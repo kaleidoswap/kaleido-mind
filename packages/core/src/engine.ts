@@ -45,6 +45,10 @@ export interface AgenticResult {
   turns: number;
   toolCalls: ToolResult[];
   requestId?: string;
+  /** Full conversation incl. assistant/tool frames — for logging / datasets. */
+  messages: Message[];
+  /** Wall-clock duration of the whole agentic run, ms. */
+  latencyMs: number;
 }
 
 export class Engine {
@@ -65,6 +69,7 @@ export class Engine {
     const hasSystem = messages.some((m) => m.role === 'system');
     const system = hasSystem ? undefined : this.defaultSystem;
 
+    const startedAt = Date.now();
     const history: Message[] = [...messages];
     const allTools = await this.registry.listTools();
     const executed: ToolResult[] = [];
@@ -124,7 +129,18 @@ export class Engine {
       }
     }
 
-    return { text: finalText, turns, toolCalls: executed, requestId: lastRequestId };
+    // Append the final answer so the returned conversation is complete (the
+    // loop breaks before pushing the no-tool-call turn).
+    if (finalText) history.push({ role: 'assistant', content: finalText });
+
+    return {
+      text: finalText,
+      turns,
+      toolCalls: executed,
+      requestId: lastRequestId,
+      messages: history,
+      latencyMs: Date.now() - startedAt,
+    };
   }
 
   async cancel(requestId: string): Promise<void> {

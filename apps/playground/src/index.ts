@@ -13,13 +13,34 @@
 
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { createHash } from 'node:crypto';
+import * as fsp from 'node:fs/promises';
 import {
   Engine,
   ToolRegistry,
   InProcessToolSource,
+  TurnLogger,
+  defaultMask,
   type LLMProvider,
   type InProcessTool,
+  type LoggerIO,
 } from '@kaleidorg/mind';
+
+// Node IO for the dataset logger — writes masked JSONL turn records.
+const loggerIO: LoggerIO = {
+  async ensureDir(p) {
+    await fsp.mkdir(p, { recursive: true });
+  },
+  async appendLine(file, line) {
+    await fsp.appendFile(file, line);
+  },
+  hash(v) {
+    return createHash('sha256').update(typeof v === 'string' ? v : JSON.stringify(v)).digest('hex');
+  },
+  now() {
+    return new Date();
+  },
+};
 
 const MODEL_PATH =
   process.env.QVAC_MODEL_PATH ||
@@ -155,6 +176,25 @@ async function main() {
   console.log(`\x1b[2m\n[${res.turns} turns · ${res.toolCalls.length} tool call(s): ${res.toolCalls
     .map((c) => c.name)
     .join(', ')}]\x1b[0m`);
+
+  // Capture a masked, APIGen-MT-compatible turn record for the fine-tune corpus.
+  const logsDir = join(homedir(), '.kaleido', 'mind', 'logs');
+  const logger = new TurnLogger({ dir: logsDir, device: 'playground', io: loggerIO, mask: defaultMask(loggerIO) });
+  const sessionId = `play-${loggerIO.hash(prompt).slice(0, 8)}`;
+  await logger.log({
+    session_id: sessionId,
+    model: { provider: 'qvac', name: MODEL_PATH.split('/').pop() ?? 'unknown' },
+    system_hash: loggerIO.hash('system'),
+    tools: demoTools.map((t) => ({ name: t.name, schema_hash: loggerIO.hash(t.parameters) })),
+    messages: res.messages,
+    decision: {
+      tool_calls: res.toolCalls.map((c) => ({ name: c.name, arguments: c.arguments })),
+      final_text: res.text,
+    },
+    results: res.toolCalls,
+    latency_ms: { reason: res.latencyMs, total: res.latencyMs },
+  });
+  console.log(`\x1b[2m[logged → ${logsDir}/<date>/session-${sessionId}.jsonl]\x1b[0m`);
 
   await sdk.unloadModel({ modelId });
   if (sdk.close) await sdk.close();
