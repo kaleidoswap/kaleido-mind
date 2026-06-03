@@ -23,6 +23,12 @@ export type { ToolSource } from './tools/source.js';
 export { InProcessToolSource } from './tools/in-process.js';
 export type { InProcessTool } from './tools/in-process.js';
 export { ToolRegistry } from './tools/registry.js';
+export {
+  createL402ToolSource,
+  parseL402Challenge,
+  bolt11AmountSats,
+} from './tools/l402.js';
+export type { L402Options, L402PayResult } from './tools/l402.js';
 
 export { Engine } from './engine.js';
 export type { EngineOptions, AgenticOptions, AgenticResult } from './engine.js';
