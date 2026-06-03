@@ -30,6 +30,15 @@ export interface L402Options {
   fetchImpl?: typeof fetch;
   /** Optional progress logging. */
   log?: (msg: string) => void;
+  /**
+   * Gate the tool behind the engine's confirmation (default true). The catch:
+   * the invoice amount is only known DURING execution (the 402 challenge), so a
+   * pre-execution confirmation can't show it. On hosts without a dedicated L402
+   * confirmation UX, set this false and bound spending with `maxAutoPaySats`.
+   */
+  requiresConfirmation?: boolean;
+  /** Auto-pay only invoices up to this many sats; reject larger ones. */
+  maxAutoPaySats?: number;
 }
 
 /** Parse an L402 (or legacy LSAT) WWW-Authenticate challenge. */
@@ -49,23 +58,22 @@ export function bolt11AmountSats(invoice: string): number {
   return Math.round(btc * 1e8);
 }
 
-const TOOL: ToolDef = {
-  name: 'fetch_paid_resource',
-  description:
-    'Fetch a paywalled (L402) HTTP resource, automatically paying the required ' +
-    'Lightning invoice in sats. Use this for premium or paid APIs (market data, ' +
-    'inference, etc.). Pass the resource URL.',
-  parameters: {
-    type: 'object',
-    properties: { url: { type: 'string', description: 'The resource URL to fetch' } },
-    required: ['url'],
-  },
-  // Spending money → let the engine's confirmation gate wrap it.
-  requiresConfirmation: true,
-};
-
 export function createL402ToolSource(opts: L402Options): ToolSource {
   const doFetch = opts.fetchImpl ?? fetch;
+
+  const tool: ToolDef = {
+    name: 'fetch_paid_resource',
+    description:
+      'Fetch a paywalled (L402) HTTP resource, automatically paying the required ' +
+      'Lightning invoice in sats. Use this for premium or paid APIs (market data, ' +
+      'inference, etc.). Pass the resource URL.',
+    parameters: {
+      type: 'object',
+      properties: { url: { type: 'string', description: 'The resource URL to fetch' } },
+      required: ['url'],
+    },
+    requiresConfirmation: opts.requiresConfirmation ?? true,
+  };
 
   async function execute(_name: string, args: Record<string, unknown>): Promise<unknown> {
     const url = String(args.url ?? '');
@@ -79,6 +87,13 @@ export function createL402ToolSource(opts: L402Options): ToolSource {
 
       const amountSats =
         bolt11AmountSats(challenge.invoice) || Number(res.headers.get('x-amount-sats') ?? 0);
+
+      if (opts.maxAutoPaySats != null && amountSats > opts.maxAutoPaySats) {
+        throw new Error(
+          `L402 invoice is ${amountSats} sats, above the ${opts.maxAutoPaySats} sat auto-pay cap — declined`,
+        );
+      }
+
       opts.log?.(`L402: ${url} requires ${amountSats} sats — paying…`);
 
       const { preimage } = await opts.payInvoice(challenge.invoice, amountSats);
@@ -100,8 +115,8 @@ export function createL402ToolSource(opts: L402Options): ToolSource {
 
   return {
     id: 'l402',
-    listTools: () => [TOOL],
-    has: (name) => name === TOOL.name,
+    listTools: () => [tool],
+    has: (name) => name === tool.name,
     execute,
   };
 }
