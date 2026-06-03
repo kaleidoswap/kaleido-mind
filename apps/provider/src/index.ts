@@ -25,6 +25,7 @@ import {
   decodeCommand,
   encodeEvent,
 } from './protocol.js';
+import { Engine, ToolRegistry, type LLMProvider, type ToolSource } from '@kaleido/mind';
 
 // ─────────────────────────────────────────────────────────────────────
 // IO helpers
@@ -173,7 +174,94 @@ const state = {
   peers: new Map<string, PeerInfo>(),
   startedAt: null as number | null,
   tokensPerSecond: null as number | null,
+  mcpSource: null as ToolSource | null,            // kaleido-mcp tools, when configured
 };
+
+// ─────────────────────────────────────────────────────────────────────
+// Shared @kaleido/mind engine — the SAME agentic loop the mobile app runs.
+// Provider wraps @qvac/sdk completion; tools come from kaleido-mcp (when
+// KALEIDO_MCP_PATH is set), else the desktop chats tool-less.
+// ─────────────────────────────────────────────────────────────────────
+
+const DESKTOP_SYSTEM =
+  'You are KaleidoMind, a local-first AI for Bitcoin, Lightning and RGB running on the user\'s desktop. ' +
+  'Use the available tools to take actions and answer questions; never invent balances, addresses or data — ' +
+  'always call a tool and report what it returns. Keep replies concise.';
+
+const qvacProvider: LLMProvider = {
+  name: 'qvac',
+  async runTurn(input) {
+    if (!sdk || !state.qvacModelHandle) throw new Error('model not loaded');
+    const history = input.system
+      ? [{ role: 'system', content: input.system }, ...input.messages]
+      : input.messages;
+    const toolDefs = input.tools.map((t) => ({
+      name: t.name,
+      description: t.description,
+      parameters: t.parameters,
+    }));
+    const run: any = sdk.completion({
+      modelId: state.qvacModelHandle,
+      history,
+      stream: true,
+      tools: toolDefs.length ? toolDefs : undefined,
+    });
+    let streamed = '';
+    if (run?.events) {
+      for await (const ev of run.events) {
+        if (ev?.type === 'contentDelta') {
+          streamed += ev.text;
+          input.onToken?.(ev.text);
+        }
+      }
+    }
+    const final = run?.final ? await run.final : null;
+    // Strip <think>…</think> reasoning blocks from the user-visible text;
+    // keep the raw frame (with framing) for history push-back.
+    const rawText = final?.contentText || streamed || '';
+    const text = rawText.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+    return {
+      text,
+      rawContent: final?.raw?.fullText ?? rawText,
+      toolCalls: (final?.toolCalls || []).map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        arguments: c.arguments ?? {},
+      })),
+      requestId: run?.requestId,
+    };
+  },
+};
+
+/** Connect kaleido-mcp as a tool source if KALEIDO_MCP_PATH is configured. */
+async function connectMcpIfConfigured(): Promise<void> {
+  if (MOCK || state.mcpSource) return;
+  const mcpEntry = process.env.KALEIDO_MCP_PATH; // path to kaleido-mcp dist/index.js
+  if (!mcpEntry) {
+    diag('KALEIDO_MCP_PATH not set — desktop chat runs tool-less');
+    return;
+  }
+  try {
+    const { McpToolSource } = await import('@kaleido/mind/mcp');
+    const src = new McpToolSource({
+      id: 'kaleido',
+      transport: {
+        kind: 'stdio',
+        command: 'node',
+        args: [mcpEntry],
+        env: { ...process.env, WDK_SEED: process.env.WDK_SEED ?? '' } as Record<string, string>,
+      },
+    });
+    await src.connect();
+    state.mcpSource = src as unknown as ToolSource;
+    const n = src.listTools().length;
+    diag(`kaleido-mcp connected: ${n} tools`);
+    emit({ type: 'log', level: 'info', message: `kaleido-mcp connected: ${n} tools` });
+  } catch (e) {
+    diag(`kaleido-mcp connect failed: ${(e as Error).message}`);
+    emit({ type: 'log', level: 'warn', message: `kaleido-mcp connect failed: ${(e as Error).message}` });
+  }
+}
 
 function snapshot(): ProviderStatusEvent {
   return {
@@ -322,6 +410,9 @@ async function handleStart(modelId: string): Promise<void> {
   state.startedAt = Date.now();
   state.tokensPerSecond = MOCK ? 24 : null;
 
+  // Best-effort: attach kaleido-mcp tools so desktop chat is a full agent.
+  await connectMcpIfConfigured();
+
   if (state.publicKey) emit({ type: 'pubkey', value: state.publicKey });
   emit({ type: 'provider_loading', phase: 'ready' });
   emit(snapshot());
@@ -342,6 +433,14 @@ async function handleStop(): Promise<void> {
         diag(`unloadModel error: ${(e as Error).message}`);
       }
     }
+  }
+  if (state.mcpSource) {
+    try {
+      await (state.mcpSource as unknown as { close?: () => Promise<void> }).close?.();
+    } catch {
+      /* ignore */
+    }
+    state.mcpSource = null;
   }
   state.providerOn = false;
   state.publicKey = null;
@@ -527,17 +626,22 @@ async function handleChat(prompt: string): Promise<{ text: string; latencyMs: nu
       tokensPerSecond: 24,
     };
   }
-  const result = sdk.completion({
-    modelId: state.qvacModelHandle,
-    history: [{ role: 'user', content: prompt }],
-    stream: false,
+  // Route through the shared @kaleido/mind engine — same agentic loop as mobile.
+  // With kaleido-mcp connected this becomes a full tool-calling agent; without
+  // it, the engine simply returns the model's direct answer.
+  const sources: ToolSource[] = state.mcpSource ? [state.mcpSource] : [];
+  const engine = new Engine({
+    provider: qvacProvider,
+    tools: new ToolRegistry(sources),
+    defaultSystem: DESKTOP_SYSTEM,
+    defaultMaxTurns: 6,
   });
-  // SDK shape: { text } or async stats — handle both
-  const text: string =
-    typeof result === 'string'
-      ? result
-      : (await result?.text) ?? (await result?.stats)?.text ?? String(result);
-  return { text, latencyMs: Date.now() - t0, tokensPerSecond: state.tokensPerSecond ?? 0 };
+  const res = await engine.runAgentic([{ role: 'user', content: prompt }]);
+  return {
+    text: res.text || '(no response)',
+    latencyMs: Date.now() - t0,
+    tokensPerSecond: state.tokensPerSecond ?? 0,
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────

@@ -16,7 +16,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@kaleido/mind": "workspace:*"
+    "@kaleido/mind": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.0.0"
   },
   "peerDependencies": {
     "@qvac/sdk": "*"
