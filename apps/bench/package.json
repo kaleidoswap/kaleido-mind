@@ -1,0 +1,20 @@
+{
+  "name": "@kaleidorg/mind-bench",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Function-calling benchmark: scores tool selection + param following + speed for a GGUF model.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@qvac/sdk": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.5.0"
+  }
+}

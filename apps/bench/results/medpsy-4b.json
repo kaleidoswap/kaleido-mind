@@ -1,0 +1,90 @@
+{
+  "label": "medpsy-4b",
+  "model": "medpsy-4b-q4_k_m-imat.gguf",
+  "cases": 10,
+  "toolAccuracy": 1,
+  "paramAccuracy": 0.333,
+  "avgLatencyMs": 14953,
+  "results": [
+    {
+      "prompt": "What's my balance?",
+      "expectTool": "get_balance",
+      "calledTool": "get_balance",
+      "toolCorrect": true,
+      "paramCorrect": null,
+      "latencyMs": 12714
+    },
+    {
+      "prompt": "How much bitcoin do I have right now?",
+      "expectTool": "get_balance",
+      "calledTool": "get_balance",
+      "toolCorrect": true,
+      "paramCorrect": null,
+      "latencyMs": 11993
+    },
+    {
+      "prompt": "Give me an address to receive some sats",
+      "expectTool": "get_address",
+      "calledTool": "get_address",
+      "toolCorrect": true,
+      "paramCorrect": null,
+      "latencyMs": 7959
+    },
+    {
+      "prompt": "I need a deposit address",
+      "expectTool": "get_address",
+      "calledTool": "get_address",
+      "toolCorrect": true,
+      "paramCorrect": null,
+      "latencyMs": 8357
+    },
+    {
+      "prompt": "Show my last 3 transactions",
+      "expectTool": "list_transactions",
+      "calledTool": "list_transactions",
+      "toolCorrect": true,
+      "paramCorrect": false,
+      "latencyMs": 9868
+    },
+    {
+      "prompt": "What are my recent payments?",
+      "expectTool": "list_transactions",
+      "calledTool": "list_transactions",
+      "toolCorrect": true,
+      "paramCorrect": null,
+      "latencyMs": 16226
+    },
+    {
+      "prompt": "Pay 5000 sats to alice@getalby.com",
+      "expectTool": "pay_invoice",
+      "calledTool": "pay_invoice",
+      "toolCorrect": true,
+      "paramCorrect": true,
+      "latencyMs": 24689
+    },
+    {
+      "prompt": "Send 1200 sats to lnbc1examplexyz",
+      "expectTool": "pay_invoice",
+      "calledTool": "pay_invoice",
+      "toolCorrect": true,
+      "paramCorrect": false,
+      "latencyMs": 30131
+    },
+    {
+      "prompt": "What is the Lightning Network, in one sentence?",
+      "expectTool": null,
+      "calledTool": null,
+      "toolCorrect": true,
+      "paramCorrect": null,
+      "latencyMs": 14990
+    },
+    {
+      "prompt": "Tell me a fun fact about Bitcoin",
+      "expectTool": null,
+      "calledTool": null,
+      "toolCorrect": true,
+      "paramCorrect": null,
+      "latencyMs": 12599
+    }
+  ]
+}

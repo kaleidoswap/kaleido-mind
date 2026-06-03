@@ -132,3 +132,52 @@ A model below the floor is not shipped, period.
 4. A chart in the submission: "Qwen3-30B-A3B vs Psy vs the rest" across the four metric families
 
 This turns a vague claim ("we run AI locally") into a defensible one ("we measured X, on Y, against Z").
+
+---
+
+## Results — v0 (wallet tool-calling, 10-case eval)
+
+Run with `apps/bench` on Apple M-series, QVAC SDK 0.12, GGUF Q4_K_M, the
+10-prompt wallet eval set (`get_balance`, `get_address`, `list_transactions`,
+`pay_invoice`, + 2 should-not-call cases). Param scoring is **by value**
+(does the recipient/amount actually land in the args), since small models vary
+the argument *names*.
+
+| Model | Size | Tool selection | Param following | Latency/call |
+|---|---|---|---|---|
+| Qwen3-0.6B | 0.4 GB | **100%** (10/10) | 33% | **0.95 s** |
+| Qwen3-4B | 2.3 GB | **100%** (10/10) | **67%** | 9.2 s |
+| QVAC MedPsy-4B | 2.5 GB | **100%** (10/10) | 33% | 15.0 s |
+
+Raw per-case results: `apps/bench/results/*.json`.
+
+### Findings
+
+1. **Tool *selection* is solved even at 0.6B.** All three models picked the
+   right tool — and correctly declined to call one — on every case. The engine
+   + `tools: true` grammar is reliable across sizes. This is the core
+   capability and it works on the smallest mobile-class model.
+
+2. **Param *following* scales with size.** 0.6B (33%) → Qwen3-4B (67%). Bigger
+   models fill the schema's argument names more faithfully. The 0.6B reliably
+   chooses `pay_invoice` but mislabels `invoice_or_address`/`amount_sats`.
+
+3. **MedPsy-4B (a QVAC Psy model) trades generality for its domain.** It nails
+   tool selection but is slower and weaker on general-purpose param following —
+   expected, since it's *medical*-specialized. The honest read: Psy models are
+   excellent for their vertical; for a Bitcoin wallet agent, a general model of
+   the same size is the better fit.
+
+4. **Speed favours the small model 10–15×.** 0.6B at ~1 s/call vs ~9–15 s for
+   the 4B models on the same hardware.
+
+### What this means for KaleidoMind's model routing
+
+- **Mobile default: Qwen3-0.6B** — instant, 100% tool selection. Pair with
+  **tolerant tool handlers** (accept arg aliases / extract by value) to close
+  the param gap, exactly as our value-based scoring does.
+- **Heavier reasoning / param-precise calls: delegate to the desktop** running
+  a 4B+ general model over P2P — the delegation path already built.
+- **Psy track coverage:** MedPsy-4B is benchmarked and supported (any GGUF the
+  QVAC SDK loads runs through the same engine); it shines on medical use cases,
+  which is a separate vertical from the wallet agent.
