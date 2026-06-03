@@ -1,4 +1,4 @@
-# Publishing `@kaleido/mind`
+# Publishing `@kaleidorg/mind`
 
 The repo is private: **https://github.com/kaleidoswap/kaleido-mind**.
 
@@ -7,7 +7,7 @@ locally via `file:` — fastest iteration, no republish needed:
 
 ```jsonc
 // rate/package.json
-"@kaleido/mind": "file:../kaleido-mind/packages/core"
+"@kaleidorg/mind": "file:../kaleido-mind/packages/core"
 ```
 
 To consume it as a *versioned* npm package (CI, external consumers, release
@@ -22,7 +22,7 @@ Ties the package to the private repo; no separate npm org needed.
 
 **One-time:**
 1. The package scope must match the repo owner, so rename the package
-   `@kaleido/mind` → `@kaleidoswap/mind` (and update the 3 import sites in
+   `@kaleidorg/mind` → `@kaleidoswap/mind` (and update the 3 import sites in
    rate: `package.json`, `services/QVACService.ts`, `screens/AIAssistantScreen.tsx`).
 2. Add to `packages/core/package.json`:
    ```jsonc
@@ -67,7 +67,7 @@ pnpm build
 npm publish --access public
 ```
 
-**Consume:** `"@kaleido/mind": "^0.0.1"` — no `.npmrc` needed.
+**Consume:** `"@kaleidorg/mind": "^0.0.1"` — no `.npmrc` needed.
 
 ---
 

@@ -1,5 +1,5 @@
 {
-  "name": "@kaleido/mind",
+  "name": "@kaleidorg/mind",
   "version": "0.0.1",
   "description": "Local-first reasoning + function-calling engine for KaleidoSwap. QVAC-powered.",
   "license": "Apache-2.0",
@@ -10,7 +10,7 @@
     "directory": "packages/core"
   },
   "publishConfig": {
-    "access": "restricted"
+    "access": "public"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

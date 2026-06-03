@@ -22,12 +22,12 @@ All inference goes through the [QVAC SDK](https://www.npmjs.com/package/@qvac/sd
 ```
 kaleido-mind/
 ├── packages/
-│   ├── core/                  @kaleido/mind  — engine, providers, tools, logger
-│   ├── tools-kaleido/         @kaleido/mind-tools-kaleido — BTC / LN / RGB tools
-│   ├── server/                @kaleido/mind-server — HTTP + MCP daemon
-│   ├── client-ts/             @kaleido/mind-client — typed HTTP client
-│   ├── adapter-react-native/  @kaleido/mind-rn — Expo/RN adapter
-│   └── adapter-browser/       @kaleido/mind-browser — extension adapter
+│   ├── core/                  @kaleidorg/mind  — engine, providers, tools, logger
+│   ├── tools-kaleido/         @kaleidorg/mind-tools-kaleido — BTC / LN / RGB tools
+│   ├── server/                @kaleidorg/mind-server — HTTP + MCP daemon
+│   ├── client-ts/             @kaleidorg/mind-client — typed HTTP client
+│   ├── adapter-react-native/  @kaleidorg/mind-rn — Expo/RN adapter
+│   └── adapter-browser/       @kaleidorg/mind-browser — extension adapter
 ├── apps/
 │   └── playground/            CLI for testing without rate/extension/agent
 ├── python/

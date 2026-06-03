@@ -25,7 +25,7 @@ import {
   decodeCommand,
   encodeEvent,
 } from './protocol.js';
-import { Engine, ToolRegistry, type LLMProvider, type ToolSource } from '@kaleido/mind';
+import { Engine, ToolRegistry, type LLMProvider, type ToolSource } from '@kaleidorg/mind';
 
 // ─────────────────────────────────────────────────────────────────────
 // IO helpers
@@ -242,7 +242,7 @@ async function connectMcpIfConfigured(): Promise<void> {
     return;
   }
   try {
-    const { McpToolSource } = await import('@kaleido/mind/mcp');
+    const { McpToolSource } = await import('@kaleidorg/mind/mcp');
     const src = new McpToolSource({
       id: 'kaleido',
       transport: {

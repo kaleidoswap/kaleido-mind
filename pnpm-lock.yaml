@@ -27,7 +27,7 @@ importers:
 
   apps/provider:
     dependencies:
-      '@kaleido/mind':
+      '@kaleidorg/mind':
         specifier: workspace:*
         version: link:../../packages/core
       '@modelcontextprotocol/sdk':
