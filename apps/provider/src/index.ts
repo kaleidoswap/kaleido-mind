@@ -25,7 +25,15 @@ import {
   decodeCommand,
   encodeEvent,
 } from './protocol.js';
-import { Engine, ToolRegistry, type LLMProvider, type ToolSource } from '@kaleidorg/mind';
+import {
+  Engine,
+  ToolRegistry,
+  SkillRegistry,
+  createSkillReferenceToolSource,
+  type LLMProvider,
+  type ToolSource,
+} from '@kaleidorg/mind';
+import { loadSkillsDir } from '@kaleidorg/mind/skills';
 
 // ─────────────────────────────────────────────────────────────────────
 // IO helpers
@@ -175,6 +183,9 @@ const state = {
   startedAt: null as number | null,
   tokensPerSecond: null as number | null,
   mcpSource: null as ToolSource | null,            // kaleido-mcp tools, when configured
+  bitrefillSource: null as ToolSource | null,      // bitrefill remote MCP, when enabled
+  skills: null as SkillRegistry | null,            // Agent Skills (loaded from skills/)
+  refSource: null as ToolSource | null,            // read_skill_reference (progressive disclosure)
 };
 
 // ─────────────────────────────────────────────────────────────────────
@@ -260,6 +271,64 @@ async function connectMcpIfConfigured(): Promise<void> {
   } catch (e) {
     diag(`kaleido-mcp connect failed: ${(e as Error).message}`);
     emit({ type: 'log', level: 'warn', message: `kaleido-mcp connect failed: ${(e as Error).message}` });
+  }
+}
+
+/**
+ * Load Agent Skills from the vendored `skills/` folder (SKILL.md + references).
+ * Best-effort: if the folder is missing the brain just runs skill-less.
+ * Override the location with KALEIDO_SKILLS_DIR.
+ */
+function loadSkills(): void {
+  if (state.skills) return;
+  const dir =
+    process.env.KALEIDO_SKILLS_DIR ?? new URL('../../../skills/', import.meta.url).pathname;
+  try {
+    const skills = loadSkillsDir(dir);
+    if (!skills.length) {
+      diag(`no skills found in ${dir}`);
+      return;
+    }
+    state.skills = new SkillRegistry(skills);
+    state.refSource = createSkillReferenceToolSource(state.skills) as unknown as ToolSource;
+    diag(`loaded ${skills.length} skill(s): ${skills.map((s) => s.name).join(', ')}`);
+    emit({ type: 'log', level: 'info', message: `skills loaded: ${skills.map((s) => s.name).join(', ')}` });
+  } catch (e) {
+    diag(`skill load failed: ${(e as Error).message}`);
+  }
+}
+
+/**
+ * Connect the Bitrefill remote MCP (gift cards / top-ups / eSIMs) as a tool
+ * source. Enabled by default; set BITREFILL_MCP=0 to disable. An optional
+ * BITREFILL_API_KEY is sent as a bearer token (purchases need auth; browse may
+ * not). Best-effort — failure just means no Bitrefill tools.
+ */
+async function connectBitrefillMcpIfEnabled(): Promise<void> {
+  if (MOCK || state.bitrefillSource) return;
+  if (process.env.BITREFILL_MCP === '0') {
+    diag('BITREFILL_MCP=0 — bitrefill tools disabled');
+    return;
+  }
+  try {
+    const { McpToolSource } = await import('@kaleidorg/mind/mcp');
+    const key = process.env.BITREFILL_API_KEY;
+    const src = new McpToolSource({
+      id: 'bitrefill',
+      transport: {
+        kind: 'http',
+        url: process.env.BITREFILL_MCP_URL ?? 'https://api.bitrefill.com/mcp',
+        headers: key ? { Authorization: `Bearer ${key}` } : undefined,
+      },
+    });
+    await src.connect();
+    state.bitrefillSource = src as unknown as ToolSource;
+    const n = src.listTools().length;
+    diag(`bitrefill MCP connected: ${n} tools`);
+    emit({ type: 'log', level: 'info', message: `bitrefill MCP connected: ${n} tools` });
+  } catch (e) {
+    diag(`bitrefill MCP connect failed: ${(e as Error).message}`);
+    emit({ type: 'log', level: 'warn', message: `bitrefill MCP connect failed: ${(e as Error).message}` });
   }
 }
 
@@ -412,8 +481,11 @@ async function handleStart(modelId: string): Promise<void> {
   state.startedAt = Date.now();
   state.tokensPerSecond = MOCK ? 24 : null;
 
-  // Best-effort: attach kaleido-mcp tools so desktop chat is a full agent.
+  // Best-effort: load skills + attach tool sources so desktop chat is a full,
+  // skill-routed agent (kaleido-mcp wallet/trading + bitrefill commerce).
+  loadSkills();
   await connectMcpIfConfigured();
+  await connectBitrefillMcpIfEnabled();
 
   if (state.publicKey) emit({ type: 'pubkey', value: state.publicKey });
   emit({ type: 'provider_loading', phase: 'ready' });
@@ -436,13 +508,16 @@ async function handleStop(): Promise<void> {
       }
     }
   }
-  if (state.mcpSource) {
-    try {
-      await (state.mcpSource as unknown as { close?: () => Promise<void> }).close?.();
-    } catch {
-      /* ignore */
+  for (const key of ['mcpSource', 'bitrefillSource'] as const) {
+    const src = state[key];
+    if (src) {
+      try {
+        await (src as unknown as { close?: () => Promise<void> }).close?.();
+      } catch {
+        /* ignore */
+      }
+      state[key] = null;
     }
-    state.mcpSource = null;
   }
   state.providerOn = false;
   state.publicKey = null;
@@ -629,16 +704,33 @@ async function handleChat(prompt: string): Promise<{ text: string; latencyMs: nu
     };
   }
   // Route through the shared @kaleido/mind engine — same agentic loop as mobile.
-  // With kaleido-mcp connected this becomes a full tool-calling agent; without
-  // it, the engine simply returns the model's direct answer.
-  const sources: ToolSource[] = state.mcpSource ? [state.mcpSource] : [];
+  // Tool sources: kaleido-mcp (wallet/trading), bitrefill (commerce), and the
+  // skill-reference reader. With none connected the engine simply returns the
+  // model's direct answer.
+  const sources: ToolSource[] = [
+    state.mcpSource,
+    state.bitrefillSource,
+    state.refSource,
+  ].filter(Boolean) as ToolSource[];
+
+  // Enter the most relevant skill: its playbook is composed into the system
+  // prompt and (when it scopes tools) only those tools are exposed.
+  const skill = state.skills?.select(prompt) ?? null;
+  const composed = state.skills?.compose(DESKTOP_SYSTEM, skill) ?? { system: DESKTOP_SYSTEM };
+  if (skill) {
+    diag(`skill selected: ${skill.name}`);
+    emit({ type: 'log', level: 'info', message: `skill: ${skill.name}` });
+  }
+
   const engine = new Engine({
     provider: qvacProvider,
     tools: new ToolRegistry(sources),
-    defaultSystem: DESKTOP_SYSTEM,
-    defaultMaxTurns: 6,
+    defaultSystem: composed.system,
+    defaultMaxTurns: 8,
   });
-  const res = await engine.runAgentic([{ role: 'user', content: prompt }]);
+  const res = await engine.runAgentic([{ role: 'user', content: prompt }], {
+    allowedTools: composed.allowedTools,
+  });
   return {
     text: res.text || '(no response)',
     latencyMs: Date.now() - t0,
