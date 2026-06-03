@@ -1,0 +1,28 @@
+{
+  "name": "kaleido-mind",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Sovereign AI for sovereign money. Local-first reasoning + function-calling engine for KaleidoSwap.",
+  "license": "Apache-2.0",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "pnpm -r run build",
+    "typecheck": "pnpm -r run typecheck",
+    "test": "pnpm -r run test",
+    "lint": "pnpm -r run lint",
+    "play": "pnpm --filter @kaleido/mind-playground run start"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.5.0"
+  },
+  "dependencies": {
+    "@qvac/sdk": "^0.12.0",
+    "require-asset": "^1.2.2"
+  }
+}
