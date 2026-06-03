@@ -37,6 +37,11 @@ export interface AgenticOptions {
   onToolCall?: (call: { name: string; arguments: Record<string, unknown> }, turn: number) => void;
   /** Human-in-the-loop gate for tools flagged requiresConfirmation. */
   onConfirm?: (call: { name: string; arguments: Record<string, unknown> }) => Promise<ConfirmDecision>;
+  /**
+   * Restrict the tools exposed to the model this run (progressive disclosure).
+   * Typically the active skill's tool list — see SkillRegistry.compose().
+   */
+  allowedTools?: string[];
   signal?: AbortSignal;
 }
 
@@ -71,7 +76,11 @@ export class Engine {
 
     const startedAt = Date.now();
     const history: Message[] = [...messages];
-    const allTools = await this.registry.listTools();
+    const registryTools = await this.registry.listTools();
+    // Progressive disclosure: expose only the active skill's tools when set.
+    const allTools = opts.allowedTools
+      ? registryTools.filter((t) => opts.allowedTools!.includes(t.name))
+      : registryTools;
     const executed: ToolResult[] = [];
     let lastRequestId: string | undefined;
     let finalText = '';
