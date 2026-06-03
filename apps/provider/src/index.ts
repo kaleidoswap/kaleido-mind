@@ -349,7 +349,9 @@ async function handleStart(modelId: string): Promise<void> {
       state.qvacModelHandle = await sdk.loadModel({
         modelSrc: model.path,
         modelType: 'llm',
-        modelConfig: { ctx_size: 16384 },
+        // tools: true enables the llamacpp tool-calling grammar — required for
+        // the agent to emit structured tool calls instead of talking about them.
+        modelConfig: { ctx_size: 16384, tools: true },
         onProgress: (p: { percentage: number }) => {
           diag(`load progress: ${p.percentage}%`);
           emit({ type: 'provider_loading', phase: 'loading_model', percentage: p.percentage });

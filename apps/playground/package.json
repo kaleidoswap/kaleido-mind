@@ -1,0 +1,24 @@
+{
+  "name": "@kaleidorg/mind-playground",
+  "version": "0.0.1",
+  "private": true,
+  "description": "CLI to exercise the @kaleidorg/mind engine + tools against a real local QVAC model — no phone, no MCP.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@kaleidorg/mind": "workspace:*"
+  },
+  "peerDependencies": {
+    "@qvac/sdk": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.5.0"
+  }
+}
