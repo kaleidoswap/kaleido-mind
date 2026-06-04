@@ -6,6 +6,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { SkillRegistry, parseSkill, READ_REFERENCE_TOOL } from './registry.js';
 import { createSkillReferenceToolSource } from './reference-source.js';
+import { skillsFromBundle } from './bundle.js';
 import { Engine } from '../engine.js';
 import { ToolRegistry } from '../tools/registry.js';
 import { InProcessToolSource } from '../tools/in-process.js';
@@ -132,6 +133,31 @@ describe('progressive disclosure — references', () => {
     await expect(src.execute(READ_REFERENCE_TOOL, { file: 'nope.md' })).rejects.toThrow(
       /not found.*bitrefill\/mcp\.md/,
     );
+  });
+});
+
+describe('skillsFromBundle — RN-safe loading', () => {
+  it('rehydrates skills (incl. references) from a v1 bundle', () => {
+    const skills = skillsFromBundle({
+      version: 1,
+      skills: [
+        {
+          dir: 'bitrefill',
+          markdown: '---\nname: bitrefill\ndescription: shop with bitcoin\ntriggers: bitrefill, gift card\n---\nbody',
+          references: [{ name: 'mcp.md', content: '# MCP' }],
+        },
+      ],
+    });
+    expect(skills).toHaveLength(1);
+    expect(skills[0].name).toBe('bitrefill');
+    expect(skills[0].references?.[0]?.name).toBe('mcp.md');
+    expect(skills[0].dir).toBe('bitrefill');
+    // and it's selectable through a registry built from the bundle
+    expect(new SkillRegistry(skills).select('buy a gift card')?.name).toBe('bitrefill');
+  });
+
+  it('rejects a malformed bundle', () => {
+    expect(() => skillsFromBundle({ version: 2 as 1, skills: [] })).toThrow(/valid v1/);
   });
 });
 

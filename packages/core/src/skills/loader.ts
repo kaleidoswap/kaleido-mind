@@ -21,8 +21,20 @@
 
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { Skill, SkillReference } from './types.js';
 import { parseSkill } from './registry.js';
+
+/**
+ * Absolute path to the skills shipped inside this package
+ * (`@kaleidorg/mind/skills`). Resolves relative to the compiled loader, so it
+ * works from any host that installs the package. Override with an explicit dir
+ * when you keep skills elsewhere.
+ */
+export function packagedSkillsDir(): string {
+  // dist/skills/loader.js → ../../skills == <package root>/skills
+  return fileURLToPath(new URL('../../skills/', import.meta.url));
+}
 
 /** Load one skill folder containing a SKILL.md (+ optional references/). */
 export function loadSkillFromDir(dir: string): Skill {

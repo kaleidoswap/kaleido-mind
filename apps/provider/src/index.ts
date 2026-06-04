@@ -33,7 +33,7 @@ import {
   type LLMProvider,
   type ToolSource,
 } from '@kaleidorg/mind';
-import { loadSkillsDir } from '@kaleidorg/mind/skills';
+import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
 
 // ─────────────────────────────────────────────────────────────────────
 // IO helpers
@@ -281,8 +281,7 @@ async function connectMcpIfConfigured(): Promise<void> {
  */
 function loadSkills(): void {
   if (state.skills) return;
-  const dir =
-    process.env.KALEIDO_SKILLS_DIR ?? new URL('../../../skills/', import.meta.url).pathname;
+  const dir = process.env.KALEIDO_SKILLS_DIR ?? packagedSkillsDir();
   try {
     const skills = loadSkillsDir(dir);
     if (!skills.length) {
@@ -310,9 +309,17 @@ async function connectBitrefillMcpIfEnabled(): Promise<void> {
     diag('BITREFILL_MCP=0 — bitrefill tools disabled');
     return;
   }
+  // The remote MCP rejects anonymous connections (401) — it needs an API key
+  // (or interactive OAuth, which a headless sidecar can't do). Skip the connect
+  // unless a key is present, so the bitrefill skill simply routes to its other
+  // channels (CLI / API / link) instead of logging a guaranteed failure.
+  const key = process.env.BITREFILL_API_KEY;
+  if (!key && process.env.BITREFILL_MCP !== '1') {
+    diag('BITREFILL_API_KEY not set — bitrefill MCP skipped (skill routes via other channels)');
+    return;
+  }
   try {
     const { McpToolSource } = await import('@kaleidorg/mind/mcp');
-    const key = process.env.BITREFILL_API_KEY;
     const src = new McpToolSource({
       id: 'bitrefill',
       transport: {

@@ -40,6 +40,8 @@ export {
   READ_REFERENCE_TOOL,
 } from './skills/registry.js';
 export { createSkillReferenceToolSource } from './skills/reference-source.js';
+export { skillsFromBundle } from './skills/bundle.js';
+export type { SkillBundle, BundledSkill } from './skills/bundle.js';
 export type { Skill, SkillReference, SkillSelector } from './skills/types.js';
 
 export { TurnLogger, defaultMask } from './logger.js';
