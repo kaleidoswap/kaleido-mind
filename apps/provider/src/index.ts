@@ -63,6 +63,11 @@ interface QvacSDK {
   loadModel: (opts: any) => Promise<string>;
   unloadModel: (opts: { modelId: string; clearStorage?: boolean }) => Promise<void>;
   completion: (opts: any) => any;
+  // Voice capabilities — served to paired phones over P2P once the matching
+  // model is loaded (see loadVoiceModels). Optional so MOCK / older SDK builds
+  // without the whisper/tts plugins still type-check.
+  transcribe?: (opts: any) => Promise<any> | any;
+  textToSpeech?: (opts: any) => any;
   startQVACProvider: (opts?: any) => Promise<any>;
   stopQVACProvider: () => Promise<void>;
   heartbeat?: (opts?: any) => Promise<unknown>;
@@ -70,11 +75,15 @@ interface QvacSDK {
 }
 
 let sdk: QvacSDK | null = null;
+// Raw module handle — kept so we can resolve pre-registered model descriptors
+// (e.g. WHISPER_BASE_Q8_0, TTS_EN_SUPERTONIC_Q4_0) by export name at runtime.
+let sdkModule: any = null;
 let MOCK = false;
 
 async function loadSdk(): Promise<void> {
   try {
-    sdk = (await import('@qvac/sdk')) as unknown as QvacSDK;
+    sdkModule = await import('@qvac/sdk');
+    sdk = sdkModule as unknown as QvacSDK;
     diag('@qvac/sdk loaded');
   } catch (e) {
     MOCK = true;
@@ -179,6 +188,8 @@ const state = {
   activeModelId: null as string | null,
   activeModelName: null as string | null,
   qvacModelHandle: null as string | null,         // returned by loadModel()
+  qvacSttHandle: null as string | null,            // Whisper model — delegated STT
+  qvacTtsHandle: null as string | null,            // TTS model — delegated speech synthesis
   peers: new Map<string, PeerInfo>(),
   startedAt: null as number | null,
   tokensPerSecond: null as number | null,
@@ -349,6 +360,8 @@ function snapshot(): ProviderStatusEvent {
     peers: Array.from(state.peers.values()),
     tokensPerSecond: state.tokensPerSecond,
     startedAt: state.startedAt,
+    sttReady: state.qvacSttHandle != null,
+    ttsReady: state.qvacTtsHandle != null,
   };
 }
 
@@ -399,6 +412,80 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T | null> {
   ]);
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// Voice (STT/TTS) delegation
+//
+// Loaded alongside the LLM so the QVAC provider advertises transcription and
+// speech-synthesis to paired phones over the same Hyperswarm channel as
+// completion. Best-effort: if the SDK build lacks the whisper/tts plugins (or
+// the model constant), the provider still serves LLM-only and just logs it.
+// Disable with KALEIDO_MIND_VOICE=0; override the models with the
+// KALEIDO_MIND_STT_MODEL / KALEIDO_MIND_TTS_MODEL env vars (names of @qvac/sdk
+// model-descriptor exports, e.g. WHISPER_LARGE_V3_TURBO).
+// ─────────────────────────────────────────────────────────────────────
+
+const DEFAULT_STT_MODEL = 'WHISPER_BASE_Q8_0';
+const DEFAULT_TTS_MODEL = 'TTS_EN_SUPERTONIC_Q4_0';
+
+/** Resolve a pre-registered @qvac/sdk model descriptor by export name. */
+function resolveModelConst(name: string): any {
+  return sdkModule?.[name] ?? null;
+}
+
+/**
+ * Load the Whisper (STT) and Supertonic (TTS) models so delegated transcribe()
+ * / textToSpeech() calls from paired phones are served by this provider. Each
+ * is independent and best-effort — a failure on one leaves the other (and the
+ * LLM) working.
+ */
+async function loadVoiceModels(): Promise<void> {
+  if (MOCK || !sdk) return;
+  if (process.env.KALEIDO_MIND_VOICE === '0') {
+    diag('voice delegation disabled (KALEIDO_MIND_VOICE=0)');
+    return;
+  }
+
+  // STT — Whisper transcription.
+  const sttName = process.env.KALEIDO_MIND_STT_MODEL || DEFAULT_STT_MODEL;
+  const sttSrc = resolveModelConst(sttName);
+  if (!sttSrc) {
+    diag(`STT model constant not found: ${sttName} — transcription delegation off`);
+  } else {
+    try {
+      state.qvacSttHandle = await sdk.loadModel({
+        modelSrc: sttSrc,
+        modelType: 'whispercpp-transcription',
+        modelConfig: { language: 'en', strategy: 'greedy', audio_format: 's16le' },
+      });
+      diag(`STT model loaded for delegation: ${sttName}`);
+      emit({ type: 'log', level: 'info', message: `voice: transcription ready (${sttName})` });
+    } catch (e) {
+      diag(`STT load failed (${sttName}): ${(e as Error).message}`);
+      emit({ type: 'log', level: 'warn', message: `voice: transcription unavailable — ${(e as Error).message}` });
+    }
+  }
+
+  // TTS — neural speech synthesis.
+  const ttsName = process.env.KALEIDO_MIND_TTS_MODEL || DEFAULT_TTS_MODEL;
+  const ttsSrc = resolveModelConst(ttsName);
+  if (!ttsSrc) {
+    diag(`TTS model constant not found: ${ttsName} — speech-synthesis delegation off`);
+  } else {
+    try {
+      state.qvacTtsHandle = await sdk.loadModel({
+        modelSrc: ttsSrc,
+        modelType: 'tts-ggml',
+        modelConfig: { ttsEngine: 'supertonic', language: 'en', voice: 'F1', ttsSpeed: 1.05, ttsNumInferenceSteps: 5 },
+      });
+      diag(`TTS model loaded for delegation: ${ttsName}`);
+      emit({ type: 'log', level: 'info', message: `voice: speech synthesis ready (${ttsName})` });
+    } catch (e) {
+      diag(`TTS load failed (${ttsName}): ${(e as Error).message}`);
+      emit({ type: 'log', level: 'warn', message: `voice: speech synthesis unavailable — ${(e as Error).message}` });
+    }
+  }
+}
+
 async function handleStart(modelId: string): Promise<void> {
   if (state.providerOn) {
     throw new Error('Provider is already running. Stop it first.');
@@ -439,6 +526,11 @@ async function handleStart(modelId: string): Promise<void> {
     }
 
     emit({ type: 'provider_loading', phase: 'model_loaded' });
+
+    // Load the voice models (best-effort) before advertising, so the provider
+    // comes up already able to serve delegated STT/TTS to paired phones.
+    await loadVoiceModels();
+
     emit({ type: 'provider_loading', phase: 'starting_p2p', message: 'Connecting to Hyperswarm…' });
 
     // 60 s ceiling on the P2P bootstrap — DHT can take ~30s on first run.
@@ -514,6 +606,14 @@ async function handleStop(): Promise<void> {
         diag(`unloadModel error: ${(e as Error).message}`);
       }
     }
+    for (const voiceHandle of [state.qvacSttHandle, state.qvacTtsHandle]) {
+      if (!voiceHandle) continue;
+      try {
+        await sdk.unloadModel({ modelId: voiceHandle });
+      } catch (e) {
+        diag(`unloadModel (voice) error: ${(e as Error).message}`);
+      }
+    }
   }
   for (const key of ['mcpSource', 'bitrefillSource'] as const) {
     const src = state[key];
@@ -531,6 +631,8 @@ async function handleStop(): Promise<void> {
   state.activeModelId = null;
   state.activeModelName = null;
   state.qvacModelHandle = null;
+  state.qvacSttHandle = null;
+  state.qvacTtsHandle = null;
   state.peers.clear();
   state.startedAt = null;
   state.tokensPerSecond = null;
