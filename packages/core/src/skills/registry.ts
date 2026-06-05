@@ -6,7 +6,10 @@
  * call); a host can inject a model-driven or embedding selector instead.
  */
 
-import type { Skill, SkillSelector } from './types.js';
+import type { Skill, SkillReference, SkillSelector } from './types.js';
+
+/** Tool name the reference source exposes for progressive disclosure. */
+export const READ_REFERENCE_TOOL = 'read_skill_reference';
 
 /**
  * Parse a SKILL.md file: a YAML-ish frontmatter block (name/description/tools/
@@ -20,15 +23,26 @@ import type { Skill, SkillSelector } from './types.js';
  *   ---
  *   <instructions…>
  */
-export function parseSkill(markdown: string): Skill {
+/** Strip wrapping single/double quotes from a frontmatter value. */
+function unquote(v: string): string {
+  const t = v.trim();
+  if ((t.startsWith('"') && t.endsWith('"')) || (t.startsWith("'") && t.endsWith("'"))) {
+    return t.slice(1, -1);
+  }
+  return t;
+}
+
+export function parseSkill(markdown: string, references?: SkillReference[]): Skill {
   const fm = markdown.match(/^---\s*\n([\s\S]*?)\n---\s*\n?([\s\S]*)$/);
   const meta: Record<string, string> = {};
   let body = markdown;
   if (fm) {
     body = fm[2] ?? '';
     for (const line of (fm[1] ?? '').split('\n')) {
-      const m = line.match(/^\s*([A-Za-z_]+)\s*:\s*(.+?)\s*$/);
-      if (m && m[1]) meta[m[1].toLowerCase()] = m[2] ?? '';
+      // Flat `key: value` lines (incl. indented keys under a nested `metadata:`
+      // block, which fold into the same map — we don't need YAML nesting here).
+      const m = line.match(/^\s*([A-Za-z_][\w-]*)\s*:\s*(.+?)\s*$/);
+      if (m && m[1]) meta[m[1].toLowerCase()] = unquote(m[2] ?? '');
     }
   }
   const list = (v?: string) =>
@@ -37,12 +51,20 @@ export function parseSkill(markdown: string): Skill {
       : undefined;
 
   if (!meta.name) throw new Error('SKILL.md missing `name` in frontmatter');
+
+  // Everything that isn't a first-class field becomes metadata.
+  const KNOWN = new Set(['name', 'description', 'tools', 'triggers']);
+  const metadata: Record<string, string> = {};
+  for (const [k, v] of Object.entries(meta)) if (!KNOWN.has(k)) metadata[k] = v;
+
   return {
     name: meta.name,
     description: meta.description ?? '',
     instructions: body.trim(),
     tools: list(meta.tools),
     triggers: list(meta.triggers),
+    metadata: Object.keys(metadata).length ? metadata : undefined,
+    references: references && references.length ? references : undefined,
   };
 }
 
@@ -93,9 +115,27 @@ export class SkillRegistry {
     return this;
   }
 
-  /** Add a skill from raw SKILL.md text. */
-  addMarkdown(markdown: string): this {
-    return this.add(parseSkill(markdown));
+  /** Add a skill from raw SKILL.md text (+ optional reference files). */
+  addMarkdown(markdown: string, references?: SkillReference[]): this {
+    return this.add(parseSkill(markdown, references));
+  }
+
+  /** All reference files across skills, tagged with their owning skill. */
+  references(): Array<SkillReference & { skill: string }> {
+    return this.skills.flatMap((s) =>
+      (s.references ?? []).map((r) => ({ ...r, skill: s.name })),
+    );
+  }
+
+  /** Look up a reference file by name (optionally scoped to one skill). */
+  reference(file: string, skill?: string): SkillReference | undefined {
+    const base = file.replace(/^references\//, '');
+    for (const s of this.skills) {
+      if (skill && s.name !== skill) continue;
+      const hit = (s.references ?? []).find((r) => r.name === base || r.name === file);
+      if (hit) return hit;
+    }
+    return undefined;
   }
 
   list(): Skill[] {
@@ -118,7 +158,26 @@ export class SkillRegistry {
    */
   compose(base: string, skill: Skill | null): { system: string; allowedTools?: string[] } {
     if (!skill) return { system: base };
-    const system = `${base}\n\n## Active skill: ${skill.name}\n${skill.instructions}`.trim();
-    return { system, allowedTools: skill.tools };
+
+    let system = `${base}\n\n## Active skill: ${skill.name}\n${skill.instructions}`.trim();
+
+    // Progressive disclosure: tell the model the reference files exist and how
+    // to pull one in, rather than dumping them all into context.
+    const refs = skill.references ?? [];
+    if (refs.length) {
+      const names = refs.map((r) => r.name).join(', ');
+      system +=
+        `\n\n## Reference files\nThis skill has detailed reference docs: ${names}. ` +
+        `When you need the detail for a step, call \`${READ_REFERENCE_TOOL}\` with the ` +
+        `filename (e.g. {"file":"${refs[0]!.name}"}) to read it before acting.`;
+    }
+
+    // When the skill scopes tools, keep the reference reader reachable too.
+    const allowedTools = skill.tools
+      ? refs.length
+        ? [...skill.tools, READ_REFERENCE_TOOL]
+        : skill.tools
+      : undefined;
+    return { system, allowedTools };
   }
 }

@@ -23,6 +23,10 @@
       "import": "./dist/tools/mcp.js",
       "types": "./dist/tools/mcp.d.ts"
     },
+    "./skills": {
+      "import": "./dist/skills/loader.js",
+      "types": "./dist/skills/loader.d.ts"
+    },
     "./logger": {
       "import": "./dist/logger.js",
       "types": "./dist/logger.d.ts"
@@ -31,6 +35,8 @@
   "files": [
     "dist",
     "src",
+    "skills",
+    "scripts",
     "README.md",
     "LICENSE"
   ],
@@ -38,7 +44,8 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "bundle-skills": "node scripts/bundle-skills.mjs"
   },
   "devDependencies": {
     "vitest": "^1.6.0"

@@ -33,8 +33,16 @@ export type { L402Options, L402PayResult } from './tools/l402.js';
 export { Engine } from './engine.js';
 export type { EngineOptions, AgenticOptions, AgenticResult } from './engine.js';
 
-export { SkillRegistry, parseSkill, keywordSelector } from './skills/registry.js';
-export type { Skill, SkillSelector } from './skills/types.js';
+export {
+  SkillRegistry,
+  parseSkill,
+  keywordSelector,
+  READ_REFERENCE_TOOL,
+} from './skills/registry.js';
+export { createSkillReferenceToolSource } from './skills/reference-source.js';
+export { skillsFromBundle } from './skills/bundle.js';
+export type { SkillBundle, BundledSkill } from './skills/bundle.js';
+export type { Skill, SkillReference, SkillSelector } from './skills/types.js';
 
 export { TurnLogger, defaultMask } from './logger.js';
 export type { TurnLog, Device, LoggerIO, LoggerOptions } from './logger.js';

@@ -39,6 +39,10 @@ export interface ProviderStatusEvent {
   peers: PeerInfo[];
   tokensPerSecond: number | null;
   startedAt: number | null;
+  /** Whisper model loaded — phones can delegate speech-to-text to this provider. */
+  sttReady?: boolean;
+  /** TTS model loaded — phones can delegate text-to-speech to this provider. */
+  ttsReady?: boolean;
 }
 
 export interface PeerInfo {

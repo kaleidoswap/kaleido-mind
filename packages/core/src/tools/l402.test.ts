@@ -84,4 +84,30 @@ describe('createL402ToolSource — pay-and-fetch flow', () => {
     expect(tools[0].name).toBe('fetch_paid_resource');
     expect(tools[0].requiresConfirmation).toBe(true);
   });
+
+  it('honours requiresConfirmation: false (auto-pay hosts)', () => {
+    const src = createL402ToolSource({ payInvoice: vi.fn(), requiresConfirmation: false });
+    expect(src.listTools()[0].requiresConfirmation).toBe(false);
+  });
+
+  it('declines invoices above maxAutoPaySats', async () => {
+    const payInvoice = vi.fn(async () => ({ preimage: 'x' }));
+    const fetchImpl = vi.fn().mockResolvedValueOnce({
+      status: 402,
+      ok: false,
+      headers: new Map([
+        // 2500u = 250,000 sats — above the 1000 cap
+        ['www-authenticate', 'L402 macaroon="M", invoice="lnbc2500u1big"'],
+      ]) as any,
+    });
+    const src = createL402ToolSource({
+      payInvoice,
+      maxAutoPaySats: 1000,
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+    await expect(src.execute('fetch_paid_resource', { url: 'https://x/y' })).rejects.toThrow(
+      /above the 1000 sat auto-pay cap/,
+    );
+    expect(payInvoice).not.toHaveBeenCalled();
+  });
 });

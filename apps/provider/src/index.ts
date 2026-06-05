@@ -25,7 +25,15 @@ import {
   decodeCommand,
   encodeEvent,
 } from './protocol.js';
-import { Engine, ToolRegistry, type LLMProvider, type ToolSource } from '@kaleidorg/mind';
+import {
+  Engine,
+  ToolRegistry,
+  SkillRegistry,
+  createSkillReferenceToolSource,
+  type LLMProvider,
+  type ToolSource,
+} from '@kaleidorg/mind';
+import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
 
 // ─────────────────────────────────────────────────────────────────────
 // IO helpers
@@ -55,6 +63,11 @@ interface QvacSDK {
   loadModel: (opts: any) => Promise<string>;
   unloadModel: (opts: { modelId: string; clearStorage?: boolean }) => Promise<void>;
   completion: (opts: any) => any;
+  // Voice capabilities — served to paired phones over P2P once the matching
+  // model is loaded (see loadVoiceModels). Optional so MOCK / older SDK builds
+  // without the whisper/tts plugins still type-check.
+  transcribe?: (opts: any) => Promise<any> | any;
+  textToSpeech?: (opts: any) => any;
   startQVACProvider: (opts?: any) => Promise<any>;
   stopQVACProvider: () => Promise<void>;
   heartbeat?: (opts?: any) => Promise<unknown>;
@@ -62,11 +75,15 @@ interface QvacSDK {
 }
 
 let sdk: QvacSDK | null = null;
+// Raw module handle — kept so we can resolve pre-registered model descriptors
+// (e.g. WHISPER_BASE_Q8_0, TTS_EN_SUPERTONIC_Q4_0) by export name at runtime.
+let sdkModule: any = null;
 let MOCK = false;
 
 async function loadSdk(): Promise<void> {
   try {
-    sdk = (await import('@qvac/sdk')) as unknown as QvacSDK;
+    sdkModule = await import('@qvac/sdk');
+    sdk = sdkModule as unknown as QvacSDK;
     diag('@qvac/sdk loaded');
   } catch (e) {
     MOCK = true;
@@ -171,10 +188,15 @@ const state = {
   activeModelId: null as string | null,
   activeModelName: null as string | null,
   qvacModelHandle: null as string | null,         // returned by loadModel()
+  qvacSttHandle: null as string | null,            // Whisper model — delegated STT
+  qvacTtsHandle: null as string | null,            // TTS model — delegated speech synthesis
   peers: new Map<string, PeerInfo>(),
   startedAt: null as number | null,
   tokensPerSecond: null as number | null,
   mcpSource: null as ToolSource | null,            // kaleido-mcp tools, when configured
+  bitrefillSource: null as ToolSource | null,      // bitrefill remote MCP, when enabled
+  skills: null as SkillRegistry | null,            // Agent Skills (loaded from skills/)
+  refSource: null as ToolSource | null,            // read_skill_reference (progressive disclosure)
 };
 
 // ─────────────────────────────────────────────────────────────────────
@@ -263,6 +285,71 @@ async function connectMcpIfConfigured(): Promise<void> {
   }
 }
 
+/**
+ * Load Agent Skills from the vendored `skills/` folder (SKILL.md + references).
+ * Best-effort: if the folder is missing the brain just runs skill-less.
+ * Override the location with KALEIDO_SKILLS_DIR.
+ */
+function loadSkills(): void {
+  if (state.skills) return;
+  const dir = process.env.KALEIDO_SKILLS_DIR ?? packagedSkillsDir();
+  try {
+    const skills = loadSkillsDir(dir);
+    if (!skills.length) {
+      diag(`no skills found in ${dir}`);
+      return;
+    }
+    state.skills = new SkillRegistry(skills);
+    state.refSource = createSkillReferenceToolSource(state.skills) as unknown as ToolSource;
+    diag(`loaded ${skills.length} skill(s): ${skills.map((s) => s.name).join(', ')}`);
+    emit({ type: 'log', level: 'info', message: `skills loaded: ${skills.map((s) => s.name).join(', ')}` });
+  } catch (e) {
+    diag(`skill load failed: ${(e as Error).message}`);
+  }
+}
+
+/**
+ * Connect the Bitrefill remote MCP (gift cards / top-ups / eSIMs) as a tool
+ * source. Enabled by default; set BITREFILL_MCP=0 to disable. An optional
+ * BITREFILL_API_KEY is sent as a bearer token (purchases need auth; browse may
+ * not). Best-effort — failure just means no Bitrefill tools.
+ */
+async function connectBitrefillMcpIfEnabled(): Promise<void> {
+  if (MOCK || state.bitrefillSource) return;
+  if (process.env.BITREFILL_MCP === '0') {
+    diag('BITREFILL_MCP=0 — bitrefill tools disabled');
+    return;
+  }
+  // The remote MCP rejects anonymous connections (401) — it needs an API key
+  // (or interactive OAuth, which a headless sidecar can't do). Skip the connect
+  // unless a key is present, so the bitrefill skill simply routes to its other
+  // channels (CLI / API / link) instead of logging a guaranteed failure.
+  const key = process.env.BITREFILL_API_KEY;
+  if (!key && process.env.BITREFILL_MCP !== '1') {
+    diag('BITREFILL_API_KEY not set — bitrefill MCP skipped (skill routes via other channels)');
+    return;
+  }
+  try {
+    const { McpToolSource } = await import('@kaleidorg/mind/mcp');
+    const src = new McpToolSource({
+      id: 'bitrefill',
+      transport: {
+        kind: 'http',
+        url: process.env.BITREFILL_MCP_URL ?? 'https://api.bitrefill.com/mcp',
+        headers: key ? { Authorization: `Bearer ${key}` } : undefined,
+      },
+    });
+    await src.connect();
+    state.bitrefillSource = src as unknown as ToolSource;
+    const n = src.listTools().length;
+    diag(`bitrefill MCP connected: ${n} tools`);
+    emit({ type: 'log', level: 'info', message: `bitrefill MCP connected: ${n} tools` });
+  } catch (e) {
+    diag(`bitrefill MCP connect failed: ${(e as Error).message}`);
+    emit({ type: 'log', level: 'warn', message: `bitrefill MCP connect failed: ${(e as Error).message}` });
+  }
+}
+
 function snapshot(): ProviderStatusEvent {
   return {
     type: 'status',
@@ -273,6 +360,8 @@ function snapshot(): ProviderStatusEvent {
     peers: Array.from(state.peers.values()),
     tokensPerSecond: state.tokensPerSecond,
     startedAt: state.startedAt,
+    sttReady: state.qvacSttHandle != null,
+    ttsReady: state.qvacTtsHandle != null,
   };
 }
 
@@ -323,6 +412,80 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T | null> {
   ]);
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// Voice (STT/TTS) delegation
+//
+// Loaded alongside the LLM so the QVAC provider advertises transcription and
+// speech-synthesis to paired phones over the same Hyperswarm channel as
+// completion. Best-effort: if the SDK build lacks the whisper/tts plugins (or
+// the model constant), the provider still serves LLM-only and just logs it.
+// Disable with KALEIDO_MIND_VOICE=0; override the models with the
+// KALEIDO_MIND_STT_MODEL / KALEIDO_MIND_TTS_MODEL env vars (names of @qvac/sdk
+// model-descriptor exports, e.g. WHISPER_LARGE_V3_TURBO).
+// ─────────────────────────────────────────────────────────────────────
+
+const DEFAULT_STT_MODEL = 'WHISPER_BASE_Q8_0';
+const DEFAULT_TTS_MODEL = 'TTS_EN_SUPERTONIC_Q4_0';
+
+/** Resolve a pre-registered @qvac/sdk model descriptor by export name. */
+function resolveModelConst(name: string): any {
+  return sdkModule?.[name] ?? null;
+}
+
+/**
+ * Load the Whisper (STT) and Supertonic (TTS) models so delegated transcribe()
+ * / textToSpeech() calls from paired phones are served by this provider. Each
+ * is independent and best-effort — a failure on one leaves the other (and the
+ * LLM) working.
+ */
+async function loadVoiceModels(): Promise<void> {
+  if (MOCK || !sdk) return;
+  if (process.env.KALEIDO_MIND_VOICE === '0') {
+    diag('voice delegation disabled (KALEIDO_MIND_VOICE=0)');
+    return;
+  }
+
+  // STT — Whisper transcription.
+  const sttName = process.env.KALEIDO_MIND_STT_MODEL || DEFAULT_STT_MODEL;
+  const sttSrc = resolveModelConst(sttName);
+  if (!sttSrc) {
+    diag(`STT model constant not found: ${sttName} — transcription delegation off`);
+  } else {
+    try {
+      state.qvacSttHandle = await sdk.loadModel({
+        modelSrc: sttSrc,
+        modelType: 'whispercpp-transcription',
+        modelConfig: { language: 'en', strategy: 'greedy', audio_format: 's16le' },
+      });
+      diag(`STT model loaded for delegation: ${sttName}`);
+      emit({ type: 'log', level: 'info', message: `voice: transcription ready (${sttName})` });
+    } catch (e) {
+      diag(`STT load failed (${sttName}): ${(e as Error).message}`);
+      emit({ type: 'log', level: 'warn', message: `voice: transcription unavailable — ${(e as Error).message}` });
+    }
+  }
+
+  // TTS — neural speech synthesis.
+  const ttsName = process.env.KALEIDO_MIND_TTS_MODEL || DEFAULT_TTS_MODEL;
+  const ttsSrc = resolveModelConst(ttsName);
+  if (!ttsSrc) {
+    diag(`TTS model constant not found: ${ttsName} — speech-synthesis delegation off`);
+  } else {
+    try {
+      state.qvacTtsHandle = await sdk.loadModel({
+        modelSrc: ttsSrc,
+        modelType: 'tts-ggml',
+        modelConfig: { ttsEngine: 'supertonic', language: 'en', voice: 'F1', ttsSpeed: 1.05, ttsNumInferenceSteps: 5 },
+      });
+      diag(`TTS model loaded for delegation: ${ttsName}`);
+      emit({ type: 'log', level: 'info', message: `voice: speech synthesis ready (${ttsName})` });
+    } catch (e) {
+      diag(`TTS load failed (${ttsName}): ${(e as Error).message}`);
+      emit({ type: 'log', level: 'warn', message: `voice: speech synthesis unavailable — ${(e as Error).message}` });
+    }
+  }
+}
+
 async function handleStart(modelId: string): Promise<void> {
   if (state.providerOn) {
     throw new Error('Provider is already running. Stop it first.');
@@ -363,6 +526,11 @@ async function handleStart(modelId: string): Promise<void> {
     }
 
     emit({ type: 'provider_loading', phase: 'model_loaded' });
+
+    // Load the voice models (best-effort) before advertising, so the provider
+    // comes up already able to serve delegated STT/TTS to paired phones.
+    await loadVoiceModels();
+
     emit({ type: 'provider_loading', phase: 'starting_p2p', message: 'Connecting to Hyperswarm…' });
 
     // 60 s ceiling on the P2P bootstrap — DHT can take ~30s on first run.
@@ -412,8 +580,11 @@ async function handleStart(modelId: string): Promise<void> {
   state.startedAt = Date.now();
   state.tokensPerSecond = MOCK ? 24 : null;
 
-  // Best-effort: attach kaleido-mcp tools so desktop chat is a full agent.
+  // Best-effort: load skills + attach tool sources so desktop chat is a full,
+  // skill-routed agent (kaleido-mcp wallet/trading + bitrefill commerce).
+  loadSkills();
   await connectMcpIfConfigured();
+  await connectBitrefillMcpIfEnabled();
 
   if (state.publicKey) emit({ type: 'pubkey', value: state.publicKey });
   emit({ type: 'provider_loading', phase: 'ready' });
@@ -435,20 +606,33 @@ async function handleStop(): Promise<void> {
         diag(`unloadModel error: ${(e as Error).message}`);
       }
     }
-  }
-  if (state.mcpSource) {
-    try {
-      await (state.mcpSource as unknown as { close?: () => Promise<void> }).close?.();
-    } catch {
-      /* ignore */
+    for (const voiceHandle of [state.qvacSttHandle, state.qvacTtsHandle]) {
+      if (!voiceHandle) continue;
+      try {
+        await sdk.unloadModel({ modelId: voiceHandle });
+      } catch (e) {
+        diag(`unloadModel (voice) error: ${(e as Error).message}`);
+      }
     }
-    state.mcpSource = null;
+  }
+  for (const key of ['mcpSource', 'bitrefillSource'] as const) {
+    const src = state[key];
+    if (src) {
+      try {
+        await (src as unknown as { close?: () => Promise<void> }).close?.();
+      } catch {
+        /* ignore */
+      }
+      state[key] = null;
+    }
   }
   state.providerOn = false;
   state.publicKey = null;
   state.activeModelId = null;
   state.activeModelName = null;
   state.qvacModelHandle = null;
+  state.qvacSttHandle = null;
+  state.qvacTtsHandle = null;
   state.peers.clear();
   state.startedAt = null;
   state.tokensPerSecond = null;
@@ -629,16 +813,33 @@ async function handleChat(prompt: string): Promise<{ text: string; latencyMs: nu
     };
   }
   // Route through the shared @kaleido/mind engine — same agentic loop as mobile.
-  // With kaleido-mcp connected this becomes a full tool-calling agent; without
-  // it, the engine simply returns the model's direct answer.
-  const sources: ToolSource[] = state.mcpSource ? [state.mcpSource] : [];
+  // Tool sources: kaleido-mcp (wallet/trading), bitrefill (commerce), and the
+  // skill-reference reader. With none connected the engine simply returns the
+  // model's direct answer.
+  const sources: ToolSource[] = [
+    state.mcpSource,
+    state.bitrefillSource,
+    state.refSource,
+  ].filter(Boolean) as ToolSource[];
+
+  // Enter the most relevant skill: its playbook is composed into the system
+  // prompt and (when it scopes tools) only those tools are exposed.
+  const skill = state.skills?.select(prompt) ?? null;
+  const composed = state.skills?.compose(DESKTOP_SYSTEM, skill) ?? { system: DESKTOP_SYSTEM };
+  if (skill) {
+    diag(`skill selected: ${skill.name}`);
+    emit({ type: 'log', level: 'info', message: `skill: ${skill.name}` });
+  }
+
   const engine = new Engine({
     provider: qvacProvider,
     tools: new ToolRegistry(sources),
-    defaultSystem: DESKTOP_SYSTEM,
-    defaultMaxTurns: 6,
+    defaultSystem: composed.system,
+    defaultMaxTurns: 8,
   });
-  const res = await engine.runAgentic([{ role: 'user', content: prompt }]);
+  const res = await engine.runAgentic([{ role: 'user', content: prompt }], {
+    allowedTools: composed.allowedTools,
+  });
   return {
     text: res.text || '(no response)',
     latencyMs: Date.now() - t0,
