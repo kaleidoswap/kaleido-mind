@@ -1,0 +1,27 @@
+{
+  "name": "@kaleidorg/mind-cli",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Interactive terminal harness for @kaleidorg/mind — run the full agent (QVAC + skills + memory + RAG + tools) on your Mac to test before mobile/desktop.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": {
+    "kaleido-mind": "./dist/index.js"
+  },
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@kaleidorg/mind": "workspace:*"
+  },
+  "peerDependencies": {
+    "@qvac/sdk": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.5.0"
+  }
+}
