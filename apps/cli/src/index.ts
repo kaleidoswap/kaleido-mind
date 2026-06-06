@@ -22,8 +22,13 @@ import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
 import { banner, box, table, c, bytes, dot } from './ui.js';
 import { CATALOG, getModel, recommendChatModel, type CatalogModel } from './catalog.js';
 import { listInstalled, isInstalled, pullModel, removeModel } from './models.js';
-import { loadConfig, saveConfig, type CliConfig } from './config.js';
+import { loadConfig, saveConfig, MIND_DIR, type CliConfig } from './config.js';
 import { buildAgent, runChat } from './chat.js';
+import { runBench } from './bench.js';
+import { generateDataset } from './eval/dataset.js';
+import { MECHANISMS, runCase, loadProvider, mockEvalProvider, type Mechanism, type CaseResult } from './eval/run.js';
+import { aggregate, renderAnsi, summaryTable, writeReport } from './eval/report.js';
+import { join } from 'node:path';
 
 const hw = () => ({ ramBytes: os.totalmem(), cores: os.cpus().length, arch: os.arch(), platform: os.platform() });
 const ramGb = (b: number) => (b / 1024 ** 3).toFixed(1);
@@ -173,6 +178,64 @@ async function main(): Promise<void> {
     case 'tools': return cmdTools();
     case 'skills': return void cmdSkills();
     case 'run': case 'chat': return cmdRun();
+    case 'bench': {
+      const cfg = await loadConfig();
+      const mock = args.includes('--mock');
+      const rag = args.includes('--rag') || cfg.rag;
+      const mi = args.indexOf('--model');
+      if (mi >= 0 && args[mi + 1]) cfg.modelId = args[mi + 1];
+      const agent = await buildAgent(cfg, { mock, rag });
+      await runBench(agent, Date.now());
+      if (agent.sdk?.close) await agent.sdk.close();
+      return;
+    }
+    case 'eval': {
+      const valOf = (n: string) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : undefined; };
+      const numOf = (n: string, d?: number) => { const v = valOf(n); return v ? Number(v) : d; };
+      const mock = args.includes('--mock');
+      const per = numOf('--per', 4)!;
+      const sample = numOf('--sample');
+      const mechs = (valOf('--mechanisms')?.split(',') as Mechanism[] | undefined)?.filter((m) => MECHANISMS.includes(m)) ?? MECHANISMS;
+
+      let cases = generateDataset(42, per);
+      if (sample) cases = cases.slice(0, sample);
+
+      let modelIds: string[];
+      if (mock) modelIds = ['mock'];
+      else {
+        const installed = (await listInstalled()).filter((m) => getModel(m.id)?.kind === 'llm').map((m) => m.id);
+        modelIds = valOf('--models')?.split(',') ?? installed;
+      }
+      if (!modelIds.length) { console.log(c.yellow('No LLM models installed — `kaleido-mind pull qwen3-0.6b` or use --mock')); return; }
+
+      const sdk = mock ? null : await import('@qvac/sdk');
+      console.log(c.dim(`\neval · ${mock ? 'MOCK' : 'QVAC'} · models: ${modelIds.join(', ')} · mechs: ${mechs.join(',')} · ${cases.length} cases`));
+
+      const results: CaseResult[] = [];
+      for (const modelId of modelIds) {
+        let provider; let label = modelId; let loadedId: string | null = null;
+        if (mock) { provider = mockEvalProvider(); label = 'mock'; }
+        else {
+          const lp = await loadProvider(modelId, sdk);
+          if (!lp) { console.log(c.yellow(`  skip ${modelId} (not installed)`)); continue; }
+          provider = lp.provider; loadedId = lp.modelId; label = getModel(modelId)?.displayName ?? modelId;
+          console.log(c.dim(`  ◆ ${label}…`));
+        }
+        for (const mech of mechs) for (const cse of cases) results.push(await runCase(provider, label, mech, cse));
+        if (sdk && loadedId) await sdk.unloadModel({ modelId: loadedId }).catch(() => {});
+      }
+
+      const agg = aggregate(results);
+      console.log(renderAnsi(agg));
+      console.log('\n' + c.bold('Matrix (task success):'));
+      console.log(summaryTable(agg));
+      const h = hw();
+      const dir = await writeReport(join(MIND_DIR, 'logs'), results, agg, { ts: Date.now(), dataset: cases.length, mode: mock ? 'mock' : 'qvac', hardware: `${h.platform}/${h.arch} ${ramGb(h.ramBytes)}GB` });
+      console.log(`\n${c.green('✓')} report → ${c.bold(join(dir, 'report.html'))}`);
+      console.log(c.dim(`  raw.jsonl · matrix.csv · report.html in ${dir}\n`));
+      if (sdk?.close) await sdk.close();
+      return;
+    }
     case 'pull': case 'install': {
       const id = args[args.indexOf(cmd) + 1];
       if (!id) { console.log(c.yellow('usage: kaleido-mind pull <id>  (see `kaleido-mind models`)')); return; }
@@ -194,6 +257,8 @@ async function main(): Promise<void> {
         [c.violet('pull <id>'), c.dim('download a model')],
         [c.violet('rm <id>'), c.dim('remove a model')],
         [c.violet('run [--rag]'), c.dim('chat with the brain (--mock to skip QVAC)')],
+        [c.violet('bench [--model id]'), c.dim('quick classic-requests smoke benchmark → JSONL')],
+        [c.violet('eval [--models a,b]'), c.dim('tool-use matrix (fc/mcp/skill/cli) → graphical HTML report')],
         [c.violet('status'), c.dim('hardware + what is installed/selected')],
         [c.violet('tools'), c.dim('tools the brain can call')],
         [c.violet('skills'), c.dim('skills the brain can enter')],

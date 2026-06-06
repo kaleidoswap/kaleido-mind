@@ -33,7 +33,9 @@ export async function listInstalled(): Promise<InstalledModel[]> {
     if (!files.includes(m.hfFile)) continue;
     try {
       const s = await stat(join(MODELS_DIR, m.hfFile));
-      if (s.size >= m.sizeBytes * 0.95) out.push({ id: m.id, path: join(MODELS_DIR, m.hfFile), sizeBytes: s.size });
+      // 85% of the catalog estimate — quant sizes vary; a partial .partial is
+      // a separate file, so anything near the expected size is "installed".
+      if (s.size >= m.sizeBytes * 0.85) out.push({ id: m.id, path: join(MODELS_DIR, m.hfFile), sizeBytes: s.size });
     } catch {
       /* skip */
     }

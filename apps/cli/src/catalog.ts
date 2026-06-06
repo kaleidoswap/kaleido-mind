@@ -81,6 +81,18 @@ export const CATALOG: CatalogModel[] = [
     notes: 'Stronger reasoning. Needs a roomy machine.',
   },
   {
+    id: 'medpsy-4b',
+    kind: 'psy',
+    displayName: 'MedPsy · 4B',
+    params: '4B',
+    quant: 'Q4_K_M',
+    sizeBytes: 2_500_000_000,
+    ramHintGb: 4,
+    hfRepo: 'tetherto/qvac-models',
+    hfFile: 'medpsy-4b-q4_k_m-imat.gguf',
+    notes: "Tether's medical/psych reasoning model. Psy track. (Pre-provisioned.)",
+  },
+  {
     id: 'gte-large',
     kind: 'embeddings',
     displayName: 'GTE-Large (embeddings)',

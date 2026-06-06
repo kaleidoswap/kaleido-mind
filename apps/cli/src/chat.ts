@@ -172,9 +172,52 @@ export async function buildAgent(cfg: CliConfig, opts: BuildOpts = {}): Promise<
   };
 }
 
+export interface TurnHooks {
+  onToolCall?: (name: string, args: Record<string, unknown>) => void;
+  onConfirm?: (name: string) => boolean;
+}
+
+export interface TurnReport {
+  skill: string | null;
+  text: string;
+  toolCalls: { name: string; arguments: Record<string, unknown> }[];
+  turns: number;
+  latencyMs: number;
+}
+
+/**
+ * Run ONE agent turn (skill route → compose context → runAgentic), shared by
+ * the REPL and the benchmark. Keeps cross-cutting tools reachable under a
+ * tool-scoped skill.
+ */
+export async function agentTurn(
+  agent: Agent,
+  text: string,
+  history: Message[] = [],
+  hooks: TurnHooks = {},
+): Promise<TurnReport> {
+  const skill = agent.skills.select(text);
+  const { system: skillSystem, allowedTools } = agent.skills.compose('', skill);
+  const { system } = await agent.builder.build({ query: text, skillSystem });
+  const effective = allowedTools ? [...new Set([...allowedTools, ...AMBIENT_TOOLS])] : undefined;
+  const engine = new Engine({ provider: agent.provider, tools: agent.tools, defaultSystem: system, defaultMaxTurns: 6 });
+  const res = await engine.runAgentic([...history, { role: 'user', content: text }], {
+    allowedTools: effective,
+    onToolCall: (c) => hooks.onToolCall?.(c.name, c.arguments),
+    onConfirm: async (c) => ({ approved: hooks.onConfirm ? hooks.onConfirm(c.name) : true }),
+  });
+  return {
+    skill: skill?.name ?? null,
+    text: res.text,
+    toolCalls: res.toolCalls.map((c) => ({ name: c.name, arguments: c.arguments })),
+    turns: res.turns,
+    latencyMs: res.latencyMs,
+  };
+}
+
 /** Interactive REPL over a built agent. */
 export async function runChat(agent: Agent): Promise<void> {
-  const { provider, tools, skills, builder, memory, retriever } = agent;
+  const { tools, skills, memory, retriever } = agent;
   const modeColor = agent.mode === 'QVAC' ? c.green : c.yellow;
   console.log(`${c.violet('chat')} ${c.dim('·')} ${modeColor(agent.mode)} ${c.dim('·')} ${c.bold(agent.modelLabel)} ${c.dim(`· ${skills.list().length} skills · RAG ${retriever ? 'on' : 'off'}`)}`);
   console.log(c.dim('type a message · /help for commands · Ctrl-D to exit\n'));
@@ -204,20 +247,14 @@ export async function runChat(agent: Agent): Promise<void> {
       return;
     }
 
-    const skill = skills.select(text);
-    const { system: skillSystem, allowedTools } = skills.compose('', skill);
-    const { system } = await builder.build({ query: text, skillSystem });
-    if (skill) console.log(c.dim(`  ↳ skill: ${skill.name}`));
-    const effective = allowedTools ? [...new Set([...allowedTools, ...AMBIENT_TOOLS])] : undefined;
-    const engine = new Engine({ provider, tools, defaultSystem: system, defaultMaxTurns: 6 });
     try {
-      const res = await engine.runAgentic([...history, { role: 'user', content: text }], {
-        allowedTools: effective,
-        onToolCall: (call) => console.log(c.cyan(`  🔧 ${call.name}(${JSON.stringify(call.arguments).slice(0, 60)})`)),
-        onConfirm: async (call) => { console.log(c.yellow(`  ⚠ auto-approving ${call.name}`)); return { approved: true }; },
+      const rep = await agentTurn(agent, text, history, {
+        onToolCall: (name, args) => console.log(c.cyan(`  🔧 ${name}(${JSON.stringify(args).slice(0, 60)})`)),
+        onConfirm: (name) => { console.log(c.yellow(`  ⚠ auto-approving ${name}`)); return true; },
       });
-      console.log(`${c.green('🤖')} ${res.text || '(no text)'}\n`);
-      history.push({ role: 'user', content: text }, { role: 'assistant', content: res.text });
+      if (rep.skill) console.log(c.dim(`  ↳ skill: ${rep.skill}`));
+      console.log(`${c.green('🤖')} ${rep.text || '(no text)'}\n`);
+      history.push({ role: 'user', content: text }, { role: 'assistant', content: rep.text });
     } catch (e) { console.log(c.yellow(`  error: ${(e as Error).message}\n`)); }
   }
 
