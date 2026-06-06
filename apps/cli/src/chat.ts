@@ -1,0 +1,227 @@
+/** Build the agent stack + run the interactive chat REPL. */
+
+import * as readline from 'node:readline';
+import { dirname } from 'node:path';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import {
+  Engine,
+  ToolRegistry,
+  InProcessToolSource,
+  SkillRegistry,
+  ContextBuilder,
+  InMemoryMemoryStore,
+  createMemoryToolSource,
+  createRagToolSource,
+  Retriever,
+  BITCOIN_COPILOT_DOCS,
+  type AgentProfile,
+  type InProcessTool,
+  type LLMProvider,
+  type EmbeddingProvider,
+  type MemoryIO,
+  type MemoryItem,
+  type Message,
+  type ToolSource,
+} from '@kaleidorg/mind';
+import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
+import { c } from './ui.js';
+import { MEMORY_PATH, type CliConfig } from './config.js';
+import { getModel } from './catalog.js';
+import { modelPath, isInstalled } from './models.js';
+
+const PROFILE: AgentProfile = {
+  name: 'KaleidoMind',
+  soul: 'A sovereign, local-first AI for Bitcoin, Lightning and RGB. Private, precise, concise. Use a tool to get real data — never invent balances, prices or addresses.',
+  instructions: 'Confirm before spending. Keep replies short.',
+};
+
+const AMBIENT_TOOLS = ['remember', 'recall', 'search_knowledge', 'read_skill_reference'];
+
+const MOCK_TOOLS: InProcessTool[] = [
+  { name: 'wdk_get_balances', description: 'Get wallet balances', parameters: { type: 'object', properties: {} }, handler: async () => ({ btc_sats: 48210, usdt: 12.5, xaut: 0 }) },
+  { name: 'wdk_get_node_info', description: 'Node status', parameters: { type: 'object', properties: {} }, handler: async () => ({ pubkey: '02ab…cd', synced: true, blockHeight: 845_000 }) },
+  { name: 'wdk_get_address', description: 'Get a receive address', parameters: { type: 'object', properties: {} }, handler: async () => ({ address: 'bc1qexampleaddr…' }) },
+  { name: 'wdk_list_channels', description: 'List channels', parameters: { type: 'object', properties: {} }, handler: async () => ([{ id: 'chan1', capacity: 1_000_000, inbound: 600_000, outbound: 400_000 }]) },
+  { name: 'get_price', description: 'BTC price', parameters: { type: 'object', properties: {} }, handler: async () => ({ btc_usd: 71_500 }) },
+  { name: 'kaleidoswap_get_quote', description: 'Quote a swap', parameters: { type: 'object', properties: { pair: { type: 'string' } } }, handler: async (a: any) => ({ pair: a.pair ?? 'BTC/USDT', out: 71.5, fees_sat: 120 }) },
+];
+
+const MOCK_ROUTES: { re: RegExp; tool: string }[] = [
+  { re: /^remember|note that|save that/i, tool: 'remember' },
+  { re: /recall|do you remember|what do you know/i, tool: 'recall' },
+  { re: /balance|funds|how much/i, tool: 'wdk_get_balances' },
+  { re: /address|receive/i, tool: 'wdk_get_address' },
+  { re: /channel/i, tool: 'wdk_list_channels' },
+  { re: /node|synced|status/i, tool: 'wdk_get_node_info' },
+  { re: /price|worth/i, tool: 'get_price' },
+  { re: /quote|swap|trade/i, tool: 'kaleidoswap_get_quote' },
+  { re: /how do|explain|what is|tell me about|look up|docs/i, tool: 'search_knowledge' },
+];
+
+function mockProvider(): LLMProvider {
+  return {
+    name: 'mock',
+    async runTurn(input) {
+      const last = input.messages[input.messages.length - 1];
+      if (last?.role === 'tool') return { text: `Result: ${String(last.content).slice(0, 400)}`, rawContent: '', toolCalls: [] };
+      const user = [...input.messages].reverse().find((m) => m.role === 'user')?.content ?? '';
+      const avail = new Set(input.tools.map((t) => t.name));
+      const route = MOCK_ROUTES.find((r) => r.re.test(user) && avail.has(r.tool));
+      if (route) {
+        const args =
+          route.tool === 'remember' ? { text: user.replace(/^.*?(remember|note that|save that)\s*/i, '').trim() || user, kind: 'note' }
+            : route.tool === 'recall' || route.tool === 'search_knowledge' ? { query: user }
+              : {};
+        return { text: '', rawContent: '', toolCalls: [{ id: 'mock', name: route.tool, arguments: args }] };
+      }
+      return { text: `[mock] "${user}" — install a model + run without --mock for a real answer.`, rawContent: '', toolCalls: [] };
+    },
+  };
+}
+
+function mockEmbeddings(): EmbeddingProvider {
+  const V = ['balance', 'inbound', 'liquidity', 'channel', 'swap', 'rgb', 'price', 'fee', 'seed', 'lightning', 'onchain', 'lsp', 'invoice', 'receive', 'send'];
+  return { dimension: V.length, async embed(texts) { return texts.map((t) => { const l = t.toLowerCase(); return V.map((w) => (l.match(new RegExp(w, 'g'))?.length ?? 0)); }); } };
+}
+
+function fileMemoryIO(path: string): MemoryIO {
+  return {
+    load: async () => { try { return JSON.parse(await readFile(path, 'utf8')) as MemoryItem[]; } catch { return []; } },
+    save: async (items) => { await mkdir(dirname(path), { recursive: true }); await writeFile(path, JSON.stringify(items, null, 2)); },
+  };
+}
+
+export interface Agent {
+  provider: LLMProvider;
+  tools: ToolRegistry;
+  skills: SkillRegistry;
+  builder: ContextBuilder;
+  memory: InMemoryMemoryStore;
+  retriever: Retriever | null;
+  mode: 'QVAC' | 'MOCK';
+  modelLabel: string;
+  sdk: any;
+}
+
+export interface BuildOpts {
+  mock?: boolean;
+  rag?: boolean;
+}
+
+/** Assemble the full agent from config + flags. */
+export async function buildAgent(cfg: CliConfig, opts: BuildOpts = {}): Promise<Agent> {
+  const wantRag = opts.rag ?? cfg.rag;
+  const chat = cfg.modelId ? getModel(cfg.modelId) : undefined;
+
+  let sdk: any = null;
+  if (!opts.mock) {
+    try { sdk = await import('@qvac/sdk'); } catch { /* mock */ }
+  }
+
+  let provider: LLMProvider;
+  let embeddings: EmbeddingProvider | null = null;
+  let modelLabel = 'mock';
+
+  if (sdk && chat && (await isInstalled(chat.id))) {
+    const id: string = await sdk.loadModel({ modelSrc: modelPath(chat), modelType: 'llm', modelConfig: { ctx_size: 8192, tools: true } });
+    modelLabel = chat.displayName;
+    provider = {
+      name: 'qvac',
+      async runTurn(input) {
+        const history = input.system ? [{ role: 'system', content: input.system }, ...input.messages] : input.messages;
+        const run: any = sdk.completion({ modelId: id, history, stream: true, tools: input.tools.map((t) => ({ name: t.name, description: t.description, parameters: t.parameters })) });
+        let s = '';
+        for await (const ev of run.events) if (ev?.type === 'contentDelta') s += ev.text;
+        const final = await run.final;
+        const raw = final?.contentText || s || '';
+        return { text: raw.replace(/<think>[\s\S]*?<\/think>/g, '').trim(), rawContent: final?.raw?.fullText ?? raw, toolCalls: (final?.toolCalls || []).map((x: any) => ({ id: x.id, name: x.name, arguments: x.arguments ?? {} })) };
+      },
+    };
+    if (wantRag) {
+      const emb = getModel('gte-large');
+      if (emb && (await isInstalled('gte-large'))) {
+        const eid: string = await sdk.loadModel({ modelSrc: modelPath(emb), modelType: 'embeddings' });
+        embeddings = { dimension: 1024, async embed(texts) { const o: number[][] = []; for (const t of texts) o.push((await sdk.embed({ modelId: eid, text: t })).embedding); return o; } };
+      } else {
+        console.log(c.yellow('  (RAG requested but gte-large not installed — run `kaleido-mind pull gte-large`)'));
+      }
+    }
+  } else {
+    provider = mockProvider();
+    if (wantRag) embeddings = mockEmbeddings();
+  }
+
+  const skills = new SkillRegistry(loadSkillsDir(packagedSkillsDir()));
+  const memory = new InMemoryMemoryStore({ io: fileMemoryIO(MEMORY_PATH) });
+  let retriever: Retriever | null = null;
+  if (embeddings) { retriever = new Retriever({ embeddings }); await retriever.ingest(BITCOIN_COPILOT_DOCS); }
+
+  const sources: ToolSource[] = [new InProcessToolSource('wallet', MOCK_TOOLS), createMemoryToolSource(memory)];
+  if (retriever) sources.push(createRagToolSource(retriever));
+
+  return {
+    provider,
+    tools: new ToolRegistry(sources),
+    skills,
+    memory,
+    retriever,
+    builder: new ContextBuilder({ profile: PROFILE, memory, retriever: retriever ?? undefined, topKMemory: 3, budgetTokens: 2000 }),
+    mode: sdk && chat ? 'QVAC' : 'MOCK',
+    modelLabel,
+    sdk,
+  };
+}
+
+/** Interactive REPL over a built agent. */
+export async function runChat(agent: Agent): Promise<void> {
+  const { provider, tools, skills, builder, memory, retriever } = agent;
+  const modeColor = agent.mode === 'QVAC' ? c.green : c.yellow;
+  console.log(`${c.violet('chat')} ${c.dim('·')} ${modeColor(agent.mode)} ${c.dim('·')} ${c.bold(agent.modelLabel)} ${c.dim(`· ${skills.list().length} skills · RAG ${retriever ? 'on' : 'off'}`)}`);
+  console.log(c.dim('type a message · /help for commands · Ctrl-D to exit\n'));
+
+  const history: Message[] = [];
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: process.stdout.isTTY });
+  const prompt = () => { if (process.stdout.isTTY) { rl.setPrompt(`${c.violet('🧠 ')}`); rl.prompt(); } };
+
+  async function handle(line: string): Promise<void> {
+    const text = line.trim();
+    if (!text) return;
+    if (text.startsWith('/')) {
+      const [cmd, ...rest] = text.slice(1).split(' ');
+      const a = rest.join(' ').trim();
+      switch (cmd) {
+        case 'help': console.log(c.dim('  /skills  /tools  /mem  /forget  /ingest <text>  /search <q>  /reset  /quit')); break;
+        case 'skills': for (const s of skills.list()) console.log(`  ${c.cyan(s.name)} ${c.dim('— ' + s.description.slice(0, 70))}`); break;
+        case 'tools': for (const t of await tools.listTools()) console.log(`  ${c.teal(t.name)} ${c.dim('— ' + t.description.slice(0, 64))}`); break;
+        case 'mem': { const items = await memory.all(); if (!items.length) console.log(c.dim('  (empty)')); for (const m of items) console.log(`  ${c.dim('(' + m.kind + ')')} ${m.text}`); break; }
+        case 'forget': await memory.clear(); console.log(c.dim('  memory cleared')); break;
+        case 'ingest': if (!retriever) { console.log(c.yellow('  RAG off — run with --rag')); break; } await retriever.ingest([{ text: a }]); console.log(c.dim('  ingested')); break;
+        case 'search': { if (!retriever) { console.log(c.yellow('  RAG off — run with --rag')); break; } for (const h of await retriever.search(a, 3)) console.log(`  ${c.dim('(' + h.score.toFixed(2) + ')')} ${h.text.slice(0, 90)}`); break; }
+        case 'reset': history.length = 0; console.log(c.dim('  reset')); break;
+        case 'quit': case 'exit': rl.close(); return;
+        default: console.log(c.yellow(`  unknown: /${cmd}`));
+      }
+      return;
+    }
+
+    const skill = skills.select(text);
+    const { system: skillSystem, allowedTools } = skills.compose('', skill);
+    const { system } = await builder.build({ query: text, skillSystem });
+    if (skill) console.log(c.dim(`  ↳ skill: ${skill.name}`));
+    const effective = allowedTools ? [...new Set([...allowedTools, ...AMBIENT_TOOLS])] : undefined;
+    const engine = new Engine({ provider, tools, defaultSystem: system, defaultMaxTurns: 6 });
+    try {
+      const res = await engine.runAgentic([...history, { role: 'user', content: text }], {
+        allowedTools: effective,
+        onToolCall: (call) => console.log(c.cyan(`  🔧 ${call.name}(${JSON.stringify(call.arguments).slice(0, 60)})`)),
+        onConfirm: async (call) => { console.log(c.yellow(`  ⚠ auto-approving ${call.name}`)); return { approved: true }; },
+      });
+      console.log(`${c.green('🤖')} ${res.text || '(no text)'}\n`);
+      history.push({ role: 'user', content: text }, { role: 'assistant', content: res.text });
+    } catch (e) { console.log(c.yellow(`  error: ${(e as Error).message}\n`)); }
+  }
+
+  prompt();
+  for await (const line of rl) { await handle(line); prompt(); }
+  if (agent.sdk?.close) await agent.sdk.close();
+}
