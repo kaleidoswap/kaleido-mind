@@ -29,6 +29,49 @@ export {
   bolt11AmountSats,
 } from './tools/l402.js';
 export type { L402Options, L402PayResult } from './tools/l402.js';
+export { createCliToolSource, isAllowed } from './tools/cli.js';
+export type { CliToolOptions, CommandRunner, CommandResult } from './tools/cli.js';
+
+// ── Memory (soul + recall) ───────────────────────────────────────────────
+export { InMemoryMemoryStore } from './memory/store.js';
+export type { MemoryStoreOptions } from './memory/store.js';
+export { createMemoryToolSource } from './memory/tool.js';
+export type {
+  AgentProfile,
+  MemoryItem,
+  MemoryKind,
+  MemoryQuery,
+  MemoryStore,
+  MemoryIO,
+  NewMemory,
+} from './memory/types.js';
+
+// ── RAG ──────────────────────────────────────────────────────────────────
+export { Retriever, chunkText } from './rag/retriever.js';
+export type { RetrieverOptions } from './rag/retriever.js';
+export { InMemoryVectorStore, cosineSimilarity } from './rag/vector-store.js';
+export { createRagToolSource } from './rag/tool.js';
+export type { RagToolOptions } from './rag/tool.js';
+export type {
+  EmbeddingProvider,
+  Chunk,
+  RetrievedChunk,
+  RagDocument,
+  VectorStore,
+  VectorStoreIO,
+} from './rag/types.js';
+
+// ── Context assembly + hardware budget ─────────────────────────────────────
+export { ContextBuilder } from './context/builder.js';
+export type { ContextBuilderOptions, BuildInput } from './context/builder.js';
+export {
+  estimateTokens,
+  clampToTokens,
+  contextBudgetTokens,
+} from './context/budget.js';
+export type { BudgetReserves } from './context/budget.js';
+export { capabilityProfile } from './capabilities.js';
+export type { CapabilityInput, MindCapabilities } from './capabilities.js';
 
 export { Engine } from './engine.js';
 export type { EngineOptions, AgenticOptions, AgenticResult } from './engine.js';
