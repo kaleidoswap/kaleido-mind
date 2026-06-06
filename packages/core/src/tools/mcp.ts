@@ -13,8 +13,9 @@
  * file type-checks and ships even where the SDK isn't installed; constructing
  * an McpToolSource without it throws a clear error.
  *
- * STATUS: skeleton for the desktop pass. The shape is final; the connect()
- * body is wired when we integrate desktop-app.
+ * Wired end-to-end: connect() (stdio + HTTP transports), listTools() and
+ * execute() are implemented. Used by the desktop sidecar (kaleido-mcp +
+ * Bitrefill MCP) and verified against the remote Bitrefill MCP.
  */
 
 import type { ToolDef } from '../types.js';
