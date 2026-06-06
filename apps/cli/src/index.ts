@@ -195,24 +195,37 @@ async function main(): Promise<void> {
       const mock = args.includes('--mock');
       const mechs = valOf('--mechanisms')?.split(',') as Mechanism[] | undefined;
       console.log(c.dim(`\neval · ${mock ? 'MOCK' : 'QVAC'} — loads each model + runs the matrix (stubbed execution)…`));
-      let lastTick = 0;
+
+      // Animated heartbeat: a spinner + overall bar + elapsed + ETA that ticks
+      // every 250ms — so it's visibly alive even while one slow inference runs.
+      const st = { startedAt: Date.now(), done: 0, total: 0, model: '', mechanism: '', stepStart: Date.now() };
+      const fmt = (s: number) => { const m = Math.floor(s / 60), ss = Math.round(s % 60); return m ? `${m}m${ss < 10 ? '0' : ''}${ss}s` : `${ss}s`; };
+      const SPIN = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+      let spin = 0;
+      const render = () => {
+        if (!process.stdout.isTTY || !st.total) return;
+        const el = (Date.now() - st.startedAt) / 1000;
+        const pct = st.done / st.total;
+        const w = 22, fill = Math.round(pct * w);
+        const bar = c.violet('█'.repeat(fill)) + c.gray('░'.repeat(w - fill));
+        const eta = st.done > 0 ? (el / st.done) * (st.total - st.done) : 0;
+        const step = (Date.now() - st.stepStart) / 1000;
+        process.stdout.write(`\r\x1b[K${c.violet(SPIN[spin++ % SPIN.length]!)} ${bar} ${Math.round(pct * 100)}% ${c.dim(`· ${st.done}/${st.total} · ${st.model} ${st.mechanism} · ${fmt(el)} elapsed · ETA ${fmt(eta)} · ${step.toFixed(0)}s/step`)}`);
+      };
+      const timer = setInterval(render, 250);
       let run;
       try {
         run = await runEvalSuite({
           mock, models: valOf('--models')?.split(','), mechanisms: mechs, per: numOf('--per') ?? 4, sample: numOf('--sample'),
           onProgress: (p) => {
-            if (p.message) { if (process.stdout.isTTY) process.stdout.write('\r\x1b[K'); console.log(c.dim(`  ${p.model ? p.model + ': ' : ''}${p.message}`)); return; }
-            const now = Date.now();
-            if (now - lastTick > 800) {
-              lastTick = now;
-              const el = ((now - p.startedAt) / 1000).toFixed(0);
-              const pct = p.total ? Math.round((p.done / p.total) * 100) : 0;
-              const line = `  ${c.dim(`${p.model ?? ''} · ${p.mechanism ?? ''} · ${p.done}/${p.total} (${pct}%) · ${el}s`)}`;
-              if (process.stdout.isTTY) process.stdout.write(`\r\x1b[K${line}`); else console.log(line);
-            }
+            st.startedAt = p.startedAt; st.total = p.total;
+            if (p.done !== st.done) st.stepStart = Date.now();
+            st.done = p.done; if (p.model) st.model = p.model; if (p.mechanism) st.mechanism = p.mechanism;
+            if (p.message) { if (process.stdout.isTTY) process.stdout.write('\r\x1b[K'); console.log(c.dim(`  ${p.model ? p.model + ': ' : ''}${p.message}`)); }
           },
         });
-      } catch (e) { console.log(c.yellow((e as Error).message)); return; }
+      } catch (e) { clearInterval(timer); console.log(c.yellow((e as Error).message)); return; }
+      clearInterval(timer);
       if (process.stdout.isTTY) process.stdout.write('\r\x1b[K');
       console.log(renderAnsi(run.agg));
       console.log('\n' + c.bold('Matrix (task success):'));

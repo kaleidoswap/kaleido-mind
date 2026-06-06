@@ -169,6 +169,7 @@ const PAGE = `<!doctype html><html><head><meta charset="utf-8"><title>KaleidoMin
 const MECHS=['fc','mcp','skill','cli'];
 const col=p=>p>=80?'#39d353':p>=50?'#e3b341':'#f85149';
 const pctOf=(n,d)=>d?Math.round(n/d*100):0;
+const SPIN='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏';let si=0;
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
 const $=s=>document.querySelector(s);
 let RUNS=[], CASES=[];
@@ -228,7 +229,8 @@ async function poll(){
     const pct=s.total?Math.round(s.done/s.total*100):0;
     bar.style.width=pct+'%';
     const el=Math.round((s.elapsedMs||0)/1000);
-    ptext.textContent=(s.phase==='loading'?'⤓ ':'')+(s.message||((s.model||'')+' · '+(s.mechanism||'')+' · '+s.done+'/'+s.total+' ('+pct+'%)'))+' · '+el+'s';
+    const eta=s.done>0?Math.round(el/s.done*(s.total-s.done)):0;
+    ptext.textContent=SPIN[si++%SPIN.length]+' '+(s.phase==='loading'?'⤓ loading model… ':'')+(s.message||((s.model||'')+' · '+(s.mechanism||'')+' · '+s.done+'/'+s.total+' ('+pct+'%)'))+' · '+el+'s elapsed'+(eta?' · ETA '+eta+'s':'');
     $('#status').textContent='';
     setTimeout(poll,1000);
   } else {
