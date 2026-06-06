@@ -54,13 +54,27 @@ await retriever.ingest([{ id: 'faq', text: longMarkdown }])      // chunk → em
 const hits = await retriever.search('how do channels work', 4)   // embed → top-k
 ```
 
-- `EmbeddingProvider` is injected — on QVAC it wraps the SDK `embed()`:
+- `EmbeddingProvider` is injected — on QVAC it wraps the SDK `embed()`
+  (the hackathon mandates that RAG runs through the QVAC SDK):
   ```ts
+  const embedModelId = await loadModel({ modelSrc: GTE_LARGE_FP16, modelType: 'embeddings' })
   const embeddings: EmbeddingProvider = {
-    dimension: 768,
-    embed: (texts) => qvac.embed({ modelId, texts }),   // host SDK call
+    dimension: 1024,                                 // GTE_LARGE_FP16
+    async embed(texts) {
+      const out: number[][] = []
+      for (const text of texts) {
+        const { embedding } = await embed({ modelId: embedModelId, text })  // QVAC, on-device
+        out.push(embedding)
+      }
+      return out
+    },
   }
   ```
+  QVAC ships the embedder + the `ragChunk()` / `ragIngest()` / `ragSearch()`
+  workflow but **not** a vector store ("bring your own DB") — so `Retriever` +
+  `InMemoryVectorStore` (or a SQLite/native `VectorStore`) is exactly the
+  intended pattern, with QVAC providing the vectors. A runnable end-to-end
+  proof lives at `apps/playground/src/rag-demo.ts`.
 - `InMemoryVectorStore` is pure-JS cosine (good for thousands of chunks); swap a
   native/SQLite `VectorStore` for more. Persist via `VectorStoreIO`.
 - Prefer the **`search_knowledge` tool** (agentic RAG) over always-injecting —
@@ -124,3 +138,38 @@ const res = await engine.runAgentic([{ role: 'user', content: text }], { allowed
 ```
 
 One brain that remembers, retrieves, and right-sizes itself to the device.
+
+## What to RAG (KaleidoMind, for the hackathon)
+
+QVAC RAG is fully on-device (`embed` + `ragSearch`), so the corpora are things
+that are useful *and* private:
+
+| Corpus | The experience | Track fit |
+|---|---|---|
+| **Bitcoin / Lightning / RGB + KaleidoSwap docs** (BOLT specs, RGB, FAQs, glossary, app help, skill `references/`) | A private **Bitcoin copilot**: "I can send but not receive — what do I do?", "what's a submarine swap?", "explain this error" — answered offline | Mobile (personal tutor), General Purpose (advanced RAG over a large collection) |
+| **Your own wallet history + contacts + notes** | A **personal finance knowledge base**: "what did I spend on coffee last month?", "who did I pay 50k sats to?", "summarise my swaps" — never leaves the device | Mobile / General Purpose (privacy-first, personal knowledge base) |
+| **Merchant directory** (e.g. the Lugano dataset) | "where can I spend BTC near me for lunch?" | Mobile (travel assistant) |
+| **Skill reference docs** | the model pulls the right CLI/MCP instructions on demand instead of holding all 60 tools in context | internal — multi-agent tool use |
+| *(Psy track, separate product)* **personal health records + MedPsy** | a private on-device health assistant | Psy / Mobile |
+
+**Recommended for our submission:** the **Bitcoin copilot** (docs RAG) + the
+**personal wallet knowledge base** — they extend the locked hero flow (the
+on-device agentic wallet that now also *knows things* and *remembers you*),
+hit Mobile + General Purpose, and showcase privacy.
+
+### Embedding model vs. track (hardware)
+
+`GTE_LARGE_FP16` is 1024-dim (~670 MB) — fine on a flagship phone or a ≤32 GB
+workstation, too heavy for a 4 GB Pi. Use `capabilityProfile` to gate it:
+
+| Track / device | Embedding model | RAG |
+|---|---|---|
+| **General Purpose** (≤32 GB laptop/desktop) | `GTE_LARGE_FP16` (1024-d) | full corpus |
+| **Mobile** (flagship phone) | `GTE_LARGE_FP16`, or a small gguf (`gte-small`/`bge-small`, ~30–130 MB) | docs subset |
+| **Tinkerer** (≤4 GB Pi) | a tiny gguf embedder, or **delegate embeddings to a desktop over P2P** | small / delegated |
+
+The P2P angle is a focus area in its own right: a **phone/Pi queries while a
+32 GB workstation does the embeddings + RAG over P2P** — the workstation is then
+the "main" device (General Purpose), and you've shown real-time local inference
++ P2P load distribution. `capabilityProfile({ delegated: true })` flips RAG on
+regardless of the edge device's RAM.
