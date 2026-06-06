@@ -11,7 +11,10 @@
   "scripts": {
     "start": "tsx src/index.ts",
     "build": "tsc",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "eval": "tsx src/index.ts eval",
+    "eval:all": "bash run-eval.sh",
+    "serve": "tsx src/index.ts serve"
   },
   "dependencies": {
     "@kaleidorg/mind": "workspace:*"
