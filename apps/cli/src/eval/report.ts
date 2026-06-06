@@ -75,14 +75,17 @@ export function renderAnsi(a: Aggregate): string {
 
 const scoreColor = (p: number) => (p >= 80 ? '#39d353' : p >= 50 ? '#e3b341' : '#f85149');
 
-function html(a: Aggregate, meta: { ts: number; dataset: number; mode: string; hardware: string }): string {
+interface ReportMeta { ts: number; dataset: number; mode: string; hardware: string; timing?: { totalMs: number; perModelLoadMs: Record<string, number> } }
+
+function html(a: Aggregate, meta: ReportMeta): string {
   const date = new Date(meta.ts).toISOString().slice(0, 16).replace('T', ' ');
+  const pctOf = (n: number, d: number) => (d ? Math.round((n / d) * 100) : 0);
   const matrixRows = a.models
     .map((model) => {
       const cells = MECHANISMS.map((mech) => {
         const cell = cellOf(a, model, mech);
         if (!cell || !cell.applicable) return `<td class="na">—</td>`;
-        return `<td><div class="cell"><div class="bar"><i style="width:${cell.pct}%;background:${scoreColor(cell.pct)}"></i></div><span>${cell.pct}%</span><small>${cell.pass}/${cell.applicable} · ${cell.avgLatency}ms${cell.overTrigger ? ` · ⚠${cell.overTrigger}` : ''}</small></div></td>`;
+        return `<td><div class="cell"><div class="bar"><i style="width:${cell.pct}%;background:${scoreColor(cell.pct)}"></i></div><span>${cell.pct}% <small class="frac">${cell.pass}/${cell.applicable}</small></span><small>sel ${pctOf(cell.selection, cell.applicable)}% · args ${pctOf(cell.args, cell.applicable)}% · ${cell.avgLatency}ms/turn${cell.overTrigger ? ` · ⚠${cell.overTrigger} over-trigger` : ''}</small></div></td>`;
       }).join('');
       const best = MECHANISMS.map((m) => cellOf(a, model, m)!).filter(Boolean).sort((x, y) => y.pct - x.pct)[0];
       return `<tr><th>${model}</th>${cells}<td class="best">${best ? `${best.mech} <b>${best.pct}%</b>` : ''}</td></tr>`;
@@ -118,6 +121,10 @@ function html(a: Aggregate, meta: { ts: number; dataset: number; mode: string; h
   td i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px;vertical-align:middle}
   .meta{color:#8b949e;font-size:12px;border-top:1px solid #21262d;padding-top:16px;margin-top:24px}
   h2{font-size:15px;margin:24px 0 4px}
+  .cell small.frac{font-weight:400;color:#8b949e}
+  .gloss{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:6px 18px;font-size:13px}
+  .gloss ul{margin:6px 0 12px;padding-left:18px;color:#c9d1d9}.gloss li{margin:3px 0}.gloss b{color:#e6edf3}
+  .note{color:#8b949e;font-size:12px}
 </style></head><body>
   <h1><span class="grad">KaleidoMind</span> · Tool-Use Eval</h1>
   <p class="sub">Which tool-use mechanism works best, per model — fully on-device via QVAC.</p>
@@ -134,11 +141,31 @@ function html(a: Aggregate, meta: { ts: number; dataset: number; mode: string; h
     <tbody>${catRows}</tbody>
   </table>
 
-  <div class="meta">
-    ${meta.dataset} cases · mode ${meta.mode} · ${meta.hardware} · ${date} ·
-    mechanisms: <b>fc</b> curated tools · <b>mcp</b> ~60 tools (selection-at-scale) ·
-    <b>skill</b> skill-scoped · <b>cli</b> free-form command · execution stubbed for reproducibility.
+  ${meta.timing ? `<h2>Timing</h2><table><thead><tr><th>model</th><th>load time</th></tr></thead><tbody>${Object.entries(meta.timing.perModelLoadMs).map(([m, ms]) => `<tr><th>${m}</th><td>${(ms / 1000).toFixed(1)}s</td></tr>`).join('')}<tr><th>total run</th><td>${(meta.timing.totalMs / 1000).toFixed(1)}s</td></tr></tbody></table><p class="note">Per-turn latency (model thinking time) is shown in each matrix cell as <code>ms/turn</code>. Load time is one-off per model.</p>` : ''}
+
+  <h2>How to read this</h2>
+  <div class="gloss">
+    <p><b>The question:</b> the same wallet capabilities are offered to each model four different ways. Higher = the model used that mechanism correctly more often.</p>
+    <p><b>Mechanisms</b></p>
+    <ul>
+      <li><b>fc</b> — <i>function calling</i>: a few curated tool schemas. The clean baseline.</li>
+      <li><b>mcp</b> — the same tools <i>plus ~46 decoys (≈60 total)</i>, like a real MCP server. Tests tool selection under a large surface.</li>
+      <li><b>skill</b> — a skill first narrows the tools to ~3–9, then function calling (our progressive-disclosure default).</li>
+      <li><b>cli</b> — no JSON: the model writes a shell command (<code>kaleido …</code>) via <code>run_command</code>. Only applies to actionable requests.</li>
+    </ul>
+    <p><b>Metrics</b> (per cell)</p>
+    <ul>
+      <li><b>%</b> — task success: the model did the right thing (selection ✓ <i>and</i> arguments ✓). The headline number.</li>
+      <li><b>sel</b> — picked the right tool/command (ignoring arguments).</li>
+      <li><b>args</b> — when it picked right, were the arguments correct (e.g. the amount to send).</li>
+      <li><b>ms/turn</b> — average model thinking time per turn.</li>
+      <li><b>⚠ over-trigger</b> — called a tool on a greeting/thanks (should have just replied). Lower is better.</li>
+    </ul>
+    <p><b>Categories</b>: wallet (balance/receive/send/channels/node), trading (price/quote), commerce (Bitrefill), knowledge (explain → search), memory (remember/recall), negative (greetings → must NOT call a tool).</p>
+    <p class="note">Execution is <b>stubbed</b> (canned tool results) so results are reproducible and measure <i>model behaviour</i>, not wallet state. Same seeded dataset on every model/host.</p>
   </div>
+
+  <div class="meta">${meta.dataset} cases · mode ${meta.mode} · ${meta.hardware} · ${date}</div>
 </body></html>`;
 }
 
@@ -147,7 +174,7 @@ export async function writeReport(
   baseDir: string,
   results: CaseResult[],
   a: Aggregate,
-  meta: { ts: number; dataset: number; mode: string; hardware: string },
+  meta: ReportMeta,
 ): Promise<string> {
   const dir = join(baseDir, `eval-${meta.ts}`);
   await mkdir(dir, { recursive: true });

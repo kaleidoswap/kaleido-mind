@@ -15,9 +15,8 @@ import { c } from '../ui.js';
 
 const LOGS = join(MIND_DIR, 'logs');
 
-// Single in-flight run + last progress message.
-let running = false;
-let progress = '';
+// Single in-flight run + structured live progress (polled by the dashboard).
+let prog: { running: boolean; startedAt?: number; done: number; total: number; model?: string; mechanism?: string; phase?: string; message?: string } = { running: false, done: 0, total: 0 };
 
 async function listRuns(): Promise<any[]> {
   let entries: string[] = [];
@@ -53,11 +52,14 @@ export async function serve(port = 4178): Promise<void> {
         return;
       }
       if (req.method === 'GET' && url.pathname === '/api/runs') return json(res, 200, await listRuns());
-      if (req.method === 'GET' && url.pathname === '/api/status') return json(res, 200, { running, progress });
+      if (req.method === 'GET' && url.pathname === '/api/status') {
+        const elapsedMs = prog.startedAt ? Date.now() - prog.startedAt : 0;
+        return json(res, 200, { ...prog, elapsedMs });
+      }
       const m = url.pathname.match(/^\/api\/runs\/(\w+)$/);
       if (req.method === 'GET' && m) return json(res, 200, { cases: await runCases(m[1]!) });
       if (req.method === 'POST' && url.pathname === '/api/run') {
-        if (running) return json(res, 409, { error: 'a run is already in progress' });
+        if (prog.running) return json(res, 409, { error: 'a run is already in progress' });
         let body = '';
         for await (const chunk of req) body += chunk;
         const o = body ? JSON.parse(body) : {};
@@ -67,14 +69,13 @@ export async function serve(port = 4178): Promise<void> {
           mechanisms: o.mechanisms,
           per: o.per ? Number(o.per) : undefined,
           sample: o.sample ? Number(o.sample) : undefined,
-          onProgress: (msg) => { progress = msg; },
+          onProgress: (p) => { prog = { ...p }; },
         };
-        running = true; progress = 'starting…';
+        prog = { running: true, startedAt: Date.now(), done: 0, total: 0, phase: 'starting', message: 'starting…' };
         // Fire-and-forget; the page polls /api/status + /api/runs.
         runEvalSuite(opts)
-          .then((r) => { progress = `done → ${r.dir.split('/').pop()}`; })
-          .catch((e) => { progress = `error: ${e.message}`; })
-          .finally(() => { running = false; });
+          .then((r) => { prog = { ...prog, running: false, phase: 'done', message: `done in ${(r.timing.totalMs / 1000).toFixed(1)}s` }; })
+          .catch((e) => { prog = { ...prog, running: false, phase: 'error', message: `error: ${e.message}` }; });
         return json(res, 202, { started: true });
       }
       json(res, 404, { error: 'not found' });
@@ -109,6 +110,12 @@ const PAGE = `<!doctype html><html><head><meta charset="utf-8"><title>KaleidoMin
  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
  code{background:#21262d;padding:1px 5px;border-radius:4px;font-size:12px}
  .muted{color:#8b949e}
+ .prog{margin-top:12px;display:none}.pbar{height:10px;background:#21262d;border-radius:5px;overflow:hidden}.pbar i{display:block;height:100%;background:linear-gradient(90deg,#a371f7,#f778ba);width:0%;transition:width .3s}
+ .ptext{font-size:12px;color:#8b949e;margin-top:4px;display:block}
+ details{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:8px 16px;margin-bottom:20px}
+ summary{cursor:pointer;color:#a371f7;font-weight:600}.gl{font-size:13px}.gl b{color:#e6edf3}.gl ul{padding-left:18px}.gl li{margin:3px 0;color:#c9d1d9}
+ .csmall{display:block;color:#8b949e;font-size:11px}.frac{color:#8b949e;font-weight:400}
+ .timing{font-size:12px;color:#8b949e;margin-top:10px}
 </style></head><body>
  <h1><span class="grad">KaleidoMind</span> · Eval</h1>
  <p class="sub">Which tool-use mechanism works best, per model — fully on-device via QVAC.</p>
@@ -123,11 +130,29 @@ const PAGE = `<!doctype html><html><head><meta charset="utf-8"><title>KaleidoMin
      <span id="status" class="muted"></span>
    </div>
    <div class="small" style="margin-top:6px">mechanisms: <code>fc</code> curated · <code>mcp</code> ~60 tools · <code>skill</code> scoped · <code>cli</code> command · leave models blank to use installed.</div>
+   <div class="prog" id="prog"><div class="pbar"><i id="pbar"></i></div><span class="ptext" id="ptext"></span></div>
  </div>
+
+ <details>
+   <summary>How to read this — mechanisms &amp; metrics</summary>
+   <div class="gl">
+     <p><b>The question:</b> the same wallet capabilities are offered four ways; higher = the model used that mechanism correctly more often. Execution is stubbed so we measure <i>model behaviour</i>, reproducibly.</p>
+     <ul>
+       <li><b>fc</b> — function calling with a few curated tools (baseline).</li>
+       <li><b>mcp</b> — same tools + ~46 decoys (≈60), like a real MCP server: selection under a large surface.</li>
+       <li><b>skill</b> — a skill narrows tools to ~3–9, then function calling (our default).</li>
+       <li><b>cli</b> — the model writes a <code>kaleido …</code> command instead of JSON (actionable requests only).</li>
+     </ul>
+     <ul>
+       <li><b>%</b> = task success: right tool <i>and</i> right arguments. <b>sel</b> = right tool. <b>args</b> = right arguments. <b>ms/turn</b> = thinking time. <b>⚠</b> = called a tool on a greeting (over-trigger, lower is better).</li>
+     </ul>
+   </div>
+ </details>
 
  <div class="panel">
    <div class="row"><label>run</label><select id="runsel"></select><span id="meta" class="muted"></span></div>
    <div id="matrix"></div>
+   <div class="timing" id="timing"></div>
  </div>
 
  <div class="panel">
@@ -143,6 +168,7 @@ const PAGE = `<!doctype html><html><head><meta charset="utf-8"><title>KaleidoMin
 <script>
 const MECHS=['fc','mcp','skill','cli'];
 const col=p=>p>=80?'#39d353':p>=50?'#e3b341':'#f85149';
+const pctOf=(n,d)=>d?Math.round(n/d*100):0;
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
 const $=s=>document.querySelector(s);
 let RUNS=[], CASES=[];
@@ -162,11 +188,13 @@ function renderMatrix(run){
     let best=null; MECHS.forEach(me=>{const c=cell(m,me);if(c&&c.applicable&&(!best||c.pct>best.pct))best=c;});
     h+='<tr><th>'+esc(m)+'</th>'+MECHS.map(me=>{const c=cell(m,me);
       if(!c||!c.applicable)return '<td class="muted">—</td>';
-      return '<td><div class="bar"><i style="width:'+c.pct+'%;background:'+col(c.pct)+'"></i></div><span class="cellv">'+c.pct+'%</span> <span class="small">'+c.pass+'/'+c.applicable+(c.overTrigger?' ⚠'+c.overTrigger:'')+'</span></td>';
+      return '<td><div class="bar"><i style="width:'+c.pct+'%;background:'+col(c.pct)+'"></i></div><span class="cellv">'+c.pct+'%</span> <span class="frac">'+c.pass+'/'+c.applicable+'</span><span class="csmall">sel '+pctOf(c.selection,c.applicable)+'% · args '+pctOf(c.args,c.applicable)+'% · '+c.avgLatency+'ms/turn'+(c.overTrigger?' · ⚠'+c.overTrigger:'')+'</span></td>';
     }).join('')+'<td>'+(best?esc(best.mech)+' <b style="color:'+col(best.pct)+'">'+best.pct+'%</b>':'')+'</td></tr>';
   });
   $('#matrix').innerHTML=h+'</tbody></table>';
-  $('#meta').textContent=run.meta.dataset+' cases · '+run.meta.hardware;
+  $('#meta').textContent=run.meta.dataset+' cases · '+run.meta.mode+' · '+run.meta.hardware;
+  const t=run.meta.timing;
+  $('#timing').innerHTML=t?('⏱ total '+(t.totalMs/1000).toFixed(1)+'s · load: '+Object.entries(t.perModelLoadMs).map(([m,ms])=>esc(m)+' '+(ms/1000).toFixed(1)+'s').join(' · ')):'';
   $('#fmodel').innerHTML='<option value="">all models</option>'+run.models.map(m=>'<option>'+esc(m)+'</option>').join('');
 }
 async function selectRun(id){
@@ -176,11 +204,11 @@ async function selectRun(id){
 function renderCases(){
   const fm=$('#fmodel').value,fe=$('#fmech').value,fs=$('#fstatus').value;
   const rows=CASES.filter(c=>(!fm||c.model===fm)&&(!fe||c.mechanism===fe)&&(!fs||(fs==='pass'?c.grade.pass:!c.grade.pass)));
-  let h='<table><thead><tr><th>✓</th><th>model</th><th>mech</th><th>prompt</th><th>expected</th><th>got</th></tr></thead><tbody>';
+  let h='<table><thead><tr><th>✓</th><th>model</th><th>mech</th><th>prompt</th><th>expected</th><th>got</th><th>ms</th></tr></thead><tbody>';
   rows.slice(0,400).forEach(c=>{
     const exp=c.expect.tool===null?'(no tool)':(c.expect.tool||c.expect.cli||c.expect.skill||'—');
     const got=(c.got.toolCalls||[]).map(t=>t.name).join(', ')||(c.got.text?('"'+c.got.text.slice(0,40)+'"'):'∅');
-    h+='<tr><td><span class="pill '+(c.grade.pass?'ok':'no')+'">'+(c.grade.pass?'pass':'fail')+'</span></td><td>'+esc(c.model)+'</td><td>'+esc(c.mechanism)+'</td><td>'+esc(c.prompt)+'</td><td><code>'+esc(exp)+'</code></td><td><code>'+esc(got)+'</code></td></tr>';
+    h+='<tr><td><span class="pill '+(c.grade.pass?'ok':'no')+'">'+(c.grade.pass?'pass':'fail')+'</span></td><td>'+esc(c.model)+'</td><td>'+esc(c.mechanism)+'</td><td>'+esc(c.prompt)+'</td><td><code>'+esc(exp)+'</code></td><td><code>'+esc(got)+'</code></td><td class="small">'+Math.round(c.got.latencyMs||0)+'</td></tr>';
   });
   $('#cases').innerHTML=h+'</tbody></table>'+(rows.length>400?'<p class="small">showing 400 of '+rows.length+'</p>':'');
 }
@@ -194,8 +222,23 @@ $('#run').onclick=async()=>{
 };
 async function poll(){
   const s=await (await fetch('/api/status')).json();
-  $('#status').textContent=s.running?('⏳ '+s.progress):'';
-  if(s.running){setTimeout(poll,1500);} else {$('#run').disabled=false; if(s.progress) $('#status').textContent='✓ '+s.progress; loadRuns();}
+  const prog=$('#prog'), bar=$('#pbar'), ptext=$('#ptext');
+  if(s.running){
+    prog.style.display='block';
+    const pct=s.total?Math.round(s.done/s.total*100):0;
+    bar.style.width=pct+'%';
+    const el=Math.round((s.elapsedMs||0)/1000);
+    ptext.textContent=(s.phase==='loading'?'⤓ ':'')+(s.message||((s.model||'')+' · '+(s.mechanism||'')+' · '+s.done+'/'+s.total+' ('+pct+'%)'))+' · '+el+'s';
+    $('#status').textContent='';
+    setTimeout(poll,1000);
+  } else {
+    bar.style.width='100%';
+    $('#run').disabled=false;
+    $('#status').textContent=s.message?('✓ '+s.message):'';
+    ptext.textContent=s.message||'';
+    setTimeout(()=>{prog.style.display='none';},2500);
+    loadRuns();
+  }
 }
 loadRuns();
 </script></body></html>`;

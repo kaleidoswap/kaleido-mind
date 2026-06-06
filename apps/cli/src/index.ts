@@ -194,16 +194,32 @@ async function main(): Promise<void> {
       const numOf = (n: string) => { const v = valOf(n); return v ? Number(v) : undefined; };
       const mock = args.includes('--mock');
       const mechs = valOf('--mechanisms')?.split(',') as Mechanism[] | undefined;
-      console.log(c.dim(`\neval · ${mock ? 'MOCK' : 'QVAC'} — this loads each model + runs the matrix…`));
+      console.log(c.dim(`\neval · ${mock ? 'MOCK' : 'QVAC'} — loads each model + runs the matrix (stubbed execution)…`));
+      let lastTick = 0;
       let run;
       try {
-        run = await runEvalSuite({ mock, models: valOf('--models')?.split(','), mechanisms: mechs, per: numOf('--per') ?? 4, sample: numOf('--sample'), onProgress: (m) => console.log(c.dim(`  ${m}`)) });
+        run = await runEvalSuite({
+          mock, models: valOf('--models')?.split(','), mechanisms: mechs, per: numOf('--per') ?? 4, sample: numOf('--sample'),
+          onProgress: (p) => {
+            if (p.message) { if (process.stdout.isTTY) process.stdout.write('\r\x1b[K'); console.log(c.dim(`  ${p.model ? p.model + ': ' : ''}${p.message}`)); return; }
+            const now = Date.now();
+            if (now - lastTick > 800) {
+              lastTick = now;
+              const el = ((now - p.startedAt) / 1000).toFixed(0);
+              const pct = p.total ? Math.round((p.done / p.total) * 100) : 0;
+              const line = `  ${c.dim(`${p.model ?? ''} · ${p.mechanism ?? ''} · ${p.done}/${p.total} (${pct}%) · ${el}s`)}`;
+              if (process.stdout.isTTY) process.stdout.write(`\r\x1b[K${line}`); else console.log(line);
+            }
+          },
+        });
       } catch (e) { console.log(c.yellow((e as Error).message)); return; }
+      if (process.stdout.isTTY) process.stdout.write('\r\x1b[K');
       console.log(renderAnsi(run.agg));
       console.log('\n' + c.bold('Matrix (task success):'));
       console.log(summaryTable(run.agg));
-      console.log(`\n${c.green('✓')} report → ${c.bold(join(run.dir, 'report.html'))}`);
-      console.log(c.dim(`  view all runs: kaleido-mind serve\n`));
+      console.log(c.dim(`\nlegend: % = success (selection ✓ AND args ✓) · bars show pass-rate · ⚠ = over-trigger on greetings`));
+      console.log(c.dim(`timing: total ${(run.timing.totalMs / 1000).toFixed(1)}s · load ${Object.entries(run.timing.perModelLoadMs).map(([m, ms]) => `${m} ${(ms / 1000).toFixed(1)}s`).join(' · ')}`));
+      console.log(`\n${c.green('✓')} report → ${c.bold(join(run.dir, 'report.html'))}  ${c.dim('· or: kaleido-mind serve')}\n`);
       return;
     }
     case 'serve': {
