@@ -73,6 +73,13 @@ export type { BudgetReserves } from './context/budget.js';
 export { capabilityProfile } from './capabilities.js';
 export type { CapabilityInput, MindCapabilities } from './capabilities.js';
 
+// ── Knowledge packs + corpus adapters (for RAG) ────────────────────────────
+export { BITCOIN_COPILOT_DOCS } from './knowledge/bitcoin-copilot.js';
+export { walletHistoryToDocuments, contactsToDocuments } from './knowledge/wallet.js';
+export type { WalletTx, Contact } from './knowledge/wallet.js';
+export { merchantsToDocuments } from './knowledge/merchants.js';
+export type { Merchant } from './knowledge/merchants.js';
+
 export { Engine } from './engine.js';
 export type { EngineOptions, AgenticOptions, AgenticResult } from './engine.js';
 

@@ -22,6 +22,7 @@ import {
   ToolRegistry,
   Retriever,
   ContextBuilder,
+  BITCOIN_COPILOT_DOCS,
   type EmbeddingProvider,
   type LLMProvider,
   type AgentProfile,
@@ -31,51 +32,9 @@ const MODEL_PATH =
   process.env.QVAC_MODEL_PATH ||
   join(homedir(), '.kaleido', 'models', 'Qwen3-0.6B-Q4_K_M.gguf');
 
-// A small on-brand corpus — the "Bitcoin copilot" knowledge base. In the real
-// app this would be the KaleidoSwap docs, BOLT/RGB specs, the user's notes, …
-const KNOWLEDGE: { id: string; text: string }[] = [
-  {
-    id: 'inbound-liquidity',
-    text:
-      'To RECEIVE Lightning payments you need inbound liquidity: remote balance ' +
-      'on a channel pointing at you. New wallets have none. On KaleidoSwap you ' +
-      'buy inbound liquidity from the LSP via an LSPS1 channel order — pick a ' +
-      'capacity, pay the fee, and the LSP opens a channel giving you receive ' +
-      'capacity instantly (0-conf supported).',
-  },
-  {
-    id: 'submarine-swap',
-    text:
-      'A submarine swap moves value between on-chain Bitcoin and Lightning ' +
-      'atomically using an HTLC. Send on-chain BTC and receive it on Lightning ' +
-      '(or vice-versa) without a custodian. KaleidoSwap uses HTLC atomic swaps ' +
-      'for its 5-step taker flow.',
-  },
-  {
-    id: 'rgb-assets',
-    text:
-      'RGB is a protocol for issuing assets (like USDT and XAUT) on top of ' +
-      'Bitcoin and Lightning, with validation kept client-side for privacy and ' +
-      'scalability. On KaleidoSwap you can hold and swap RGB assets inside ' +
-      'Lightning channels (colored channels).',
-  },
-  {
-    id: 'channel-vs-onchain',
-    text:
-      'A Lightning channel is a 2-of-2 funding output that lets two peers send ' +
-      'instant, cheap payments off-chain. On-chain transactions settle directly ' +
-      'on Bitcoin: slower and with miner fees, but no channel needed. Use ' +
-      'Lightning for fast spending, on-chain for settlement and channel funding.',
-  },
-  {
-    id: 'rebalance',
-    text:
-      'Rebalancing moves liquidity so you keep both inbound (to receive) and ' +
-      'outbound (to send) capacity. If you can send but not receive, you lack ' +
-      'inbound liquidity; buy a channel from the LSP or receive an on-chain ' +
-      'deposit and swap it into a channel.',
-  },
-];
+// The shipped Bitcoin-copilot corpus. In the real app, add the KaleidoSwap docs,
+// BOLT/RGB specs, the user's wallet history (walletHistoryToDocuments), etc.
+const KNOWLEDGE = BITCOIN_COPILOT_DOCS;
 
 /** QVAC embeddings wrapped as an EmbeddingProvider — the mandatory QVAC RAG bit. */
 function qvacEmbeddingProvider(sdk: any, embedModelId: string): EmbeddingProvider {

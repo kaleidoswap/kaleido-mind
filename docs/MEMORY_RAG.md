@@ -157,6 +157,22 @@ that are useful *and* private:
 on-device agentic wallet that now also *knows things* and *remembers you*),
 hit Mobile + General Purpose, and showcase privacy.
 
+All three corpora ship as ready-to-ingest building blocks (zero-dep, RN-safe —
+feed straight into `Retriever.ingest()`):
+
+```ts
+import {
+  BITCOIN_COPILOT_DOCS,          // Bitcoin/Lightning/RGB/KaleidoSwap knowledge pack
+  walletHistoryToDocuments,      // personal wallet knowledge (tx history → docs)
+  contactsToDocuments,
+  merchantsToDocuments,          // BTC map discovery (merchant directory → docs)
+} from '@kaleidorg/mind'
+
+await retriever.ingest(BITCOIN_COPILOT_DOCS)
+await retriever.ingest(walletHistoryToDocuments(txs))
+await retriever.ingest(merchantsToDocuments(places))
+```
+
 ### Embedding model vs. track (hardware)
 
 `GTE_LARGE_FP16` is 1024-dim (~670 MB) — fine on a flagship phone or a ≤32 GB
