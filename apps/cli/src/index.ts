@@ -22,12 +22,12 @@ import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
 import { banner, box, table, c, bytes, dot } from './ui.js';
 import { CATALOG, getModel, recommendChatModel, type CatalogModel } from './catalog.js';
 import { listInstalled, isInstalled, pullModel, removeModel } from './models.js';
-import { loadConfig, saveConfig, MIND_DIR, type CliConfig } from './config.js';
+import { loadConfig, saveConfig, type CliConfig } from './config.js';
 import { buildAgent, runChat } from './chat.js';
 import { runBench } from './bench.js';
-import { generateDataset } from './eval/dataset.js';
-import { MECHANISMS, runCase, loadProvider, mockEvalProvider, type Mechanism, type CaseResult } from './eval/run.js';
-import { aggregate, renderAnsi, summaryTable, writeReport } from './eval/report.js';
+import { runEvalSuite } from './eval/orchestrate.js';
+import { renderAnsi, summaryTable } from './eval/report.js';
+import { type Mechanism } from './eval/run.js';
 import { join } from 'node:path';
 
 const hw = () => ({ ramBytes: os.totalmem(), cores: os.cpus().length, arch: os.arch(), platform: os.platform() });
@@ -191,50 +191,26 @@ async function main(): Promise<void> {
     }
     case 'eval': {
       const valOf = (n: string) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : undefined; };
-      const numOf = (n: string, d?: number) => { const v = valOf(n); return v ? Number(v) : d; };
+      const numOf = (n: string) => { const v = valOf(n); return v ? Number(v) : undefined; };
       const mock = args.includes('--mock');
-      const per = numOf('--per', 4)!;
-      const sample = numOf('--sample');
-      const mechs = (valOf('--mechanisms')?.split(',') as Mechanism[] | undefined)?.filter((m) => MECHANISMS.includes(m)) ?? MECHANISMS;
-
-      let cases = generateDataset(42, per);
-      if (sample) cases = cases.slice(0, sample);
-
-      let modelIds: string[];
-      if (mock) modelIds = ['mock'];
-      else {
-        const installed = (await listInstalled()).filter((m) => getModel(m.id)?.kind === 'llm').map((m) => m.id);
-        modelIds = valOf('--models')?.split(',') ?? installed;
-      }
-      if (!modelIds.length) { console.log(c.yellow('No LLM models installed — `kaleido-mind pull qwen3-0.6b` or use --mock')); return; }
-
-      const sdk = mock ? null : await import('@qvac/sdk');
-      console.log(c.dim(`\neval · ${mock ? 'MOCK' : 'QVAC'} · models: ${modelIds.join(', ')} · mechs: ${mechs.join(',')} · ${cases.length} cases`));
-
-      const results: CaseResult[] = [];
-      for (const modelId of modelIds) {
-        let provider; let label = modelId; let loadedId: string | null = null;
-        if (mock) { provider = mockEvalProvider(); label = 'mock'; }
-        else {
-          const lp = await loadProvider(modelId, sdk);
-          if (!lp) { console.log(c.yellow(`  skip ${modelId} (not installed)`)); continue; }
-          provider = lp.provider; loadedId = lp.modelId; label = getModel(modelId)?.displayName ?? modelId;
-          console.log(c.dim(`  ◆ ${label}…`));
-        }
-        for (const mech of mechs) for (const cse of cases) results.push(await runCase(provider, label, mech, cse));
-        if (sdk && loadedId) await sdk.unloadModel({ modelId: loadedId }).catch(() => {});
-      }
-
-      const agg = aggregate(results);
-      console.log(renderAnsi(agg));
+      const mechs = valOf('--mechanisms')?.split(',') as Mechanism[] | undefined;
+      console.log(c.dim(`\neval · ${mock ? 'MOCK' : 'QVAC'} — this loads each model + runs the matrix…`));
+      let run;
+      try {
+        run = await runEvalSuite({ mock, models: valOf('--models')?.split(','), mechanisms: mechs, per: numOf('--per') ?? 4, sample: numOf('--sample'), onProgress: (m) => console.log(c.dim(`  ${m}`)) });
+      } catch (e) { console.log(c.yellow((e as Error).message)); return; }
+      console.log(renderAnsi(run.agg));
       console.log('\n' + c.bold('Matrix (task success):'));
-      console.log(summaryTable(agg));
-      const h = hw();
-      const dir = await writeReport(join(MIND_DIR, 'logs'), results, agg, { ts: Date.now(), dataset: cases.length, mode: mock ? 'mock' : 'qvac', hardware: `${h.platform}/${h.arch} ${ramGb(h.ramBytes)}GB` });
-      console.log(`\n${c.green('✓')} report → ${c.bold(join(dir, 'report.html'))}`);
-      console.log(c.dim(`  raw.jsonl · matrix.csv · report.html in ${dir}\n`));
-      if (sdk?.close) await sdk.close();
+      console.log(summaryTable(run.agg));
+      console.log(`\n${c.green('✓')} report → ${c.bold(join(run.dir, 'report.html'))}`);
+      console.log(c.dim(`  view all runs: kaleido-mind serve\n`));
       return;
+    }
+    case 'serve': {
+      const valOf = (n: string) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : undefined; };
+      const { serve } = await import('./eval/server.js');
+      await serve(Number(valOf('--port') ?? 4178));
+      return; // serve() keeps the process alive
     }
     case 'pull': case 'install': {
       const id = args[args.indexOf(cmd) + 1];
@@ -259,6 +235,7 @@ async function main(): Promise<void> {
         [c.violet('run [--rag]'), c.dim('chat with the brain (--mock to skip QVAC)')],
         [c.violet('bench [--model id]'), c.dim('quick classic-requests smoke benchmark → JSONL')],
         [c.violet('eval [--models a,b]'), c.dim('tool-use matrix (fc/mcp/skill/cli) → graphical HTML report')],
+        [c.violet('serve [--port]'), c.dim('web dashboard to browse + trigger eval runs')],
         [c.violet('status'), c.dim('hardware + what is installed/selected')],
         [c.violet('tools'), c.dim('tools the brain can call')],
         [c.violet('skills'), c.dim('skills the brain can enter')],

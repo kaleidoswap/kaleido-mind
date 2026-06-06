@@ -160,6 +160,9 @@ export async function writeReport(
   const csv = ['model,mechanism,applicable,pass,pct,selection,args,overTrigger,avgLatencyMs', ...a.cells.map((x) => `${x.model},${x.mech},${x.applicable},${x.pass},${x.pct},${x.selection},${x.args},${x.overTrigger},${x.avgLatency}`)].join('\n');
   await writeFile(join(dir, 'matrix.csv'), csv + '\n');
 
+  // summary.json — what the web dashboard reads (matrix without the raw cases).
+  await writeFile(join(dir, 'summary.json'), JSON.stringify({ meta, models: a.models, cells: a.cells, byCategory: a.byCategory }, null, 2));
+
   await writeFile(join(dir, 'report.html'), html(a, meta));
   return dir;
 }
