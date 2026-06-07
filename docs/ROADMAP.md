@@ -153,7 +153,7 @@ device**.
 | **1. Spec** | ARCHITECTURE.md + this plan | ✅ |
 | **2. Tool contract in core** | per-layer `ToolDef[]` + spend flags + missing fns | ✅ `wallet/contract.ts` |
 | **3a. Desktop binding** | `kaleido-mcp` namespaced tools + `kaleido` CLI | ▢ |
-| **3b. Mobile binding** | in-process handlers → Spark/RLN/Arkade WDK adapters | ◐ `rate/services/walletTools.ts` (binding done; screen+skill wiring next) |
+| **3b. Mobile binding** | in-process handlers → Spark/RLN/Arkade WDK adapters | ✅ `rate/services/walletTools.ts` + screen + skill |
 | **4. Skills + recipes** | payments/receive/swap (recipe + few-shot) + per-layer | ▢ |
 | **5. Mobile funnel** | deterministic fast-path + slot-filling + Recipe engine | ▢ |
 | **6. UX/perf** | warm-on-open, streaming, prefix-cache, idle-unload | ▢ |
