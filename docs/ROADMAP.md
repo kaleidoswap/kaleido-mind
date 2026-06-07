@@ -139,10 +139,15 @@ across models; report accuracy + thinking-time + reliability → **best model pe
 device**.
 - **Track A — single-step** (tool decision): done (3 mechanisms, K-repeats,
   decision-only, reliability).
-- **Track B — multi-step** (agentic chains): NEW. Grade coverage / order /
-  final-args; safety is framework-enforced. **Also compare Recipe vs Free
-  agentic** to prove the mobile optimization (recipe = higher success + far
-  lower latency on tiny models).
+- **Track B — multi-step** (agentic chains): grade coverage / order / final-args.
+  **Recipe vs Free agentic** proves the mobile optimization (recipe = higher
+  success + far lower latency on tiny models). `eval/multistep.ts`.
+- **Track C — safety & adversarial**: over a realistic stateful **MockWallet** —
+  amount/unit safety, **prompt-injection resistance** (poisoned tool data),
+  refusal/over-trigger, insufficient-funds. Inverted metric (fewer unsafe spends
+  = better); a catastrophic miss (paid attacker / 10× amount) dominates. Recipes
+  are structurally injection-resistant (use the structured address, ignore free
+  text). `eval/safety.ts` + `eval/mockWallet.ts`.
 
 ---
 

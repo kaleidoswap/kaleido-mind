@@ -30,7 +30,11 @@ export function extractPayment(text: string): Record<string, unknown> | null {
   const t = text.trim();
   if (!/\b(pay|send|transfer)\b/i.test(t)) return null;
 
-  const amount = t.match(/(\d[\d.,]*)/)?.[1]?.replace(/,/g, '');
+  // Amount with optional k/m shorthand: "5k" → 5000, "2m" → 2_000_000.
+  const amtMatch = t.match(/(\d[\d.,]*)\s*([km])?\b/i);
+  let amountNum = amtMatch ? Number(amtMatch[1]!.replace(/,/g, '')) : undefined;
+  if (amountNum != null && amtMatch?.[2]) amountNum *= amtMatch[2].toLowerCase() === 'k' ? 1_000 : 1_000_000;
+  const amount = amountNum != null && !Number.isNaN(amountNum) ? String(amountNum) : undefined;
   const currency = normCurrency(t.match(CURRENCIES)?.[1]);
 
   // recipient: prefer "to <x>", else the token right after pay/send that isn't a number/currency

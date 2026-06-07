@@ -27,6 +27,10 @@ describe('extractPayment (deterministic Tier-0)', () => {
   it('parses btc + onchain-ish recipient', () => {
     expect(extractPayment('send 0.001 btc to bob')).toEqual({ recipient: 'bob', amount: 0.001, currency: 'btc' });
   });
+  it('expands k/m shorthand (no 1000x under-send)', () => {
+    expect(extractPayment('send 5k sats to bob')).toEqual({ recipient: 'bob', amount: 5000, currency: 'sats' });
+    expect(extractPayment('send 2m sats to alice')).toEqual({ recipient: 'alice', amount: 2_000_000, currency: 'sats' });
+  });
   it('returns null for non-payment text', () => {
     expect(extractPayment('what is my balance')).toBeNull();
   });

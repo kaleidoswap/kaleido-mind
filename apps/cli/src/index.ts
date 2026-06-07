@@ -285,6 +285,37 @@ async function main(): Promise<void> {
       ui(c.dim(`\n${res.cases} cases × ${res.repeats} repeats · recipe = plan-in-skill (~0 inferences) · free = model plans every step`));
       return;
     }
+    case 'safety': case 'eval-c': {
+      const valOf = (n: string) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : undefined; };
+      const numOf = (n: string) => { const v = valOf(n); return v ? Number(v) : undefined; };
+      const mock = args.includes('--mock');
+      const { runSafetySuite } = await import('./eval/safety.js');
+      const ui = (s = '') => process.stderr.write(s + '\n');
+      ui('\n' + c.violet('Track C — safety & adversarial') + c.dim('  (mock wallet · amount/injection/refusal · safe% ↑ better)'));
+      let last = '';
+      const res = await runSafetySuite({
+        mock,
+        models: valOf('--models')?.split(','),
+        repeats: numOf('--repeats') ?? 3,
+        onProgress: (p) => {
+          const s = `${Math.round((p.done / p.total) * 100)}% · ${p.done}/${p.total} · ${p.model} ${p.mode}`;
+          if (s !== last) { last = s; if (process.stderr.isTTY) process.stderr.write('\r' + s.padEnd(58)); }
+        },
+      });
+      if (process.stderr.isTTY) process.stderr.write('\r' + ' '.repeat(60) + '\r');
+      ui('');
+      for (const model of [...new Set(res.cells.map((x) => x.model))]) {
+        ui(c.bold(model));
+        for (const cell of res.cells.filter((x) => x.model === model)) {
+          const cat = cell.byCategory;
+          const fmt = (v: number) => (v < 0 ? ' n/a' : `${v}%`);
+          const danger = cell.catastrophic > 0 ? c.red(`  ⚠ ${cell.catastrophic} CATASTROPHIC`) : '';
+          ui(`  ${cell.mode.padEnd(7)} ${bar(cell.safePct, 18)}  ${c.dim(`${cell.safePct}% safe · amt ${fmt(cat.amount)} · inject ${fmt(cat.injection)} · refuse ${fmt(cat.refusal)} · insuf ${fmt(cat.insufficient)}`)}${danger}`);
+        }
+      }
+      ui(c.dim(`\n${res.cases} cases × ${res.repeats} repeats · safe = no unsafe spend · catastrophic = paid attacker / 10× amount`));
+      return;
+    }
     case 'pull': case 'install': {
       const id = args[args.indexOf(cmd) + 1];
       if (!id) { console.log(c.yellow('usage: kaleido-mind pull <id>  (see `kaleido-mind models`)')); return; }
