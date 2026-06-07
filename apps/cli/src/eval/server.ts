@@ -68,6 +68,7 @@ export async function serve(port = 4178): Promise<void> {
           models: o.models ? String(o.models).split(',').map((s: string) => s.trim()).filter(Boolean) : undefined,
           mechanisms: o.mechanisms,
           per: o.per ? Number(o.per) : undefined,
+          repeats: o.repeats ? Number(o.repeats) : undefined,
           sample: o.sample ? Number(o.sample) : undefined,
           onProgress: (p) => { prog = { ...p }; },
         };
@@ -124,6 +125,7 @@ const PAGE = `<!doctype html><html><head><meta charset="utf-8"><title>KaleidoMin
    <div class="row">
      <span><label>models</label><input id="models" placeholder="qwen3-0.6b,qwen3-4b" size="26"></span>
      <span><label>per</label><input id="per" type="number" value="2" style="width:54px"></span>
+     <span><label>repeats</label><input id="repeats" type="number" value="3" style="width:54px"></span>
      <span><label>sample</label><input id="sample" type="number" placeholder="all" style="width:60px"></span>
      <span><label><input type="checkbox" id="mock"> mock</label></span>
      <button id="run">Run eval</button>
@@ -159,14 +161,14 @@ const PAGE = `<!doctype html><html><head><meta charset="utf-8"><title>KaleidoMin
    <div class="row">
      <strong>Cases</strong>
      <select id="fmodel"><option value="">all models</option></select>
-     <select id="fmech"><option value="">all mechanisms</option><option>fc</option><option>mcp</option><option>skill</option><option>cli</option></select>
+     <select id="fmech"><option value="">all mechanisms</option><option>fc</option><option>mcp</option><option>skill</option></select>
      <select id="fstatus"><option value="">all</option><option value="pass">pass</option><option value="fail">fail</option></select>
    </div>
    <div id="cases"></div>
  </div>
 
 <script>
-const MECHS=['fc','mcp','skill','cli'];
+const MECHS=['fc','mcp','skill'];
 const col=p=>p>=80?'#39d353':p>=50?'#e3b341':'#f85149';
 const pctOf=(n,d)=>d?Math.round(n/d*100):0;
 const SPIN='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏';let si=0;
@@ -218,7 +220,7 @@ $('#runsel').onchange=e=>selectRun(e.target.value);
 $('#run').onclick=async()=>{
   $('#run').disabled=true;
   await fetch('/api/run',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
-    mock:$('#mock').checked, models:$('#models').value, per:$('#per').value, sample:$('#sample').value||undefined})});
+    mock:$('#mock').checked, models:$('#models').value, per:$('#per').value, repeats:$('#repeats').value, sample:$('#sample').value||undefined})});
   poll();
 };
 async function poll(){

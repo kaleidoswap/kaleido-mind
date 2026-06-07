@@ -9,13 +9,15 @@ import { CATEGORIES, type Category } from './dataset.js';
 export interface Cell {
   model: string;
   mech: Mechanism;
-  applicable: number;
-  pass: number;
+  applicable: number;   // total trials (cases × repeats) that apply
+  pass: number;         // passing trials
   selection: number;
   args: number;
   overTrigger: number;
   avgLatency: number;
-  pct: number; // pass / applicable * 100
+  pct: number;          // pass / applicable * 100 (trial pass-rate)
+  cases: number;        // distinct cases
+  reliablePct: number;  // % of distinct cases that passed ALL repeats
 }
 
 export interface Aggregate {
@@ -34,6 +36,11 @@ export function aggregate(results: CaseResult[]): Aggregate {
       const rs = results.filter((r) => r.model === model && r.mechanism === mech && r.applicable);
       const applicable = rs.length;
       const pass = rs.filter((r) => r.pass).length;
+      // Reliability: of the distinct cases, how many passed on EVERY repeat.
+      const byCase = new Map<string, boolean[]>();
+      for (const r of rs) { const a = byCase.get(r.case.id) ?? []; a.push(r.pass); byCase.set(r.case.id, a); }
+      const distinct = byCase.size;
+      const reliable = [...byCase.values()].filter((arr) => arr.every(Boolean)).length;
       cells.push({
         model,
         mech,
@@ -44,6 +51,8 @@ export function aggregate(results: CaseResult[]): Aggregate {
         overTrigger: results.filter((r) => r.model === model && r.mechanism === mech && r.overTriggered).length,
         avgLatency: applicable ? Math.round(rs.reduce((s, r) => s + r.latencyMs, 0) / applicable) : 0,
         pct: applicable ? Math.round((pass / applicable) * 100) : 0,
+        cases: distinct,
+        reliablePct: distinct ? Math.round((reliable / distinct) * 100) : 0,
       });
     }
   }
@@ -64,7 +73,7 @@ export function renderAnsi(a: Aggregate): string {
     for (const mech of MECHANISMS) {
       const cell = cellOf(a, model, mech);
       if (!cell || !cell.applicable) continue;
-      lines.push(`  ${c.dim(mech.padEnd(6))} ${bar(cell.pct, 20)}  ${c.dim(`${cell.pass}/${cell.applicable} · ${cell.avgLatency}ms${cell.overTrigger ? ` · ⚠${cell.overTrigger} over-trigger` : ''}`)}`);
+      lines.push(`  ${c.dim(mech.padEnd(6))} ${bar(cell.pct, 20)}  ${c.dim(`${cell.reliablePct}% reliable · ${cell.avgLatency}ms · ${cell.applicable} trials${cell.overTrigger ? ` · ⚠${cell.overTrigger}` : ''}`)}`);
     }
     // best mechanism for this model
     const best = MECHANISMS.map((m) => cellOf(a, model, m)).filter(Boolean).sort((x, y) => y!.pct - x!.pct)[0];
@@ -75,7 +84,7 @@ export function renderAnsi(a: Aggregate): string {
 
 const scoreColor = (p: number) => (p >= 80 ? '#39d353' : p >= 50 ? '#e3b341' : '#f85149');
 
-interface ReportMeta { ts: number; dataset: number; mode: string; hardware: string; timing?: { totalMs: number; perModelLoadMs: Record<string, number> } }
+interface ReportMeta { ts: number; dataset: number; repeats?: number; mode: string; hardware: string; timing?: { totalMs: number; perModelLoadMs: Record<string, number> } }
 
 function html(a: Aggregate, meta: ReportMeta): string {
   const date = new Date(meta.ts).toISOString().slice(0, 16).replace('T', ' ');
@@ -85,7 +94,7 @@ function html(a: Aggregate, meta: ReportMeta): string {
       const cells = MECHANISMS.map((mech) => {
         const cell = cellOf(a, model, mech);
         if (!cell || !cell.applicable) return `<td class="na">—</td>`;
-        return `<td><div class="cell"><div class="bar"><i style="width:${cell.pct}%;background:${scoreColor(cell.pct)}"></i></div><span>${cell.pct}% <small class="frac">${cell.pass}/${cell.applicable}</small></span><small>sel ${pctOf(cell.selection, cell.applicable)}% · args ${pctOf(cell.args, cell.applicable)}% · ${cell.avgLatency}ms/turn${cell.overTrigger ? ` · ⚠${cell.overTrigger} over-trigger` : ''}</small></div></td>`;
+        return `<td><div class="cell"><div class="bar"><i style="width:${cell.pct}%;background:${scoreColor(cell.pct)}"></i></div><span>${cell.pct}% <small class="frac">${cell.reliablePct}% rel</small></span><small>sel ${pctOf(cell.selection, cell.applicable)}% · args ${pctOf(cell.args, cell.applicable)}% · ${cell.avgLatency}ms · ${cell.applicable} trials${cell.overTrigger ? ` · ⚠${cell.overTrigger}` : ''}</small></div></td>`;
       }).join('');
       const best = MECHANISMS.map((m) => cellOf(a, model, m)!).filter(Boolean).sort((x, y) => y.pct - x.pct)[0];
       return `<tr><th>${model}</th>${cells}<td class="best">${best ? `${best.mech} <b>${best.pct}%</b>` : ''}</td></tr>`;
@@ -145,27 +154,26 @@ function html(a: Aggregate, meta: ReportMeta): string {
 
   <h2>How to read this</h2>
   <div class="gloss">
-    <p><b>The question:</b> the same wallet capabilities are offered to each model four different ways. Higher = the model used that mechanism correctly more often.</p>
+    <p><b>The question:</b> the same wallet capabilities are offered to each model three ways. Higher = the model picked the right tool more often. We grade the model's <b>first decision</b> (one inference, no execution) and run each case <b>${meta.repeats ?? 1}×</b> for confidence.</p>
     <p><b>Mechanisms</b></p>
     <ul>
       <li><b>fc</b> — <i>function calling</i>: a few curated tool schemas. The clean baseline.</li>
-      <li><b>mcp</b> — the same tools <i>plus ~46 decoys (≈60 total)</i>, like a real MCP server. Tests tool selection under a large surface.</li>
-      <li><b>skill</b> — a skill first narrows the tools to ~3–9, then function calling (our progressive-disclosure default).</li>
-      <li><b>cli</b> — no JSON: the model writes a shell command (<code>kaleido …</code>) via <code>run_command</code>. Only applies to actionable requests.</li>
+      <li><b>mcp</b> — the same tools <i>plus ~46 decoys (≈60 total)</i>, like a real MCP server. Tests selection under a large surface.</li>
+      <li><b>skill</b> — a skill narrows the tools to ~3–9 and injects a playbook (our portable default — works on mobile, where CLI doesn't exist; on desktop a skill can also drive a CLI).</li>
     </ul>
     <p><b>Metrics</b> (per cell)</p>
     <ul>
-      <li><b>%</b> — task success: the model did the right thing (selection ✓ <i>and</i> arguments ✓). The headline number.</li>
-      <li><b>sel</b> — picked the right tool/command (ignoring arguments).</li>
-      <li><b>args</b> — when it picked right, were the arguments correct (e.g. the amount to send).</li>
-      <li><b>ms/turn</b> — average model thinking time per turn.</li>
-      <li><b>⚠ over-trigger</b> — called a tool on a greeting/thanks (should have just replied). Lower is better.</li>
+      <li><b>%</b> — task success across all repeats: right tool ✓ <i>and</i> right args ✓. The headline.</li>
+      <li><b>% rel</b> — <b>reliability</b>: share of cases that passed on <i>every</i> repeat (consistency, not luck).</li>
+      <li><b>sel</b> — picked the right tool (ignoring arguments). <b>args</b> — got the arguments right when it picked right.</li>
+      <li><b>ms</b> — average decision latency (model resident in RAM). <b>trials</b> = cases × repeats.</li>
+      <li><b>⚠</b> — over-trigger: called a tool on a greeting (should have just replied). Lower is better.</li>
     </ul>
-    <p><b>Categories</b>: wallet (balance/receive/send/channels/node), trading (price/quote), commerce (Bitrefill), knowledge (explain → search), memory (remember/recall), negative (greetings → must NOT call a tool).</p>
-    <p class="note">Execution is <b>stubbed</b> (canned tool results) so results are reproducible and measure <i>model behaviour</i>, not wallet state. Same seeded dataset on every model/host.</p>
+    <p><b>Categories</b>: wallet, trading, commerce (Bitrefill), knowledge (explain → search), memory (remember/recall), negative (greetings → must NOT call a tool).</p>
+    <p class="note">No execution — we grade the model's chosen tool call directly, against a seeded dataset, with the model loaded once and reused. Reproducible; measures <i>decision quality</i>.</p>
   </div>
 
-  <div class="meta">${meta.dataset} cases · mode ${meta.mode} · ${meta.hardware} · ${date}</div>
+  <div class="meta">${meta.dataset} cases × ${meta.repeats ?? 1} repeats · mode ${meta.mode} · ${meta.hardware} · ${date}</div>
 </body></html>`;
 }
 
@@ -180,7 +188,7 @@ export async function writeReport(
   await mkdir(dir, { recursive: true });
 
   const raw = results
-    .map((r) => JSON.stringify({ ts: meta.ts, model: r.model, mechanism: r.mechanism, id: r.case.id, intent: r.case.intent, category: r.case.category, prompt: r.case.prompt, expect: { skill: r.case.expectSkill, tool: r.case.expectTool, cli: r.case.expectCli }, got: { toolCalls: r.toolCalls, text: r.text, turns: r.turns, latencyMs: r.latencyMs }, grade: { applicable: r.applicable, selectionOk: r.selectionOk, argsOk: r.argsOk, skillOk: r.skillOk, overTriggered: r.overTriggered, pass: r.pass } }))
+    .map((r) => JSON.stringify({ ts: meta.ts, model: r.model, mechanism: r.mechanism, repeat: r.repeat, id: r.case.id, intent: r.case.intent, category: r.case.category, prompt: r.case.prompt, expect: { skill: r.case.expectSkill, tool: r.case.expectTool }, got: { toolCalls: r.toolCalls, text: r.text, latencyMs: r.latencyMs }, grade: { applicable: r.applicable, selectionOk: r.selectionOk, argsOk: r.argsOk, skillOk: r.skillOk, overTriggered: r.overTriggered, pass: r.pass } }))
     .join('\n');
   await writeFile(join(dir, 'raw.jsonl'), raw + '\n');
 

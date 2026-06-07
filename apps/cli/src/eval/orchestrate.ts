@@ -28,6 +28,7 @@ export interface EvalOpts {
   mechanisms?: Mechanism[];
   per?: number;               // paraphrases per intent
   sample?: number;            // cap total cases
+  repeats?: number;           // run each case K times (variance/reliability); default 3
   seed?: number;
   onProgress?: (p: Progress) => void;
 }
@@ -62,10 +63,11 @@ export async function runEvalSuite(opts: EvalOpts): Promise<EvalRun> {
   }
   if (!modelIds.length) throw new Error('No models to evaluate (none installed; pull one or use mock).');
 
+  const repeats = Math.max(1, opts.repeats ?? 3);
   const sdk = opts.mock ? null : await import('@qvac/sdk');
   const results: CaseResult[] = [];
   const startedAt = Date.now();
-  const total = modelIds.length * mechs.length * cases.length;
+  const total = modelIds.length * mechs.length * cases.length * repeats;
   const perModelLoadMs: Record<string, number> = {};
   let done = 0;
   const tick = (p: Partial<Progress>) => emit({ running: true, startedAt, done, total, ...p });
@@ -85,9 +87,11 @@ export async function runEvalSuite(opts: EvalOpts): Promise<EvalRun> {
     }
     for (const mech of mechs) {
       for (const cse of cases) {
-        results.push(await runCase(provider, label, mech, cse));
-        done++;
-        tick({ model: label, mechanism: mech, phase: 'evaluating' });
+        for (let r = 0; r < repeats; r++) {
+          results.push(await runCase(provider, label, mech, cse, r));
+          done++;
+          tick({ model: label, mechanism: mech, phase: 'evaluating' });
+        }
       }
     }
     if (sdk && loadedId) await sdk.unloadModel({ modelId: loadedId }).catch(() => {});
@@ -97,7 +101,7 @@ export async function runEvalSuite(opts: EvalOpts): Promise<EvalRun> {
   const ts = Date.now();
   const timing: EvalTiming = { totalMs: ts - startedAt, perModelLoadMs };
   const dir = await writeReport(join(MIND_DIR, 'logs'), results, agg, {
-    ts, dataset: cases.length, mode: opts.mock ? 'mock' : 'qvac',
+    ts, dataset: cases.length, repeats, mode: opts.mock ? 'mock' : 'qvac',
     hardware: `${os.platform()}/${os.arch()} ${ramGb(os.totalmem())}GB`, timing,
   });
   if (sdk?.close) await sdk.close();

@@ -33,6 +33,19 @@ import { join } from 'node:path';
 const hw = () => ({ ramBytes: os.totalmem(), cores: os.cpus().length, arch: os.arch(), platform: os.platform() });
 const ramGb = (b: number) => (b / 1024 ** 3).toFixed(1);
 
+// The QVAC SDK is chatty on stdout ([sdk:…], [request-lifecycle], Bare worker
+// chatter). Drop those so the CLI shows only our own output (progress, matrix).
+// Set KALEIDO_VERBOSE=1 to keep them. Native llama.cpp logs go to stderr.
+function silenceSdkLogs(): void {
+  if (process.env.KALEIDO_VERBOSE === '1') return;
+  const NOISE = /^\s*\[(sdk:|request-lifecycle)|Bare worker|Local model registered|Unloaded \d+ models|Cleanup completed|Cancelling \d+ active|Killing bare worker/i;
+  for (const m of ['log', 'info', 'warn', 'error', 'debug'] as const) {
+    const orig = console[m].bind(console);
+    console[m] = (...a: unknown[]) => { if (typeof a[0] === 'string' && NOISE.test(a[0])) return; orig(...(a as []));  };
+  }
+}
+silenceSdkLogs();
+
 function hwBox(): string {
   const h = hw();
   const caps = capabilityProfile({ ramBytes: h.ramBytes, modelCtxTokens: 8192, hasEmbeddings: true });
@@ -194,7 +207,10 @@ async function main(): Promise<void> {
       const numOf = (n: string) => { const v = valOf(n); return v ? Number(v) : undefined; };
       const mock = args.includes('--mock');
       const mechs = valOf('--mechanisms')?.split(',') as Mechanism[] | undefined;
-      console.log(c.dim(`\neval · ${mock ? 'MOCK' : 'QVAC'} — loads each model + runs the matrix (stubbed execution)…`));
+      // All eval UI goes to STDERR so the harness can divert QVAC's chatty
+      // worker stdout to a logfile while our progress/matrix stay on screen.
+      const ui = (s = '') => process.stderr.write(s + '\n');
+      ui(c.dim(`\neval · ${mock ? 'MOCK' : 'QVAC'} — loads each model + runs the matrix (stubbed execution)…`));
 
       // Animated heartbeat: a spinner + overall bar + elapsed + ETA that ticks
       // every 250ms — so it's visibly alive even while one slow inference runs.
@@ -203,36 +219,36 @@ async function main(): Promise<void> {
       const SPIN = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
       let spin = 0;
       const render = () => {
-        if (!process.stdout.isTTY || !st.total) return;
+        if (!process.stderr.isTTY || !st.total) return;
         const el = (Date.now() - st.startedAt) / 1000;
         const pct = st.done / st.total;
         const w = 22, fill = Math.round(pct * w);
         const bar = c.violet('█'.repeat(fill)) + c.gray('░'.repeat(w - fill));
         const eta = st.done > 0 ? (el / st.done) * (st.total - st.done) : 0;
         const step = (Date.now() - st.stepStart) / 1000;
-        process.stdout.write(`\r\x1b[K${c.violet(SPIN[spin++ % SPIN.length]!)} ${bar} ${Math.round(pct * 100)}% ${c.dim(`· ${st.done}/${st.total} · ${st.model} ${st.mechanism} · ${fmt(el)} elapsed · ETA ${fmt(eta)} · ${step.toFixed(0)}s/step`)}`);
+        process.stderr.write(`\r\x1b[K${c.violet(SPIN[spin++ % SPIN.length]!)} ${bar} ${Math.round(pct * 100)}% ${c.dim(`· ${st.done}/${st.total} · ${st.model} ${st.mechanism} · ${fmt(el)} elapsed · ETA ${fmt(eta)} · ${step.toFixed(0)}s/step`)}`);
       };
       const timer = setInterval(render, 250);
       let run;
       try {
         run = await runEvalSuite({
-          mock, models: valOf('--models')?.split(','), mechanisms: mechs, per: numOf('--per') ?? 4, sample: numOf('--sample'),
+          mock, models: valOf('--models')?.split(','), mechanisms: mechs, per: numOf('--per') ?? 4, sample: numOf('--sample'), repeats: numOf('--repeats') ?? 3,
           onProgress: (p) => {
             st.startedAt = p.startedAt; st.total = p.total;
             if (p.done !== st.done) st.stepStart = Date.now();
             st.done = p.done; if (p.model) st.model = p.model; if (p.mechanism) st.mechanism = p.mechanism;
-            if (p.message) { if (process.stdout.isTTY) process.stdout.write('\r\x1b[K'); console.log(c.dim(`  ${p.model ? p.model + ': ' : ''}${p.message}`)); }
+            if (p.message) { if (process.stderr.isTTY) process.stderr.write('\r\x1b[K'); ui(c.dim(`  ${p.model ? p.model + ': ' : ''}${p.message}`)); }
           },
         });
-      } catch (e) { clearInterval(timer); console.log(c.yellow((e as Error).message)); return; }
+      } catch (e) { clearInterval(timer); ui(c.yellow((e as Error).message)); return; }
       clearInterval(timer);
-      if (process.stdout.isTTY) process.stdout.write('\r\x1b[K');
-      console.log(renderAnsi(run.agg));
-      console.log('\n' + c.bold('Matrix (task success):'));
-      console.log(summaryTable(run.agg));
-      console.log(c.dim(`\nlegend: % = success (selection ✓ AND args ✓) · bars show pass-rate · ⚠ = over-trigger on greetings`));
-      console.log(c.dim(`timing: total ${(run.timing.totalMs / 1000).toFixed(1)}s · load ${Object.entries(run.timing.perModelLoadMs).map(([m, ms]) => `${m} ${(ms / 1000).toFixed(1)}s`).join(' · ')}`));
-      console.log(`\n${c.green('✓')} report → ${c.bold(join(run.dir, 'report.html'))}  ${c.dim('· or: kaleido-mind serve')}\n`);
+      if (process.stderr.isTTY) process.stderr.write('\r\x1b[K');
+      ui(renderAnsi(run.agg));
+      ui('\n' + c.bold('Matrix (task success):'));
+      ui(summaryTable(run.agg));
+      ui(c.dim(`\nlegend: % reliable = cases passing ALL repeats · bars = trial pass-rate · decision-only (graded the 1st tool call)`));
+      ui(c.dim(`timing: total ${(run.timing.totalMs / 1000).toFixed(1)}s · load ${Object.entries(run.timing.perModelLoadMs).map(([m, ms]) => `${m} ${(ms / 1000).toFixed(1)}s`).join(' · ')}`));
+      ui(`\n${c.green('✓')} report → ${c.bold(join(run.dir, 'report.html'))}  ${c.dim('· or: kaleido-mind serve')}`);
       return;
     }
     case 'serve': {
