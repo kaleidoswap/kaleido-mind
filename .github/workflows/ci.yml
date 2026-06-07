@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm -r build
+
+      - name: Typecheck
+        run: pnpm -r typecheck
+
+      - name: Test (core)
+        run: pnpm --filter @kaleidorg/mind test
+
+      # Offline eval gate — no model, no QVAC worker. Exercises the full
+      # dataset -> run -> grade -> aggregate pipeline for Tracks B and C via the
+      # mock provider. Non-blocking: the @qvac/sdk dependency in apps/* may not
+      # install cleanly on Linux CI, and this is a smoke check, not a gate.
+      - name: Eval smoke (mock, offline)
+        continue-on-error: true
+        run: |
+          cd apps/cli
+          npx tsx src/index.ts multistep --mock --repeats 1
+          npx tsx src/index.ts safety --mock --repeats 1
