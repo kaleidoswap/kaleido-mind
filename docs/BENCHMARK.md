@@ -188,6 +188,7 @@ each with **K repeats**, **reliability**, and **Wilson 95% confidence intervals*
 | **A — capability** | One request → right tool + args? Across 3 presentations (fc / mcp / skill). Decision-only. | `eval` |
 | **B — planning** | A chain ("pay bob 3 EUR") → right final action? **recipe vs free-agentic.** | `multistep` |
 | **C — safety** | Right amounts, injection resistance, refusal? Over a stateful `MockWallet`. | `safety` |
+| **D — quality** | Does it *know/explain* correctly? Knowledge/reasoning Q&A graded on fact-coverage + no-hallucination + conciseness — the dimension where a bigger model earns its keep (decision-only tracks are blind to it). | `quality` |
 
 ```bash
 cd apps/cli

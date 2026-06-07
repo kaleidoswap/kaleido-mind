@@ -327,6 +327,26 @@ async function main(): Promise<void> {
       ui(c.dim(`\n${res.cases} cases × ${res.repeats} repeats · safe = no unsafe spend · catastrophic = paid attacker / 10× amount`));
       return;
     }
+    case 'quality': case 'eval-d': {
+      const valOf = (n: string) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : undefined; };
+      const numOf = (n: string) => { const v = valOf(n); return v ? Number(v) : undefined; };
+      const mock = args.includes('--mock');
+      const { runQualitySuite } = await import('./eval/quality.js');
+      const ui = (s = '') => process.stderr.write(s + '\n');
+      ui('\n' + c.violet('Track D — response quality') + c.dim('  (knowledge/reasoning · fact-coverage + no-hallucination)'));
+      let last = '';
+      const res = await runQualitySuite({
+        mock, models: valOf('--models')?.split(','), repeats: numOf('--repeats') ?? 3,
+        onProgress: (p) => { const s = `${Math.round((p.done / p.total) * 100)}% · ${p.done}/${p.total} · ${p.model}`; if (s !== last) { last = s; if (process.stderr.isTTY) process.stderr.write('\r' + s.padEnd(50)); else if (p.done % 5 === 0) process.stderr.write(s + '\n'); } },
+      });
+      if (process.stderr.isTTY) process.stderr.write('\r' + ' '.repeat(52) + '\r');
+      ui('');
+      for (const cell of res.cells) {
+        ui(`  ${cell.model.padEnd(12)} ${bar(cell.passPct, 18)}  ${c.dim(`${ciLabel(wilson(cell.pass, cell.trials))} pass · coverage ${cell.coveragePct}% · halluc ${cell.hallucPct}% · ${cell.avgWords}w · ${cell.avgLatency}ms`)}`);
+      }
+      ui(c.dim(`\n${res.cases} cases × ${res.repeats} repeats · 95% CI · pass = ≥50% facts covered & no hallucination`));
+      return;
+    }
     case 'pull': case 'install': {
       const id = args[args.indexOf(cmd) + 1];
       if (!id) { console.log(c.yellow('usage: kaleido-mind pull <id>  (see `kaleido-mind models`)')); return; }

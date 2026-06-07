@@ -36,11 +36,12 @@ run() {
 
 run safety     safety    --models "$MODELS" --repeats "$REPEATS"
 run multistep  multistep --models "$MODELS" --repeats "$REPEATS"
+run quality    quality   --models "$MODELS" --repeats "$REPEATS"
 run capability eval      --models "$MODELS" --per "$PER" --repeats "$REPEATS"
 
 echo ""
 echo "════════════════ SUMMARY ($TS) ════════════════"
-for name in safety multistep capability; do
+for name in safety multistep quality capability; do
   f="$OUT/$name-$TS.log"
   echo ""
   echo "──────── $name ────────"
