@@ -151,7 +151,7 @@ device**.
 | Phase | Deliverable | Status |
 |---|---|---|
 | **1. Spec** | ARCHITECTURE.md + this plan | ✅ |
-| **2. Tool contract in core** | per-layer `ToolDef[]` + spend flags + missing fns | ▢ |
+| **2. Tool contract in core** | per-layer `ToolDef[]` + spend flags + missing fns | ✅ `wallet/contract.ts` |
 | **3a. Desktop binding** | `kaleido-mcp` namespaced tools + `kaleido` CLI | ▢ |
 | **3b. Mobile binding** | in-process handlers → Spark/RLN/Arkade WDK adapters | ▢ |
 | **4. Skills + recipes** | payments/receive/swap (recipe + few-shot) + per-layer | ▢ |

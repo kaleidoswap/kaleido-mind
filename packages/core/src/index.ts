@@ -32,6 +32,24 @@ export type { L402Options, L402PayResult } from './tools/l402.js';
 export { createCliToolSource, isAllowed } from './tools/cli.js';
 export type { CliToolOptions, CommandRunner, CommandResult } from './tools/cli.js';
 
+// ── Multi-L2 wallet tool contract (single source of truth) ─────────────────
+export {
+  WALLET_TOOLS,
+  WALLET_LAYERS,
+  SPEND_TOOLS,
+  isSpendTool,
+  getWalletTool,
+  walletTools,
+  toToolDefs,
+  bindWalletTools,
+} from './wallet/contract.js';
+export type {
+  WalletLayer,
+  WalletToolDef,
+  WalletHandler,
+  BindWalletOptions,
+} from './wallet/contract.js';
+
 // ── Memory (soul + recall) ───────────────────────────────────────────────
 export { InMemoryMemoryStore } from './memory/store.js';
 export type { MemoryStoreOptions } from './memory/store.js';
