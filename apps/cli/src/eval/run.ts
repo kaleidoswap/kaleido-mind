@@ -203,7 +203,7 @@ export async function loadProvider(modelId: string, sdk: any): Promise<{ provide
       async runTurn(input) {
         const history = input.system ? [{ role: 'system', content: input.system }, ...input.messages] : input.messages;
         const run: any = sdk.completion({
-          modelId: id, history, stream: false, temperature: 0,
+          modelId: id, history, stream: false, temperature: 0, max_tokens: 512,
           tools: input.tools.map((t) => ({ name: t.name, description: t.description, parameters: t.parameters })),
         });
         const final = await run.final;
