@@ -19,8 +19,10 @@ import {
   bindWalletTools,
   runRecipe,
   paymentsRecipe,
+  swapRecipe,
   type LLMProvider,
   type WalletHandler,
+  type Recipe,
 } from '@kaleidorg/mind';
 import { loadProvider, mockEvalProvider } from './run.js';
 
@@ -28,8 +30,8 @@ const RATE_USD = 60000; // stub BTC/USD
 const FREE_SYSTEM =
   'You are a wallet assistant. To pay someone: (1) call resolve_contact to get ' +
   'their address, (2) if the amount is in a fiat currency call fiat_to_sats, ' +
-  '(3) call send_payment with `to` and `amount_sats`. Always use tools; never ' +
-  'invent an address or amount.';
+  '(3) call send_payment with `to` and `amount_sats`. To swap assets: call ' +
+  'get_swap_quote, then execute_swap. Always use tools; never invent a value.';
 
 // ── Stub contract tools (chained canned results) ─────────────────────────────
 function stubHandlers(): Record<string, WalletHandler> {
@@ -38,6 +40,8 @@ function stubHandlers(): Record<string, WalletHandler> {
     get_price: async ({ fiat }) => ({ asset: 'BTC', price_usd: RATE_USD, fiat: fiat ?? 'USD' }),
     fiat_to_sats: async ({ amount }) => ({ sats: Math.round((Number(amount) / RATE_USD) * 1e8) }),
     send_payment: async () => ({ status: 'SUCCESS', payment_hash: 'stub' }),
+    get_swap_quote: async ({ from_asset, to_asset, amount }) => ({ quote_id: 'q-stub', from_asset, to_asset, amount: Number(amount), receive_amount: Number(amount) }),
+    execute_swap: async () => ({ status: 'SUCCESS', swap_id: 'stub' }),
   };
 }
 function stubRegistry(): ToolRegistry {
@@ -47,10 +51,13 @@ function stubRegistry(): ToolRegistry {
 // ── Dataset (seeded, fixed) ──────────────────────────────────────────────────
 export interface MultiCase {
   id: string;
+  kind: 'pay' | 'swap';
   prompt: string;
-  recipient: string;
   expectTools: string[];
-  expectSats: number;
+  recipient?: string;
+  expectSats?: number;
+  expectFrom?: string;
+  expectTo?: string;
 }
 const NAMES = ['bob', 'alice', 'carol'];
 export function multiCases(): MultiCase[] {
@@ -60,7 +67,7 @@ export function multiCases(): MultiCase[] {
   fiat.forEach(([amt, cur], i) => {
     const name = NAMES[i % NAMES.length]!;
     out.push({
-      id: `fiat-${i}`,
+      id: `fiat-${i}`, kind: 'pay',
       prompt: `pay ${name} ${amt} ${cur}`,
       recipient: name,
       expectTools: ['resolve_contact', 'fiat_to_sats', 'send_payment'],
@@ -72,11 +79,22 @@ export function multiCases(): MultiCase[] {
   sats.forEach((s, i) => {
     const name = NAMES[(i + 1) % NAMES.length]!;
     out.push({
-      id: `sats-${i}`,
+      id: `sats-${i}`, kind: 'pay',
       prompt: `send ${s} sats to ${name}`,
       recipient: name,
       expectTools: ['resolve_contact', 'send_payment'],
       expectSats: s,
+    });
+  });
+  // Swap: get_swap_quote → execute_swap
+  const swaps: [string, string, number][] = [['usdt', 'btc', 10], ['usdt', 'btc', 25], ['btc', 'usdt', 0.005]];
+  swaps.forEach(([from, to, amt], i) => {
+    out.push({
+      id: `swap-${i}`, kind: 'swap',
+      prompt: `swap ${amt} ${from} for ${to}`,
+      expectTools: ['get_swap_quote', 'execute_swap'],
+      expectFrom: from.toUpperCase(),
+      expectTo: to.toUpperCase(),
     });
   });
   return out;
@@ -102,6 +120,19 @@ export interface MultiResult {
 
 function grade(c: MultiCase, calls: string[], finalArgs: Record<string, unknown> | null, gateFired: boolean): Pick<MultiResult, 'coverage' | 'order' | 'finalOk' | 'pass'> {
   const coverage = c.expectTools.every((t) => calls.includes(t));
+  if (c.kind === 'swap') {
+    const qi = calls.indexOf('get_swap_quote');
+    const ei = calls.indexOf('execute_swap');
+    const order = qi >= 0 && ei >= 0 ? qi < ei : ei >= 0;
+    let finalOk = false;
+    if (finalArgs) {
+      const from = String(finalArgs.from_asset ?? '').toUpperCase();
+      const to = String(finalArgs.to_asset ?? '').toUpperCase();
+      finalOk = (!c.expectFrom || from === c.expectFrom) && (!c.expectTo || to === c.expectTo);
+    }
+    return { coverage, order, finalOk, pass: coverage && order && finalOk && gateFired };
+  }
+  // pay
   const ri = calls.indexOf('resolve_contact');
   const si = calls.indexOf('send_payment');
   const order = ri >= 0 && si >= 0 ? ri < si : si >= 0;
@@ -109,12 +140,11 @@ function grade(c: MultiCase, calls: string[], finalArgs: Record<string, unknown>
   if (finalArgs) {
     const to = String(finalArgs.to ?? '').toLowerCase();
     const sats = Number(finalArgs.amount_sats ?? 0);
-    const toOk = to.includes(c.recipient);
-    const satsOk = c.expectSats > 0 && Math.abs(sats - c.expectSats) <= Math.max(1, c.expectSats * 0.02);
+    const toOk = c.recipient ? to.includes(c.recipient) : true;
+    const satsOk = (c.expectSats ?? 0) > 0 && Math.abs(sats - (c.expectSats ?? 0)) <= Math.max(1, (c.expectSats ?? 0) * 0.02);
     finalOk = toOk && satsOk;
   }
-  const pass = coverage && order && finalOk && gateFired;
-  return { coverage, order, finalOk, pass };
+  return { coverage, order, finalOk, pass: coverage && order && finalOk && gateFired };
 }
 
 async function runCase(provider: LLMProvider, model: string, mode: Mode, c: MultiCase, repeat: number): Promise<MultiResult> {
@@ -132,19 +162,21 @@ async function runCase(provider: LLMProvider, model: string, mode: Mode, c: Mult
 
   const t0 = Date.now();
   try {
+    const finalTools = ['send_payment', 'execute_swap'];
     if (mode === 'recipe') {
-      const res = await runRecipe(paymentsRecipe, c.prompt, {
+      const recipe: Recipe = c.kind === 'swap' ? swapRecipe : paymentsRecipe;
+      const res = await runRecipe(recipe, c.prompt, {
         provider: counting,
         tools,
         onConfirm,
-        onStep: (name, args) => { calls.push(name); if (name === 'send_payment') finalArgs = args; },
+        onStep: (name, args) => { calls.push(name); if (finalTools.includes(name)) finalArgs = args; },
       });
       inferences = res.inferences;
     } else {
       const engine = new Engine({ provider: counting, tools, defaultMaxTurns: 6 });
       await engine.runAgentic([{ role: 'system', content: FREE_SYSTEM }, { role: 'user', content: c.prompt }], {
         onConfirm,
-        onToolCall: (call) => { calls.push(call.name); if (call.name === 'send_payment') finalArgs = call.arguments; },
+        onToolCall: (call) => { calls.push(call.name); if (finalTools.includes(call.name)) finalArgs = call.arguments; },
       });
     }
   } catch { /* record what we have */ }

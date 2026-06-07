@@ -94,6 +94,18 @@ export class MockWallet {
         if ((this.assets[a] ?? 0) < Number(amount)) throw new Error(`Insufficient ${a} balance.`);
         return this.send('rln_send_asset', { to: String(to), asset: a, amount: Number(amount) });
       },
+      get_swap_quote: async ({ from_asset, to_asset, amount }) => ({
+        quote_id: 'quote-mock',
+        from_asset,
+        to_asset,
+        amount: Number(amount),
+        // toy rate: 1 USDT ≈ 1538 sats at $65k; otherwise echo.
+        receive_amount: String(from_asset).toUpperCase() === 'USDT' ? Math.round(Number(amount) * (1e8 / this.priceUsd)) : Number(amount),
+      }),
+      execute_swap: async ({ from_asset, to_asset, amount }) => {
+        this.sends.push({ tool: 'execute_swap', to: `${from_asset}->${to_asset}`, amount: Number(amount) });
+        return { status: 'SUCCESS', swap_id: 'swap' + this.sends.length };
+      },
     };
   }
 

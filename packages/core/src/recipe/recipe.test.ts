@@ -4,6 +4,7 @@ import { InProcessToolSource } from '../tools/in-process.js';
 import type { LLMProvider } from '../providers/types.js';
 import { runRecipe, RecipeRegistry } from './runner.js';
 import { paymentsRecipe, extractPayment } from './payments.js';
+import { swapRecipe, extractSwap } from './swap.js';
 
 // Stub contract tools: resolve_contact, fiat_to_sats, send_payment (spend).
 function stubTools(spy?: { send?: (a: any) => void }) {
@@ -81,6 +82,35 @@ describe('runRecipe — pay a contact', () => {
     expect(res.inferences).toBe(1);
     expect(provider.runTurn).toHaveBeenCalledOnce();
     expect(sent[0]).toEqual({ to: 'bob@kaleidoswap.com', amount_sats: 2000 });
+  });
+});
+
+describe('extractSwap', () => {
+  it('parses "buy X <to> with <from>"', () => {
+    expect(extractSwap('buy 0.001 btc with usdt')).toEqual({ amount: 0.001, to_asset: 'BTC', from_asset: 'USDT' });
+  });
+  it('parses "swap X <from> for <to>"', () => {
+    expect(extractSwap('swap 10 usdt for btc')).toEqual({ amount: 10, from_asset: 'USDT', to_asset: 'BTC' });
+  });
+  it('returns null for non-swap text', () => {
+    expect(extractSwap('what is my balance')).toBeNull();
+  });
+});
+
+describe('runRecipe — swap', () => {
+  it('quote → confirm → execute', async () => {
+    const exec: any[] = [];
+    const tools = new ToolRegistry([new InProcessToolSource('w', [
+      { name: 'get_swap_quote', description: '', parameters: { type: 'object', properties: {} }, handler: async (a) => ({ quote_id: 'q1', receive_amount: 1500, ...a }) },
+      { name: 'execute_swap', description: '', parameters: { type: 'object', properties: {} }, requiresConfirmation: true, handler: async (a) => { exec.push(a); return { status: 'SUCCESS' }; } },
+    ])]);
+    const onConfirm = vi.fn(async () => ({ approved: true }));
+    const res = await runRecipe(swapRecipe, 'buy 0.001 btc with usdt', { provider: approve, tools, onConfirm });
+    expect(res.status).toBe('done');
+    expect(res.inferences).toBe(0);
+    expect(onConfirm).toHaveBeenCalledOnce();
+    expect(res.results.quote).toMatchObject({ quote_id: 'q1' });
+    expect(exec[0]).toMatchObject({ quote_id: 'q1', from_asset: 'USDT', to_asset: 'BTC', amount: 0.001 });
   });
 });
 
