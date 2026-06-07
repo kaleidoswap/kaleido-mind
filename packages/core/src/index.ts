@@ -50,6 +50,12 @@ export type {
   BindWalletOptions,
 } from './wallet/contract.js';
 
+// ── Recipes (mobile multi-step: "recipes, not planning") ───────────────────
+export { runRecipe, extractSlots, RecipeRegistry } from './recipe/runner.js';
+export type { RunRecipeOptions } from './recipe/runner.js';
+export { paymentsRecipe, extractPayment } from './recipe/payments.js';
+export type { Recipe, RecipeStep, RecipeSlot, RecipeContext, RecipeResult, RecipeStatus } from './recipe/types.js';
+
 // ── Memory (soul + recall) ───────────────────────────────────────────────
 export { InMemoryMemoryStore } from './memory/store.js';
 export type { MemoryStoreOptions } from './memory/store.js';
