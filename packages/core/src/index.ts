@@ -56,6 +56,10 @@ export type { RunRecipeOptions } from './recipe/runner.js';
 export { paymentsRecipe, extractPayment } from './recipe/payments.js';
 export type { Recipe, RecipeStep, RecipeSlot, RecipeContext, RecipeResult, RecipeStatus } from './recipe/types.js';
 
+// ── Tier-0 deterministic fast-path (no LLM) ────────────────────────────────
+export { FastPath, WALLET_FAST_INTENTS } from './fastpath/fastpath.js';
+export type { FastIntent, FastHit } from './fastpath/fastpath.js';
+
 // ── Memory (soul + recall) ───────────────────────────────────────────────
 export { InMemoryMemoryStore } from './memory/store.js';
 export type { MemoryStoreOptions } from './memory/store.js';
