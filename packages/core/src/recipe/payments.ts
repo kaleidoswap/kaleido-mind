@@ -64,6 +64,8 @@ const isFiat = (ctx: RecipeContext) => {
 export const paymentsRecipe: Recipe = {
   name: 'pay-contact',
   description: 'Pay a contact or address — resolves the contact, converts fiat to sats, then sends (with confirmation).',
+  // A spend intent, but NOT a receive/invoice ("send me an invoice", "request").
+  match: (t) => /\b(pay|send|transfer)\b/i.test(t) && !/\b(invoice|receive|request|address|qr|deposit)\b/i.test(t),
   triggers: ['pay', 'send', 'transfer'],
   slots: [
     { name: 'recipient', type: 'string', description: 'Who to pay: a contact name, Lightning address, or invoice', required: true },
