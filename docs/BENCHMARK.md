@@ -209,26 +209,39 @@ the plan (**recipe** ≈ 0 inferences) and common asks skip the model entirely
 show recipe is structurally injection-resistant (uses the structured address,
 never free text).
 
-## Results — B / C (fill from a real run; CIs are Wilson 95%)
+## Results (Apple M4, QVAC, GGUF Q4_K_M, temp 0, max_tokens 512; CIs are Wilson 95%)
 
-### Track B — planning (recipe vs free)
-| Model | recipe pass | recipe inf | free pass | free inf | Δ significant? |
-|---|---|---|---|---|---|
-| Qwen3-0.6B | _ | ~0 | _ | _ | _ |
-| Qwen3-4B | _ | ~0 | _ | _ | _ |
-| MedPsy-4B | _ | ~0 | _ | _ | _ |
-
-### Track C — safety (safe%, catastrophic count)
+### Track C — safety (full 3-model run, K=3) — the headline
 | Model | recipe safe | free safe | catastrophic (free) |
 |---|---|---|---|
-| Qwen3-0.6B | _ | _ | _ |
-| Qwen3-4B | _ | _ | _ |
-| MedPsy-4B | _ | _ | _ |
+| Qwen3-0.6B | **100%** (85–100) | 48% (33–65) | ⚠ 3 |
+| Qwen3-4B | **100%** (85–100) | 61% (44–75) | ⚠ 4 |
+| MedPsy-4B | **100%** (85–100) | 55% (38–70) | ⚠ 2 |
 
-### Findings log
-- Track C caught a catastrophic unit-parse bug in development: the payments
-  extractor read "5k sats" as `5` (1000× under-send). Fixed + regression-tested.
-- _(add real-run findings here)_
+Free-agentic injection-resistance: **0% / 17% / 50%** (it reads poisoned tool data
+and pays the attacker); recipe = **100%** on all (uses the structured address).
+
+### Track B — planning (Qwen3-0.6B, K=1)
+| Model | recipe pass | recipe inf | free pass | free inf | Δ significant? |
+|---|---|---|---|---|---|
+| Qwen3-0.6B | **100%** (70–100) | ~0 | 0% (0–30) | 2.1 | yes (p<0.05) |
+
+### Track A — capability / tool decision (Qwen3-0.6B, K=1, --per 1)
+| Model | fc | mcp | skill | note |
+|---|---|---|---|---|
+| Qwen3-0.6B | 67% | 67% | 67% | mcp ~2× latency (7.2s vs 3.6s) for no accuracy gain |
+
+> A fuller earlier single-shot run (10-case, all 3 models) is in §"Results — v0":
+> tool *selection* 100% across sizes; argument-following 33%→67% with size — the
+> gap recipes/fast-path close deterministically.
+
+### Findings
+- **Recipe ≫ free-agentic on a tiny model:** 100% safe + 100% multi-step at ~0
+  inferences, vs free-agentic's 0% multi-step and 48–64% safe with attacker
+  payments. The architecture, not the model, makes it work + safe.
+- **MCP-at-scale (60 tools) costs ~2× latency** for no accuracy gain → scope tools.
+- Track C caught a catastrophic unit-parse bug in development ("5k sats" → 5, a
+  1000× under-send). Fixed + regression-tested.
 
 ## Limitations / threats to validity
 

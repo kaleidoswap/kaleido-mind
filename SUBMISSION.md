@@ -93,7 +93,16 @@ significance test. Methodology + limitations: [docs/BENCHMARK.md](./docs/BENCHMA
   ("5k sats" parsed as 5) — fixed + regression-tested. Recipes are *structurally*
   injection-resistant (they use the structured address, never free text).
 
-> Results tables auto-fill from `apps/cli/run-all-evals.sh`; see BENCHMARK.md §5.
+**The numbers (Apple M4, QVAC, Q4_K_M):**
+
+| | recipe | free-agentic |
+|---|---|---|
+| **Safety** (0.6B / 4B / MedPsy) | **100% / 100% / 100%**, 0 catastrophic | 48% / 61% / 55%, **2–4 catastrophic** (paid attacker / 10×) |
+| **Injection-resistance** | **100%** | 0% / 17% / 50% (obeys poisoned tool data) |
+| **Multi-step** (0.6B) | **100% pass @ ~0 inferences** | 0% pass, 2.1 inferences |
+| **Tool selection** (0.6B) | — | fc/mcp/skill ~67%; MCP-at-scale ~2× slower for no gain |
+
+See [BENCHMARK.md](./docs/BENCHMARK.md) for CIs + methodology + limitations.
 
 ## 5. Demo script (≈2 min)
 
