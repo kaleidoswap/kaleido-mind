@@ -158,7 +158,7 @@ device**.
 | **5. Mobile funnel** | deterministic fast-path + slot-filling + Recipe engine | ◐ Recipe engine + Tier-2 wired in rate; Tier-0 fast-path next |
 | **6. UX/perf** | warm-on-open, streaming, prefix-cache, idle-unload | ▢ |
 | **7. Safety wiring** | flag spend tools; `onConfirm` sheet (mobile) + dialog (desktop) | partial (gate exists) |
-| **8. Eval B + per-surface** | multi-step track; recipe vs free; best-model table | ▢ |
+| **8. Eval B + per-surface** | multi-step track; recipe vs free; best-model table | ◐ harness done (`eval/multistep.ts`, `multistep` cmd); real run next |
 | **9. Delegation** | P2P offload of hard multi-step to desktop | partial (pairing exists) |
 | **10. Fine-tune (stretch)** | LoRA a small model on our eval logs (QVAC Fabric) | ▢ |
 | **11. Demo** | rate + desktop end-to-end on the contract | ▢ |

@@ -19,7 +19,7 @@ import { stdin, stdout } from 'node:process';
 import { capabilityProfile } from '@kaleidorg/mind';
 import { SkillRegistry } from '@kaleidorg/mind';
 import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
-import { banner, box, table, c, bytes, dot } from './ui.js';
+import { banner, box, table, c, bytes, dot, bar } from './ui.js';
 import { CATALOG, getModel, recommendChatModel, type CatalogModel } from './catalog.js';
 import { listInstalled, isInstalled, pullModel, removeModel } from './models.js';
 import { loadConfig, saveConfig, type CliConfig } from './config.js';
@@ -256,6 +256,34 @@ async function main(): Promise<void> {
       const { serve } = await import('./eval/server.js');
       await serve(Number(valOf('--port') ?? 4178));
       return; // serve() keeps the process alive
+    }
+    case 'multistep': case 'eval-b': {
+      const valOf = (n: string) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : undefined; };
+      const numOf = (n: string) => { const v = valOf(n); return v ? Number(v) : undefined; };
+      const mock = args.includes('--mock');
+      const { runMultiStepSuite } = await import('./eval/multistep.js');
+      const ui = (s = '') => process.stderr.write(s + '\n');
+      ui('\n' + c.violet('Track B — multi-step: recipe vs free-agentic') + c.dim('  (stubbed execution, K repeats)'));
+      let last = '';
+      const res = await runMultiStepSuite({
+        mock,
+        models: valOf('--models')?.split(','),
+        repeats: numOf('--repeats') ?? 3,
+        onProgress: (p) => {
+          const s = `${Math.round((p.done / p.total) * 100)}% · ${p.done}/${p.total} · ${p.model} ${p.mode}`;
+          if (s !== last) { last = s; if (process.stderr.isTTY) process.stderr.write('\r' + s.padEnd(58)); }
+        },
+      });
+      if (process.stderr.isTTY) process.stderr.write('\r' + ' '.repeat(60) + '\r');
+      ui('');
+      for (const model of [...new Set(res.cells.map((x) => x.model))]) {
+        ui(c.bold(model));
+        for (const cell of res.cells.filter((x) => x.model === model)) {
+          ui(`  ${cell.mode.padEnd(7)} ${bar(cell.pct, 18)}  ${c.dim(`${cell.pct}% pass · ${cell.reliablePct}% reliable · ${cell.avgInferences} inf · ${cell.avgLatency}ms · cov ${cell.coverage}% ord ${cell.order}% args ${cell.finalOk}% gate ${cell.gate}%`)}`);
+        }
+      }
+      ui(c.dim(`\n${res.cases} cases × ${res.repeats} repeats · recipe = plan-in-skill (~0 inferences) · free = model plans every step`));
+      return;
     }
     case 'pull': case 'install': {
       const id = args[args.indexOf(cmd) + 1];
