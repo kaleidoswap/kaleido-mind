@@ -2,7 +2,7 @@
 
 A reproducible bench for measuring **the right thing**: function-calling accuracy under real KaleidoMind conditions, on each candidate model and device.
 
-This lives in `apps/bench/` and runs against the same `Engine` interface every consumer uses, so a passing bench is a passing model in production.
+The **implemented** eval lives in `apps/cli/src/eval/` and runs via the `kaleido-mind` CLI — see the **Three-track eval suite (A/B/C)** section below for the real commands. It runs against the same `Engine` interface every consumer uses, so a passing bench is a passing model in production. The plan in this first section is the target; items marked _(planned)_ aren't built yet.
 
 ---
 
@@ -41,7 +41,7 @@ Given an input + available tools, did the model pick the **right tool** with **v
 
 ## Datasets
 
-Three layered eval sets, all live in `apps/bench/datasets/`:
+_(planned)_ Three layered eval sets:
 
 | Set | Size | Source | Purpose |
 |---|---|---|---|
@@ -81,18 +81,10 @@ Mobile (iPhone 15 Pro / equivalent Android):
 
 ## How to run
 
-```bash
-# Single model, all sets
-pnpm bench --model=qwen3-30b-a3b-q4 --device=mac-m4
-
-# Sweep all candidates on a device
-pnpm bench:sweep --device=mac-m4
-
-# Compare two snapshots
-pnpm bench:diff results/qwen3-14b.json results/qwen3-30b-a3b.json
-```
-
-Output: `results/<device>/<model>-<timestamp>.json` + a markdown summary in `results/<device>/SUMMARY.md` that gets committed.
+The real, implemented commands live in the **Three-track eval suite** section
+below (`kaleido-mind eval | multistep | safety`, or `apps/cli/run-all-evals.sh`
+to run all three sequentially). _(planned: a `bench:sweep` device-sweep wrapper
+and a `bench:diff` snapshot comparator.)_
 
 ---
 
@@ -126,7 +118,7 @@ A model below the floor is not shipped, period.
 
 ## What we ship at submission
 
-1. The `apps/bench/` harness, runnable on any machine
+1. The `apps/cli` eval tracks (A/B/C), runnable on any machine
 2. `results/mac-m4/SUMMARY.md` — full sweep on the demo machine
 3. `results/iphone-15-pro/SUMMARY.md` — full sweep on the demo phone
 4. A chart in the submission: "Qwen3-30B-A3B vs Psy vs the rest" across the four metric families
@@ -137,7 +129,7 @@ This turns a vague claim ("we run AI locally") into a defensible one ("we measur
 
 ## Results — v0 (wallet tool-calling, 10-case eval)
 
-Run with `apps/bench` on Apple M-series, QVAC SDK 0.12, GGUF Q4_K_M, the
+Run on Apple M-series, QVAC SDK 0.12, GGUF Q4_K_M, the
 10-prompt wallet eval set (`get_balance`, `get_address`, `list_transactions`,
 `pay_invoice`, + 2 should-not-call cases). Param scoring is **by value**
 (does the recipient/amount actually land in the args), since small models vary
@@ -149,7 +141,7 @@ the argument *names*.
 | Qwen3-4B | 2.3 GB | **100%** (10/10) | **67%** | 9.2 s |
 | QVAC MedPsy-4B | 2.5 GB | **100%** (10/10) | 33% | 15.0 s |
 
-Raw per-case results: `apps/bench/results/*.json`.
+(Raw per-case results were from the v0 run; that harness is now consolidated into the CLI eval tracks above.)
 
 ### Findings
 

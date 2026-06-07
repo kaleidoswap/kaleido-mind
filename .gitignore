@@ -10,3 +10,4 @@ build
 .idea
 coverage
 .turbo
+eval-results/
