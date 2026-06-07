@@ -181,3 +181,81 @@ Raw per-case results: `apps/bench/results/*.json`.
 - **Psy track coverage:** MedPsy-4B is benchmarked and supported (any GGUF the
   QVAC SDK loads runs through the same engine); it shines on medical use cases,
   which is a separate vertical from the wallet agent.
+
+---
+
+# Three-track eval suite (A / B / C)
+
+The newer, more rigorous harness lives in `apps/cli/src/eval/` and runs via the
+`kaleido-mind` CLI. It extends the v0 single-shot bench above into three tracks,
+each with **K repeats**, **reliability**, and **Wilson 95% confidence intervals**
+(a rate without an interval is noise at our sample sizes).
+
+| Track | Question | Command |
+|---|---|---|
+| **A — capability** | One request → right tool + args? Across 3 presentations (fc / mcp / skill). Decision-only. | `eval` |
+| **B — planning** | A chain ("pay bob 3 EUR") → right final action? **recipe vs free-agentic.** | `multistep` |
+| **C — safety** | Right amounts, injection resistance, refusal? Over a stateful `MockWallet`. | `safety` |
+
+```bash
+cd apps/cli
+npx tsx src/index.ts eval      --models qwen3-0.6b,qwen3-4b,medpsy-4b --repeats 3
+npx tsx src/index.ts multistep --models qwen3-0.6b,qwen3-4b,medpsy-4b --repeats 3
+npx tsx src/index.ts safety    --models qwen3-0.6b,qwen3-4b,medpsy-4b --repeats 3
+```
+
+**Method:** models loaded once (warm); temperature 0; seeded dataset. A is
+decision-only (grade the first tool call). B/C run the real loop against a
+`MockWallet` (balances per layer, contacts incl. ambiguous + injectable, price,
+validation) — the observable is *what actually got sent*. The spend gate is
+auto-approved and asserted (framework-enforced). Significance = two-proportion
+z-test (p<0.05) for recipe-vs-free.
+
+**Thesis under test:** small models can't reliably *plan*, so the skill carries
+the plan (**recipe** ≈ 0 inferences) and common asks skip the model entirely
+(fast-path). Track B should show recipe ≫ free on small models; Track C should
+show recipe is structurally injection-resistant (uses the structured address,
+never free text).
+
+## Results — B / C (fill from a real run; CIs are Wilson 95%)
+
+### Track B — planning (recipe vs free)
+| Model | recipe pass | recipe inf | free pass | free inf | Δ significant? |
+|---|---|---|---|---|---|
+| Qwen3-0.6B | _ | ~0 | _ | _ | _ |
+| Qwen3-4B | _ | ~0 | _ | _ | _ |
+| MedPsy-4B | _ | ~0 | _ | _ | _ |
+
+### Track C — safety (safe%, catastrophic count)
+| Model | recipe safe | free safe | catastrophic (free) |
+|---|---|---|---|
+| Qwen3-0.6B | _ | _ | _ |
+| Qwen3-4B | _ | _ | _ |
+| MedPsy-4B | _ | _ | _ |
+
+### Findings log
+- Track C caught a catastrophic unit-parse bug in development: the payments
+  extractor read "5k sats" as `5` (1000× under-send). Fixed + regression-tested.
+- _(add real-run findings here)_
+
+## Limitations / threats to validity
+
+Cite responsibly:
+
+1. **Synthetic + small dataset** (~12 intents A, 6 chains B, 11 cases C),
+   author-written — not a real-usage distribution; risk of overfitting our own
+   skills (no held-out **test** split yet).
+2. **Stubbed execution** — measures model *decisions*, not real wallet outcomes;
+   no real node / on-chain / LN edge cases.
+3. **Heuristic grading** — value/substring matching, single grader, not yet
+   hand-audited.
+4. **Lab hardware** — latency on a dev laptop, **not a phone** (the mobile target).
+5. **Narrow injection coverage** — a few tool-data vectors, not the full surface
+   (Nostr DMs, invoice memos, merchant listings, RAG docs).
+6. **Small n** — even at K=3, intervals are wide; treat sub-10-point gaps as
+   inconclusive unless the z-test agrees.
+
+**Roadmap to a fully professional eval:** real-signet end-to-end subset ·
+on-device (phone) latency/energy · larger naturalistic dataset with
+train/dev/**test** split · grader audit + agreement · broader injection vectors ·
+CI job + baseline + regression gate.

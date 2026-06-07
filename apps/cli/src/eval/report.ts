@@ -3,6 +3,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { c, bar, table } from '../ui.js';
+import { wilson, ciLabel } from './stats.js';
 import { MECHANISMS, type CaseResult, type Mechanism } from './run.js';
 import { CATEGORIES, type Category } from './dataset.js';
 
@@ -73,7 +74,7 @@ export function renderAnsi(a: Aggregate): string {
     for (const mech of MECHANISMS) {
       const cell = cellOf(a, model, mech);
       if (!cell || !cell.applicable) continue;
-      lines.push(`  ${c.dim(mech.padEnd(6))} ${bar(cell.pct, 20)}  ${c.dim(`${cell.reliablePct}% reliable · ${cell.avgLatency}ms · ${cell.applicable} trials${cell.overTrigger ? ` · ⚠${cell.overTrigger}` : ''}`)}`);
+      lines.push(`  ${c.dim(mech.padEnd(6))} ${bar(cell.pct, 20)}  ${c.dim(`${ciLabel(wilson(cell.pass, cell.applicable))} · ${cell.reliablePct}% reliable · ${cell.avgLatency}ms${cell.overTrigger ? ` · ⚠${cell.overTrigger}` : ''}`)}`);
     }
     // best mechanism for this model
     const best = MECHANISMS.map((m) => cellOf(a, model, m)).filter(Boolean).sort((x, y) => y!.pct - x!.pct)[0];
@@ -94,7 +95,8 @@ function html(a: Aggregate, meta: ReportMeta): string {
       const cells = MECHANISMS.map((mech) => {
         const cell = cellOf(a, model, mech);
         if (!cell || !cell.applicable) return `<td class="na">—</td>`;
-        return `<td><div class="cell"><div class="bar"><i style="width:${cell.pct}%;background:${scoreColor(cell.pct)}"></i></div><span>${cell.pct}% <small class="frac">${cell.reliablePct}% rel</small></span><small>sel ${pctOf(cell.selection, cell.applicable)}% · args ${pctOf(cell.args, cell.applicable)}% · ${cell.avgLatency}ms · ${cell.applicable} trials${cell.overTrigger ? ` · ⚠${cell.overTrigger}` : ''}</small></div></td>`;
+        const ci = wilson(cell.pass, cell.applicable);
+        return `<td><div class="cell"><div class="bar"><i style="width:${cell.pct}%;background:${scoreColor(cell.pct)}"></i></div><span>${cell.pct}% <small class="frac">${cell.reliablePct}% rel</small></span><small>95% CI ${Math.round(ci.lo)}–${Math.round(ci.hi)} · sel ${pctOf(cell.selection, cell.applicable)}% · args ${pctOf(cell.args, cell.applicable)}% · ${cell.avgLatency}ms · ${cell.applicable} trials${cell.overTrigger ? ` · ⚠${cell.overTrigger}` : ''}</small></div></td>`;
       }).join('');
       const best = MECHANISMS.map((m) => cellOf(a, model, m)!).filter(Boolean).sort((x, y) => y.pct - x.pct)[0];
       return `<tr><th>${model}</th>${cells}<td class="best">${best ? `${best.mech} <b>${best.pct}%</b>` : ''}</td></tr>`;

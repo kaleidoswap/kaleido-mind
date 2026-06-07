@@ -26,6 +26,7 @@ import { loadConfig, saveConfig, type CliConfig } from './config.js';
 import { buildAgent, runChat } from './chat.js';
 import { runBench } from './bench.js';
 import { runEvalSuite } from './eval/orchestrate.js';
+import { wilson, ciLabel, differ } from './eval/stats.js';
 import { renderAnsi, summaryTable } from './eval/report.js';
 import { type Mechanism } from './eval/run.js';
 import { join } from 'node:path';
@@ -278,11 +279,14 @@ async function main(): Promise<void> {
       ui('');
       for (const model of [...new Set(res.cells.map((x) => x.model))]) {
         ui(c.bold(model));
-        for (const cell of res.cells.filter((x) => x.model === model)) {
-          ui(`  ${cell.mode.padEnd(7)} ${bar(cell.pct, 18)}  ${c.dim(`${cell.pct}% pass · ${cell.reliablePct}% reliable · ${cell.avgInferences} inf · ${cell.avgLatency}ms · cov ${cell.coverage}% ord ${cell.order}% args ${cell.finalOk}% gate ${cell.gate}%`)}`);
+        const mc = res.cells.filter((x) => x.model === model);
+        for (const cell of mc) {
+          ui(`  ${cell.mode.padEnd(7)} ${bar(cell.pct, 18)}  ${c.dim(`${ciLabel(wilson(cell.pass, cell.trials))} pass · ${cell.reliablePct}% reliable · ${cell.avgInferences} inf · ${cell.avgLatency}ms · cov ${cell.coverage}% ord ${cell.order}% args ${cell.finalOk}%`)}`);
         }
+        const rec = mc.find((x) => x.mode === 'recipe'); const free = mc.find((x) => x.mode === 'free');
+        if (rec && free) ui(c.dim(`    recipe vs free: ${differ({ pass: rec.pass, n: rec.trials }, { pass: free.pass, n: free.trials }) ? 'significant (p<0.05)' : 'not significant'}`));
       }
-      ui(c.dim(`\n${res.cases} cases × ${res.repeats} repeats · recipe = plan-in-skill (~0 inferences) · free = model plans every step`));
+      ui(c.dim(`\n${res.cases} cases × ${res.repeats} repeats · 95% CI (Wilson) · recipe = plan-in-skill (~0 inferences) · free = model plans every step`));
       return;
     }
     case 'safety': case 'eval-c': {
@@ -310,7 +314,7 @@ async function main(): Promise<void> {
           const cat = cell.byCategory;
           const fmt = (v: number) => (v < 0 ? ' n/a' : `${v}%`);
           const danger = cell.catastrophic > 0 ? c.red(`  ⚠ ${cell.catastrophic} CATASTROPHIC`) : '';
-          ui(`  ${cell.mode.padEnd(7)} ${bar(cell.safePct, 18)}  ${c.dim(`${cell.safePct}% safe · amt ${fmt(cat.amount)} · inject ${fmt(cat.injection)} · refuse ${fmt(cat.refusal)} · insuf ${fmt(cat.insufficient)}`)}${danger}`);
+          ui(`  ${cell.mode.padEnd(7)} ${bar(cell.safePct, 18)}  ${c.dim(`${ciLabel(wilson(cell.safe, cell.trials))} safe · amt ${fmt(cat.amount)} · inject ${fmt(cat.injection)} · refuse ${fmt(cat.refusal)} · insuf ${fmt(cat.insufficient)}`)}${danger}`);
         }
       }
       ui(c.dim(`\n${res.cases} cases × ${res.repeats} repeats · safe = no unsafe spend · catastrophic = paid attacker / 10× amount`));
