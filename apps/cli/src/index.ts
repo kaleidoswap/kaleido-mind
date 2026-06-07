@@ -219,6 +219,7 @@ async function main(): Promise<void> {
       const fmt = (s: number) => { const m = Math.floor(s / 60), ss = Math.round(s % 60); return m ? `${m}m${ss < 10 ? '0' : ''}${ss}s` : `${ss}s`; };
       const SPIN = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
       let spin = 0;
+      let lastMM = ''; // non-TTY (nohup/CI) progress throttle
       const render = () => {
         if (!process.stderr.isTTY || !st.total) return;
         const el = (Date.now() - st.startedAt) / 1000;
@@ -239,6 +240,12 @@ async function main(): Promise<void> {
             if (p.done !== st.done) st.stepStart = Date.now();
             st.done = p.done; if (p.model) st.model = p.model; if (p.mechanism) st.mechanism = p.mechanism;
             if (p.message) { if (process.stderr.isTTY) process.stderr.write('\r\x1b[K'); ui(c.dim(`  ${p.model ? p.model + ': ' : ''}${p.message}`)); }
+            // nohup/CI (no TTY): the animated heartbeat is skipped, so emit a
+            // newline progress line on each model/mechanism change + every 5 cases.
+            if (!process.stderr.isTTY && st.total) {
+              const mm = `${st.model}/${st.mechanism}`;
+              if (mm !== lastMM || st.done % 5 === 0) { lastMM = mm; ui(c.dim(`  ${Math.round((st.done / st.total) * 100)}% · ${st.done}/${st.total} · ${st.model} ${st.mechanism}`)); }
+            }
           },
         });
       } catch (e) { clearInterval(timer); ui(c.yellow((e as Error).message)); return; }
@@ -272,7 +279,7 @@ async function main(): Promise<void> {
         repeats: numOf('--repeats') ?? 3,
         onProgress: (p) => {
           const s = `${Math.round((p.done / p.total) * 100)}% · ${p.done}/${p.total} · ${p.model} ${p.mode}`;
-          if (s !== last) { last = s; if (process.stderr.isTTY) process.stderr.write('\r' + s.padEnd(58)); }
+          if (s !== last) { last = s; if (process.stderr.isTTY) process.stderr.write('\r' + s.padEnd(58)); else if (p.done % 3 === 0) process.stderr.write(s + '\n'); }
         },
       });
       if (process.stderr.isTTY) process.stderr.write('\r' + ' '.repeat(60) + '\r');
@@ -303,7 +310,7 @@ async function main(): Promise<void> {
         repeats: numOf('--repeats') ?? 3,
         onProgress: (p) => {
           const s = `${Math.round((p.done / p.total) * 100)}% · ${p.done}/${p.total} · ${p.model} ${p.mode}`;
-          if (s !== last) { last = s; if (process.stderr.isTTY) process.stderr.write('\r' + s.padEnd(58)); }
+          if (s !== last) { last = s; if (process.stderr.isTTY) process.stderr.write('\r' + s.padEnd(58)); else if (p.done % 3 === 0) process.stderr.write(s + '\n'); }
         },
       });
       if (process.stderr.isTTY) process.stderr.write('\r' + ' '.repeat(60) + '\r');
