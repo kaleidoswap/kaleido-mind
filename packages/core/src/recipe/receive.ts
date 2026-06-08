@@ -78,7 +78,9 @@ export const receiveRecipe: Recipe = {
   summary: (ctx, result) => {
     const r = result as { invoice?: string; address?: string } | undefined;
     const dest = r?.invoice ?? r?.address ?? '';
-    const amt = ctx.slots.amount ? `${ctx.slots.amount} ${ctx.slots.asset ?? 'sats'}` : 'any amount';
-    return dest ? `Here's your ${ctx.slots.asset ?? 'BTC'} invoice for ${amt}:\n\n${dest}` : `Created an invoice for ${amt}.`;
+    const asset = (ctx.slots.asset as string) ?? 'BTC';
+    const unit = asset === 'BTC' ? 'sats' : asset; // BTC amounts are in sats, not "BTC"
+    const amt = ctx.slots.amount ? `${Number(ctx.slots.amount).toLocaleString()} ${unit}` : 'any amount';
+    return dest ? `Here's your ${asset} invoice for ${amt}:\n\n${dest}` : `Created an invoice for ${amt}.`;
   },
 };
