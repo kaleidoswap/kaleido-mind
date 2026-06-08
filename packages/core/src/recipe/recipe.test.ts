@@ -118,14 +118,17 @@ describe('runRecipe — swap', () => {
 });
 
 describe('extractReceive', () => {
-  it('parses amount + asset + layer', () => {
-    expect(extractReceive('create an invoice for 25 usdt on liquid')).toEqual({ amount: 25, asset: 'USDT', layer: 'liquid' });
+  it('parses asset + layer', () => {
+    expect(extractReceive('create an invoice for 25 usdt on liquid')).toEqual({ amount: 25, kind: 'asset', currency: 'USDT', layer: 'liquid' });
   });
   it('amountless BTC invoice', () => {
-    expect(extractReceive('give me an invoice')).toEqual({});
+    expect(extractReceive('give me an invoice')).toEqual({ kind: 'sats', currency: 'BTC' });
   });
-  it('sats amount with k shorthand', () => {
-    expect(extractReceive('invoice for 5k sats')).toEqual({ amount: 5000, asset: 'BTC' });
+  it('sats with k shorthand', () => {
+    expect(extractReceive('invoice for 5k sats')).toEqual({ amount: 5000, kind: 'sats', currency: 'BTC' });
+  });
+  it('fiat: "$2.00" → 2 USD (not 2000)', () => {
+    expect(extractReceive('create a payment request of $2.00')).toEqual({ amount: 2, kind: 'fiat', currency: 'USD' });
   });
   it('null for non-receive text', () => {
     expect(extractReceive('pay bob 3 eur')).toBeNull();
@@ -133,16 +136,22 @@ describe('extractReceive', () => {
 });
 
 describe('runRecipe — receive', () => {
-  it('routes to create_invoice (no confirmation)', async () => {
-    const tools = new ToolRegistry([new InProcessToolSource('w', [
-      { name: 'create_invoice', description: '', parameters: { type: 'object', properties: {} }, handler: async (a) => ({ invoice: `lnbc-${a.asset}-${a.amount ?? 'any'}` }) },
-    ])]);
+  const tools = () => new ToolRegistry([new InProcessToolSource('w', [
+    { name: 'fiat_to_sats', description: '', parameters: { type: 'object', properties: {} }, handler: async ({ amount }) => ({ sats: Math.round(Number(amount) * 1500) }) },
+    { name: 'create_invoice', description: '', parameters: { type: 'object', properties: {} }, handler: async (a) => ({ invoice: `lnbc-${a.asset}-${a.amount ?? 'any'}` }) },
+  ])]);
+  it('sats → create_invoice (no confirmation)', async () => {
     const onConfirm = vi.fn(async () => ({ approved: true }));
-    const res = await runRecipe(receiveRecipe, 'invoice for 5000 sats', { provider: approve, tools, onConfirm });
+    const res = await runRecipe(receiveRecipe, 'invoice for 5000 sats', { provider: approve, tools: tools(), onConfirm });
     expect(res.status).toBe('done');
-    expect(onConfirm).not.toHaveBeenCalled(); // receive is not a spend
+    expect(onConfirm).not.toHaveBeenCalled();
     expect(res.text).toContain('lnbc-BTC-5000');
-    expect(receiveRecipe.confident!(extractReceive('an invoice')!)).toBe(true);
+  });
+  it('fiat "$2" → fiat_to_sats → invoice (3000 sats), never 2000', async () => {
+    const res = await runRecipe(receiveRecipe, 'create a payment request of $2', { provider: approve, tools: tools() });
+    expect(res.status).toBe('done');
+    expect(res.text).toContain('lnbc-BTC-3000'); // 2 * 1500
+    expect(res.text).toContain('USD 2');
   });
 });
 
