@@ -68,8 +68,10 @@ const isFiat = (ctx: RecipeContext) => {
 export const paymentsRecipe: Recipe = {
   name: 'pay-contact',
   description: 'Pay a contact or address — resolves the contact, converts fiat to sats, then sends (with confirmation).',
-  // A spend intent, but NOT a receive/invoice ("send me an invoice", "request").
-  match: (t) => /\b(pay|send|transfer)\b/i.test(t) && !/\b(invoice|receive|request|address|qr|deposit)\b/i.test(t),
+  // A BTC/fiat spend intent — NOT a receive/invoice, and NOT an RGB-asset send
+  // ("send 10 USDT to bob" is handled by the asset-send recipe, so USDT/XAUT
+  // amounts are never mis-parsed as fiat).
+  match: (t) => /\b(pay|send|transfer)\b/i.test(t) && !/\b(invoice|receive|request|address|qr|deposit|usdt|tether|xaut|gold)\b/i.test(t),
   triggers: ['pay', 'send', 'transfer'],
   slots: [
     { name: 'recipient', type: 'string', description: 'Who to pay: a contact name, Lightning address, or invoice', required: true },

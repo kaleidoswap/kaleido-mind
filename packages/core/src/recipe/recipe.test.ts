@@ -6,6 +6,8 @@ import { runRecipe, RecipeRegistry } from './runner.js';
 import { paymentsRecipe, extractPayment } from './payments.js';
 import { swapRecipe, extractSwap } from './swap.js';
 import { receiveRecipe, extractReceive } from './receive.js';
+import { assetSendRecipe, extractAssetSend } from './asset-send.js';
+import { paymentsRecipe as _pay } from './payments.js';
 
 // Stub contract tools: resolve_contact, fiat_to_sats, send_payment (spend).
 function stubTools(spy?: { send?: (a: any) => void }) {
@@ -141,6 +143,35 @@ describe('runRecipe — receive', () => {
     expect(onConfirm).not.toHaveBeenCalled(); // receive is not a spend
     expect(res.text).toContain('lnbc-BTC-5000');
     expect(receiveRecipe.confident!(extractReceive('an invoice')!)).toBe(true);
+  });
+});
+
+describe('extractAssetSend + USDT bug fix', () => {
+  it('parses "send N USDT to contact"', () => {
+    expect(extractAssetSend('send 10 usdt to bob')).toEqual({ recipient: 'bob', asset: 'USDT', amount: 10 });
+  });
+  it('null for BTC/sats sends (payments owns those)', () => {
+    expect(extractAssetSend('send 5000 sats to bob')).toBeNull();
+  });
+  it('payments recipe NO LONGER matches an asset send (was the bug)', () => {
+    expect(_pay.match!('send 10 usdt to bob')).toBe(false);
+    expect(_pay.match!('send 5000 sats to bob')).toBe(true);
+    expect(assetSendRecipe.match!('send 10 usdt to bob')).toBe(true);
+  });
+});
+
+describe('runRecipe — asset send', () => {
+  it('resolve → rln_send_asset (confirmation-gated), no fiat conversion', async () => {
+    const sent: any[] = [];
+    const tools = new ToolRegistry([new InProcessToolSource('w', [
+      { name: 'resolve_contact', description: '', parameters: { type: 'object', properties: {} }, handler: async ({ name }) => ({ name, ln_address: `${name}@x.com` }) },
+      { name: 'rln_send_asset', description: '', parameters: { type: 'object', properties: {} }, requiresConfirmation: true, handler: async (a) => { sent.push(a); return { status: 'SUCCESS' }; } },
+    ])]);
+    const onConfirm = vi.fn(async () => ({ approved: true }));
+    const res = await runRecipe(assetSendRecipe, 'send 10 usdt to bob', { provider: approve, tools, onConfirm });
+    expect(res.status).toBe('done');
+    expect(onConfirm).toHaveBeenCalledOnce();
+    expect(sent[0]).toEqual({ asset: 'USDT', amount: 10, to: 'bob@x.com' });
   });
 });
 
