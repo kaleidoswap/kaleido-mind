@@ -89,6 +89,8 @@ export const WALLET_TOOLS: WalletToolDef[] = [
   t('core', 'execute_swap', 'Execute a previously quoted swap.', { quote_id: { type: 'string' }, from_asset: asset, to_asset: asset, amount: { type: 'number' } }, [], true),
   // The high-level entry a skill prefers — picks the rail for the asset, or uses `layer`.
   t('core', 'send_payment', 'Send a payment, automatically choosing the best layer for the asset (or use `layer`).', { asset, amount_sats: sats, to: { type: 'string', description: 'Contact, address, or invoice' }, layer: { type: 'string', enum: ['spark', 'rln', 'arkade', 'liquid'] } }, ['to'], true),
+  // High-level receive — picks the right invoice/address tool for the asset/layer.
+  t('core', 'create_invoice', 'Create an invoice or address to receive funds, choosing the rail for the asset (or use `layer`). Omit amount for an any-amount invoice.', { asset, amount: { type: 'number', description: 'Amount (sats for BTC, asset units otherwise) — optional' }, layer: { type: 'string', enum: ['spark', 'rln', 'arkade', 'liquid'] } }),
 ];
 
 // ── Selectors ───────────────────────────────────────────────────────────────

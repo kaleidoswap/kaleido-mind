@@ -47,6 +47,12 @@ export interface Recipe {
   slots: RecipeSlot[];
   /** Optional deterministic extractor tried BEFORE the LLM (Tier-0 fast-path). */
   extract?: (text: string) => Record<string, unknown> | null;
+  /**
+   * Whether the recipe is confident enough to RUN deterministically given the
+   * extracted slots (vs falling back to the agentic loop). e.g. payments needs a
+   * recipient; receive needs an amount or asset. Default: any slot extracted.
+   */
+  confident?: (slots: Record<string, unknown>) => boolean;
   /** Deterministic steps, run in order, results threaded into `ctx`. */
   steps: RecipeStep[];
   /** The terminal action (usually a spend → confirmation-gated by its tool). */

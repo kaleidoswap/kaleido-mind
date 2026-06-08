@@ -51,6 +51,7 @@ export const swapRecipe: Recipe = {
     { name: 'amount', type: 'number', description: 'Amount to swap' },
   ],
   extract: extractSwap,
+  confident: (s) => !!s.from_asset && !!s.to_asset,
   steps: [
     {
       tool: 'get_swap_quote',

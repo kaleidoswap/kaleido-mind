@@ -5,6 +5,7 @@ import type { LLMProvider } from '../providers/types.js';
 import { runRecipe, RecipeRegistry } from './runner.js';
 import { paymentsRecipe, extractPayment } from './payments.js';
 import { swapRecipe, extractSwap } from './swap.js';
+import { receiveRecipe, extractReceive } from './receive.js';
 
 // Stub contract tools: resolve_contact, fiat_to_sats, send_payment (spend).
 function stubTools(spy?: { send?: (a: any) => void }) {
@@ -111,6 +112,35 @@ describe('runRecipe — swap', () => {
     expect(onConfirm).toHaveBeenCalledOnce();
     expect(res.results.quote).toMatchObject({ quote_id: 'q1' });
     expect(exec[0]).toMatchObject({ quote_id: 'q1', from_asset: 'USDT', to_asset: 'BTC', amount: 0.001 });
+  });
+});
+
+describe('extractReceive', () => {
+  it('parses amount + asset + layer', () => {
+    expect(extractReceive('create an invoice for 25 usdt on liquid')).toEqual({ amount: 25, asset: 'USDT', layer: 'liquid' });
+  });
+  it('amountless BTC invoice', () => {
+    expect(extractReceive('give me an invoice')).toEqual({});
+  });
+  it('sats amount with k shorthand', () => {
+    expect(extractReceive('invoice for 5k sats')).toEqual({ amount: 5000, asset: 'BTC' });
+  });
+  it('null for non-receive text', () => {
+    expect(extractReceive('pay bob 3 eur')).toBeNull();
+  });
+});
+
+describe('runRecipe — receive', () => {
+  it('routes to create_invoice (no confirmation)', async () => {
+    const tools = new ToolRegistry([new InProcessToolSource('w', [
+      { name: 'create_invoice', description: '', parameters: { type: 'object', properties: {} }, handler: async (a) => ({ invoice: `lnbc-${a.asset}-${a.amount ?? 'any'}` }) },
+    ])]);
+    const onConfirm = vi.fn(async () => ({ approved: true }));
+    const res = await runRecipe(receiveRecipe, 'invoice for 5000 sats', { provider: approve, tools, onConfirm });
+    expect(res.status).toBe('done');
+    expect(onConfirm).not.toHaveBeenCalled(); // receive is not a spend
+    expect(res.text).toContain('lnbc-BTC-5000');
+    expect(receiveRecipe.confident!(extractReceive('an invoice')!)).toBe(true);
   });
 });
 

@@ -77,6 +77,7 @@ export const paymentsRecipe: Recipe = {
     { name: 'currency', type: 'string', description: 'Unit of the amount: sats, btc, or a fiat code like eur/usd' },
   ],
   extract: extractPayment,
+  confident: (s) => !!s.recipient,
   steps: [
     {
       // Resolve a contact name → payable address (skip if already an address/invoice).

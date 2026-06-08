@@ -55,6 +55,7 @@ export { runRecipe, extractSlots, RecipeRegistry } from './recipe/runner.js';
 export type { RunRecipeOptions } from './recipe/runner.js';
 export { paymentsRecipe, extractPayment } from './recipe/payments.js';
 export { swapRecipe, extractSwap } from './recipe/swap.js';
+export { receiveRecipe, extractReceive } from './recipe/receive.js';
 export type { Recipe, RecipeStep, RecipeSlot, RecipeContext, RecipeResult, RecipeStatus } from './recipe/types.js';
 
 // ── Tier-0 deterministic fast-path (no LLM) ────────────────────────────────
