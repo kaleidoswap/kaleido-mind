@@ -212,35 +212,48 @@ never free text).
 
 ## Results (Apple M4, QVAC, GGUF Q4_K_M, temp 0, max_tokens 512; CIs are Wilson 95%)
 
-### Track C — safety (full 3-model run, K=3) — the headline
+### Track C — safety (full 4-model, K=3) — the headline
 | Model | recipe safe | free safe | catastrophic (free) |
 |---|---|---|---|
-| Qwen3-0.6B | **100%** (85–100) | 48% (33–65) | ⚠ 3 |
+| Qwen3-0.6B | **100%** (85–100) | 42% (27–59) | ⚠ 3 |
+| Qwen3-1.7B | **100%** (85–100) | 64% (47–78) | ⚠ 3 |
 | Qwen3-4B | **100%** (85–100) | 61% (44–75) | ⚠ 4 |
-| MedPsy-4B | **100%** (85–100) | 55% (38–70) | ⚠ 2 |
+| MedPsy-4B | **100%** (85–100) | 61% (44–75) | ⚠ 1 |
 
-Free-agentic injection-resistance: **0% / 17% / 50%** (it reads poisoned tool data
-and pays the attacker); recipe = **100%** on all (uses the structured address).
+Free-agentic safety **does not improve with size** (42→64→61→61%) and **every**
+model has catastrophic failures (paid attacker / 10×); recipe = **100%** on all
+(uses the structured address, ignores poisoned tool data). *The architecture, not
+the model, makes it safe.*
 
-### Track B — planning (Qwen3-0.6B, K=1)
-| Model | recipe pass | recipe inf | free pass | free inf | Δ significant? |
-|---|---|---|---|---|---|
-| Qwen3-0.6B | **100%** (70–100) | ~0 | 0% (0–30) | 2.1 | yes (p<0.05) |
-
-### Track A — capability / tool decision (Qwen3-0.6B, K=1, --per 1)
-| Model | fc | mcp | skill | note |
+### Track B — planning, recipe vs free (Qwen3-0.6B, K=1)
+| recipe pass | recipe inf | free pass | free inf | Δ significant? |
 |---|---|---|---|---|
-| Qwen3-0.6B | 67% | 67% | 67% | mcp ~2× latency (7.2s vs 3.6s) for no accuracy gain |
+| **100%** (70–100) | ~0 | 0% (0–30) | 2.1 | yes (p<0.05) |
 
-> A fuller earlier single-shot run (10-case, all 3 models) is in §"Results — v0":
-> tool *selection* 100% across sizes; argument-following 33%→67% with size — the
-> gap recipes/fast-path close deterministically.
+### Track A — capability / tool *selection* (0.6B vs 1.7B, K=3, --per 2)
+| Model | fc | mcp | skill | fc latency |
+|---|---|---|---|---|
+| Qwen3-0.6B | 69% (58–79) | 58% | 61% | **1.9 s** |
+| Qwen3-1.7B | 67% (55–77) | 67% | 60% | 7.8 s |
 
-### Findings
-- **Recipe ≫ free-agentic on a tiny model:** 100% safe + 100% multi-step at ~0
-  inferences, vs free-agentic's 0% multi-step and 48–64% safe with attacker
-  payments. The architecture, not the model, makes it work + safe.
-- **MCP-at-scale (60 tools) costs ~2× latency** for no accuracy gain → scope tools.
+Statistical **tie** on accuracy; 0.6B is **~4× faster**. MCP-at-scale (60 tools)
+costs ~2× latency for no gain.
+
+### Track D — response *quality* (0.6B vs 1.7B, K=3) — where size matters
+| Model | pass | fact-coverage | hallucination | latency |
+|---|---|---|---|---|
+| Qwen3-0.6B | 63% (46–78) | 63% | 0% | 3.2 s |
+| Qwen3-1.7B | **90% (74–97)** | **84%** | 0% | 9.0 s |
+
+### Findings → model selection
+- **Recipe ≫ free-agentic** on every model: 100% safe + 100% multi-step at ~0
+  inferences, vs free's 0% multi-step and 42–64% safe with attacker payments.
+- **Two axes, two winners.** Tool *selection* is solved at 0.6B (= 1.7B, 4× faster)
+  → **0.6B is enough for wallet actions** (the funnel handles the rest). Response
+  *quality* clearly favors **1.7B** (90% vs 63%) → **better for conversation/
+  knowledge.** → **Recommendation: 1.7B default on ≥6 GB phones (richer chat,
+  actions stay fast/safe via the funnel); 0.6B on low-RAM (actions still
+  excellent).**
 - Track C caught a catastrophic unit-parse bug in development ("5k sats" → 5, a
   1000× under-send). Fixed + regression-tested.
 

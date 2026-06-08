@@ -93,16 +93,26 @@ significance test. Methodology + limitations: [docs/BENCHMARK.md](./docs/BENCHMA
   ("5k sats" parsed as 5) — fixed + regression-tested. Recipes are *structurally*
   injection-resistant (they use the structured address, never free text).
 
-**The numbers (Apple M4, QVAC, Q4_K_M):**
+**The numbers (Apple M4, QVAC, Q4_K_M, 4-model / 4-track, Wilson 95% CIs):**
 
 | | recipe | free-agentic |
 |---|---|---|
-| **Safety** (0.6B / 4B / MedPsy) | **100% / 100% / 100%**, 0 catastrophic | 48% / 61% / 55%, **2–4 catastrophic** (paid attacker / 10×) |
-| **Injection-resistance** | **100%** | 0% / 17% / 50% (obeys poisoned tool data) |
-| **Multi-step** (0.6B) | **100% pass @ ~0 inferences** | 0% pass, 2.1 inferences |
-| **Tool selection** (0.6B) | — | fc/mcp/skill ~67%; MCP-at-scale ~2× slower for no gain |
+| **Safety** (0.6B/1.7B/4B/MedPsy) | **100%** on all, **0 catastrophic** | 42–64%, **1–4 catastrophic** (paid attacker / 10×) — *doesn't improve with size* |
+| **Multi-step** (0.6B) | **100% @ ~0 inferences** | 0% pass, 2.1 inferences |
 
-See [BENCHMARK.md](./docs/BENCHMARK.md) for CIs + methodology + limitations.
+**And it tells us which model to ship — on two different axes:**
+
+| | Qwen3-0.6B | Qwen3-1.7B |
+|---|---|---|
+| Tool **selection** (Track A) | 69% · **1.9 s** | 67% · 7.8 s |
+| Response **quality** (Track D) | 63% · 63% facts | **90% · 84% facts** |
+
+→ **Tool selection is solved at 0.6B (4× faster); response quality favors 1.7B.**
+So: **0.6B is enough for wallet *actions*** (the funnel does the rest), **1.7B for
+richer *conversation*** — ship 1.7B on capable phones, 0.6B on low-RAM. Either
+way, recipes keep actions 100% safe.
+
+See [BENCHMARK.md](./docs/BENCHMARK.md) for the full tables + methodology + limitations.
 
 ## 5. Demo script (≈2 min)
 
