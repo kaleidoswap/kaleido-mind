@@ -12,6 +12,7 @@ import {
   InMemoryMemoryStore,
   createMemoryToolSource,
   createRagToolSource,
+  createBtcMapToolSource,
   Retriever,
   BITCOIN_COPILOT_DOCS,
   type AgentProfile,
@@ -35,7 +36,7 @@ const PROFILE: AgentProfile = {
   instructions: 'Confirm before spending. Keep replies short.',
 };
 
-const AMBIENT_TOOLS = ['remember', 'recall', 'search_knowledge', 'read_skill_reference'];
+const AMBIENT_TOOLS = ['remember', 'recall', 'search_knowledge', 'read_skill_reference', 'find_merchants', 'get_merchant_info'];
 
 const MOCK_TOOLS: InProcessTool[] = [
   { name: 'wdk_get_balances', description: 'Get wallet balances', parameters: { type: 'object', properties: {} }, handler: async () => ({ btc_sats: 48210, usdt: 12.5, xaut: 0 }) },
@@ -56,6 +57,7 @@ const MOCK_ROUTES: { re: RegExp; tool: string }[] = [
   { re: /price|worth/i, tool: 'get_price' },
   { re: /quote|swap|trade/i, tool: 'kaleidoswap_get_quote' },
   { re: /how do|explain|what is|tell me about|look up|docs/i, tool: 'search_knowledge' },
+  { re: /merchant|spend bitcoin|accept bitcoin|near me|where can i|lightning caf[eé]|btc ?map/i, tool: 'find_merchants' },
 ];
 
 function mockProvider(): LLMProvider {
@@ -71,7 +73,8 @@ function mockProvider(): LLMProvider {
         const args =
           route.tool === 'remember' ? { text: user.replace(/^.*?(remember|note that|save that)\s*/i, '').trim() || user, kind: 'note' }
             : route.tool === 'recall' || route.tool === 'search_knowledge' ? { query: user }
-              : {};
+              : route.tool === 'find_merchants' ? { query: user }
+                : {};
         return { text: '', rawContent: '', toolCalls: [{ id: 'mock', name: route.tool, arguments: args }] };
       }
       return { text: `[mock] "${user}" — install a model + run without --mock for a real answer.`, rawContent: '', toolCalls: [] };
@@ -170,7 +173,11 @@ export async function buildAgent(cfg: CliConfig, opts: BuildOpts = {}): Promise<
   let retriever: Retriever | null = null;
   if (embeddings) { retriever = new Retriever({ embeddings }); await retriever.ingest(BITCOIN_COPILOT_DOCS); }
 
-  const sources: ToolSource[] = [new InProcessToolSource('wallet', MOCK_TOOLS), createMemoryToolSource(memory)];
+  const sources: ToolSource[] = [
+    new InProcessToolSource('wallet', MOCK_TOOLS),
+    createMemoryToolSource(memory),
+    createBtcMapToolSource(),
+  ];
   if (retriever) sources.push(createRagToolSource(retriever));
 
   return {

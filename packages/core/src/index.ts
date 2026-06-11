@@ -110,6 +110,8 @@ export { walletHistoryToDocuments, contactsToDocuments } from './knowledge/walle
 export type { WalletTx, Contact } from './knowledge/wallet.js';
 export { merchantsToDocuments } from './knowledge/merchants.js';
 export type { Merchant } from './knowledge/merchants.js';
+export { createBtcMapToolSource, BTC_MAP_SAMPLE } from './knowledge/btc-map.js';
+export type { BtcMapToolOptions } from './knowledge/btc-map.js';
 
 export { Engine } from './engine.js';
 export type { EngineOptions, AgenticOptions, AgenticResult } from './engine.js';

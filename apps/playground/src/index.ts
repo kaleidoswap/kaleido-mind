@@ -21,6 +21,7 @@ import {
   InProcessToolSource,
   TurnLogger,
   defaultMask,
+  createBtcMapToolSource,
   type LLMProvider,
   type InProcessTool,
   type LoggerIO,
@@ -157,12 +158,17 @@ async function main() {
 
   const engine = new Engine({
     provider,
-    tools: new ToolRegistry([new InProcessToolSource('wallet', demoTools)]),
+    tools: new ToolRegistry([
+      new InProcessToolSource('wallet', demoTools),
+      createBtcMapToolSource(),
+    ]),
     defaultSystem:
       'You are KaleidoMind, a Bitcoin and Lightning wallet assistant. ' +
       'Use tools to answer — never invent balances, addresses or amounts. ' +
       'Be concise, but ALWAYS report all balance components (confirmed + pending) ' +
-      'when both are non-zero — confirmed is spendable, pending is not.',
+      'when both are non-zero — confirmed is spendable, pending is not. ' +
+      'When the user asks where to spend Bitcoin or find Bitcoin-accepting places, ' +
+      'use find_merchants.',
     defaultMaxTurns: 6,
   });
 
