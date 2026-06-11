@@ -114,6 +114,10 @@ export type { Merchant } from './knowledge/merchants.js';
 export { Engine } from './engine.js';
 export type { EngineOptions, AgenticOptions, AgenticResult } from './engine.js';
 
+// ── Funnel (T0 fast-path → T2 recipe → T1 agentic — the tiered agent) ───────
+export { Funnel, DEFAULT_WALLET_SYSTEM } from './funnel.js';
+export type { FunnelOptions, FunnelSettings, FunnelCallbacks, FunnelResult } from './funnel.js';
+
 export {
   SkillRegistry,
   parseSkill,
