@@ -70,11 +70,15 @@ export async function runRecipe(recipe: Recipe, text: string, opts: RunRecipeOpt
       opts.onStep?.(step.tool, args, result);
     }
 
-    // Final action — confirmation-gated if the tool requires it.
+    // Final action — confirmation-gated if the tool requires it. Like the
+    // Engine, a missing onConfirm FAILS CLOSED: the spend is declined, never
+    // silently executed.
     const finalArgs = recipe.final.args(ctx);
     const def = await opts.tools.getDef(recipe.final.tool);
-    if (def?.requiresConfirmation && opts.onConfirm) {
-      const decision = await opts.onConfirm({ name: recipe.final.tool, arguments: finalArgs });
+    if (def?.requiresConfirmation) {
+      const decision = opts.onConfirm
+        ? await opts.onConfirm({ name: recipe.final.tool, arguments: finalArgs })
+        : { approved: false, reason: 'no confirmation handler available' };
       if (!decision.approved) {
         return { recipe: recipe.name, slots: ctx.slots, results: ctx.results, text: 'Cancelled — nothing was sent.', status: 'cancelled', inferences };
       }
