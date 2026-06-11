@@ -135,7 +135,8 @@ telegram, `:4242`); only its reasoning core changes.
    injections). For the rest, you can route with mind's `SkillRegistry`
    (`select` → `compose` → `allowedTools`). Long term: add an injection hook to
    mind's loader and unify. Until then: agent = injection skills; mind = the
-   portable SKILL.md skills (bitrefill, kaleido-wallet, kaleido-trading).
+   portable SKILL.md skills (bitrefill, wallet-assistant, merchant-finder,
+   paid-data, kaleido-trading).
 
 ### Result
 `kaleido-agent` becomes the **server deployment of the shared brain** —
