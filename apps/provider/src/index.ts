@@ -26,11 +26,12 @@ import {
   encodeEvent,
 } from './protocol.js';
 import {
-  Engine,
+  Funnel,
   ToolRegistry,
   SkillRegistry,
   createSkillReferenceToolSource,
   type LLMProvider,
+  type Message,
   type ToolSource,
 } from '@kaleidorg/mind';
 import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
@@ -197,6 +198,7 @@ const state = {
   bitrefillSource: null as ToolSource | null,      // bitrefill remote MCP, when enabled
   skills: null as SkillRegistry | null,            // Agent Skills (loaded from skills/)
   refSource: null as ToolSource | null,            // read_skill_reference (progressive disclosure)
+  chatHistory: [] as Message[],                    // rolling conversation (trimmed by the Funnel)
 };
 
 // ─────────────────────────────────────────────────────────────────────
@@ -490,6 +492,7 @@ async function handleStart(modelId: string): Promise<void> {
   if (state.providerOn) {
     throw new Error('Provider is already running. Stop it first.');
   }
+  state.chatHistory = []; // fresh conversation per provider session
   const installed = await listInstalledModels();
   const model = installed.find((m) => m.id === modelId);
   if (!model) {
@@ -812,36 +815,39 @@ async function handleChat(prompt: string): Promise<{ text: string; latencyMs: nu
       tokensPerSecond: 24,
     };
   }
-  // Route through the shared @kaleido/mind engine — same agentic loop as mobile.
+  // Route through the shared @kaleido/mind Funnel — the SAME tiered agent the
+  // mobile app runs (T0 fast-path → T2 recipe → T1 skill-scoped agentic).
   // Tool sources: kaleido-mcp (wallet/trading), bitrefill (commerce), and the
-  // skill-reference reader. With none connected the engine simply returns the
-  // model's direct answer.
+  // skill-reference reader. Tiers whose tools the registry doesn't implement
+  // fall through to the agentic loop; with no sources connected the model
+  // simply answers directly. Spend tools fail closed (no onConfirm yet —
+  // desktop confirmation UI is a follow-up).
   const sources: ToolSource[] = [
     state.mcpSource,
     state.bitrefillSource,
     state.refSource,
   ].filter(Boolean) as ToolSource[];
 
-  // Enter the most relevant skill: its playbook is composed into the system
-  // prompt and (when it scopes tools) only those tools are exposed.
-  const skill = state.skills?.select(prompt) ?? null;
-  const composed = state.skills?.compose(DESKTOP_SYSTEM, skill) ?? { system: DESKTOP_SYSTEM };
-  if (skill) {
-    diag(`skill selected: ${skill.name}`);
-    emit({ type: 'log', level: 'info', message: `skill: ${skill.name}` });
-  }
-
-  const engine = new Engine({
+  const funnel = new Funnel({
     provider: qvacProvider,
     tools: new ToolRegistry(sources),
-    defaultSystem: composed.system,
-    defaultMaxTurns: 8,
+    skills: state.skills?.list() ?? [],
+    system: DESKTOP_SYSTEM,
+    maxTurns: 8,
+    log: (m) => diag(m),
   });
-  const res = await engine.runAgentic([{ role: 'user', content: prompt }], {
-    allowedTools: composed.allowedTools,
-  });
+
+  const res = await funnel.runTurn(prompt, { history: state.chatHistory });
+  diag(`tier=${res.tier}`);
+  if (res.tier === 'agentic') emit({ type: 'log', level: 'info', message: `agentic (${res.turns} turns)` });
+
+  // Rolling context for follow-ups ("and how much is that in USD?") — the
+  // Funnel trims it to its history budget each turn.
+  const text = res.text || '(no response)';
+  state.chatHistory.push({ role: 'user', content: prompt }, { role: 'assistant', content: text });
+
   return {
-    text: res.text || '(no response)',
+    text,
     latencyMs: Date.now() - t0,
     tokensPerSecond: state.tokensPerSecond ?? 0,
   };
