@@ -134,7 +134,7 @@ async function cmdSetup(): Promise<void> {
   const pick = (await rl.question(`\n${c.violet('model')} [${chats.findIndex((m) => m.id === rec.id) + 1}]: `)).trim();
   const chosen: CatalogModel = chats[(pick ? Number(pick) : chats.findIndex((m) => m.id === rec.id) + 1) - 1] ?? rec;
 
-  const ragAns = (await rl.question(`${c.violet('enable RAG')}? (downloads gte-large, ~670MB) [y/N]: `)).trim().toLowerCase();
+  const ragAns = (await rl.question(`${c.violet('enable RAG')}? (downloads gte-large, ~640MB) [y/N]: `)).trim().toLowerCase();
   const rag = ragAns === 'y' || ragAns === 'yes';
   rl.close();
 

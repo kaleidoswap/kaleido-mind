@@ -138,12 +138,26 @@ export async function buildAgent(cfg: CliConfig, opts: BuildOpts = {}): Promise<
       },
     };
     if (wantRag) {
+      // Prefer the locally-downloaded GGUF (HTTPS, fast). The catalog points at
+      // the same FP16 file QVAC's registry serves, so it loads on their fork.
+      // Fall back to the pre-registered GTE_LARGE_FP16 symbol only if the file
+      // isn't installed — that path downloads over P2P and can be very slow.
       const emb = getModel('gte-large');
+      let modelSrc: any = null;
       if (emb && (await isInstalled('gte-large'))) {
-        const eid: string = await sdk.loadModel({ modelSrc: modelPath(emb), modelType: 'embeddings' });
-        embeddings = { dimension: 1024, async embed(texts) { const o: number[][] = []; for (const t of texts) o.push((await sdk.embed({ modelId: eid, text: t })).embedding); return o; } };
+        modelSrc = modelPath(emb);
+      } else if ((sdk as any).GTE_LARGE_FP16) {
+        modelSrc = (sdk as any).GTE_LARGE_FP16;
+      }
+      if (modelSrc) {
+        try {
+          const eid: string = await sdk.loadModel({ modelSrc, modelType: 'embeddings' });
+          embeddings = { dimension: 1024, async embed(texts) { const o: number[][] = []; for (const t of texts) o.push((await sdk.embed({ modelId: eid, text: t })).embedding); return o; } };
+        } catch (e: any) {
+          console.log(c.yellow(`  (RAG embeddings failed to load: ${e?.message ?? e} — RAG disabled)`));
+        }
       } else {
-        console.log(c.yellow('  (RAG requested but gte-large not installed — run `kaleido-mind pull gte-large`)'));
+        console.log(c.yellow('  (RAG requested but gte-large not available — run `kaleido-mind pull gte-large` or update @qvac/sdk)'));
       }
     }
   } else {
