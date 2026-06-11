@@ -23,6 +23,7 @@ export type Command =
   | { id: string; cmd: 'delete_model'; modelId: string }
   | { id: string; cmd: 'set_active_model'; modelId: string }
   | { id: string; cmd: 'chat'; prompt: string }
+  | { id: string; cmd: 'tool_confirm'; confirmId: string; approved: boolean; reason?: string }
   | { id: string; cmd: 'forget_peer'; shortKey: string }
   | { id: string; cmd: 'shutdown' };
 
@@ -95,10 +96,23 @@ export interface ProviderLoadingEvent {
   message?: string;
 }
 
+/**
+ * The agent wants to run a confirmation-gated tool (a spend). The host UI
+ * must show the call and answer with a `tool_confirm` command within
+ * `timeoutMs`, or the sidecar declines it (fail closed).
+ */
+export interface ToolConfirmRequestEvent {
+  type: 'tool_confirm_request';
+  confirmId: string;
+  call: { name: string; arguments: Record<string, unknown> };
+  timeoutMs: number;
+}
+
 export type Event =
   | { type: 'ready'; version: string }
   | ProviderStatusEvent
   | ProviderLoadingEvent
+  | ToolConfirmRequestEvent
   | { type: 'pubkey'; value: string }
   | { type: 'peer_connected'; peer: PeerInfo }
   | { type: 'peer_disconnected'; shortKey: string }

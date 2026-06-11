@@ -13,6 +13,7 @@
 // so the desktop-app build/test still works.
 
 import * as readline from 'node:readline';
+import { randomUUID } from 'node:crypto';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -805,6 +806,40 @@ async function handleDeleteModel(modelId: string): Promise<void> {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// Tool confirmation — the human-in-the-loop gate for spends.
+//
+// When the agent wants a confirmation-gated tool, we emit a
+// tool_confirm_request event; the desktop UI shows the call and answers
+// with a tool_confirm command. No answer within the timeout ⇒ declined
+// (fail closed, same as having no handler at all).
+// ─────────────────────────────────────────────────────────────────────
+
+const CONFIRM_TIMEOUT_MS = 120_000;
+const pendingConfirms = new Map<string, (d: { approved: boolean; reason?: string }) => void>();
+
+function requestToolConfirmation(call: {
+  name: string;
+  arguments: Record<string, unknown>;
+}): Promise<{ approved: boolean; reason?: string }> {
+  const confirmId = randomUUID();
+  diag(`confirm requested: ${call.name} (${confirmId})`);
+  emit({ type: 'tool_confirm_request', confirmId, call, timeoutMs: CONFIRM_TIMEOUT_MS });
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      pendingConfirms.delete(confirmId);
+      diag(`confirm timed out: ${call.name} (${confirmId})`);
+      resolve({ approved: false, reason: 'confirmation timed out' });
+    }, CONFIRM_TIMEOUT_MS);
+    pendingConfirms.set(confirmId, (d) => {
+      clearTimeout(timer);
+      pendingConfirms.delete(confirmId);
+      diag(`confirm ${d.approved ? 'approved' : 'declined'}: ${call.name} (${confirmId})`);
+      resolve(d);
+    });
+  });
+}
+
 async function handleChat(prompt: string): Promise<{ text: string; latencyMs: number; tokensPerSecond: number }> {
   const t0 = Date.now();
   if (MOCK || !sdk || !state.qvacModelHandle) {
@@ -820,8 +855,8 @@ async function handleChat(prompt: string): Promise<{ text: string; latencyMs: nu
   // Tool sources: kaleido-mcp (wallet/trading), bitrefill (commerce), and the
   // skill-reference reader. Tiers whose tools the registry doesn't implement
   // fall through to the agentic loop; with no sources connected the model
-  // simply answers directly. Spend tools fail closed (no onConfirm yet —
-  // desktop confirmation UI is a follow-up).
+  // simply answers directly. Spend tools round-trip to the desktop UI for
+  // explicit approval (tool_confirm_request / tool_confirm).
   const sources: ToolSource[] = [
     state.mcpSource,
     state.bitrefillSource,
@@ -837,7 +872,10 @@ async function handleChat(prompt: string): Promise<{ text: string; latencyMs: nu
     log: (m) => diag(m),
   });
 
-  const res = await funnel.runTurn(prompt, { history: state.chatHistory });
+  const res = await funnel.runTurn(prompt, {
+    history: state.chatHistory,
+    onConfirm: requestToolConfirmation,
+  });
   diag(`tier=${res.tier}`);
   if (res.tier === 'agentic') emit({ type: 'log', level: 'info', message: `agentic (${res.turns} turns)` });
 
@@ -899,6 +937,17 @@ async function dispatch(cmd: Command): Promise<void> {
       case 'chat':
         respondOk(cmd.id, await handleChat(cmd.prompt));
         break;
+      case 'tool_confirm': {
+        const resolve = pendingConfirms.get(cmd.confirmId);
+        if (resolve) {
+          resolve({ approved: cmd.approved, reason: cmd.reason });
+          respondOk(cmd.id, { received: true });
+        } else {
+          // Already timed out (declined) or unknown — harmless, just say so.
+          respondOk(cmd.id, { received: false, stale: true });
+        }
+        break;
+      }
       case 'forget_peer':
         state.peers.delete(cmd.shortKey);
         emit({ type: 'peer_disconnected', shortKey: cmd.shortKey });
