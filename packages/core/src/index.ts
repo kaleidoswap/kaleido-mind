@@ -50,6 +50,22 @@ export type {
   BindWalletOptions,
 } from './wallet/contract.js';
 
+// ── KaleidoSwap maker tool contract (single source of truth) ────────────────
+export {
+  KALEIDOSWAP_TOOLS,
+  KALEIDOSWAP_SPEND_TOOLS,
+  isKaleidoswapSpendTool,
+  getKaleidoswapTool,
+  kaleidoswapTools,
+  bindKaleidoswapTools,
+} from './kaleidoswap/contract.js';
+export type {
+  KaleidoswapGroup,
+  KaleidoswapToolDef,
+  KaleidoswapHandler,
+  BindKaleidoswapOptions,
+} from './kaleidoswap/contract.js';
+
 // ── Recipes (mobile multi-step: "recipes, not planning") ───────────────────
 export { runRecipe, extractSlots, RecipeRegistry } from './recipe/runner.js';
 export type { RunRecipeOptions } from './recipe/runner.js';
