@@ -50,7 +50,10 @@ const MODEL_PATH =
 const demoTools: InProcessTool[] = [
   {
     name: 'get_balance',
-    description: 'Get the wallet BTC balance in satoshis.',
+    description:
+      'Get the wallet BTC balance. Returns { sats, confirmed, pending }: ' +
+      '`confirmed` is spendable now; `pending` is incoming and not yet usable. ' +
+      'Always report both when pending > 0.',
     parameters: { type: 'object', properties: {} },
     handler: async () => ({ sats: 124_000, confirmed: 120_000, pending: 4_000 }),
   },
@@ -157,8 +160,9 @@ async function main() {
     tools: new ToolRegistry([new InProcessToolSource('wallet', demoTools)]),
     defaultSystem:
       'You are KaleidoMind, a Bitcoin and Lightning wallet assistant. ' +
-      'Use the available tools to answer; never invent balances, addresses or amounts — ' +
-      'always call a tool and report what it returns. Keep replies short.',
+      'Use tools to answer — never invent balances, addresses or amounts. ' +
+      'Be concise, but ALWAYS report all balance components (confirmed + pending) ' +
+      'when both are non-zero — confirmed is spendable, pending is not.',
     defaultMaxTurns: 6,
   });
 

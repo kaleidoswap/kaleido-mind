@@ -52,6 +52,7 @@
     "bundle-skills": "node scripts/bundle-skills.mjs"
   },
   "devDependencies": {
+    "@types/node": "^20.0.0",
     "vitest": "^1.6.0"
   }
 }
