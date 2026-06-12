@@ -61,7 +61,7 @@ const MOCK_TOOLS: InProcessTool[] = [
   { name: 'wdk_get_address', description: 'Get a receive address', parameters: { type: 'object', properties: {} }, handler: async () => ({ address: 'bc1qexampleaddr…' }) },
   { name: 'wdk_list_channels', description: 'List channels', parameters: { type: 'object', properties: {} }, handler: async () => ([{ id: 'chan1', capacity: 1_000_000, inbound: 600_000, outbound: 400_000 }]) },
   { name: 'get_price', description: 'BTC price', parameters: { type: 'object', properties: {} }, handler: async () => ({ btc_usd: 71_500 }) },
-  { name: 'kaleidoswap_get_quote', description: 'Quote a swap', parameters: { type: 'object', properties: { pair: { type: 'string' } } }, handler: async (a: any) => ({ pair: a.pair ?? 'BTC/USDT', out: 71.5, fees_sat: 120 }) },
+  // kaleidoswap_get_quote handled by buildKaleidoswapToolSource (real HTTP) — no mock here.
 ];
 
 const MOCK_ROUTES: { re: RegExp; tool: string }[] = [
