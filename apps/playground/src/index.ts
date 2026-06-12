@@ -26,6 +26,10 @@ import {
   type InProcessTool,
   type LoggerIO,
 } from '@kaleidorg/mind';
+import { buildKaleidoswapToolSource, buildLsps1ToolSource } from './kaleidoswapTools.js';
+
+const KALEIDOSWAP_BASE_URL = process.env.KALEIDOSWAP_BASE_URL ?? 'http://localhost:8000';
+const KALEIDOSWAP_API_KEY = process.env.KALEIDOSWAP_API_KEY;
 
 // Node IO for the dataset logger — writes masked JSONL turn records.
 const loggerIO: LoggerIO = {
@@ -161,6 +165,10 @@ async function main() {
     tools: new ToolRegistry([
       new InProcessToolSource('wallet', demoTools),
       createBtcMapToolSource(),
+      // KaleidoSwap maker + LSPS1 — fetch-based, defaults to localhost:8000.
+      // Calls only succeed when a maker is actually running there.
+      buildKaleidoswapToolSource({ baseUrl: KALEIDOSWAP_BASE_URL, apiKey: KALEIDOSWAP_API_KEY }),
+      buildLsps1ToolSource({ baseUrl: KALEIDOSWAP_BASE_URL, apiKey: KALEIDOSWAP_API_KEY }),
     ]),
     defaultSystem:
       'You are KaleidoMind, a Bitcoin and Lightning wallet assistant. ' +
@@ -168,7 +176,7 @@ async function main() {
       'Be concise, but ALWAYS report all balance components (confirmed + pending) ' +
       'when both are non-zero — confirmed is spendable, pending is not. ' +
       'When the user asks where to spend Bitcoin or find Bitcoin-accepting places, ' +
-      'use find_merchants.',
+      'use find_merchant_locations.',
     defaultMaxTurns: 6,
   });
 
