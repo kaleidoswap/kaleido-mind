@@ -75,6 +75,23 @@ const STOPWORDS = new Set([
   'show', 'tell', 'how', 'much', 'many', 'about', 'into', 'over',
 ]);
 
+/** Escape a string for safe inclusion in a regex. */
+function reEscape(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Match a trigger phrase in the query with WORD BOUNDARIES — so the
+ * `usd` trigger on a wallet skill doesn't fire on `usdt`/`usdc`, and
+ * `cafe` doesn't fire on `cafeteria`. Multi-word triggers ("near me")
+ * still work because spaces are already word boundaries.
+ */
+function triggerMatches(query: string, trigger: string): boolean {
+  const t = trigger.toLowerCase().trim();
+  if (!t) return false;
+  return new RegExp(`\\b${reEscape(t)}\\b`).test(query);
+}
+
 /** Default selector: score by meaningful keyword overlap; triggers weigh most. */
 export const keywordSelector: SkillSelector = {
   select(query, skills) {
@@ -89,8 +106,10 @@ export const keywordSelector: SkillSelector = {
       const hayWords = haystack.split(/\W+/).filter((w) => w.length > 2 && !STOPWORDS.has(w));
       let score = 0;
       for (const w of hayWords) if (words.has(w)) score += 1;
-      // Strong boost for an explicit trigger appearing in the query.
-      for (const t of skill.triggers ?? []) if (q.includes(t.toLowerCase())) score += 3;
+      // Strong boost for an explicit trigger appearing in the query — at a
+      // word boundary, so short triggers (`usd`, `eur`, `cafe`) don't leak
+      // into longer words (`usdt`, `europe`, `cafeteria`).
+      for (const t of skill.triggers ?? []) if (triggerMatches(q, t)) score += 3;
       if (score > bestScore) {
         bestScore = score;
         best = skill;
