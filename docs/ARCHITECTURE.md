@@ -74,6 +74,35 @@ Same names everywhere; the binding differs by surface.
 The unified `send_payment` is the high-level entry a skill prefers; the per-layer
 `*_send` are the low-level primitives.
 
+### KaleidoSwap maker — `kaleidoswap/contract.ts`
+
+Same shape, separate contract — declared in `packages/core/src/kaleidoswap/contract.ts`,
+bound by `bindKaleidoswapTools(handlers, { groups? })`. Grouped so a host can
+expose only the read tools to an eval/sandbox.
+
+| Group | Tools |
+|---|---|
+| **market** (read) | `kaleidoswap_get_assets` · `kaleidoswap_get_pairs` · `kaleidoswap_get_quote(from,to,amount,side?)` · `kaleidoswap_get_nodeinfo` |
+| **orders** | `kaleidoswap_place_order(quote_id)` 🔒 · `kaleidoswap_get_order_status(order_id)` · `kaleidoswap_get_order_history` |
+| **atomic** | `kaleidoswap_atomic_init(quote_id, receive_invoice)` 🔒 · `kaleidoswap_atomic_execute(atomic_id)` 🔒 · `kaleidoswap_atomic_status(atomic_id)` |
+
+The atomic chain is driven deterministically by `kaleidoswapAtomicRecipe` —
+quote → create RGB/LN receive invoice → init → pay → execute. Multi-spend
+recipes have every spend gated by the recipe runner (intermediate steps too).
+
+### LSPS1 channel orders — `lsps1/contract.ts`
+
+LSP-agnostic (`lsp_*`, not `kaleidoswap_lsp_*`) so a different LSP can be swapped
+in by changing only the host's binder. Bound by `bindLsps1Tools(handlers)`.
+
+| Tool | Purpose |
+|---|---|
+| `lsp_get_info` | LSP capabilities: min/max channel size, fees |
+| `lsp_get_network_info` | LSP node URI for pre-connect / display |
+| `lsp_estimate_fees(lsp_balance_sat, …)` | Fee before committing |
+| `lsp_create_order(lsp_balance_sat, …)` 🔒 | Place a channel order — returns a Lightning invoice to pay |
+| `lsp_get_order(order_id)` | Poll until the channel opens |
+
 ## 4. Skills = "how to call the tools" + routing
 
 Skills ship in core and load identically on both surfaces. They encode *when +
