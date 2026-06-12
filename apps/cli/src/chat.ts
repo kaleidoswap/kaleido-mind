@@ -217,6 +217,7 @@ export async function buildAgent(cfg: CliConfig, opts: BuildOpts = {}): Promise<
 
 export interface TurnHooks {
   onToolCall?: (name: string, args: Record<string, unknown>) => void;
+  onToolResult?: (name: string, result: unknown) => void;
   onConfirm?: (name: string) => boolean;
 }
 
@@ -247,6 +248,7 @@ export async function agentTurn(
   const res = await engine.runAgentic([...history, { role: 'user', content: text }], {
     allowedTools: effective,
     onToolCall: (c) => hooks.onToolCall?.(c.name, c.arguments),
+    onToolResult: (e) => hooks.onToolResult?.(e.name, e.result),
     onConfirm: async (c) => ({ approved: hooks.onConfirm ? hooks.onConfirm(c.name) : true }),
   });
   return {
@@ -291,8 +293,23 @@ export async function runChat(agent: Agent): Promise<void> {
     }
 
     try {
+      const verbose = process.env.KALEIDO_VERBOSE === '1';
+      const preview = (v: unknown, max = 240) => {
+        const s = typeof v === 'string' ? v : (() => { try { return JSON.stringify(v); } catch { return String(v); } })();
+        return s.length > max ? s.slice(0, max) + '…' : s;
+      };
       const rep = await agentTurn(agent, text, history, {
         onToolCall: (name, args) => console.log(c.cyan(`  🔧 ${name}(${JSON.stringify(args).slice(0, 60)})`)),
+        onToolResult: (name, result) => {
+          // Errors are always shown; full results behind KALEIDO_VERBOSE=1.
+          const r = result as any;
+          const looksError = r && typeof r === 'object' && 'error' in r;
+          if (looksError) {
+            console.log(c.yellow(`     ⤺ ${name} → error: ${preview(r.error, 300)}`));
+          } else if (verbose) {
+            console.log(c.dim(`     ⤺ ${name} → ${preview(result, 400)}`));
+          }
+        },
         onConfirm: (name) => { console.log(c.yellow(`  ⚠ auto-approving ${name}`)); return true; },
       });
       if (rep.skill) console.log(c.dim(`  ↳ skill: ${rep.skill}`));

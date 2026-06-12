@@ -92,6 +92,12 @@ export interface FunnelCallbacks {
     call: { name: string; arguments: Record<string, unknown> },
     info: { requiresConfirmation: boolean },
   ) => void;
+  /** A tool returned a result (agentic tier). Errors arrive as `{error}`. */
+  onToolResult?: (event: {
+    name: string;
+    arguments: Record<string, unknown>;
+    result: unknown;
+  }) => void;
   onConfirm?: (call: { name: string; arguments: Record<string, unknown> }) => Promise<ConfirmDecision>;
 }
 
@@ -271,6 +277,7 @@ export class Funnel {
           .then((def) => cbs.onToolCall?.(call, { requiresConfirmation: !!def?.requiresConfirmation }))
           .catch(() => cbs.onToolCall?.(call, { requiresConfirmation: false }));
       },
+      onToolResult: cbs.onToolResult,
       onConfirm: cbs.onConfirm,
     });
     return { text: res.text ?? '', tier: 'agentic', toolCalls: res.toolCalls, turns: res.turns };
