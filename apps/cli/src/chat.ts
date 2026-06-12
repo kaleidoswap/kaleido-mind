@@ -15,6 +15,8 @@ import {
   createBtcMapToolSource,
   Retriever,
   BITCOIN_COPILOT_DOCS,
+  KALEIDOSWAP_TOOLS,
+  LSPS1_TOOLS,
   type AgentProfile,
   type InProcessTool,
   type LLMProvider,
@@ -29,6 +31,15 @@ import { c } from './ui.js';
 import { MEMORY_PATH, type CliConfig } from './config.js';
 import { getModel } from './catalog.js';
 import { modelPath, isInstalled } from './models.js';
+import { buildKaleidoswapToolSource } from './kaleidoswapTools.js';
+import { buildLsps1ToolSource } from './lsps1Tools.js';
+
+const KALEIDOSWAP_BASE_URL = process.env.KALEIDOSWAP_BASE_URL ?? 'http://localhost:8000';
+const KALEIDOSWAP_API_KEY = process.env.KALEIDOSWAP_API_KEY;
+
+/** Tool names from the canonical contracts — used as ambient-tool entries. */
+const KALEIDOSWAP_NAMES = KALEIDOSWAP_TOOLS.map((t) => t.name);
+const LSPS1_NAMES = LSPS1_TOOLS.map((t) => t.name);
 
 const PROFILE: AgentProfile = {
   name: 'KaleidoMind',
@@ -36,7 +47,13 @@ const PROFILE: AgentProfile = {
   instructions: 'Confirm before spending. Keep replies short.',
 };
 
-const AMBIENT_TOOLS = ['remember', 'recall', 'search_knowledge', 'read_skill_reference', 'find_merchants', 'get_merchant_info'];
+const AMBIENT_TOOLS = [
+  'remember', 'recall', 'search_knowledge', 'read_skill_reference',
+  'find_merchant_locations', 'get_merchant_info',
+  // KaleidoSwap + LSPS1 tools — always callable; the trading / lsps skills
+  // give the model focused guidance when their triggers fire.
+  ...KALEIDOSWAP_NAMES, ...LSPS1_NAMES,
+];
 
 const MOCK_TOOLS: InProcessTool[] = [
   { name: 'wdk_get_balances', description: 'Get wallet balances', parameters: { type: 'object', properties: {} }, handler: async () => ({ btc_sats: 48210, usdt: 12.5, xaut: 0 }) },
@@ -57,7 +74,7 @@ const MOCK_ROUTES: { re: RegExp; tool: string }[] = [
   { re: /price|worth/i, tool: 'get_price' },
   { re: /quote|swap|trade/i, tool: 'kaleidoswap_get_quote' },
   { re: /how do|explain|what is|tell me about|look up|docs/i, tool: 'search_knowledge' },
-  { re: /merchant|spend bitcoin|accept bitcoin|near me|where can i|lightning caf[eé]|btc ?map/i, tool: 'find_merchants' },
+  { re: /merchant|spend bitcoin|accept bitcoin|near me|where can i|lightning caf[eé]|btc ?map/i, tool: 'find_merchant_locations' },
 ];
 
 function mockProvider(): LLMProvider {
@@ -73,7 +90,7 @@ function mockProvider(): LLMProvider {
         const args =
           route.tool === 'remember' ? { text: user.replace(/^.*?(remember|note that|save that)\s*/i, '').trim() || user, kind: 'note' }
             : route.tool === 'recall' || route.tool === 'search_knowledge' ? { query: user }
-              : route.tool === 'find_merchants' ? { query: user }
+              : route.tool === 'find_merchant_locations' ? { query: user }
                 : {};
         return { text: '', rawContent: '', toolCalls: [{ id: 'mock', name: route.tool, arguments: args }] };
       }
@@ -177,6 +194,11 @@ export async function buildAgent(cfg: CliConfig, opts: BuildOpts = {}): Promise<
     new InProcessToolSource('wallet', MOCK_TOOLS),
     createMemoryToolSource(memory),
     createBtcMapToolSource(),
+    // KaleidoSwap maker — fetch-based, defaults to localhost:8000 for the demo.
+    // The mind never sees the URL; the HTTP call lives in kaleidoswapTools.ts.
+    buildKaleidoswapToolSource({ baseUrl: KALEIDOSWAP_BASE_URL, apiKey: KALEIDOSWAP_API_KEY }),
+    // LSPS1 channel orders — same base URL, LSP-agnostic tool names.
+    buildLsps1ToolSource({ baseUrl: KALEIDOSWAP_BASE_URL, apiKey: KALEIDOSWAP_API_KEY }),
   ];
   if (retriever) sources.push(createRagToolSource(retriever));
 
