@@ -61,10 +61,22 @@ export async function runRecipe(recipe: Recipe, text: string, opts: RunRecipeOpt
       inferences = ex.inferences;
     }
 
-    // Deterministic steps.
+    // Deterministic steps. Intermediate spend tools fire the same confirmation
+    // gate as the final step — recipes with multi-spend chains (e.g. atomic
+    // swaps) MUST have every money-moving call gated, never just the last one.
+    // Missing onConfirm fails closed, matching the Engine.
     for (const step of recipe.steps) {
       if (step.skipIf?.(ctx)) continue;
       const args = step.args(ctx);
+      const def = await opts.tools.getDef(step.tool);
+      if (def?.requiresConfirmation) {
+        const decision = opts.onConfirm
+          ? await opts.onConfirm({ name: step.tool, arguments: args })
+          : { approved: false, reason: 'no confirmation handler available' };
+        if (!decision.approved) {
+          return { recipe: recipe.name, slots: ctx.slots, results: ctx.results, text: 'Cancelled — nothing was sent.', status: 'cancelled', inferences };
+        }
+      }
       const result = await opts.tools.execute(step.tool, args);
       ctx.results[step.as ?? step.tool] = result;
       opts.onStep?.(step.tool, args, result);
