@@ -15,12 +15,19 @@ the user can't receive a payment (no inbound liquidity) or wants a bigger
 receive limit. The host binds these to whichever LSP it talks to — the
 KaleidoSwap maker by default, but the contract is LSP-agnostic (`lsp_*`).
 
-## Critical rule
+## Critical rules
 
 You have **no knowledge of LSP fees, channel sizes, or order status**. Every
-number you state MUST come from a tool result returned this turn. Never quote
-a fee from memory; never claim an order completed without calling
-`lsp_get_order`.
+number, capacity, fee, or order id in your reply MUST come from a tool result
+returned in the CURRENT turn. Never quote a fee from memory. Never claim an
+order completed without calling `lsp_get_order`. Never reuse a number from a
+previous turn.
+
+**Calling the tool IS the answer.** Don't write "the LSP info is fetched with
+`lsp_get_info`" — call it.
+
+If a tool needs a required argument the user didn't give (e.g. an `order_id`
+when polling), ASK. Don't loop the same failing call.
 
 ## Flow
 
