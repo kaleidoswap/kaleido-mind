@@ -1,15 +1,8 @@
 /**
- * Confirm-sheet readback — a deterministic, voice-first summary of a spend
- * BEFORE it executes. Confirm-before-spend is structural (every fund-moving
- * tool is `requiresConfirmation`), but on a voice-first mobile wallet the
- * *readback* is where unit/recipient mistakes get caught. So the host speaks
- * this line on the confirm sheet — "Send 4,800 sats to bob over Spark. Confirm?"
- *
- * Built from the resolved tool call, NOT the model: zero inference, identical on
- * every surface, and impossible for the model to phrase around. Pure + RN-safe.
- *
- *   const line = confirmReadback({ name: 'send_payment', arguments: { to: 'bob', amount_sats: 4800 } })
- *   await speak(line)            // in the host's onConfirm, before showing the sheet
+ * Confirm-sheet readback — a deterministic, voice-first summary of a spend that
+ * the host speaks before executing it ("Send 4,800 sats to bob over Spark.
+ * Confirm?"). Built from the resolved tool call, not the model: zero inference,
+ * identical on every surface, and impossible for the model to phrase around.
  */
 
 import { getWalletTool } from './contract.js';
@@ -30,7 +23,7 @@ function fmtNum(n: number): string {
   return (neg ? '-' : '') + (frac ? `${grouped}.${frac}` : grouped);
 }
 
-/** Looks like an on-chain address / invoice / lnurl (vs a human contact name). */
+/** Looks like an address/invoice/lnurl (vs a human contact name). */
 function isRef(s: string): boolean {
   return /^(ln(bc|tb|bcrt)|bc1|tb1|lq1|lnurl)/i.test(s) || (s.length > 20 && !/\s/.test(s));
 }
@@ -51,10 +44,7 @@ function over(name: string, args: Record<string, unknown>): string {
 const sats = (v: unknown) => `${fmtNum(Number(v))} sats`;
 const asset = (amount: unknown, ticker: unknown) => `${fmtNum(Number(amount))} ${String(ticker)}`;
 
-/**
- * A short spoken confirmation for a (spend) tool call, ending in "Confirm?".
- * Returns `null` for non-spend / unknown tools — nothing to read back.
- */
+/** A spoken confirmation ending in "Confirm?", or null for non-spend tools. */
 export function confirmReadback(call: { name: string; arguments: Record<string, unknown> }): string | null {
   const { name, arguments: a } = call;
   const to = (k = 'to') => shortRef(String(a[k] ?? ''));

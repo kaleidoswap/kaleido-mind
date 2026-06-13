@@ -74,9 +74,8 @@ export class InMemoryMemoryStore implements MemoryStore {
     let tags = item.tags;
     let supersedeId: string | undefined;
 
-    // Consolidation: fold a near-duplicate of the same kind into this write
-    // rather than appending. Embedding-only by default (cheap, mobile-safe);
-    // an injected `merge` upgrades it to an LLM rewrite on capable devices.
+    // Consolidation: fold a same-kind near-duplicate into this write instead of
+    // appending — embedding-only by default, LLM rewrite when `merge` is set.
     if (this.consolidate && embedding) {
       const threshold = this.consolidate.threshold ?? DEFAULT_DEDUP_THRESHOLD;
       let best: { item: MemoryItem; score: number } | undefined;

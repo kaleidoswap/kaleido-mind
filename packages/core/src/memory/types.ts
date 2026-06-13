@@ -63,24 +63,14 @@ export interface MemoryIO {
 }
 
 /**
- * Consolidation — fold near-duplicate memories of the same kind into one item
- * instead of letting memory bloat with "user likes EUR" ×5. Two tiers:
- *
- *   - **Dedup** (embedding-only, zero inference) — when a near-dup is found the
- *     newer item supersedes the older. Cheap enough for a 0.6B phone.
- *   - **Merge** (optional, injected LLM) — when `merge` is set, the old + new
- *     texts are rewritten into one consolidated fact. Reserve for capable /
- *     P2P-delegated devices; never run it on a tiny on-device model.
- *
- * Requires embeddings (the duplicate check is cosine similarity). Omit the whole
- * option for append-only behaviour.
+ * Consolidation — fold same-kind near-duplicate memories into one item instead
+ * of bloating with "user likes EUR" ×5. Needs embeddings (the dup check is
+ * cosine). Omit for append-only. Two tiers: embedding-only dedup (zero
+ * inference, mobile-safe) and, when `merge` is set, an LLM rewrite.
  */
 export interface MemoryConsolidation {
   /** Cosine threshold above which two same-kind memories are "the same". Default 0.92. */
   threshold?: number;
-  /**
-   * Optional LLM merger: given the existing and incoming text, return one
-   * consolidated sentence. If omitted, the newer item simply supersedes the older.
-   */
+  /** Optional LLM merger; without it the newer item simply supersedes the older. */
   merge?: (existing: string, incoming: string) => Promise<string>;
 }
