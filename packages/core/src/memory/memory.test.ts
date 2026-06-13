@@ -61,6 +61,61 @@ describe('InMemoryMemoryStore', () => {
     const hits = await store.search({ text: 'how many sats do I have', limit: 1 });
     expect(hits[0].text).toMatch(/wallet balance/);
   });
+
+  // Embedding-only dedup: same vector → near-dup → newer supersedes older. No LLM.
+  it('consolidate (dedup): near-duplicates supersede instead of appending', async () => {
+    const embed = async (text: string): Promise<number[]> =>
+      /eur/i.test(text) ? [1, 0] : [0, 1];
+    let t = 0;
+    const store = new InMemoryMemoryStore({
+      embed,
+      consolidate: { threshold: 0.9 },
+      now: () => ++t,
+    });
+    await store.add({ text: 'user prefers EUR', kind: 'preference' });
+    await store.add({ text: 'user prefers EUR for fiat display', kind: 'preference' });
+
+    const all = await store.all();
+    expect(all).toHaveLength(1); // folded, not appended
+    expect(all[0].text).toBe('user prefers EUR for fiat display'); // newer wins
+  });
+
+  it('consolidate (dedup): distinct facts are kept separate', async () => {
+    const embed = async (text: string): Promise<number[]> =>
+      /eur/i.test(text) ? [1, 0] : [0, 1];
+    const store = new InMemoryMemoryStore({ embed, consolidate: { threshold: 0.9 }, now: () => 1 });
+    await store.add({ text: 'user prefers EUR', kind: 'preference' });
+    await store.add({ text: 'it is sunny today', kind: 'note' });
+    expect(await store.all()).toHaveLength(2);
+  });
+
+  it('consolidate (dedup): different kinds are never merged', async () => {
+    const embed = async (): Promise<number[]> => [1, 0]; // identical vectors
+    const store = new InMemoryMemoryStore({ embed, consolidate: { threshold: 0.9 }, now: () => 1 });
+    await store.add({ text: 'EUR', kind: 'preference' });
+    await store.add({ text: 'EUR', kind: 'fact' });
+    expect(await store.all()).toHaveLength(2);
+  });
+
+  // LLM merge: injected merger rewrites old + new into one consolidated item, with unioned tags.
+  it('consolidate (merge): injected merger folds near-dups into one item', async () => {
+    const embed = async (): Promise<number[]> => [1, 0];
+    const merge = vi.fn(async (existing: string, incoming: string) => `${existing}; ${incoming}`);
+    let t = 0;
+    const store = new InMemoryMemoryStore({
+      embed,
+      consolidate: { threshold: 0.9, merge },
+      now: () => ++t,
+    });
+    await store.add({ text: 'likes EUR', kind: 'preference', tags: ['fiat'] });
+    await store.add({ text: 'and CHF', kind: 'preference', tags: ['currency'] });
+
+    expect(merge).toHaveBeenCalledWith('likes EUR', 'and CHF');
+    const all = await store.all();
+    expect(all).toHaveLength(1);
+    expect(all[0].text).toBe('likes EUR; and CHF');
+    expect(all[0].tags).toEqual(['fiat', 'currency']); // unioned
+  });
 });
 
 describe('memory tool source', () => {

@@ -69,6 +69,7 @@ export type { MemoryStoreOptions } from './memory/store.js';
 export { createMemoryToolSource } from './memory/tool.js';
 export type {
   AgentProfile,
+  MemoryConsolidation,
   MemoryItem,
   MemoryKind,
   MemoryQuery,

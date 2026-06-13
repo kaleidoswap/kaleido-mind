@@ -25,6 +25,10 @@ export interface MindCapabilities {
   memory: boolean;
   /** Semantic recall for memory (needs embeddings). */
   semanticMemory: boolean;
+  /** Embedding-only dedup of near-duplicate memories (zero inference — mobile-safe). */
+  dedupeMemory: boolean;
+  /** LLM merge of near-duplicate memories (an extra inference — capable/delegated only). */
+  mergeMemory: boolean;
   /** Retrieval-augmented generation (needs embeddings + enough RAM/context). */
   rag: boolean;
   /** Token budget for injected system context. */
@@ -48,6 +52,12 @@ export function capabilityProfile(input: CapabilityInput): MindCapabilities {
   const memory = budget >= 256;
   const semanticMemory = memory && hasEmb;
 
+  // Consolidation: embedding-only dedup is cheap (no inference) — on wherever
+  // semantic memory is. The LLM merge costs an extra inference, so reserve it
+  // for delegated or roomy on-device setups; never run it on a tiny phone model.
+  const dedupeMemory = semanticMemory;
+  const mergeMemory = dedupeMemory && (input.delegated || (ramGb >= 4 && ctx >= 4096));
+
   // RAG is the expensive one: needs embeddings, a non-tiny context window, and
   // (on-device) enough RAM to hold an embedding model + index.
   const rag = hasEmb && ctx >= 4096 && (input.delegated || ramGb >= 3);
@@ -59,6 +69,8 @@ export function capabilityProfile(input: CapabilityInput): MindCapabilities {
   return {
     memory,
     semanticMemory,
+    dedupeMemory,
+    mergeMemory,
     rag,
     contextBudgetTokens: budget,
     topKMemory,

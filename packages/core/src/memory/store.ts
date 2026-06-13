@@ -9,6 +9,7 @@
 
 import { cosineSimilarity } from '../rag/vector-store.js';
 import type {
+  MemoryConsolidation,
   MemoryIO,
   MemoryItem,
   MemoryQuery,
@@ -16,11 +17,18 @@ import type {
   NewMemory,
 } from './types.js';
 
+const DEFAULT_DEDUP_THRESHOLD = 0.92;
+
 export interface MemoryStoreOptions {
   /** Persistence (load on first use, save on writes). Omit for ephemeral memory. */
   io?: MemoryIO;
   /** Embed text for semantic recall. Omit to fall back to substring matching. */
   embed?: (text: string) => Promise<number[]>;
+  /**
+   * Fold near-duplicate writes into one item instead of appending. Needs `embed`.
+   * Omit for append-only. See {@link MemoryConsolidation}.
+   */
+  consolidate?: MemoryConsolidation;
   /** Clock — injectable for deterministic tests. */
   now?: () => number;
 }
@@ -31,11 +39,13 @@ export class InMemoryMemoryStore implements MemoryStore {
   private counter = 0;
   private readonly io?: MemoryIO;
   private readonly embed?: (text: string) => Promise<number[]>;
+  private readonly consolidate?: MemoryConsolidation;
   private readonly now: () => number;
 
   constructor(opts: MemoryStoreOptions = {}) {
     this.io = opts.io;
     this.embed = opts.embed;
+    this.consolidate = opts.consolidate;
     this.now = opts.now ?? (() => Date.now());
   }
 
@@ -58,16 +68,46 @@ export class InMemoryMemoryStore implements MemoryStore {
 
   async add(item: NewMemory): Promise<MemoryItem> {
     await this.hydrate();
-    const embedding =
-      item.embedding ?? (this.embed ? await this.embed(item.text).catch(() => undefined) : undefined);
+    let text = item.text;
+    let embedding =
+      item.embedding ?? (this.embed ? await this.embed(text).catch(() => undefined) : undefined);
+    let tags = item.tags;
+    let supersedeId: string | undefined;
+
+    // Consolidation: fold a near-duplicate of the same kind into this write
+    // rather than appending. Embedding-only by default (cheap, mobile-safe);
+    // an injected `merge` upgrades it to an LLM rewrite on capable devices.
+    if (this.consolidate && embedding) {
+      const threshold = this.consolidate.threshold ?? DEFAULT_DEDUP_THRESHOLD;
+      let best: { item: MemoryItem; score: number } | undefined;
+      for (const m of this.items) {
+        if (m.kind !== item.kind || !m.embedding) continue;
+        const score = cosineSimilarity(embedding, m.embedding);
+        if (!best || score > best.score) best = { item: m, score };
+      }
+      if (best && best.score >= threshold) {
+        supersedeId = best.item.id;
+        tags = unionTags(best.item.tags, item.tags);
+        if (this.consolidate.merge) {
+          const merged = await this.consolidate.merge(best.item.text, text).catch(() => null);
+          if (merged && merged.trim()) {
+            text = merged.trim();
+            if (this.embed) embedding = await this.embed(text).catch(() => embedding);
+          }
+        }
+        // No merger → the incoming (newer) text supersedes the older item as-is.
+      }
+    }
+
     const full: MemoryItem = {
       id: item.id ?? `mem_${this.now()}_${++this.counter}`,
-      text: item.text,
+      text,
       kind: item.kind,
-      tags: item.tags,
+      tags,
       createdAt: item.createdAt ?? this.now(),
       ...(embedding ? { embedding } : {}),
     };
+    if (supersedeId) this.items = this.items.filter((m) => m.id !== supersedeId);
     this.items.push(full);
     await this.persist();
     return full;
@@ -126,4 +166,10 @@ export class InMemoryMemoryStore implements MemoryStore {
     this.items = [];
     await this.persist();
   }
+}
+
+/** Merge two optional tag lists, de-duplicated. Returns undefined when both empty. */
+function unionTags(a?: string[], b?: string[]): string[] | undefined {
+  if (!a?.length && !b?.length) return undefined;
+  return [...new Set([...(a ?? []), ...(b ?? [])])];
 }
