@@ -49,6 +49,7 @@ export type {
   WalletHandler,
   BindWalletOptions,
 } from './wallet/contract.js';
+export { confirmReadback } from './wallet/confirm.js';
 
 // ── Recipes (mobile multi-step: "recipes, not planning") ───────────────────
 export { runRecipe, extractSlots, RecipeRegistry } from './recipe/runner.js';
