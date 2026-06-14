@@ -4,6 +4,15 @@ A reproducible bench for measuring **the right thing**: function-calling accurac
 
 The **implemented** eval lives in `apps/cli/src/eval/` and runs via the `kaleido-mind` CLI — see the **Three-track eval suite (A/B/C)** section below for the real commands. It runs against the same `Engine` interface every consumer uses, so a passing bench is a passing model in production. The plan in this first section is the target; items marked _(planned)_ aren't built yet.
 
+> ⚠️ **Read every result below as preliminary.** The numbers are dev-machine runs
+> on small, author-written datasets (≈12 / 6 / 11 cases) with heuristic grading —
+> **directional evidence for the architecture, not production-grade or
+> independently verified benchmarks.** Read [Limitations / threats to
+> validity](#limitations--threats-to-validity) before citing, and treat
+> sub-10-point gaps as inconclusive. The reusable contribution here is the
+> **harness** (three tracks, K-repeats, Wilson CIs) — the absolute figures will
+> move on a real dataset and on-device.
+
 ---
 
 ## What we measure
