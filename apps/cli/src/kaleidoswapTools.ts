@@ -85,11 +85,11 @@ const ROUTES: Record<string, Route> = {
     // We accept either { quote_id } (the agent-friendly shape) or a full
     // explicit body — and re-derive the legs from the prior quote args
     // when the agent only passes quote_id (the recipe path does this).
-    body: (a) => ({
-      rfq_id: a.quote_id ?? a.rfq_id,
-      from_asset: leg(a.from_asset, a.amount),
-      to_asset: leg(a.to_asset),
-    }),
+    body: (a) => {
+      const rfq_id = a.quote_id ?? a.rfq_id;
+      if (a.from_asset != null && a.to_asset != null) return { rfq_id, from_asset: leg(a.from_asset, a.amount), to_asset: leg(a.to_asset) };
+      return { rfq_id };
+    },
   },
   kaleidoswap_get_order_status: {
     method: 'POST',
