@@ -65,7 +65,8 @@ const MOCK_TOOLS: InProcessTool[] = [
   { name: 'wdk_get_node_info', description: 'Node status', parameters: { type: 'object', properties: {} }, handler: async () => ({ pubkey: '02ab…cd', synced: true, blockHeight: 845_000 }) },
   { name: 'wdk_get_address', description: 'Get a receive address', parameters: { type: 'object', properties: {} }, handler: async () => ({ address: 'bc1qexampleaddr…' }) },
   { name: 'wdk_list_channels', description: 'List channels', parameters: { type: 'object', properties: {} }, handler: async () => ([{ id: 'chan1', capacity: 1_000_000, inbound: 600_000, outbound: 400_000 }]) },
-  { name: 'get_price', description: 'BTC price', parameters: { type: 'object', properties: {} }, handler: async () => ({ btc_usd: 71_500 }) },
+  // get_price removed — quotes (including BTC/USD-via-USDT) go through the
+  // maker via kaleidoswap_get_quote. No fake spot-price oracle in the CLI.
   // kaleidoswap_get_quote handled by buildKaleidoswapToolSource (real HTTP) — no mock here.
 ];
 
@@ -76,8 +77,10 @@ const MOCK_ROUTES: { re: RegExp; tool: string }[] = [
   { re: /address|receive/i, tool: 'wdk_get_address' },
   { re: /channel/i, tool: 'wdk_list_channels' },
   { re: /node|synced|status/i, tool: 'wdk_get_node_info' },
-  { re: /price|worth/i, tool: 'get_price' },
-  { re: /quote|swap|trade/i, tool: 'kaleidoswap_get_quote' },
+  // "price"/"worth"/"rate" all route to the maker quote — there is no
+  // separate price oracle in this CLI. Mock mode won't have an amount but
+  // real mode passes it through normally.
+  { re: /quote|swap|trade|price|worth|rate|how (many|much) sats/i, tool: 'kaleidoswap_get_quote' },
   { re: /how do|explain|what is|tell me about|look up|docs/i, tool: 'search_knowledge' },
   { re: /merchant|spend bitcoin|accept bitcoin|near me|where can i|lightning caf[eé]|btc ?map/i, tool: 'find_merchant_locations' },
 ];
