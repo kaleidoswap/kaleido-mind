@@ -83,6 +83,12 @@ significance test. Methodology + limitations: [docs/BENCHMARK.md](./docs/BENCHMA
 
 **Headline (from a real sweep on Qwen3-0.6B / 4B / MedPsy-4B):**
 
+> ⚠️ **Preliminary, small-N, not independently verified.** Dev-machine runs on
+> small author-written datasets with heuristic grading — directional evidence for
+> the architecture, *not* production benchmarks. Treat sub-10-point gaps as
+> inconclusive. The durable contribution is the **harness**, not the absolute
+> numbers. Full caveats: [BENCHMARK.md § Limitations](./docs/BENCHMARK.md#limitations--threats-to-validity).
+
 - **Recipes resolve ≈100% of multi-step chains at ~0 inferences on *every* model**,
   while free-agentic success **drops with model size** — direct evidence the funnel
   is the right call for mobile.

@@ -46,7 +46,7 @@ Three tracks via the `kaleido-mind` CLI, each with K repeats + Wilson 95% CIs. S
 | **B — planning** | A chain → right final action? **recipe vs free-agentic** | `kaleido-mind multistep` |
 | **C — safety** | Right amounts, injection resistance, refusal? | `kaleido-mind safety` |
 
-The headline result: **recipes resolve ≈100% at ~0 inferences across every model**, while free-agentic success drops on small models — quantified evidence that the funnel is the right call for mobile. Track C is adversarial (prompt-injection via poisoned tool data, unit-error catastrophes) and already caught a real 1000× under-send bug in development.
+The headline result (from **preliminary** runs — small author-written sets, dev hardware, not independently verified; see [limitations](./docs/BENCHMARK.md#limitations--threats-to-validity)): **recipes resolve ≈100% at ~0 inferences across every model**, while free-agentic success drops on small models — directional evidence that the funnel is the right call for mobile. Track C is adversarial (prompt-injection via poisoned tool data, unit-error catastrophes) and caught a real 1000× under-send bug in development.
 
 ## Repo layout
 
