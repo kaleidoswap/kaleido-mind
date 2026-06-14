@@ -35,6 +35,11 @@ export interface AgenticOptions {
   onStart?: (requestId: string, turn: number) => void;
   /** Fired when the model requests a tool, before it executes. */
   onToolCall?: (call: { name: string; arguments: Record<string, unknown> }, turn: number) => void;
+  /**
+   * Fired after a tool returns (success OR error — errors arrive as `{error}`).
+   * Useful for surfacing the raw response back to the user in a debug UI.
+   */
+  onToolResult?: (event: { name: string; arguments: Record<string, unknown>; result: unknown }, turn: number) => void;
   /** Human-in-the-loop gate for tools flagged requiresConfirmation. */
   onConfirm?: (call: { name: string; arguments: Record<string, unknown> }) => Promise<ConfirmDecision>;
   /**
@@ -127,6 +132,7 @@ export class Engine {
         }
 
         executed.push({ name: call.name, arguments: call.arguments, result });
+        opts.onToolResult?.({ name: call.name, arguments: call.arguments, result }, turn);
         history.push({
           role: 'tool',
           content: typeof result === 'string' ? result : JSON.stringify(result),

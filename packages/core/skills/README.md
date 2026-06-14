@@ -70,5 +70,10 @@ Then per query: `const skill = registry.select(query)` →
   `https://api.bitrefill.com/mcp` (needs `BITREFILL_API_KEY` — anonymous = 401).
   Source: https://github.com/bitrefill/agents (MIT). Update with
   `npx skills add bitrefill/agents` or re-vendor the folder.
-- **kaleido-wallet/** — balances, receive, pay, channels over `kaleido-mcp`.
+- **wallet-assistant/** — everyday wallet tasks (balance, receive, send, pay,
+  price, fiat→sats, resolve a contact). Resolves to host-bound `wallet/contract.ts`
+  tools (in-process WDK on mobile, MCP on desktop).
+- **merchant-finder/** — find Bitcoin-accepting merchants via BTC Map. Live
+  data when the host injects a fetch + location; bundled offline list otherwise.
+- **paid-data/** — fetch L402-paywalled resources via `fetch_paid_resource`.
 - **kaleido-trading/** — prices, quotes, atomic swaps, LSP channels.

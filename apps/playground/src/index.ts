@@ -21,10 +21,15 @@ import {
   InProcessToolSource,
   TurnLogger,
   defaultMask,
+  createBtcMapToolSource,
   type LLMProvider,
   type InProcessTool,
   type LoggerIO,
 } from '@kaleidorg/mind';
+import { buildKaleidoswapToolSource, buildLsps1ToolSource } from './kaleidoswapTools.js';
+
+const KALEIDOSWAP_BASE_URL = process.env.KALEIDOSWAP_BASE_URL ?? 'http://localhost:8000';
+const KALEIDOSWAP_API_KEY = process.env.KALEIDOSWAP_API_KEY;
 
 // Node IO for the dataset logger — writes masked JSONL turn records.
 const loggerIO: LoggerIO = {
@@ -50,7 +55,10 @@ const MODEL_PATH =
 const demoTools: InProcessTool[] = [
   {
     name: 'get_balance',
-    description: 'Get the wallet BTC balance in satoshis.',
+    description:
+      'Get the wallet BTC balance. Returns { sats, confirmed, pending }: ' +
+      '`confirmed` is spendable now; `pending` is incoming and not yet usable. ' +
+      'Always report both when pending > 0.',
     parameters: { type: 'object', properties: {} },
     handler: async () => ({ sats: 124_000, confirmed: 120_000, pending: 4_000 }),
   },
@@ -154,11 +162,21 @@ async function main() {
 
   const engine = new Engine({
     provider,
-    tools: new ToolRegistry([new InProcessToolSource('wallet', demoTools)]),
+    tools: new ToolRegistry([
+      new InProcessToolSource('wallet', demoTools),
+      createBtcMapToolSource(),
+      // KaleidoSwap maker + LSPS1 — fetch-based, defaults to localhost:8000.
+      // Calls only succeed when a maker is actually running there.
+      buildKaleidoswapToolSource({ baseUrl: KALEIDOSWAP_BASE_URL, apiKey: KALEIDOSWAP_API_KEY }),
+      buildLsps1ToolSource({ baseUrl: KALEIDOSWAP_BASE_URL, apiKey: KALEIDOSWAP_API_KEY }),
+    ]),
     defaultSystem:
       'You are KaleidoMind, a Bitcoin and Lightning wallet assistant. ' +
-      'Use the available tools to answer; never invent balances, addresses or amounts — ' +
-      'always call a tool and report what it returns. Keep replies short.',
+      'Use tools to answer — never invent balances, addresses or amounts. ' +
+      'Be concise, but ALWAYS report all balance components (confirmed + pending) ' +
+      'when both are non-zero — confirmed is spendable, pending is not. ' +
+      'When the user asks where to spend Bitcoin or find Bitcoin-accepting places, ' +
+      'use find_merchant_locations.',
     defaultMaxTurns: 6,
   });
 

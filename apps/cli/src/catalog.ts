@@ -98,11 +98,11 @@ export const CATALOG: CatalogModel[] = [
     displayName: 'GTE-Large (embeddings)',
     params: '335M',
     quant: 'FP16',
-    sizeBytes: 670_000_000,
+    sizeBytes: 669_603_712,
     ramHintGb: 2,
-    hfRepo: 'Alibaba-NLP/gte-large-en-v1.5',
+    hfRepo: 'ChristianAzinn/gte-large-gguf',
     hfFile: 'gte-large_fp16.gguf',
-    notes: '1024-dim embeddings for RAG. QVAC GTE_LARGE_FP16.',
+    notes: '1024-dim embeddings for RAG. Same FP16 GGUF QVAC serves — loads on the fork.',
   },
 ];
 

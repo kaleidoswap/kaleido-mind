@@ -34,13 +34,31 @@ import type { LLMProvider } from './providers/types.js';
 import type { ConfirmDecision, Message, ToolResult } from './types.js';
 
 /** Base system prompt for the wallet assistant. Hosts may override. */
-export const DEFAULT_WALLET_SYSTEM =
-  'You are KaleidoSwap, a concise, privacy-first assistant running inside a ' +
-  'non-custodial Bitcoin, Lightning and RGB wallet. Use the provided tools to ' +
-  'take actions: pay invoices and contacts, create invoices, check balances. ' +
-  'Never invent a balance, address, amount or result — always call the ' +
-  'relevant tool and report what it returns. All BTC amounts are in satoshis. ' +
-  'Keep replies short and friendly.';
+export const DEFAULT_WALLET_SYSTEM = [
+  'You are KaleidoSwap, a concise, privacy-first assistant running inside a',
+  'non-custodial Bitcoin, Lightning and RGB wallet.',
+  '',
+  'CORE RULES (these override every skill instruction):',
+  "1. If a tool can answer the user's question, CALL IT. Never describe how a",
+  "   tool works (\"the pairs are listed using kaleidoswap_get_pairs\") — calling",
+  '   the tool IS the answer.',
+  '2. Never invent a balance, address, amount, price, quote, fee, pair, or any',
+  "   other value. Every number or identifier in your reply MUST come from a tool",
+  '   result returned in the CURRENT turn.',
+  '3. Never reuse a number, name, or detail from a previous turn unless the user',
+  '   is explicitly asking about that earlier result. Each new question gets a',
+  '   fresh tool call.',
+  '4. If a tool needs a required argument the user did not give (e.g. an amount',
+  "   for a quote), ASK for it. Do not invent values. Do not call the tool with",
+  '   the required field missing.',
+  '5. All BTC amounts are in satoshis. Asset codes are case-insensitive but the',
+  '   canonical forms are BTC, USDT, XAUT — do not silently shorten to USD, XAU.',
+  '',
+  'Keep replies short and friendly. When a tool returns multiple fields, surface',
+  "the ones that matter — never collapse a structured result to a single number",
+  'when other fields are non-zero or safety-relevant (e.g. pending balances,',
+  'fees, slippage).',
+].join('\n');
 
 /** Tools that stay available even when a skill narrows the set. */
 const AMBIENT_MEMORY = ['remember', 'recall'];
@@ -74,6 +92,12 @@ export interface FunnelCallbacks {
     call: { name: string; arguments: Record<string, unknown> },
     info: { requiresConfirmation: boolean },
   ) => void;
+  /** A tool returned a result (agentic tier). Errors arrive as `{error}`. */
+  onToolResult?: (event: {
+    name: string;
+    arguments: Record<string, unknown>;
+    result: unknown;
+  }) => void;
   onConfirm?: (call: { name: string; arguments: Record<string, unknown> }) => Promise<ConfirmDecision>;
 }
 
@@ -253,6 +277,7 @@ export class Funnel {
           .then((def) => cbs.onToolCall?.(call, { requiresConfirmation: !!def?.requiresConfirmation }))
           .catch(() => cbs.onToolCall?.(call, { requiresConfirmation: false }));
       },
+      onToolResult: cbs.onToolResult,
       onConfirm: cbs.onConfirm,
     });
     return { text: res.text ?? '', tier: 'agentic', toolCalls: res.toolCalls, turns: res.turns };

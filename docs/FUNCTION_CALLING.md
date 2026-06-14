@@ -78,13 +78,27 @@ Two non-obvious rules from the SDK:
 
 Wallet tools aren't like weather lookups — some move money. The loop must pause for human approval mid-chain.
 
-### Tool taxonomy (from `qvacTools.ts`)
+### Tool taxonomy (canonical contracts in `packages/core/src/*/contract.ts`)
+
+Three contracts ship in core today; the host binds them to whichever transport
+it runs over (WDK on mobile, HTTP on desktop, stubs in eval). The model sees
+identical names + schemas everywhere — only `bindXxxTools(handlers)` differs.
 
 | Class | Tools | Confirmation |
 |---|---|---|
-| **Read** | `get_wallet_balance`, `get_receive_address`, `list_recent_transactions`, `find_merchant_locations`, `get_merchant_info` | none — auto-invoke |
-| **Write (money)** | `pay_lightning_invoice`, `pay_nostr_contact` | **required** — human-in-the-loop |
-| **Write (safe)** | `generate_invoice` | none — receiving is safe |
+| **Read — wallet** | `get_balances`, `get_price`, `fiat_to_sats`, `resolve_contact`, `*_get_balance`, `*_get_address`, `rln_list_channels`, `rln_get_node_info` | none — auto-invoke |
+| **Write — receive (safe)** | `spark_create_invoice`, `rln_create_ln_invoice`, `rln_create_rgb_invoice` | none — receiving is safe |
+| **Write — wallet spend** | `send_payment`, `spark_send`, `rln_pay_invoice`, `rln_send_asset`, `arkade_send` | **required** |
+| **Read — merchant** | `find_merchant_locations`, `get_merchant_info` | none |
+| **Read — KaleidoSwap** | `kaleidoswap_get_assets`, `kaleidoswap_get_pairs`, `kaleidoswap_get_quote`, `kaleidoswap_get_nodeinfo`, `kaleidoswap_get_order_status`, `kaleidoswap_get_order_history`, `kaleidoswap_atomic_status` | none |
+| **Write — KaleidoSwap spend** | `kaleidoswap_place_order`, `kaleidoswap_atomic_init`, `kaleidoswap_atomic_execute` | **required** |
+| **Read — LSPS1** | `lsp_get_info`, `lsp_get_network_info`, `lsp_estimate_fees`, `lsp_get_order` | none |
+| **Write — LSPS1 spend** | `lsp_create_order` | **required** |
+| **Ambient** | `remember`, `recall`, `search_knowledge`, `read_skill_reference`, `fetch_paid_resource` | none (L402 spend is auto-paid under a cap) |
+
+The spend flag lives on the contract (`spend: true` → `requiresConfirmation`),
+so the gate is structural — the model can't bypass it by choosing a different
+transport.
 
 ### The agentic loop with confirmation
 

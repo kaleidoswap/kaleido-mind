@@ -50,6 +50,39 @@ export type {
   BindWalletOptions,
 } from './wallet/contract.js';
 
+// ── KaleidoSwap maker tool contract (single source of truth) ────────────────
+export {
+  KALEIDOSWAP_TOOLS,
+  KALEIDOSWAP_SPEND_TOOLS,
+  isKaleidoswapSpendTool,
+  getKaleidoswapTool,
+  kaleidoswapTools,
+  bindKaleidoswapTools,
+} from './kaleidoswap/contract.js';
+export type {
+  KaleidoswapGroup,
+  KaleidoswapToolDef,
+  KaleidoswapHandler,
+  BindKaleidoswapOptions,
+} from './kaleidoswap/contract.js';
+
+// ── LSPS1 (Lightning Service Provider channel orders) ───────────────────────
+export {
+  LSPS1_TOOLS,
+  LSPS1_SPEND_TOOLS,
+  isLsps1SpendTool,
+  getLsps1Tool,
+  bindLsps1Tools,
+} from './lsps1/contract.js';
+export type {
+  Lsps1ToolDef,
+  Lsps1Handler,
+  BindLsps1Options,
+} from './lsps1/contract.js';
+
+// ── KaleidoSwap atomic-swap recipe (opt-in — register via Funnel.recipes) ──
+export { kaleidoswapAtomicRecipe } from './recipe/kaleidoswap-atomic.js';
+
 // ── Recipes (mobile multi-step: "recipes, not planning") ───────────────────
 export { runRecipe, extractSlots, RecipeRegistry } from './recipe/runner.js';
 export type { RunRecipeOptions } from './recipe/runner.js';
@@ -110,6 +143,14 @@ export { walletHistoryToDocuments, contactsToDocuments } from './knowledge/walle
 export type { WalletTx, Contact } from './knowledge/wallet.js';
 export { merchantsToDocuments } from './knowledge/merchants.js';
 export type { Merchant } from './knowledge/merchants.js';
+export { createBtcMapToolSource, BTC_MAP_SAMPLE } from './knowledge/btc-map.js';
+export type {
+  BtcMapToolOptions,
+  BtcMapMerchant,
+  BtcMapFetch,
+  LocationProvider,
+  LatLng,
+} from './knowledge/btc-map.js';
 
 export { Engine } from './engine.js';
 export type { EngineOptions, AgenticOptions, AgenticResult } from './engine.js';

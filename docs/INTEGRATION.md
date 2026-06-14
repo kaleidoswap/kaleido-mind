@@ -135,7 +135,8 @@ telegram, `:4242`); only its reasoning core changes.
    injections). For the rest, you can route with mind's `SkillRegistry`
    (`select` → `compose` → `allowedTools`). Long term: add an injection hook to
    mind's loader and unify. Until then: agent = injection skills; mind = the
-   portable SKILL.md skills (bitrefill, kaleido-wallet, kaleido-trading).
+   portable SKILL.md skills (bitrefill, wallet-assistant, merchant-finder,
+   paid-data, kaleido-trading).
 
 ### Result
 `kaleido-agent` becomes the **server deployment of the shared brain** —
@@ -231,3 +232,80 @@ Two options:
   the `:4242` control surface, portfolio policy. The *deployment*.
 - **`rate` / `desktop-app`**: the user-facing host — UI, wallet adapters,
   QVAC lifecycle, pairing. They *run* the brain and/or *call* the agent.
+
+---
+
+## Binding tool contracts (the host side)
+
+Core declares three contracts as pure data + a binder factory. The host injects
+the handlers; the mind never reaches the network. Same pattern across all three.
+
+```ts
+// Mobile (rate) — WDK adapters
+import {
+  bindWalletTools,
+  bindKaleidoswapTools,
+  bindLsps1Tools,
+  createBtcMapToolSource,
+  ToolRegistry,
+} from '@kaleidorg/mind';
+
+const wallet = bindWalletTools({
+  get_balances:   async () => protocolManager.totals(),
+  send_payment:   async ({ to, amount_sats }) => router.send(to, amount_sats),
+  // …one handler per WALLET_TOOLS entry
+});
+
+const kswap = bindKaleidoswapTools({
+  kaleidoswap_get_quote: async (a) => swapProtocol.quote(a),
+  kaleidoswap_place_order: async ({ quote_id }) => swapProtocol.placeOrder({ quoteId: quote_id }),
+  kaleidoswap_atomic_init: async (a) => swapProtocol.atomicInit(a),
+  // …one handler per KALEIDOSWAP_TOOLS entry
+});
+
+const lsp = bindLsps1Tools({
+  lsp_get_info:     async () => lspClient.getInfo(),
+  lsp_create_order: async (a) => lspClient.createOrder(a),
+  // …one handler per LSPS1_TOOLS entry
+});
+
+const merchants = createBtcMapToolSource({
+  location: { getCurrent: getUserLocation, geocode: geocodeAddress },
+  fetch:    findNearbyMerchants,           // host wraps api.btcmap.org
+  offlineMerchants: LUGANO_OFFLINE,        // bundled fallback
+});
+
+const tools = new ToolRegistry([wallet, kswap, lsp, merchants /*, memory, rag, l402*/]);
+```
+
+```ts
+// Desktop / CLI / playground — fetch over HTTP
+function fetchHandlers<Map extends Record<string, { method: 'GET'|'POST'; path: string }>>(
+  baseUrl: string, routes: Map,
+) {
+  const handlers: Record<string, (a: any) => Promise<unknown>> = {};
+  for (const [name, route] of Object.entries(routes)) {
+    handlers[name] = async (args) => {
+      const url = new URL(baseUrl + route.path);
+      if (route.method === 'GET') {
+        for (const [k, v] of Object.entries(args ?? {})) if (v != null) url.searchParams.set(k, String(v));
+      }
+      const res = await fetch(url.toString(), {
+        method: route.method,
+        headers: { 'content-type': 'application/json' },
+        ...(route.method === 'POST' ? { body: JSON.stringify(args ?? {}) } : {}),
+      });
+      if (!res.ok) throw new Error(`${name} failed: ${res.status}`);
+      return res.json();
+    };
+  }
+  return handlers;
+}
+// Concrete example in apps/cli/src/kaleidoswapTools.ts +
+// apps/cli/src/lsps1Tools.ts.
+```
+
+The contract files (`wallet/contract.ts`, `kaleidoswap/contract.ts`,
+`lsps1/contract.ts`) carry the spend flags; binders preserve them, so the
+Engine and recipe runner both pause for `onConfirm` on the same tools no
+matter which host is running.

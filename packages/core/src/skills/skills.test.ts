@@ -75,6 +75,48 @@ Manage Lightning channels via LSPS1.`);
   });
 });
 
+describe('SkillRegistry selection — trigger word boundaries', () => {
+  // Regression: short triggers must NOT match inside longer words.
+  // Bug observed in the CLI: a wallet skill with `usd` as a trigger was
+  // picked for "what is the quote of usdt to btc" because the old
+  // q.includes("usd") was true for "usdt", outranking the trading skill.
+  const reg = new SkillRegistry();
+  reg.addMarkdown(`---
+name: wallet-fiat
+description: Check the BTC price and convert fiat to sats. Fiat support: usd, eur, gbp.
+triggers: price, eur, usd, gbp
+---
+Wallet — fiat conversion.`);
+  reg.addMarkdown(`---
+name: trading
+description: Quote and execute swaps between BTC, USDT and XAUT on KaleidoSwap.
+triggers: quote, swap, trade, usdt, xaut
+---
+Trading on the maker.`);
+
+  it("doesn't fire the `usd` trigger inside `usdt`", () => {
+    const sel = reg.select('what is the quote of usdt to btc')?.name;
+    expect(sel).toBe('trading'); // not wallet-fiat
+  });
+
+  it('still fires the `usd` trigger when the user actually said `usd`', () => {
+    const sel = reg.select('how many sats is 30 usd')?.name;
+    expect(sel).toBe('wallet-fiat');
+  });
+
+  it("doesn't fire a short trigger inside a longer word — `cafe` not in `cafeteria`", () => {
+    const r2 = new SkillRegistry();
+    r2.addMarkdown(`---
+name: merchants
+description: Find merchants that accept Bitcoin.
+triggers: cafe, restaurant, bar
+---
+Merchant finder.`);
+    expect(r2.select('the cafeteria menu')).toBeNull(); // no match
+    expect(r2.select('any bitcoin cafe nearby')?.name).toBe('merchants');
+  });
+});
+
 describe('parseSkill — real Agent-Skills spec', () => {
   it('unquotes the description, captures metadata, tolerates no tools', () => {
     const s = parseSkill(BITREFILL_SKILL);
