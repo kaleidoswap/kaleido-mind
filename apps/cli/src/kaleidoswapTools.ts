@@ -32,6 +32,44 @@ interface Route {
   body?: (args: Record<string, unknown>) => unknown;
   /** Optional transform from agent-facing args → query params. */
   query?: (args: Record<string, unknown>) => Record<string, string>;
+  /**
+   * Optional transform of the maker's response BEFORE it reaches the model.
+   * Used to add precomputed human-readable fields so a small model never has
+   * to do unit math (which it gets wrong — it parrots example numbers instead).
+   */
+  transformResponse?: (data: unknown) => unknown;
+}
+
+/** Scale a smallest-unit integer by its precision into a human decimal string. */
+function scaled(amount: unknown, precision: unknown): string | undefined {
+  const a = Number(amount);
+  const p = Number(precision);
+  if (!Number.isFinite(a) || !Number.isFinite(p)) return undefined;
+  const v = a / 10 ** p;
+  // Trim trailing zeros but keep it readable.
+  return v.toLocaleString('en-US', { maximumFractionDigits: Math.min(p, 8) });
+}
+
+/**
+ * Enrich a quote response with `*_display` strings the model can read verbatim,
+ * so it never computes amount ÷ 10^precision itself. Leaves the raw fields
+ * intact for any host that wants them.
+ */
+function enrichQuote(data: unknown): unknown {
+  if (!data || typeof data !== 'object') return data;
+  const d = data as any;
+  const from = d.from_asset ?? {};
+  const to = d.to_asset ?? {};
+  const fee = d.fee ?? {};
+  const fromDisp = scaled(from.amount, from.precision);
+  const toDisp = scaled(to.amount, to.precision);
+  const feeDisp = scaled(fee.final_fee, fee.fee_asset_precision);
+  return {
+    ...d,
+    from_amount_display: fromDisp != null ? `${fromDisp} ${from.ticker ?? from.asset_id ?? ''}`.trim() : undefined,
+    to_amount_display: toDisp != null ? `${toDisp} ${to.ticker ?? to.asset_id ?? ''}`.trim() : undefined,
+    fee_display: feeDisp != null ? `${feeDisp} ${fee.fee_asset ?? ''}`.trim() : undefined,
+  };
 }
 
 /**
@@ -46,9 +84,32 @@ function defaultLayer(asset: string): string {
   return 'RGB_LN'; // USDT, XAUT, and any other RGB asset
 }
 
+/**
+ * Normalize whatever the model passed as an asset code into the maker's
+ * canonical id. The 0.6B sometimes types "sats" or "tether" as the asset_id
+ * even when prompted not to — fix at the host instead of whack-a-mole on the
+ * prompt (project's "don't ask the small model to do the slow/weak parts"
+ * philosophy). Unknown inputs are passed through uppercased so an explicit
+ * `rgb:xxx` contract id still works.
+ */
+function normalizeAsset(asset: unknown): string {
+  const raw = String(asset ?? '').trim();
+  const a = raw.toUpperCase();
+  // BTC family — anything denominated in satoshis IS Bitcoin.
+  if (a === 'BTC' || a === 'BITCOIN' || a === 'SATS' || a === 'SAT' || a === 'SATOSHI' || a === 'SATOSHIS') return 'BTC';
+  // USDT family — common misnamings (USD, TETHER, USDT).
+  if (a === 'USDT' || a === 'USD' || a === 'TETHER') return 'USDT';
+  // XAUT family — Tether Gold.
+  if (a === 'XAUT' || a === 'XAU' || a === 'GOLD') return 'XAUT';
+  // Anything else (e.g. an explicit rgb: contract id) — pass through unchanged
+  // case-wise — `rgb:` ids are case-sensitive so don't upper-case those.
+  if (raw.startsWith('rgb:')) return raw;
+  return a;
+}
+
 /** Build the nested SwapLegInput object the maker expects on quote/order requests. */
 function leg(asset: unknown, amount?: unknown) {
-  const id = String(asset ?? '').toUpperCase();
+  const id = normalizeAsset(asset);
   const out: Record<string, unknown> = { asset_id: id, layer: defaultLayer(id) };
   if (amount != null && amount !== '') out.amount = Number(amount);
   return out;
@@ -73,6 +134,9 @@ const ROUTES: Record<string, Route> = {
       from_asset: leg(a.from_asset, a.amount),
       to_asset: leg(a.to_asset),
     }),
+    // Precompute human amounts so the model reads a string, never does the
+    // amount ÷ 10^precision math (a 0.6B parrots example numbers instead).
+    transformResponse: enrichQuote,
   },
   kaleidoswap_get_nodeinfo: {
     method: 'GET',
@@ -171,7 +235,8 @@ export function buildKaleidoswapToolSource(opts: KaleidoswapHttpOptions): InProc
           (typeof text === 'string' && text ? ` — ${text.slice(0, 240)}` : ''),
         );
       }
-      return data ?? { ok: true };
+      const out = data ?? { ok: true };
+      return route.transformResponse ? route.transformResponse(out) : out;
     };
   }
 
