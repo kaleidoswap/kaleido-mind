@@ -33,6 +33,11 @@ import { getModel } from './catalog.js';
 import { modelPath, isInstalled } from './models.js';
 import { buildKaleidoswapToolSource } from './kaleidoswapTools.js';
 import { buildLsps1ToolSource } from './lsps1Tools.js';
+import { btcMapLiveFetch, btcMapLiveLocation, defaultLocationFromEnv } from './btcmapLive.js';
+
+// BTC Map live mode is the default; set KALEIDO_BTCMAP_LIVE=0 to fall back to
+// the small bundled offline list (useful in offline dev / CI / unit smoke).
+const BTCMAP_LIVE = process.env.KALEIDO_BTCMAP_LIVE !== '0';
 
 const KALEIDOSWAP_BASE_URL = process.env.KALEIDOSWAP_BASE_URL ?? 'http://localhost:8000';
 const KALEIDOSWAP_API_KEY = process.env.KALEIDOSWAP_API_KEY;
@@ -190,10 +195,22 @@ export async function buildAgent(cfg: CliConfig, opts: BuildOpts = {}): Promise<
   let retriever: Retriever | null = null;
   if (embeddings) { retriever = new Retriever({ embeddings }); await retriever.ingest(BITCOIN_COPILOT_DOCS); }
 
+  // Live BTC Map by default — hits api.btcmap.org (24h disk cache) and
+  // geocodes addresses via Nominatim. Set KALEIDO_BTCMAP_LIVE=0 to use the
+  // bundled offline sample. KALEIDO_DEFAULT_LOCATION configures "near me"
+  // for the CLI which has no GPS (set to a city name or "lat,lng").
+  const defaultLoc = BTCMAP_LIVE ? await defaultLocationFromEnv() : undefined;
+  const merchantSource = BTCMAP_LIVE
+    ? createBtcMapToolSource({
+        fetch: btcMapLiveFetch,
+        location: btcMapLiveLocation(defaultLoc),
+      })
+    : createBtcMapToolSource();
+
   const sources: ToolSource[] = [
     new InProcessToolSource('wallet', MOCK_TOOLS),
     createMemoryToolSource(memory),
-    createBtcMapToolSource(),
+    merchantSource,
     // KaleidoSwap maker — fetch-based, defaults to localhost:8000 for the demo.
     // The mind never sees the URL; the HTTP call lives in kaleidoswapTools.ts.
     buildKaleidoswapToolSource({ baseUrl: KALEIDOSWAP_BASE_URL, apiKey: KALEIDOSWAP_API_KEY }),
