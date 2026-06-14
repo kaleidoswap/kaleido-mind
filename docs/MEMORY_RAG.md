@@ -46,6 +46,37 @@ Two layers, mirroring nanobot's SOUL/AGENTS/memory split:
   The agent uses it via the `remember` / `recall` tools, and the
   `ContextBuilder` auto-recalls the most relevant items each turn.
 
+### Consolidation — no-bloat memory (the one good `mem0` idea, kept sovereign)
+
+Append-only memory drifts toward near-duplicates ("user likes EUR" ×5). Pass a
+`consolidate` option to fold same-kind near-dups into one item. Two tiers, both
+zero-dep — we deliberately did **not** add the `mem0` dependency (cloud /
+OpenAI-coupled / won't bundle in RN); we ported only its useful behaviour:
+
+- **Dedup** (embedding-only, *zero inference*) — a near-dup is detected by cosine
+  similarity and the newer item supersedes the older. Cheap enough for a 0.6B
+  phone, so it's on for **Mobile** too.
+- **Merge** (optional, injected LLM) — set `consolidate.merge` to rewrite old +
+  new into one consolidated fact. Costs an extra inference, so reserve it for
+  **desktop / P2P-delegated** devices.
+
+```ts
+const merge = async (existing: string, incoming: string) =>
+  (await completeOnQvac(`Merge into one short fact:\n- ${existing}\n- ${incoming}`)).trim()
+
+const memory = new InMemoryMemoryStore({
+  io,
+  embed: caps.semanticMemory ? embedOne : undefined,
+  consolidate: caps.dedupeMemory
+    ? { threshold: 0.92, merge: caps.mergeMemory ? merge : undefined }  // merge only when capable
+    : undefined,
+})
+```
+
+`capabilityProfile` decides the tiers for you: `dedupeMemory` (≈ semanticMemory)
+and `mergeMemory` (delegated, or ≥4 GB RAM @ ≥4k ctx). Omit `consolidate`
+entirely for the original append-only behaviour.
+
 ## RAG — injected embeddings + vector store
 
 ```ts

@@ -61,3 +61,16 @@ export interface MemoryIO {
   load(): Promise<MemoryItem[]>;
   save(items: MemoryItem[]): Promise<void>;
 }
+
+/**
+ * Consolidation — fold same-kind near-duplicate memories into one item instead
+ * of bloating with "user likes EUR" ×5. Needs embeddings (the dup check is
+ * cosine). Omit for append-only. Two tiers: embedding-only dedup (zero
+ * inference, mobile-safe) and, when `merge` is set, an LLM rewrite.
+ */
+export interface MemoryConsolidation {
+  /** Cosine threshold above which two same-kind memories are "the same". Default 0.92. */
+  threshold?: number;
+  /** Optional LLM merger; without it the newer item simply supersedes the older. */
+  merge?: (existing: string, incoming: string) => Promise<string>;
+}

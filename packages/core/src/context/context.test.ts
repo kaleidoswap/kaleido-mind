@@ -60,18 +60,22 @@ describe('ContextBuilder', () => {
 });
 
 describe('capabilityProfile', () => {
-  it('low-end phone: memory yes, RAG no', () => {
+  it('low-end phone: memory yes, RAG no, dedup yes but no LLM merge', () => {
     const c = capabilityProfile({ ramBytes: 2 * 1024 ** 3, modelCtxTokens: 2048, hasEmbeddings: true });
     expect(c.memory).toBe(true);
     expect(c.rag).toBe(false); // ctx too small + low RAM
     expect(c.topKRag).toBe(0);
+    expect(c.dedupeMemory).toBe(true); // embedding-only dedup is mobile-safe
+    expect(c.mergeMemory).toBe(false); // never run merge inference on a tiny phone
   });
 
-  it('desktop / delegated: RAG on', () => {
+  it('desktop / delegated: RAG on, memory merge on', () => {
     const c = capabilityProfile({ modelCtxTokens: 8192, hasEmbeddings: true, delegated: true });
     expect(c.rag).toBe(true);
     expect(c.topKRag).toBeGreaterThan(0);
     expect(c.semanticMemory).toBe(true);
+    expect(c.dedupeMemory).toBe(true);
+    expect(c.mergeMemory).toBe(true);
   });
 
   it('no embeddings → no RAG, no semantic memory', () => {

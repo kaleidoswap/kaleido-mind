@@ -49,6 +49,7 @@ export type {
   WalletHandler,
   BindWalletOptions,
 } from './wallet/contract.js';
+export { confirmReadback } from './wallet/confirm.js';
 
 // ── KaleidoSwap maker tool contract (single source of truth) ────────────────
 export {
@@ -102,6 +103,7 @@ export type { MemoryStoreOptions } from './memory/store.js';
 export { createMemoryToolSource } from './memory/tool.js';
 export type {
   AgentProfile,
+  MemoryConsolidation,
   MemoryItem,
   MemoryKind,
   MemoryQuery,
