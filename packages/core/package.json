@@ -1,6 +1,6 @@
 {
   "name": "@kaleidorg/mind",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Local-first reasoning + function-calling engine for KaleidoSwap. QVAC-powered.",
   "license": "Apache-2.0",
   "type": "module",
