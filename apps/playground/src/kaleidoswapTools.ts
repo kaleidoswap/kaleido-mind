@@ -53,7 +53,11 @@ const KALEIDOSWAP_ROUTES: Record<string, Route> = {
   kaleidoswap_get_nodeinfo: { method: 'GET',  path: '/api/v1/swaps/nodeinfo' },
   kaleidoswap_place_order: {
     method: 'POST', path: '/api/v1/swaps/orders',
-    body: (a) => ({ rfq_id: a.quote_id ?? a.rfq_id, from_asset: leg(a.from_asset, a.amount), to_asset: leg(a.to_asset) }),
+    body: (a) => {
+      const rfq_id = a.quote_id ?? a.rfq_id;
+      if (a.from_asset != null && a.to_asset != null) return { rfq_id, from_asset: leg(a.from_asset, a.amount), to_asset: leg(a.to_asset) };
+      return { rfq_id };
+    },
   },
   kaleidoswap_get_order_status: {
     method: 'POST', path: '/api/v1/swaps/orders/status',
