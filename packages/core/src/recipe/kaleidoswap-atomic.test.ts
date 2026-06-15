@@ -13,7 +13,10 @@ const refusingProvider: LLMProvider = {
   },
 };
 
-// Stub tools that record every call so we can assert the chain ran end-to-end.
+/**
+ * Stub the maker + node tools. The quote echoes full asset specs (asset_id +
+ * maker-unit amount) the way the real maker does, so init can source them.
+ */
 function buildStubs(captured: { name: string; args: any }[]) {
   const tool = (name: string, response: any, spend = false) => ({
     name,
@@ -27,112 +30,124 @@ function buildStubs(captured: { name: string; args: any }[]) {
   });
   return new ToolRegistry([
     new InProcessToolSource('kaleidoswap', [
-      tool('kaleidoswap_get_quote', { quote_id: 'q-1', receive_amount: 100, fees: 250 }),
-      tool('kaleidoswap_atomic_init', { atomic_id: 'a-1', maker_invoice: 'lnbc1maker' }, /* spend */ true),
-      tool('kaleidoswap_atomic_execute', { status: 'completed' }, /* spend */ true),
+      tool('kaleidoswap_get_quote', {
+        rfq_id: 'rfq-1',
+        from_asset: { asset_id: 'USDT', ticker: 'USDT', amount: 10_000_000 },
+        to_asset: { asset_id: 'BTC', ticker: 'BTC', amount: 15_250_000 },
+        from_amount_display: '10 USDT',
+        to_amount_display: '15,250 sats',
+        fee_display: '154 sats',
+      }),
+      tool('kaleidoswap_atomic_init', { swapstring: 'SWAP/abc/def', payment_hash: 'ph-1' }, /* spend */ true),
+      tool('kaleidoswap_atomic_execute', { status: 200, message: 'Swap executed successfully.' }, /* spend */ true),
     ]),
     new InProcessToolSource('rln', [
-      tool('rln_create_rgb_invoice', { invoice: 'rgb:invoice:USDT:100' }),
-      tool('rln_create_ln_invoice', { invoice: 'lnbc1user' }),
-      tool('rln_pay_invoice', { status: 'SUCCESS', payment_hash: 'h' }, /* spend */ true),
+      tool('rln_get_node_info', { pubkey: '03c31dae' }),
+      tool('rln_whitelist_swap', { ok: true }, /* spend */ true),
     ]),
   ]);
 }
 
-describe('kaleidoswapAtomicRecipe — selection (match + triggers)', () => {
-  it('triggers on explicit atomic-swap phrasings', () => {
-    expect(kaleidoswapAtomicRecipe.match!('atomic swap 100000 sats for usdt')).toBe(true);
-    expect(kaleidoswapAtomicRecipe.match!('trustless swap btc to usdt')).toBe(true);
-    expect(kaleidoswapAtomicRecipe.match!('htlc swap 1000 sats to USDT')).toBe(true);
+describe('kaleidoswapAtomicRecipe — selection', () => {
+  it('triggers on swap phrasings', () => {
+    expect(kaleidoswapAtomicRecipe.match!('swap 10 usdt to btc')).toBe(true);
+    expect(kaleidoswapAtomicRecipe.match!('exchange 100000 sats for usdt')).toBe(true);
+    expect(kaleidoswapAtomicRecipe.match!('convert btc to usdt')).toBe(true);
   });
-
-  it('does NOT fire on a plain swap (those go to swapRecipe)', () => {
-    expect(kaleidoswapAtomicRecipe.match!('swap 10 usdt for btc')).toBe(false);
-    expect(kaleidoswapAtomicRecipe.match!('exchange 1000 sats for usdt')).toBe(false);
+  it('does not trigger on a balance question', () => {
+    expect(kaleidoswapAtomicRecipe.match!('what is my balance')).toBe(false);
   });
 });
 
-describe('kaleidoswapAtomicRecipe — RGB receive leg', () => {
-  it('runs quote → rgb_invoice → atomic_init → pay → atomic_execute (one inference)', async () => {
+describe('kaleidoswapAtomicRecipe — full chain', () => {
+  it('runs quote → init → nodeinfo → whitelist → execute in order (one inference)', async () => {
     const captured: { name: string; args: any }[] = [];
     const tools = buildStubs(captured);
 
-    const res = await runRecipe(kaleidoswapAtomicRecipe, 'atomic swap 100000 sats for usdt', {
+    const res = await runRecipe(kaleidoswapAtomicRecipe, 'swap 10 usdt to btc', {
       provider: refusingProvider,
       tools,
       onConfirm: async () => ({ approved: true }),
     });
 
     expect(res.status).toBe('done');
-    expect(res.inferences).toBe(0); // extractSwap handled it deterministically
-
-    // The chain: quote → rgb_invoice → atomic_init → pay → atomic_execute (5 calls).
+    expect(res.inferences).toBe(0); // extractSwap handled it
     expect(captured.map((c) => c.name)).toEqual([
       'kaleidoswap_get_quote',
-      'rln_create_rgb_invoice',
       'kaleidoswap_atomic_init',
-      'rln_pay_invoice',
+      'rln_get_node_info',
+      'rln_whitelist_swap',
       'kaleidoswap_atomic_execute',
     ]);
+  });
 
-    // RGB invoice fed into atomic_init.
+  it('threads quote → init args (flat asset ids + maker-unit amounts)', async () => {
+    const captured: { name: string; args: any }[] = [];
+    const tools = buildStubs(captured);
+    await runRecipe(kaleidoswapAtomicRecipe, 'swap 10 usdt to btc', {
+      provider: refusingProvider, tools, onConfirm: async () => ({ approved: true }),
+    });
     const init = captured.find((c) => c.name === 'kaleidoswap_atomic_init')!;
-    expect(init.args).toEqual({ quote_id: 'q-1', receive_invoice: 'rgb:invoice:USDT:100' });
+    expect(init.args).toEqual({
+      rfq_id: 'rfq-1',
+      from_asset: 'USDT', from_amount: 10_000_000,
+      to_asset: 'BTC', to_amount: 15_250_000,
+    });
+  });
 
-    // Maker invoice fed into pay step.
-    const pay = captured.find((c) => c.name === 'rln_pay_invoice')!;
-    expect(pay.args).toEqual({ invoice: 'lnbc1maker' });
-
-    // Final execute carried the atomic id.
+  it('threads init.swapstring + node.pubkey + init.payment_hash → execute', async () => {
+    const captured: { name: string; args: any }[] = [];
+    const tools = buildStubs(captured);
+    await runRecipe(kaleidoswapAtomicRecipe, 'swap 10 usdt to btc', {
+      provider: refusingProvider, tools, onConfirm: async () => ({ approved: true }),
+    });
+    const whitelist = captured.find((c) => c.name === 'rln_whitelist_swap')!;
+    expect(whitelist.args).toEqual({ swapstring: 'SWAP/abc/def' });
     const exe = captured.find((c) => c.name === 'kaleidoswap_atomic_execute')!;
-    expect(exe.args).toEqual({ atomic_id: 'a-1' });
-  });
-});
-
-describe('kaleidoswapAtomicRecipe — BTC receive leg', () => {
-  it('uses rln_create_ln_invoice (not rgb) when to_asset is BTC', async () => {
-    const captured: { name: string; args: any }[] = [];
-    const tools = buildStubs(captured);
-
-    const res = await runRecipe(kaleidoswapAtomicRecipe, 'atomic swap 100 usdt for btc', {
-      provider: refusingProvider,
-      tools,
-      onConfirm: async () => ({ approved: true }),
+    expect(exe.args).toEqual({
+      swapstring: 'SWAP/abc/def',
+      taker_pubkey: '03c31dae',
+      payment_hash: 'ph-1',
     });
-
-    expect(res.status).toBe('done');
-    expect(captured.map((c) => c.name)).toEqual([
-      'kaleidoswap_get_quote',
-      'rln_create_ln_invoice',
-      'kaleidoswap_atomic_init',
-      'rln_pay_invoice',
-      'kaleidoswap_atomic_execute',
-    ]);
-    const init = captured.find((c) => c.name === 'kaleidoswap_atomic_init')!;
-    expect(init.args.receive_invoice).toBe('lnbc1user');
   });
 });
 
-describe('kaleidoswapAtomicRecipe — confirmation gate', () => {
-  it('cancels the chain when the user declines a spend gate', async () => {
+describe('kaleidoswapAtomicRecipe — single confirmation', () => {
+  it('fires ONE gate (before init), showing the quote summary, then runs ungated', async () => {
     const captured: { name: string; args: any }[] = [];
     const tools = buildStubs(captured);
-    let firstSpendSeen = false;
+    const confirms: { name: string; summary?: string }[] = [];
 
-    const res = await runRecipe(kaleidoswapAtomicRecipe, 'atomic swap 100000 sats for usdt', {
+    const res = await runRecipe(kaleidoswapAtomicRecipe, 'swap 10 usdt to btc', {
       provider: refusingProvider,
       tools,
-      onConfirm: async () => {
-        if (firstSpendSeen) return { approved: true };
-        firstSpendSeen = true;
-        return { approved: false, reason: 'user said no' };
+      onConfirm: async (call) => {
+        confirms.push({ name: call.name, summary: (call as any).summary });
+        return { approved: true };
       },
     });
 
-    expect(res.status).not.toBe('done');
-    // The first spend tool (atomic_init) should NOT have completed successfully —
-    // the chain stops before pay/execute.
-    expect(captured.some((c) => c.name === 'rln_pay_invoice')).toBe(false);
-    expect(captured.some((c) => c.name === 'kaleidoswap_atomic_execute')).toBe(false);
+    expect(res.status).toBe('done');
+    // Exactly one confirm, on the first spend step (init), with the rich summary.
+    expect(confirms).toHaveLength(1);
+    expect(confirms[0]!.name).toBe('kaleidoswap_atomic_init');
+    expect(confirms[0]!.summary).toContain('10 USDT');
+    expect(confirms[0]!.summary).toContain('15,250 sats');
+    expect(confirms[0]!.summary).toContain('154 sats');
+  });
+
+  it('declining the single gate cancels the whole chain before any spend', async () => {
+    const captured: { name: string; args: any }[] = [];
+    const tools = buildStubs(captured);
+
+    const res = await runRecipe(kaleidoswapAtomicRecipe, 'swap 10 usdt to btc', {
+      provider: refusingProvider,
+      tools,
+      onConfirm: async () => ({ approved: false, reason: 'user said no' }),
+    });
+
+    expect(res.status).toBe('cancelled');
+    // Quote ran (read-only), but NOTHING after the declined gate.
+    expect(captured.map((c) => c.name)).toEqual(['kaleidoswap_get_quote']);
   });
 });

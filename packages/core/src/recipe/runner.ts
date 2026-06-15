@@ -15,8 +15,13 @@ const EXTRACT_TOOL = 'extract_request';
 export interface RunRecipeOptions {
   provider: LLMProvider;
   tools: ToolRegistry;
-  /** Called before the (spend) final action when its tool is confirmation-gated. */
-  onConfirm?: (call: { name: string; arguments: Record<string, unknown> }) => Promise<ConfirmDecision>;
+  /**
+   * Called before a confirmation-gated spend. `summary` is set when the recipe
+   * supplies a `confirm(ctx)` — a human-readable description of the whole
+   * approved action (e.g. "swap 10 USDT → 15,250 sats, fee 154 sats"). Hosts
+   * should prefer `summary` over the raw tool name/args when showing a sheet.
+   */
+  onConfirm?: (call: { name: string; arguments: Record<string, unknown>; summary?: string }) => Promise<ConfirmDecision>;
   /** Progress hook per completed step. */
   onStep?: (name: string, args: Record<string, unknown>, result: unknown) => void;
   /** Skip extraction and use these slots (deterministic Tier-0 / tests). */
@@ -61,40 +66,52 @@ export async function runRecipe(recipe: Recipe, text: string, opts: RunRecipeOpt
       inferences = ex.inferences;
     }
 
-    // Deterministic steps. Intermediate spend tools fire the same confirmation
-    // gate as the final step — recipes with multi-spend chains (e.g. atomic
-    // swaps) MUST have every money-moving call gated, never just the last one.
-    // Missing onConfirm fails closed, matching the Engine.
+    // Confirmation model:
+    //  - Recipe with `confirm(ctx)`: fire ONE gate before the first spend step,
+    //    showing the recipe-level summary; once approved, later spend steps run
+    //    ungated (the whole chain is one approved decision).
+    //  - Recipe without `confirm`: gate EACH spend tool individually (default;
+    //    payments/receive/asset-send rely on this).
+    // Missing onConfirm FAILS CLOSED in both cases, matching the Engine.
+    const cancelled = (): RecipeResult => ({
+      recipe: recipe.name, slots: ctx.slots, results: ctx.results,
+      text: 'Cancelled — nothing was sent.', status: 'cancelled', inferences,
+    });
+    let recipeApproved = false;
+
+    /** Gate a single (spend) step. Returns false if the user declined. */
+    const passesGate = async (toolName: string, args: Record<string, unknown>): Promise<boolean> => {
+      const def = await opts.tools.getDef(toolName);
+      if (!def?.requiresConfirmation) return true;
+      // Recipe-level single confirm: ask once, then remember the approval.
+      if (recipe.confirm) {
+        if (recipeApproved) return true;
+        const summary = recipe.confirm(ctx) ?? undefined;
+        const decision = opts.onConfirm
+          ? await opts.onConfirm({ name: toolName, arguments: args, summary })
+          : { approved: false, reason: 'no confirmation handler available' };
+        if (decision.approved) recipeApproved = true;
+        return decision.approved;
+      }
+      // Per-tool confirm (legacy default).
+      const decision = opts.onConfirm
+        ? await opts.onConfirm({ name: toolName, arguments: args })
+        : { approved: false, reason: 'no confirmation handler available' };
+      return decision.approved;
+    };
+
     for (const step of recipe.steps) {
       if (step.skipIf?.(ctx)) continue;
       const args = step.args(ctx);
-      const def = await opts.tools.getDef(step.tool);
-      if (def?.requiresConfirmation) {
-        const decision = opts.onConfirm
-          ? await opts.onConfirm({ name: step.tool, arguments: args })
-          : { approved: false, reason: 'no confirmation handler available' };
-        if (!decision.approved) {
-          return { recipe: recipe.name, slots: ctx.slots, results: ctx.results, text: 'Cancelled — nothing was sent.', status: 'cancelled', inferences };
-        }
-      }
+      if (!(await passesGate(step.tool, args))) return cancelled();
       const result = await opts.tools.execute(step.tool, args);
       ctx.results[step.as ?? step.tool] = result;
       opts.onStep?.(step.tool, args, result);
     }
 
-    // Final action — confirmation-gated if the tool requires it. Like the
-    // Engine, a missing onConfirm FAILS CLOSED: the spend is declined, never
-    // silently executed.
+    // Final action.
     const finalArgs = recipe.final.args(ctx);
-    const def = await opts.tools.getDef(recipe.final.tool);
-    if (def?.requiresConfirmation) {
-      const decision = opts.onConfirm
-        ? await opts.onConfirm({ name: recipe.final.tool, arguments: finalArgs })
-        : { approved: false, reason: 'no confirmation handler available' };
-      if (!decision.approved) {
-        return { recipe: recipe.name, slots: ctx.slots, results: ctx.results, text: 'Cancelled — nothing was sent.', status: 'cancelled', inferences };
-      }
-    }
+    if (!(await passesGate(recipe.final.tool, finalArgs))) return cancelled();
     const finalResult = await opts.tools.execute(recipe.final.tool, finalArgs);
     ctx.results[recipe.final.as ?? recipe.final.tool] = finalResult;
     opts.onStep?.(recipe.final.tool, finalArgs, finalResult);

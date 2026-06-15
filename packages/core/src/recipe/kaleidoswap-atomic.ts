@@ -1,44 +1,55 @@
 /**
- * Built-in "atomic swap on KaleidoSwap" recipe — trust-minimised chain.
+ * Built-in "swap on KaleidoSwap" recipe — the real atomic-swap chain.
  *
- * Most users want the simple market-order swap (`swapRecipe` over generic
- * `get_swap_quote` / `execute_swap`). This recipe is the EXPLICIT atomic path:
- * the user creates an RGB/LN receive invoice, the maker locks the swap, the
- * user pays the maker's Lightning invoice, and the maker releases.
+ * A swap is a 6-step, two-service flow no small model can plan reliably, so the
+ * recipe carries the plan; the model only extracts {from, to, amount}. The
+ * maker owns init/execute/status; the user's RGB Lightning Node only exposes
+ * its pubkey and whitelists the swapstring.
  *
- * Triggered only by explicit atomic-swap intent ("atomic swap", "trustless
- * swap", "htlc swap") so it never preempts the simpler swap path for vague
- * phrasings.
- *
- *   "atomic swap 100000 sats for usdt"
+ *   "swap 10 usdt to btc"
  *     ↓ 1 model inference (slot extraction)
- *   kaleidoswap_get_quote        ← maker prices the swap
- *   rln_create_rgb_invoice       ← user's node prepares receive (if to_asset is RGB)
- *   rln_create_ln_invoice        ← (alt) if to_asset is BTC
- *   kaleidoswap_atomic_init  🔒 ← maker locks the swap, returns its invoice
- *   rln_pay_invoice          🔒 ← user pays the maker
- *   kaleidoswap_atomic_execute 🔒 ← (final) maker releases the asset
+ *   kaleidoswap_get_quote        ← MAKER  prices the swap (read-only)
+ *     ↓ [ONE confirmation gate — shows the real quote numbers]
+ *   kaleidoswap_atomic_init      ← MAKER  locks the swap → swapstring, payment_hash
+ *   rln_get_node_info            ← NODE   read pubkey (= taker_pubkey)
+ *   rln_whitelist_swap           ← NODE   accept the swapstring
+ *   kaleidoswap_atomic_execute   ← MAKER  settle (final)
  *
- * Two-or-three confirmation gates are intentional: each represents a distinct
- * decision point. The host's confirm UI describes what's about to happen.
+ * Status is NOT polled here — settlement takes seconds-to-minutes and blocking
+ * the chat is bad UX. The recipe reports "submitted, settling"; the user (or a
+ * follow-up turn) calls `kaleidoswap_atomic_status` on demand.
+ *
+ * Confirmation: the single decision a user makes is "given this quote, proceed?"
+ * — so the recipe declares ONE `confirm(ctx)` summary, fired after the quote and
+ * before init. init/whitelist/execute then run as one approved unit. (The
+ * runner's recipe-level confirm path handles this; see recipe/runner.ts.)
  */
 
-import type { Recipe } from './types.js';
+import type { Recipe, RecipeContext } from './types.js';
 import { extractSwap } from './swap.js';
 
-const ATOMIC_INTENT =
-  /\b(atomic|trustless|htlc)\b.*\b(swap|exchange|convert|trade)\b|\b(swap|exchange|convert|trade)\b.*\b(atomic|trustless|htlc)\b/i;
+// Fire on plain swap intent too — there's one swap path now (atomic). The
+// generic `swapRecipe` (get_swap_quote/execute_swap) is for hosts wired to a
+// different venue; on the KaleidoSwap CLI this recipe is the swap.
+const SWAP_INTENT = /\b(swap|exchange|convert|trade)\b/i;
 
-function isBtc(asset: unknown): boolean {
-  return String(asset ?? '').toUpperCase() === 'BTC';
+interface QuoteResult {
+  rfq_id?: string;
+  from_asset?: { asset_id?: string; ticker?: string; amount?: number };
+  to_asset?: { asset_id?: string; ticker?: string; amount?: number };
+  from_amount_display?: string;
+  to_amount_display?: string;
+  fee_display?: string;
 }
+interface InitResult { swapstring?: string; payment_hash?: string }
+interface NodeInfo { pubkey?: string }
 
 export const kaleidoswapAtomicRecipe: Recipe = {
   name: 'kaleidoswap-atomic',
   description:
-    'Trust-minimised atomic swap on KaleidoSwap: quote, prepare a receive invoice on the user\'s node, lock the swap with the maker, pay, and execute.',
-  match: (t) => ATOMIC_INTENT.test(t),
-  triggers: ['atomic swap', 'trustless swap', 'htlc swap'],
+    'Swap between BTC and an RGB asset on KaleidoSwap: quote, confirm once, then init (maker) → whitelist (node) → execute (maker).',
+  match: (t) => SWAP_INTENT.test(t),
+  triggers: ['swap', 'exchange', 'convert', 'trade'],
   slots: [
     { name: 'from_asset', type: 'string', description: 'Asset to spend (BTC / USDT / XAUT)', required: true },
     { name: 'to_asset', type: 'string', description: 'Asset to receive (BTC / USDT / XAUT)', required: true },
@@ -47,7 +58,8 @@ export const kaleidoswapAtomicRecipe: Recipe = {
   extract: extractSwap,
   confident: (s) => !!s.from_asset && !!s.to_asset && !!s.amount,
   steps: [
-    // 1. Maker quotes the swap. Returns { quote_id, receive_amount, fees, ttl_ms, ... }.
+    // 1. MAKER quotes the swap (read-only). Returns rfq_id + full asset specs
+    //    (echoes the rgb: asset ids and maker-unit amounts) + *_display strings.
     {
       tool: 'kaleidoswap_get_quote',
       as: 'quote',
@@ -57,61 +69,65 @@ export const kaleidoswapAtomicRecipe: Recipe = {
         amount: ctx.slots.amount,
       }),
     },
-    // 2a. User's node creates an RGB receive invoice (when to_asset is an RGB asset).
-    {
-      tool: 'rln_create_rgb_invoice',
-      as: 'receive_rgb',
-      args: (ctx) => {
-        const q = ctx.results.quote as { receive_amount?: number } | undefined;
-        return { asset: ctx.slots.to_asset, amount: q?.receive_amount };
-      },
-      skipIf: (ctx) => isBtc(ctx.slots.to_asset),
-    },
-    // 2b. User's node creates an LN receive invoice (when to_asset is BTC).
-    {
-      tool: 'rln_create_ln_invoice',
-      as: 'receive_ln',
-      args: (ctx) => {
-        const q = ctx.results.quote as { receive_amount?: number } | undefined;
-        return { amount_sats: q?.receive_amount };
-      },
-      skipIf: (ctx) => !isBtc(ctx.slots.to_asset),
-    },
-    // 3. Maker locks the swap. Returns { atomic_id, maker_invoice }. Spend-gated.
+    // 2. MAKER locks the swap. SwapRequest is flat (asset ids + maker-unit
+    //    amounts) — sourced straight from the quote result, no re-scaling.
+    //    First spend step → the recipe-level confirm gate fires just before it.
     {
       tool: 'kaleidoswap_atomic_init',
-      as: 'atomic',
+      as: 'init',
       args: (ctx) => {
-        const rgb = ctx.results.receive_rgb as { invoice?: string } | undefined;
-        const ln = ctx.results.receive_ln as { invoice?: string } | undefined;
-        const q = ctx.results.quote as { quote_id?: string } | undefined;
+        const q = ctx.results.quote as QuoteResult | undefined;
         return {
-          quote_id: q?.quote_id,
-          receive_invoice: rgb?.invoice ?? ln?.invoice,
+          rfq_id: q?.rfq_id,
+          from_asset: q?.from_asset?.asset_id,
+          from_amount: q?.from_asset?.amount,
+          to_asset: q?.to_asset?.asset_id,
+          to_amount: q?.to_asset?.amount,
         };
       },
     },
-    // 4. User pays the maker's Lightning invoice. Spend-gated by the wallet contract.
+    // 3. NODE: read our pubkey — the maker needs it as taker_pubkey for execute.
     {
-      tool: 'rln_pay_invoice',
-      as: 'paid',
+      tool: 'rln_get_node_info',
+      as: 'node',
+      args: () => ({}),
+    },
+    // 4. NODE: whitelist the maker's swapstring (accept the swap). Ungated —
+    //    covered by the single confirm above.
+    {
+      tool: 'rln_whitelist_swap',
+      as: 'whitelist',
       args: (ctx) => {
-        const a = ctx.results.atomic as { maker_invoice?: string } | undefined;
-        return { invoice: a?.maker_invoice };
+        const init = ctx.results.init as InitResult | undefined;
+        return { swapstring: init?.swapstring };
       },
     },
   ],
-  // 5. Maker releases the receive asset → swap completes. Spend-gated.
+  // 5. MAKER settles the swap. Needs swapstring + taker_pubkey + payment_hash.
   final: {
     tool: 'kaleidoswap_atomic_execute',
     args: (ctx) => {
-      const a = ctx.results.atomic as { atomic_id?: string } | undefined;
-      return { atomic_id: a?.atomic_id };
+      const init = ctx.results.init as InitResult | undefined;
+      const node = ctx.results.node as NodeInfo | undefined;
+      return {
+        swapstring: init?.swapstring,
+        taker_pubkey: node?.pubkey,
+        payment_hash: init?.payment_hash,
+      };
     },
   },
+  // ONE confirmation, fired after the quote / before init, with the real numbers.
+  confirm: (ctx: RecipeContext) => {
+    const q = ctx.results.quote as QuoteResult | undefined;
+    const from = q?.from_amount_display ?? `${ctx.slots.amount} ${ctx.slots.from_asset}`;
+    const to = q?.to_amount_display ?? String(ctx.slots.to_asset);
+    const fee = q?.fee_display ? ` · fee ${q.fee_display}` : '';
+    return `Swap ${from} → ${to}${fee} on KaleidoSwap. Proceed?`;
+  },
   summary: (ctx) => {
-    const q = ctx.results.quote as { receive_amount?: number } | undefined;
-    const tail = q?.receive_amount ? ` ≈ ${q.receive_amount} ${ctx.slots.to_asset}` : '';
-    return `Atomic swap: ${ctx.slots.amount} ${ctx.slots.from_asset} → ${ctx.slots.to_asset}${tail}.`;
+    const q = ctx.results.quote as QuoteResult | undefined;
+    const from = q?.from_amount_display ?? `${ctx.slots.amount} ${ctx.slots.from_asset}`;
+    const to = q?.to_amount_display ?? String(ctx.slots.to_asset);
+    return `Swap submitted: ${from} → ${to}. Settling now — ask me to check the status.`;
   },
 };

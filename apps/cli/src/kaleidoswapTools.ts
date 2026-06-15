@@ -234,24 +234,37 @@ const ROUTES: Record<string, Route> = {
   kaleidoswap_atomic_init: {
     method: 'POST',
     path: '/api/v1/swaps/init',
-    // InitSwapRequest is rfq_id-driven. The full body shape varies by swap
-    // type; for the demo we forward whatever the agent built and let the
-    // maker validate. The atomic recipe will populate this correctly.
-    body: (a) => ({ rfq_id: a.quote_id ?? a.rfq_id, ...a }),
+    // Maker SwapRequest = { rfq_id, from_asset, from_amount, to_asset, to_amount }
+    // — FLAT (string asset ids + integer maker-unit amounts), NOT the nested
+    // SwapLegInput used by /quote. The atomic recipe sources every field from
+    // the prior quote RESULT (which echoes full rgb: asset ids + maker-unit
+    // amounts), so no re-scaling here — pass through as integers.
+    body: (a) => ({
+      rfq_id: a.rfq_id ?? a.quote_id,
+      from_asset: String(a.from_asset ?? ''),
+      from_amount: Math.round(Number(a.from_amount)),
+      to_asset: String(a.to_asset ?? ''),
+      to_amount: Math.round(Number(a.to_amount)),
+    }),
   },
   kaleidoswap_atomic_execute: {
     method: 'POST',
     path: '/api/v1/swaps/execute',
-    // ConfirmSwapRequest = { swapstring, taker_pubkey }. The atomic recipe
-    // gets swapstring from the prior init result; we forward verbatim.
-    body: (a) => a,
+    // Maker ConfirmSwapRequest = { swapstring, taker_pubkey, payment_hash }.
+    // The recipe threads swapstring + payment_hash from init and taker_pubkey
+    // from rln_get_node_info.
+    body: (a) => ({
+      swapstring: String(a.swapstring ?? ''),
+      taker_pubkey: String(a.taker_pubkey ?? ''),
+      payment_hash: String(a.payment_hash ?? ''),
+    }),
   },
   kaleidoswap_atomic_status: {
     method: 'POST',
     path: '/api/v1/swaps/atomic/status',
-    // SwapStatusRequest = { payment_hash }. The agent-facing field is
-    // atomic_id; map it to payment_hash for the maker.
-    body: (a) => ({ payment_hash: a.atomic_id ?? a.payment_hash }),
+    // SwapStatusRequest = { payment_hash }. Accept atomic_id or payment_hash
+    // from the agent.
+    body: (a) => ({ payment_hash: String(a.atomic_id ?? a.payment_hash ?? '') }),
   },
 };
 

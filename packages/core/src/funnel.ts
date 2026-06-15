@@ -98,12 +98,14 @@ export interface FunnelCallbacks {
     arguments: Record<string, unknown>;
     result: unknown;
   }) => void;
-  onConfirm?: (call: { name: string; arguments: Record<string, unknown> }) => Promise<ConfirmDecision>;
+  onConfirm?: (call: { name: string; arguments: Record<string, unknown>; summary?: string }) => Promise<ConfirmDecision>;
 }
 
 export interface FunnelResult {
   text: string;
   tier: 'fast' | 'recipe' | 'agentic';
+  /** What handled the turn: the intent (fast), recipe name (recipe), or skill name (agentic). */
+  route?: string;
   /** Fast tier only: the matched intent + raw tool result (e.g. for a balance card). */
   intent?: string;
   data?: unknown;
@@ -205,7 +207,7 @@ export class Funnel {
     if (fast && (await this.registry.getDef(fast.tool))) {
       this.log(`tier=fast-path → ${fast.tool}`);
       const r = await this.registry.execute(fast.tool, fast.args);
-      return { text: this.renderFast(fast.intent.name, r), tier: 'fast', intent: fast.intent.name, data: r };
+      return { text: this.renderFast(fast.intent.name, r), tier: 'fast', route: fast.intent.name, intent: fast.intent.name, data: r };
     }
 
     // ── T2: recipe multi-step — fires only when the recipe is confident given
@@ -229,7 +231,7 @@ export class Funnel {
           cbs.onStep?.(name);
         },
       });
-      return { text: res.text, tier: 'recipe' };
+      return { text: res.text, tier: 'recipe', route: recipe.name };
     }
 
     // ── T1: skill-scoped agentic loop ──
@@ -280,6 +282,6 @@ export class Funnel {
       onToolResult: cbs.onToolResult,
       onConfirm: cbs.onConfirm,
     });
-    return { text: res.text ?? '', tier: 'agentic', toolCalls: res.toolCalls, turns: res.turns };
+    return { text: res.text ?? '', tier: 'agentic', route: skill?.name, toolCalls: res.toolCalls, turns: res.turns };
   }
 }

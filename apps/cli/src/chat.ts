@@ -4,7 +4,7 @@ import * as readline from 'node:readline';
 import { dirname } from 'node:path';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import {
-  Engine,
+  Funnel,
   ToolRegistry,
   InProcessToolSource,
   SkillRegistry,
@@ -15,8 +15,10 @@ import {
   createBtcMapToolSource,
   Retriever,
   BITCOIN_COPILOT_DOCS,
-  KALEIDOSWAP_TOOLS,
-  LSPS1_TOOLS,
+  kaleidoswapAtomicRecipe,
+  paymentsRecipe,
+  receiveRecipe,
+  assetSendRecipe,
   type AgentProfile,
   type InProcessTool,
   type LLMProvider,
@@ -24,6 +26,7 @@ import {
   type MemoryIO,
   type MemoryItem,
   type Message,
+  type Skill,
   type ToolSource,
 } from '@kaleidorg/mind';
 import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
@@ -47,16 +50,6 @@ const KALEIDOSWAP_API_KEY = process.env.KALEIDOSWAP_API_KEY;
 // invoices). Atomic init/execute/status are owned by the maker, not the node.
 const RLN_BASE_URL = process.env.KALEIDO_RLN_URL ?? 'http://localhost:3001';
 const RLN_API_KEY = process.env.KALEIDO_RLN_API_KEY;
-const RLN_TOOL_NAMES = [
-  'rln_get_node_info',
-  'rln_whitelist_swap',
-  'rln_create_ln_invoice',
-  'rln_create_rgb_invoice',
-];
-
-/** Tool names from the canonical contracts — used as ambient-tool entries. */
-const KALEIDOSWAP_NAMES = KALEIDOSWAP_TOOLS.map((t) => t.name);
-const LSPS1_NAMES = LSPS1_TOOLS.map((t) => t.name);
 
 const PROFILE: AgentProfile = {
   name: 'KaleidoMind',
@@ -64,13 +57,10 @@ const PROFILE: AgentProfile = {
   instructions: 'Confirm before spending. Keep replies short.',
 };
 
-const AMBIENT_TOOLS = [
-  'remember', 'recall', 'search_knowledge', 'read_skill_reference',
-  'find_merchant_locations', 'get_merchant_info',
-  // KaleidoSwap + LSPS1 + RLN tools — always callable; the matching skills
-  // give the model focused guidance when their triggers fire.
-  ...KALEIDOSWAP_NAMES, ...LSPS1_NAMES, ...RLN_TOOL_NAMES,
-];
+// Tool scoping (which tools each skill exposes, what stays ambient) is now
+// handled inside the Funnel — no host-level AMBIENT_TOOLS list needed. Recipes
+// bypass scoping entirely (they call tools by name), so the swap recipe reaches
+// both maker and RLN tools regardless of the matched skill.
 
 const MOCK_TOOLS: InProcessTool[] = [
   { name: 'wdk_get_balances', description: 'Get wallet balances', parameters: { type: 'object', properties: {} }, handler: async () => ({ btc_sats: 48210, usdt: 12.5, xaut: 0 }) },
@@ -135,6 +125,8 @@ export interface Agent {
   provider: LLMProvider;
   tools: ToolRegistry;
   skills: SkillRegistry;
+  /** The tiered agent (T0 fast-path → T2 recipe → T1 agentic). */
+  funnel: Funnel;
   builder: ContextBuilder;
   memory: InMemoryMemoryStore;
   retriever: Retriever | null;
@@ -237,10 +229,28 @@ export async function buildAgent(cfg: CliConfig, opts: BuildOpts = {}): Promise<
   ];
   if (retriever) sources.push(createRagToolSource(retriever));
 
+  const registry = new ToolRegistry(sources);
+
+  // The tiered Funnel: T0 fast-path → T2 recipe → T1 skill-scoped agentic.
+  // Recipes are tried in order; kaleidoswapAtomicRecipe first so "swap …" is
+  // driven deterministically (quote → confirm once → init → whitelist →
+  // execute) rather than left to the small model to plan.
+  const funnel = new Funnel({
+    provider,
+    tools: registry,
+    skills: skills.list() as Skill[],
+    recipes: [kaleidoswapAtomicRecipe, paymentsRecipe, receiveRecipe, assetSendRecipe],
+    system:
+      `${PROFILE.soul}\n${PROFILE.instructions ?? ''}`.trim(),
+    getSettings: () => ({ ragEnabled: !!retriever }),
+    log: (m) => { if (process.env.KALEIDO_VERBOSE === '1') console.error(c.dim(`[funnel] ${m}`)); },
+  });
+
   return {
     provider,
-    tools: new ToolRegistry(sources),
+    tools: registry,
     skills,
+    funnel,
     memory,
     retriever,
     builder: new ContextBuilder({ profile: PROFILE, memory, retriever: retriever ?? undefined, topKMemory: 3, budgetTokens: 2000 }),
@@ -253,7 +263,8 @@ export async function buildAgent(cfg: CliConfig, opts: BuildOpts = {}): Promise<
 export interface TurnHooks {
   onToolCall?: (name: string, args: Record<string, unknown>) => void;
   onToolResult?: (name: string, result: unknown) => void;
-  onConfirm?: (name: string) => boolean;
+  /** `summary` is the recipe-level confirmation text when present (e.g. the swap quote). */
+  onConfirm?: (name: string, summary?: string) => boolean;
 }
 
 export interface TurnReport {
@@ -265,9 +276,8 @@ export interface TurnReport {
 }
 
 /**
- * Run ONE agent turn (skill route → compose context → runAgentic), shared by
- * the REPL and the benchmark. Keeps cross-cutting tools reachable under a
- * tool-scoped skill.
+ * Run ONE agent turn through the tiered Funnel (T0 fast-path → T2 recipe →
+ * T1 skill-scoped agentic). Shared by the REPL and the benchmark.
  */
 export async function agentTurn(
   agent: Agent,
@@ -275,23 +285,19 @@ export async function agentTurn(
   history: Message[] = [],
   hooks: TurnHooks = {},
 ): Promise<TurnReport> {
-  const skill = agent.skills.select(text);
-  const { system: skillSystem, allowedTools } = agent.skills.compose('', skill);
-  const { system } = await agent.builder.build({ query: text, skillSystem });
-  const effective = allowedTools ? [...new Set([...allowedTools, ...AMBIENT_TOOLS])] : undefined;
-  const engine = new Engine({ provider: agent.provider, tools: agent.tools, defaultSystem: system, defaultMaxTurns: 6 });
-  const res = await engine.runAgentic([...history, { role: 'user', content: text }], {
-    allowedTools: effective,
+  const startedAt = Date.now();
+  const res = await agent.funnel.runTurn(text, {
+    history,
     onToolCall: (c) => hooks.onToolCall?.(c.name, c.arguments),
     onToolResult: (e) => hooks.onToolResult?.(e.name, e.result),
-    onConfirm: async (c) => ({ approved: hooks.onConfirm ? hooks.onConfirm(c.name) : true }),
+    onConfirm: async (c) => ({ approved: hooks.onConfirm ? hooks.onConfirm(c.name, c.summary) : true }),
   });
   return {
-    skill: skill?.name ?? null,
+    skill: res.route ?? null,
     text: res.text,
-    toolCalls: res.toolCalls.map((c) => ({ name: c.name, arguments: c.arguments })),
-    turns: res.turns,
-    latencyMs: res.latencyMs,
+    toolCalls: (res.toolCalls ?? []).map((c) => ({ name: c.name, arguments: c.arguments })),
+    turns: res.turns ?? 0,
+    latencyMs: Date.now() - startedAt,
   };
 }
 
@@ -345,9 +351,15 @@ export async function runChat(agent: Agent): Promise<void> {
             console.log(c.dim(`     ⤺ ${name} → ${preview(result, 400)}`));
           }
         },
-        onConfirm: (name) => { console.log(c.yellow(`  ⚠ auto-approving ${name}`)); return true; },
+        onConfirm: (name, summary) => {
+          // Recipe-level confirmations carry a human summary (e.g. the swap
+          // quote). Show it; auto-approve for the demo (a real UI would prompt).
+          if (summary) console.log(c.yellow(`  ⚠ confirm: ${summary} → auto-approving`));
+          else console.log(c.yellow(`  ⚠ auto-approving ${name}`));
+          return true;
+        },
       });
-      if (rep.skill) console.log(c.dim(`  ↳ skill: ${rep.skill}`));
+      if (rep.skill) console.log(c.dim(`  ↳ ${rep.skill}`));
       console.log(`${c.green('🤖')} ${rep.text || '(no text)'}\n`);
       history.push({ role: 'user', content: text }, { role: 'assistant', content: rep.text });
     } catch (e) { console.log(c.yellow(`  error: ${(e as Error).message}\n`)); }

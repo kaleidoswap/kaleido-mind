@@ -59,6 +59,22 @@ export interface Recipe {
   final: RecipeStep;
   /** Render the outcome for the user. */
   summary?: (ctx: RecipeContext, finalResult: unknown) => string;
+  /**
+   * Single recipe-level confirmation. When set, the runner fires exactly ONE
+   * confirmation gate immediately before the first spend step, passing the
+   * returned string as the confirm summary; once approved, the remaining spend
+   * steps run WITHOUT re-prompting (the whole chain is one approved decision).
+   *
+   * Use for multi-spend chains where the user makes a single choice up front
+   * from data gathered by earlier (read-only) steps — e.g. an atomic swap:
+   * quote first, then confirm "swap X → Y, fee Z" once, then init/whitelist/
+   * execute run as a unit.
+   *
+   * Return `null` to skip confirmation entirely (rare). When `confirm` is
+   * absent, the runner falls back to gating EACH spend tool individually
+   * (the default — used by payments/receive/asset-send).
+   */
+  confirm?: (ctx: RecipeContext) => string | null;
 }
 
 export type RecipeStatus = 'done' | 'cancelled' | 'error';
