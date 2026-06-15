@@ -36,23 +36,74 @@ export async function extractSlots(
   text: string,
 ): Promise<{ slots: Record<string, unknown>; inferences: number }> {
   const det = recipe.extract?.(text);
-  if (det && Object.values(det).some((v) => v !== undefined && v !== null && v !== '')) {
+  const detValid = det && Object.values(det).some((v) => v !== undefined && v !== null && v !== '');
+
+  if (detValid && !recipe.forceModelExtract) {
     return { slots: det, inferences: 0 };
   }
+
+  // Build a richer extraction prompt + tool schema so small models have a
+  // better chance of producing correct structured output for recipes (especially
+  // when forceModelExtract is on for natural language intents like "buy 1 usdt").
   const properties: Record<string, { type: string; description: string }> = {};
   for (const s of recipe.slots) properties[s.name] = { type: s.type ?? 'string', description: s.description };
+
+  const recipeHint = recipe.description ? ` for the "${recipe.name}" recipe (${recipe.description})` : '';
   const extractTool = {
     name: EXTRACT_TOOL,
-    description: `Extract the fields from the user's request.`,
+    description: `Extract the fields from the user's request${recipeHint}.`,
     parameters: { type: 'object', properties, required: recipe.slots.filter((s) => s.required).map((s) => s.name) },
   };
+
+  const system = [
+    `Call ${EXTRACT_TOOL} with the fields from the user's message.`,
+    recipe.description ? `This extraction is for: ${recipe.description}.` : '',
+    'Only emit values that match the field descriptions.',
+    'Canonical assets: BTC, USDT, XAUT (pass as strings like "BTC" or "USDT").',
+    'amount_side: "to" when the named amount is what you receive/buy (e.g. "buy 1 USDT" → to_asset=USDT, amount=1, from_asset=BTC); "from" for sell/swap (amount on from_asset).',
+    'The host binding handles per-asset precision scaling (BTC in sats → maker units; USDT/XAUT whole units). Pass the user\'s number as-is for the correct side.',
+    'Do not call any other tool and do not add commentary.',
+  ].filter(Boolean).join(' ');
+
   const out = await provider.runTurn({
-    system: `Call ${EXTRACT_TOOL} with the fields from the user's message. Do not call any other tool and do not add commentary.`,
+    system,
     messages: [{ role: 'user', content: text }],
     tools: [extractTool],
   });
+
   const call = out.toolCalls?.find((c) => c.name === EXTRACT_TOOL) ?? out.toolCalls?.[0];
-  return { slots: (call?.arguments as Record<string, unknown>) ?? {}, inferences: 1 };
+  let llmSlots: Record<string, unknown> = (call?.arguments as Record<string, unknown>) ?? {};
+
+  // Safety net when forceModelExtract is active.
+  // - Use det as base (reliable for amount_side, defaults, and precision intent).
+  // - LLM can override assets/amount if it provides better values.
+  // - Specifically protect amount_side (critical for which leg gets the amount
+  //   and thus correct scaling/precision in quote bindings like for BTC/USDT).
+  // - If LLM output is incomplete or has invalid amount_side, fall back more.
+  if (recipe.forceModelExtract && detValid) {
+    const required = recipe.slots.filter((s) => s.required);
+    const llmHasAllRequired = required.every((s) => {
+      const v = llmSlots[s.name];
+      return v != null && v !== '';
+    });
+
+    const llmSide = String(llmSlots.amount_side || '').toLowerCase();
+    const validSide = llmSide === 'from' || llmSide === 'to';
+
+    if (!llmHasAllRequired || !validSide) {
+      llmSlots = { ...det, ...llmSlots };
+    } else {
+      // LLM looks complete; still ensure amount_side is sane (prefer LLM if valid)
+      llmSlots.amount_side = llmSide;
+    }
+
+    // Always prefer det's amount_side if LLM didn't provide a valid one
+    if (!validSide && det.amount_side) {
+      llmSlots.amount_side = det.amount_side;
+    }
+  }
+
+  return { slots: llmSlots, inferences: 1 };
 }
 
 /** Run a recipe end to end. Never throws — failures come back as status:'error'. */

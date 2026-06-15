@@ -5,11 +5,12 @@ import type { LLMProvider } from '../providers/types.js';
 import { runRecipe } from './runner.js';
 import { kaleidoswapAtomicRecipe } from './kaleidoswap-atomic.js';
 
-// LLM provider that should never be called when slots are extracted deterministically.
+// LLM provider that should never be called when slots are pre-supplied to runRecipe
+// (or when a recipe is not using forceModelExtract).
 const refusingProvider: LLMProvider = {
   name: 'refusing',
   runTurn: async () => {
-    throw new Error('provider should NOT be called when extractSwap succeeds');
+    throw new Error('provider should NOT be called (slots pre-supplied or det path)');
   },
 };
 
@@ -67,6 +68,47 @@ describe('kaleidoswapAtomicRecipe — selection', () => {
   });
 });
 
+describe('kaleidoswapAtomicRecipe — forceModelExtract (less deterministic slot parsing)', () => {
+  it('always uses 1 LLM inference for slots even when a det extract would succeed (model does the NL understanding)', async () => {
+    const captured: { name: string; args: any }[] = [];
+    const tools = buildStubs(captured);
+
+    // Provider that handles the synthetic extract_request tool the runner builds.
+    const modelExtractProvider: LLMProvider = {
+      name: 'model-extract',
+      runTurn: async (input) => {
+        // The runner sends a single-turn request with the extract tool.
+        const call = input.tools?.find((t) => t.name === 'extract_request');
+        if (call && input.messages.some((m) => m.role === 'user' && /usdt/i.test(m.content || ''))) {
+          // Simulate the model correctly parsing a natural "buy" phrasing.
+          return {
+            text: '',
+            rawContent: '',
+            toolCalls: [{
+              id: 'ex1',
+              name: 'extract_request',
+              arguments: { from_asset: 'BTC', to_asset: 'USDT', amount: 1, amount_side: 'to' },
+            }],
+          };
+        }
+        return { text: '', rawContent: '', toolCalls: [] };
+      },
+    };
+
+    const res = await runRecipe(kaleidoswapAtomicRecipe, 'buy 1 usdt', {
+      provider: modelExtractProvider,
+      tools,
+      onConfirm: async () => ({ approved: true }),
+    });
+
+    expect(res.status).toBe('done');
+    expect(res.inferences).toBe(1); // forced through the model
+    // The execution still used the model-provided slots (from_asset came from the "model" not regex default).
+    // (The stub quote in the test is for USDT→BTC, but the point is the inference count + that it ran.)
+    expect(captured[0].name).toBe('kaleidoswap_get_quote');
+  });
+});
+
 describe('kaleidoswapAtomicRecipe — full chain', () => {
   it('runs quote → init → nodeinfo → whitelist → execute in order (one inference)', async () => {
     const captured: { name: string; args: any }[] = [];
@@ -76,10 +118,14 @@ describe('kaleidoswapAtomicRecipe — full chain', () => {
       provider: refusingProvider,
       tools,
       onConfirm: async () => ({ approved: true }),
+      // Pre-supply slots so refusingProvider is not hit. This simulates a
+      // successful prior extraction (the normal fast path for most recipes,
+      // or the early Funnel heuristic for forceModelExtract recipes).
+      slots: { from_asset: 'USDT', to_asset: 'BTC', amount: 10, amount_side: 'from' },
     });
 
     expect(res.status).toBe('done');
-    expect(res.inferences).toBe(0); // extractSwap handled it
+    expect(res.inferences).toBe(0);
     expect(captured.map((c) => c.name)).toEqual([
       'kaleidoswap_get_quote',
       'kaleidoswap_atomic_init',
@@ -94,6 +140,7 @@ describe('kaleidoswapAtomicRecipe — full chain', () => {
     const tools = buildStubs(captured);
     await runRecipe(kaleidoswapAtomicRecipe, 'swap 10 usdt to btc', {
       provider: refusingProvider, tools, onConfirm: async () => ({ approved: true }),
+      slots: { from_asset: 'USDT', to_asset: 'BTC', amount: 10, amount_side: 'from' },
     });
     const init = captured.find((c) => c.name === 'kaleidoswap_atomic_init')!;
     expect(init.args).toEqual({
@@ -108,6 +155,7 @@ describe('kaleidoswapAtomicRecipe — full chain', () => {
     const tools = buildStubs(captured);
     await runRecipe(kaleidoswapAtomicRecipe, 'swap 10 usdt to btc', {
       provider: refusingProvider, tools, onConfirm: async () => ({ approved: true }),
+      slots: { from_asset: 'USDT', to_asset: 'BTC', amount: 10, amount_side: 'from' },
     });
     const whitelist = captured.find((c) => c.name === 'rln_whitelist_swap')!;
     expect(whitelist.args).toEqual({ swapstring: 'SWAP/abc/def' });
@@ -133,6 +181,7 @@ describe('kaleidoswapAtomicRecipe — single confirmation', () => {
         confirms.push({ name: call.name, summary: (call as any).summary });
         return { approved: true };
       },
+      slots: { from_asset: 'USDT', to_asset: 'BTC', amount: 10, amount_side: 'from' },
     });
 
     expect(res.status).toBe('done');
@@ -152,6 +201,7 @@ describe('kaleidoswapAtomicRecipe — single confirmation', () => {
       provider: refusingProvider,
       tools,
       onConfirm: async () => ({ approved: false, reason: 'user said no' }),
+      slots: { from_asset: 'USDT', to_asset: 'BTC', amount: 10, amount_side: 'from' },
     });
 
     expect(res.status).toBe('cancelled');

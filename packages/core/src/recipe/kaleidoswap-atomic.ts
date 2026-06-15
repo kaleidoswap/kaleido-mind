@@ -1,19 +1,25 @@
 /**
  * Built-in "swap on KaleidoSwap" recipe — the real atomic-swap chain.
  *
- * A swap is a 6-step, two-service flow no small model can plan reliably, so the
- * recipe carries the plan; the model only extracts {from, to, amount}. The
- * maker owns init/execute/status; the user's RGB Lightning Node only exposes
- * its pubkey and whitelists the swapstring.
+ * A swap (especially the full maker + RLN atomic) is a 6-step, two-service flow
+ * no small model can plan reliably, so the recipe carries the plan. The model
+ * is used for natural-language understanding of the request (slot extraction).
  *
- *   "swap 10 usdt to btc"
- *     ↓ 1 model inference (slot extraction)
+ *   "buy 1 usdt"  (or "swap 10 usdt to btc")
+ *     ↓ heuristic pre-filter (0 inf) decides to enter the reliable recipe branch
+ *     ↓ 1 model inference (forced LLM slot extraction — the model parses intent)
  *   kaleidoswap_get_quote        ← MAKER  prices the swap (read-only)
  *     ↓ [ONE confirmation gate — shows the real quote numbers]
  *   kaleidoswap_atomic_init      ← MAKER  locks the swap → swapstring, payment_hash
  *   rln_get_node_info            ← NODE   read pubkey (= taker_pubkey)
  *   rln_whitelist_swap           ← NODE   accept the swapstring
  *   kaleidoswap_atomic_execute   ← MAKER  settle (final)
+ *
+ * `forceModelExtract` ensures the model is always consulted for slot parsing
+ * (1 inference) so natural language like "buy 1 usdt" is interpreted by the LLM.
+ * A safety fallback in the runner uses the deterministic extractor if the model
+ * returns incomplete slots. The execution sequence + single-confirm gate remain
+ * fully deterministic and reliable.
  *
  * Status is NOT polled here — settlement takes seconds-to-minutes and blocking
  * the chat is bad UX. The recipe reports "submitted, settling"; the user (or a
@@ -66,7 +72,12 @@ export const kaleidoswapAtomicRecipe: Recipe = {
     { name: 'amount', type: 'number', description: 'The amount the user named' },
     { name: 'amount_side', type: 'string', description: "Which leg the amount is on: 'from' (sell/swap) or 'to' (buy)" },
   ],
+  // Keep the fast `extract` for the Funnel's cheap pre-filter (so "buy 1 usdt"
+  // reliably enters the recipe branch instead of falling to free agentic).
+  // `forceModelExtract` makes runRecipe ignore the deterministic result and
+  // always ask the model to produce the actual slots used for execution.
   extract: extractSwap,
+  forceModelExtract: true,
   confident: (s) => !!s.from_asset && !!s.to_asset && !!s.amount,
   steps: [
     // 1. MAKER quotes the swap (read-only). Returns rfq_id + full asset specs
