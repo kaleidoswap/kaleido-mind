@@ -13,15 +13,16 @@ Built for the [QVAC Hackathon](https://dorahacks.io/hackathon/qvac-unleach-edge-
 Three ideas make that work:
 
 1. **One tool contract, many transports.** The model sees identical tool names + schemas everywhere; only execution differs (mobile = in-process WDK adapters, desktop = a namespaced MCP + CLI, eval = stubs). So skills are portable and benchmarks are honest.
-2. **Recipes, not planning.** A small model can't reliably plan *"pay bob 3 EUR"* (resolve → price → convert → confirm → send). So a **skill carries the plan**; the model only fills the slots. ~1 inference instead of 5, reliable on a 0.6B.
+2. **Recipes, not planning (with hybrid model use).** A small model can't reliably plan *"pay bob 3 EUR"* (resolve → price → convert → confirm → send). So a **skill carries the plan**; the model only fills the slots (~1 inference instead of 5, reliable on a 0.6B). For complex recipes (e.g. atomic swaps) slot extraction can be forced through the model for better natural-language understanding, with deterministic fallbacks to protect precision and reliability. Discovery skills (e.g. merchant-finder) are intentionally more model-leveraging.
 3. **A tiered funnel.** Most requests never reach the model at all.
 
 ```
 user request
   ├─ T0  fast-path     "balance" / "address" / "btc price"   → 0 inferences, instant
-  ├─ T2  recipe        "pay bob 3 EUR" / "buy 0.001 BTC"      → ~1 inference, deterministic chain, confirm-gated
+  ├─ T2  recipe        "pay bob 3 EUR" / "buy 0.001 BTC"      → ~1 inference (model may assist slot extraction for complex recipes), deterministic chain, confirm-gated
   └─ T1  agentic loop  everything else                        → skill-scoped LLM
         ↘ hard / novel chains can P2P-delegate to a paired desktop's bigger model
+        (discovery flows like merchants intentionally use more model reasoning)
 ```
 
 **Confirm-before-spend is structural:** every fund-moving tool is `requiresConfirmation` in the contract, so the engine pauses for the host's confirm sheet before any send — the model can't bypass it. The sheet gets a deterministic, voice-first **readback** (`confirmReadback` — *"Send 4,800 sats to bob over Spark. Confirm?"*) built from the resolved call, not the model, so unit/recipient mistakes surface where they're caught.
@@ -29,8 +30,8 @@ user request
 ## Features
 
 - **Multi-L2 wallet tool contract** — per-layer namespaced tools (`spark_*`, `rln_*`, `arkade_*`) + a cross-cutting router (`resolve_contact`, `get_price`, `fiat_to_sats`, `send_payment`, `get_swap_quote`/`execute_swap`). One source of truth in core.
-- **Recipe engine** — deterministic multi-step (payments, swaps) that works on a 0.6B model.
-- **Skills** — Agent-Skills-spec playbooks (`SKILL.md` + progressive disclosure) that scope tools and carry recipes; bundled for React Native.
+- **Recipe engine** — deterministic multi-step (payments, swaps) that works on a 0.6B model; slot extraction can be model-assisted for complex cases with precision safeguards.
+- **Skills** — Agent-Skills-spec playbooks (`SKILL.md` + progressive disclosure) that scope tools and carry recipes; bundled for React Native. Some (e.g. merchant-finder for location/BTC Map) are intentionally more model-leveraging for natural language understanding, context, and result post-processing (via pluggable selectors including embeddings).
 - **Tool sources** — in-process, MCP, CLI, and L402 (pay-per-call HTTP) — all behind one `ToolRegistry`.
 - **Memory + RAG** — long-term recall and injected-embedding retrieval (Bitcoin copilot, wallet history, BTC-map discovery), all through QVAC. Memory **consolidates** near-duplicates (cheap on-device dedup, optional LLM merge on capable/delegated devices) so it doesn't bloat.
 - **Hardware-aware** — picks the model + context budget for the device; P2P delegation for heavy work.

@@ -31,17 +31,22 @@ Most "local AI wallet" demos ignore all three. We designed around them.
 1. **One tool contract, many transports.** The model sees identical tool
    names/schemas everywhere (mobile = in-process WDK adapters; desktop = a
    namespaced MCP + CLI; eval = stubs). Skills are portable; benchmarks are honest.
-2. **Recipes, not planning.** A *skill carries the plan*; the model only fills the
-   slots. *"Pay bob 3 EUR"* runs in **~1 inference instead of 5**, reliably, on a
-   0.6B — the deterministic steps (resolve/price/convert) cost no model time.
+2. **Recipes, not planning (with hybrid model use).** A *skill carries the plan*;
+   the model only fills the slots. *"Pay bob 3 EUR"* runs in **~1 inference instead of 5**,
+   reliably, on a 0.6B — the deterministic steps cost no model time. For complex
+   recipes (e.g. atomic swaps) the model can be used for slot extraction (better NL
+   understanding), with deterministic fallbacks for precision/reliability. Discovery
+   skills (merchant-finder) are intentionally more model-leveraging for understanding
+   vague queries + post-processing.
 3. **A tiered funnel** — most requests never reach the model:
 
 ```
 user request
   ├─ T0  fast-path     "balance" / "address" / "btc price"   → 0 inferences, instant
-  ├─ T2  recipe        "pay bob 3 EUR" / "buy 0.001 BTC"      → ~1 inference, deterministic, confirm-gated
+  ├─ T2  recipe        "pay bob 3 EUR" / "buy 0.001 BTC"      → ~1 inference (model may assist slots for complex recipes), deterministic chain, confirm-gated
   └─ T1  agentic loop  everything else                        → skill-scoped LLM
         ↘ hard chains can P2P-delegate to a paired desktop's bigger model
+        (discovery like merchants intentionally more model-driven)
 ```
 
 **Safety is structural, not prompted.** Every fund-moving tool is

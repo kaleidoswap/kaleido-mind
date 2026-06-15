@@ -75,5 +75,8 @@ Then per query: `const skill = registry.select(query)` →
   tools (in-process WDK on mobile, MCP on desktop).
 - **merchant-finder/** — find Bitcoin-accepting merchants via BTC Map. Live
   data when the host injects a fetch + location; bundled offline list otherwise.
+  Intentionally model-leveraging (updated playbook + pluggable selectors) for
+  natural language understanding of vague location queries, context use,
+  post-processing results, and hybrid RAG.
 - **paid-data/** — fetch L402-paywalled resources via `fetch_paid_resource`.
 - **kaleido-trading/** — prices, quotes, atomic swaps, LSP channels.

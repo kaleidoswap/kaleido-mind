@@ -74,7 +74,8 @@ latency, and the model is reserved for genuine ambiguity.
 A tiny model can't reliably plan *"pay bob 3 EUR"* (resolve → price → convert →
 confirm → send) from scratch. So we don't ask it to.
 
-**The skill carries the recipe; the model only fills the gaps.**
+**The skill carries the recipe; the model only fills the gaps** (with targeted
+exceptions for better NL handling).
 
 ```
 "pay bob 3 EUR"
@@ -96,11 +97,15 @@ confirm → send) from scratch. So we don't ask it to.
 - **Reliable** on 0.6–4B because the hard part (the plan) is in the skill.
 - **Graceful fallback:** no recipe match → full agentic loop (more inferences) or
   **delegate to desktop**.
+- **Hybrid nuance (implemented):** For discovery skills (merchant-finder), the
+  model does more reasoning/understanding/post-processing. For complex recipes
+  (atomic), slot extraction can use the model with deterministic precision
+  safeguards. See updated skills section and `forceModelExtract`.
 
 ### Two multi-step modes (both eval'd)
 | Mode | Where | How |
 |---|---|---|
-| **Recipe** | mobile default | skill = ordered plan; 1 structured extraction + deterministic execution |
+| **Recipe** | mobile default | skill = ordered plan; 1 structured extraction (+ optional model-assisted via `forceModelExtract` for complex cases like atomic swaps, with precision fallbacks) + deterministic execution |
 | **Free agentic** | desktop / delegated | model plans each step in a full loop |
 
 Implementation: a lightweight **Recipe** abstraction — a skill may declare an
@@ -126,9 +131,9 @@ cross-cutting router/helpers: `resolve_contact`, `get_price(asset,fiat?)`,
 
 Ship in core; load identically on both surfaces. They are the routing playbooks
 **and** the multi-step recipes, with **few-shot** examples for small models:
-- **payments** (recipe), **receive** (recipe), **swap** (recipe) — these remain deliberately deterministic (recipe owns the plan; model only fills slots reliably on tiny models).
+- **payments** (recipe), **receive** (recipe), **swap** (recipe) — these remain deliberately deterministic for the execution plan (recipe owns the ordered steps and single-confirmation safety; model only fills slots reliably on tiny models). For complex recipes like atomic swaps, slot extraction can be forced through the model (`forceModelExtract`) for better natural-language handling of intents like "buy 1 USDT", with deterministic fallbacks to protect precision/leg selection.
 - **per-layer** (`spark`, `rln`, `arkade`) — tool list + when to pick that rail
-- Discovery skills (e.g. merchant-finder for BTC Map location queries) are intentionally more model-leveraging: the skill + pluggable selectors let the LLM apply natural language understanding, context, and post-processing of results.
+- Discovery skills (e.g. merchant-finder for BTC Map location queries) are intentionally more model-leveraging: the skill + pluggable selectors (including embedding-based via `createEmbeddingSkillSelector`) let the LLM apply natural language understanding, context, post-processing of results, and hybrid RAG use.
 - port **wallet-assistant** from kaleido-agent (already documents these flows)
 
 ---
@@ -160,7 +165,7 @@ device**.
 | **2. Tool contract in core** | per-layer `ToolDef[]` + spend flags + missing fns | ✅ `wallet/contract.ts` |
 | **3a. Desktop binding** | `kaleido-mcp` namespaced tools + `kaleido` CLI | ▢ |
 | **3b. Mobile binding** | in-process handlers → Spark/RLN/Arkade WDK adapters | ✅ `rate/services/walletTools.ts` + screen + skill |
-| **4. Skills + recipes** | payments/receive/swap (recipe + few-shot) + per-layer | ◐ payments + swap recipes done; receive + few-shot next |
+| **4. Skills + recipes** | payments/receive/swap (recipe + few-shot) + per-layer; hybrid model use for discovery skills and complex recipe slot parsing | ◐ payments + atomic swap recipes done (with model-assisted extraction + precision safeguards for atomic); receive + few-shot next; merchant-finder made intentionally model-leveraging with pluggable selectors |
 | **5. Mobile funnel** | deterministic fast-path + slot-filling + Recipe engine | ✅ Tier-0 fast-path + Tier-2 recipe + Recipe engine wired in rate |
 | **6. UX/perf** | warm-on-open, streaming, prefix-cache, idle-unload | ▢ |
 | **7. Safety wiring** | flag spend tools; `onConfirm` sheet (mobile) + dialog (desktop) | partial (gate exists) |
@@ -188,3 +193,8 @@ device**.
 - **New:** the per-layer contract; the deterministic fast-path + slot-filling;
   the Recipe engine (mobile multi-step); few-shot skills; per-surface eval +
   Track B; warm/cache/idle perf; the namespaced MCP + CLI mirror.
+- **Evolved (implemented):** Hybrid model use — discovery skills (merchant-finder)
+  intentionally leverage the model for NL understanding + post-processing (with
+  pluggable SkillSelector including embeddings); complex recipes (atomic swap)
+  can force model slot extraction while keeping deterministic plans and precision
+  safeguards via fallbacks.

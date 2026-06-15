@@ -87,8 +87,12 @@ expose only the read tools to an eval/sandbox.
 | **atomic** | `kaleidoswap_atomic_init(quote_id, receive_invoice)` 🔒 · `kaleidoswap_atomic_execute(atomic_id)` 🔒 · `kaleidoswap_atomic_status(atomic_id)` |
 
 The atomic chain is driven deterministically by `kaleidoswapAtomicRecipe` —
-quote → create RGB/LN receive invoice → init → pay → execute. Multi-spend
-recipes have every spend gated by the recipe runner (intermediate steps too).
+quote → create RGB/LN receive invoice → init → pay → execute (single confirmation
+for the whole multi-spend unit). Slot extraction can be forced through the model
+(`forceModelExtract`) for better natural-language handling of user intents, with
+deterministic fallbacks to protect precision, leg selection, and reliability.
+Multi-spend recipes have every spend gated by the recipe runner (intermediate
+steps too).
 
 ### LSPS1 channel orders — `lsps1/contract.ts`
 
@@ -107,11 +111,14 @@ in by changing only the host's binder. Bound by `bindLsps1Tools(handlers)`.
 
 Skills ship in core and load identically on both surfaces. They encode *when +
 how* to use the tools and the **layer-routing rules** — exactly the "info on how
-to call the MCPs":
-- **payments** — resolve contact → price → `fiat_to_sats` → (gate) → `send_payment` on the right rail.
+to call the MCPs". Most payment/swap/receive skills remain plan-deterministic
+(recipe owns the ordered steps for reliability on tiny models), but we have
+evolved hybrid use:
+- **payments / receive / (simple) swap** — resolve contact → price → `fiat_to_sats` → (gate) → `send_payment` on the right rail (or equivalents).
+- **atomic swap** (via `kaleidoswapAtomicRecipe`) — quote → (single gate) → init/whitelist/execute. Slot extraction can be model-driven (`forceModelExtract`) for better intent parsing, with deterministic fallbacks for precision.
 - **receive** — `*_create_invoice` on the requested/best layer.
-- **swap** — `get_swap_quote` → (gate) → `execute_swap`.
 - **per-layer** (`spark`, `rln`, `arkade`) — the tool list + when to choose that rail (e.g. USDT → RLN/RGB unless Liquid specified; fast small BTC → Spark).
+- **Discovery** (merchant-finder) — intentionally more model-leveraging for NL understanding of vague "near me / coffee in X" queries, context, result post-processing, and RAG hybrid (pluggable selectors).
 
 ## 5. Safety: confirm-before-spend (engine-enforced)
 
