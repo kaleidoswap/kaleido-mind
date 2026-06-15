@@ -187,8 +187,8 @@ export const btcMapLiveFetch: BtcMapFetch = async (q) => {
  *
  * The CLI has no GPS, so:
  *   - `getCurrent` returns `defaultLocation` if one is configured (e.g.
- *     KALEIDO_DEFAULT_LOCATION="Lugano"); otherwise null → core falls
- *     through to offline mode.
+ *     KALEIDO_DEFAULT_LOCATION="Lugano"); otherwise null → the core source
+ *     returns a clean "no location" error (no offline fallback).
  *   - `geocode` hits Nominatim (OSM's free geocoder). User agent set per
  *     Nominatim usage policy.
  */
@@ -223,7 +223,8 @@ export function btcMapLiveLocation(defaultLocation?: LatLng): LocationProvider {
 /**
  * Resolve a default location from env (`KALEIDO_DEFAULT_LOCATION`).
  * Set to a free-text address or a "lat,lng" pair. Returns undefined when
- * unset — the source then falls through to offline mode for "near me".
+ * unset — the source then returns a "could not determine your location"
+ * error for "near me" queries (no offline fallback).
  */
 export async function defaultLocationFromEnv(): Promise<LatLng | undefined> {
   const v = process.env.KALEIDO_DEFAULT_LOCATION;

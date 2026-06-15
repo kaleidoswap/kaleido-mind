@@ -40,10 +40,6 @@ import { buildLsps1ToolSource } from './lsps1Tools.js';
 import { buildRlnToolSource } from './rlnTools.js';
 import { btcMapLiveFetch, btcMapLiveLocation, defaultLocationFromEnv } from './btcmapLive.js';
 
-// BTC Map live mode is the default; set KALEIDO_BTCMAP_LIVE=0 to fall back to
-// the small bundled offline list (useful in offline dev / CI / unit smoke).
-const BTCMAP_LIVE = process.env.KALEIDO_BTCMAP_LIVE !== '0';
-
 const KALEIDOSWAP_BASE_URL = process.env.KALEIDOSWAP_BASE_URL ?? 'http://localhost:8000';
 const KALEIDOSWAP_API_KEY = process.env.KALEIDOSWAP_API_KEY;
 
@@ -203,17 +199,16 @@ export async function buildAgent(cfg: CliConfig, opts: BuildOpts = {}): Promise<
   let retriever: Retriever | null = null;
   if (embeddings) { retriever = new Retriever({ embeddings }); await retriever.ingest(BITCOIN_COPILOT_DOCS); }
 
-  // Live BTC Map by default — hits api.btcmap.org (24h disk cache) and
-  // geocodes addresses via Nominatim. Set KALEIDO_BTCMAP_LIVE=0 to use the
-  // bundled offline sample. KALEIDO_DEFAULT_LOCATION configures "near me"
-  // for the CLI which has no GPS (set to a city name or "lat,lng").
-  const defaultLoc = BTCMAP_LIVE ? await defaultLocationFromEnv() : undefined;
-  const merchantSource = BTCMAP_LIVE
-    ? createBtcMapToolSource({
-        fetch: btcMapLiveFetch,
-        location: btcMapLiveLocation(defaultLoc),
-      })
-    : createBtcMapToolSource();
+  // Live BTC Map only — hits api.btcmap.org (24h disk cache) and geocodes
+  // addresses via Nominatim. There is NO offline fallback: if the network
+  // is unreachable the tool returns a clean error rather than fake data.
+  // KALEIDO_DEFAULT_LOCATION configures "near me" for the CLI which has no
+  // GPS (set to a city name or "lat,lng").
+  const defaultLoc = await defaultLocationFromEnv();
+  const merchantSource = createBtcMapToolSource({
+    fetch: btcMapLiveFetch,
+    location: btcMapLiveLocation(defaultLoc),
+  });
 
   const sources: ToolSource[] = [
     new InProcessToolSource('wallet', MOCK_TOOLS),
