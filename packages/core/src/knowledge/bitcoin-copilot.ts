@@ -174,4 +174,73 @@ export const BITCOIN_COPILOT_DOCS: RagDocument[] = [
       'accumulate BTC or an asset over time without timing the market.',
     metadata: { topic: 'trading' },
   },
+  {
+    id: 'spend-vs-receive-capacity',
+    text:
+      'Two completely different numbers, often confused: your SPEND capacity ' +
+      '(outbound, local balance — what you can send right now) and your ' +
+      'RECEIVE capacity (inbound, remote balance — what others can pay you ' +
+      'without opening a new channel). Knowing local_balance does NOT tell ' +
+      'you receive capacity, and vice versa. "How much can I spend?" → local ' +
+      'balance. "How much can I receive?" → inbound, derived from channels ' +
+      'or bought from an LSP.',
+    metadata: { topic: 'liquidity' },
+  },
+  {
+    id: 'nodeinfo-fields',
+    text:
+      'Common RGB Lightning Node fields and what they actually mean: pubkey ' +
+      '(your node identity); num_channels (total channels, including unusable ' +
+      'ones); num_usable_channels (subset that can route — what you spend ' +
+      'with); local_balance_sat (sats YOU own across all channels — your ' +
+      'spend / outbound capacity); pending_outbound_payments_sat (in-flight, ' +
+      'temporarily locked); eventual_close_fees_sat (cost if you close every ' +
+      'channel now); num_peers (connected peers). local_balance_sat is NOT ' +
+      'receive capacity and NOT total channel capacity.',
+    metadata: { topic: 'lightning' },
+  },
+  {
+    id: 'channel-two-sided',
+    text:
+      'Every Lightning channel has TWO balances: your side (local — what you ' +
+      'can spend) and the peer\'s side (remote — what they can spend, which ' +
+      'is what YOU can receive). Total channel capacity = local + remote and ' +
+      'is fixed at open time. Routing a payment moves sats from one side to ' +
+      'the other; it does NOT change total capacity. So if you "have 2 ' +
+      'channels with 1,000,000 sats total capacity", that does NOT mean you ' +
+      'can spend 1M and receive 1M — only the split tells you.',
+    metadata: { topic: 'channels' },
+  },
+  {
+    id: 'lsp-info-meaning',
+    text:
+      'The LSPS1 `get_info` endpoint returns the LSP\'s OFFER (min/max ' +
+      'channel size you can buy, fees, accepted payment options). It is NOT ' +
+      'your current inbound capacity — it describes what the LSP is willing ' +
+      'to sell you. To learn your CURRENT receive capacity, sum the remote ' +
+      'balance of your existing channels; to BUY MORE, use lsp_get_info and ' +
+      'lsp_create_order.',
+    metadata: { topic: 'channels' },
+  },
+  {
+    id: 'asset-channels',
+    text:
+      'RGB asset channels (colored channels) carry one specific asset like ' +
+      'USDT or XAUT alongside the BTC funding. Asset capacity is SEPARATE per ' +
+      'asset — having 100,000 sats spendable in BTC channels does not give ' +
+      'you USDT spendable; you need a USDT channel (or buy one via LSPS1). ' +
+      'Likewise, USDT inbound and BTC inbound are independent numbers.',
+    metadata: { topic: 'rgb' },
+  },
+  {
+    id: 'swap-vs-payment',
+    text:
+      'Swap and payment are different actions. A SWAP trades one asset for ' +
+      'another via the KaleidoSwap maker (quote → init → execute). A PAYMENT ' +
+      'moves an existing balance to a recipient over Lightning or on-chain ' +
+      '(no maker). "Send 10 USDT to Alice" is a payment; "swap 10 USDT to ' +
+      'BTC" is a swap. They use different tools, different fees, and a swap ' +
+      'is always between two assets the maker prices.',
+    metadata: { topic: 'usage' },
+  },
 ];
