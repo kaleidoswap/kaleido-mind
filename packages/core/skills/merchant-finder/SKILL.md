@@ -1,8 +1,8 @@
 ---
 name: merchant-finder
-description: "Find Bitcoin-accepting merchants near the user using live BTC Map data and the device's real location. Triggers when the user asks where to spend Bitcoin, for a shop, store, restaurant, cafe, bar, or ATM that accepts Bitcoin, or for merchants nearby."
+description: "Find Bitcoin-accepting merchants near the user using live BTC Map data and the device's real location. Triggers when the user asks where to spend Bitcoin, buy pizza/food with sats or bitcoin, eat at restaurants/cafes paying with sats, for a shop, store, restaurant, cafe, bar, or ATM that accepts Bitcoin, or for merchants nearby or in a city like turin."
 tools: find_merchant_locations
-triggers: merchant, merchants, shop, shops, store, stores, restaurant, restaurants, cafe, cafes, bar, bars, atm, atms, accept, accepts, accepting, nearby, near me, around, place, places, spend, find, pizza, food, coffee, bitcoin map, btcmap
+triggers: merchant, merchants, shop, shops, store, stores, restaurant, restaurants, cafe, cafes, bar, bars, atm, atms, accept, accepts, accepting, nearby, near me, around, place, places, spend, find, pizza, pizz, food, coffee, eat, dinner, lunch, buy, bitcoin map, btcmap
 metadata:
   author: kaleidoswap
   version: "0.3.0"
@@ -20,10 +20,11 @@ that error to the user verbatim instead of inventing places.
 
 1. **Never answer from memory.** You have NO knowledge of any merchant. Every
    place, name, address and distance in your reply MUST come from a
-   `find_merchant_locations` result returned in the CURRENT turn. Call
-   `find_merchant_locations` for every place question, even if a similar one
+   result returned by the merchant search tool in the CURRENT turn. Use the
+   merchant search tool for every place question, even if a similar one
    was answered earlier — do NOT reuse a previous answer. Never invent a
-   merchant.
+   merchant. Do not mention the exact name of the tool in your text reply
+   to the user.
 2. **List, don't pick.** A "where can I…" / "find merchants" question is a
    LIST question. Show every merchant the tool returned (cap at the first ~5
    if there are many), ONE LINE EACH. Never collapse a list of 10 to one
@@ -42,18 +43,18 @@ that error to the user verbatim instead of inventing places.
   - "coffee near the station", "grab a bite", "something to eat" → `query: "coffee"` or `"food"` / `"pizza"` (or leave descriptive terms in `query`); consider `category: "cafe"` or `"restaurant"` only when it clearly fits one of the allowed values.
   - "near me for lunch" or "around here" → start with empty or just a broad `query`; let the device location do the work. You may infer a reasonable city from prior turns ("you mentioned Lugano earlier") and pass `near_address`.
   - "ATMs or shops that take lightning" → `query: "atm"` or separate calls, or put "atm shop lightning" in `query`.
-  - "the cheaper ones", "with websites", "open late", "good for dinner" → call the tool first (possibly broad), then in the same or follow-up turn use the returned list + any other context/memory to filter, rank or describe. Do not fabricate entries.
+  - "the cheaper ones", "with websites", "open late", "good for dinner" → use the tool first (possibly broad), then in the same or follow-up turn use the returned list + any other context/memory to filter, rank or describe. Do not fabricate entries.
   - **Critical for currency terms**: "where can I spend sats in turin", "bitcoin merchants in X", "places that accept crypto" are generic spend requests. **Do not** put "sats", "btc", "bitcoin", "spend" into `query` or invent a `category` (e.g. "shop"). Use only `near_address` (or empty). Putting currency words in query almost always returns zero results because the data source already only contains Bitcoin-accepting places.
 
-- Multi-turn and post-processing: After `find_merchant_locations` returns a list you may (and should) reason over it: rank by distance or relevance to the user's phrasing, surface `phone`/`website`/`opening_hours` when present, note accepts_lightning, suggest next actions ("want directions or to check one?"), or combine with `search_knowledge` / memory results if merchants have been ingested for the area.
+- Multi-turn and post-processing: After the merchant search tool returns a list you may (and should) reason over it: rank by distance or relevance to the user's phrasing, surface `phone`/`website`/`opening_hours` when present, note accepts_lightning, suggest next actions ("want directions or to check one?"), or combine with `search_knowledge` / memory results if merchants have been ingested for the area.
 
-- Hybrid live + RAG: If a `search_knowledge` tool is available and a merchant corpus is loaded, you can call both the live finder (for freshness + distance) and search for background on an area or previously-seen places. Present live results as the actionable list.
+- Hybrid live + RAG: If a `search_knowledge` tool is available and a merchant corpus is loaded, you can use both the live finder (for freshness + distance) and search for background on an area or previously-seen places. Present live results as the actionable list.
 
 - Context is fair game for *formulating the call or summarizing results* (e.g. previous city mentioned, user's preference for Lightning). It is never a substitute for calling the tool for the actual current list of places.
 
 ## How to call the tool
 
-1. **Start with `find_merchant_locations`.** Map the user's words to fields using the guidance above. The schema accepts:
+1. **Start with the merchant search tool.** Map the user's words to fields using the guidance above. The schema accepts:
 
    - `query` — free-text the user effectively named or implied (e.g. "coffee", "pizza", "food", "tapas", "atm"). Good place for terms that don't match a strict category. **Omit entirely** for generic "spend sats", "where can I spend", "merchants", "places to spend bitcoin", or "accept crypto". **Never** put "sats", "sat", "bitcoin", "btc", "crypto", "spend", or similar currency/verb terms here — the data source is already Bitcoin-only and this will usually return zero results.
 
@@ -66,14 +67,14 @@ that error to the user verbatim instead of inventing places.
    - `limit` — only when the user named a count (1–20).
 
    Positive examples (using understanding):
-   - "where can I spend btc near me" → `find_merchant_locations({})`
-   - "where can I spend sats in turin" → `find_merchant_locations({ near_address: "Turin" })`   ← generic spend → minimal args, no query, no category
-   - "where can I spend btc in Lugano" → `find_merchant_locations({ near_address: "Lugano" })`
-   - "cafes in Lisbon" → `find_merchant_locations({ category: "cafe", near_address: "Lisbon" })`
-   - "pizza places in Switzerland that take bitcoin" → `find_merchant_locations({ query: "pizza", near_address: "Switzerland" })`
-   - "lightning bars in NYC, within 2 km" → `find_merchant_locations({ category: "bar", near_address: "New York", radius_km: 2 })`
-   - "coffee near the station" or "grab a bite around here" → `find_merchant_locations({ query: "coffee" })` or `{ query: "food" }` (let location come from device or prior context)
-   - "ATMs or shops that take sats in the center" → first call with `query: "atm shop"` + appropriate near_address; then reason over results.
+   - "where can I spend btc near me" → use the tool with `{}`
+   - "where can I spend sats in turin" → use the tool with `{ near_address: "Turin" }`   ← generic spend → minimal args, no query, no category
+   - "where can I spend btc in Lugano" → use the tool with `{ near_address: "Lugano" }`
+   - "cafes in Lisbon" → use the tool with `{ category: "cafe", near_address: "Lisbon" }`
+   - "pizza places in Switzerland that take bitcoin" → use the tool with `{ query: "pizza", near_address: "Switzerland" }`
+   - "lightning bars in NYC, within 2 km" → use the tool with `{ category: "bar", near_address: "New York", radius_km: 2 }`
+   - "coffee near the station" or "grab a bite around here" → use the tool with `{ query: "coffee" }` or `{ query: "food" }` (let location come from device or prior context)
+   - "ATMs or shops that take sats in the center" → first use the tool with `query: "atm shop"` + appropriate near_address; then reason over results.
 
    Things that are still wrong (schema or data reasons):
    - `category: "merchant"` or `"place"` (invalid per schema).
@@ -83,7 +84,7 @@ that error to the user verbatim instead of inventing places.
    - Adding constraints the user did not name when a minimal call would have returned more relevant places.
 
    **Real bad example that causes zero results**:
-   - "where can I spend sats in turin" → bad: `{"query":"sats","category":"shop","near_address":"Turin","radius_km":5}`
+   - "where can I spend sats in turin" → bad: use query "sats" + category "shop"
      ( "sats" in query + guessed category over-filters everything; correct is just the near_address or nothing).
 
 2. **Present the results.** Each row carries:
@@ -113,4 +114,4 @@ that error to the user verbatim instead of inventing places.
 - When `precise_location` is false for a "near me" result, mention the fallback area that was used.
 - After showing the list you are free to reason, rank, or ask a clarifying follow-up using the data + conversation context.
 
-**Remember**: the live `find_merchant_locations` (plus any RAG merchant documents you also search) are the only sources of place information. Your value is excellent intent → arg mapping on the way in, and helpful reasoning / presentation on the way out.
+**Remember**: the live merchant search tool (plus any RAG merchant documents you also search) are the only sources of place information. Your value is excellent intent → arg mapping on the way in, and helpful reasoning / presentation on the way out. Do not name the tool in your user-facing reply.

@@ -117,10 +117,11 @@ export const keywordSelector: SkillSelector = {
       for (const t of skill.triggers ?? []) if (triggerMatches(q, t)) score += 3;
 
       // Light discovery / location phrase boost (helps merchant-finder and
-      // similar skills on natural language like "coffee near the station").
-      if (/\b(near|nearby|around|close|spend|find|shop|cafe|coffee|food|eat|lunch|dinner|atm)\b/i.test(q)) {
+      // similar skills on natural language like "coffee near the station" or
+      // "buy pizza with sats in turin").
+      if (/\b(near|nearby|around|close|spend|find|shop|cafe|coffee|food|eat|lunch|dinner|atm|buy|pizz|restaurant)\b/i.test(q)) {
         const skillText = (skill.description + ' ' + (skill.triggers || []).join(' ')).toLowerCase();
-        if (/(merchant|btcmap|map|location|nearby|spend.*bitcoin|find.*place)/.test(skillText)) score += 1.5;
+        if (/(merchant|btcmap|map|location|nearby|spend.*bitcoin|find.*place|food|restaurant|cafe|eat|pizza)/.test(skillText)) score += 1.5;
       }
 
       if (score > bestScore) {
