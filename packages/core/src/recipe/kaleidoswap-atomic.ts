@@ -28,10 +28,16 @@
 import type { Recipe, RecipeContext } from './types.js';
 import { extractSwap } from './swap.js';
 
-// Fire on plain swap intent too — there's one swap path now (atomic). The
-// generic `swapRecipe` (get_swap_quote/execute_swap) is for hosts wired to a
-// different venue; on the KaleidoSwap CLI this recipe is the swap.
-const SWAP_INTENT = /\b(swap|exchange|convert|trade)\b/i;
+// Fire on swap intent — "swap/exchange/convert/trade", OR "buy/sell/get" when a
+// crypto asset is named (so "buy one usdt" routes here, but "buy a gift card"
+// does not). The generic `swapRecipe` is for hosts wired to a different venue;
+// on the KaleidoSwap CLI this recipe is the swap.
+const ASSET = /\b(btc|bitcoin|sats?|usdt|tether|xaut|gold)\b/i;
+const SWAP_INTENT = (t: string) =>
+  /\b(swap|exchange|convert|trade)\b/i.test(t) ||
+  (/\b(buy|sell|get|purchase|acquire)\b/i.test(t) &&
+    ASSET.test(t) &&
+    !/\b(gift\s?card|top-?up|esim|voucher|invoice|address)\b/i.test(t));
 
 interface QuoteResult {
   rfq_id?: string;
@@ -48,12 +54,13 @@ export const kaleidoswapAtomicRecipe: Recipe = {
   name: 'kaleidoswap-atomic',
   description:
     'Swap between BTC and an RGB asset on KaleidoSwap: quote, confirm once, then init (maker) → whitelist (node) → execute (maker).',
-  match: (t) => SWAP_INTENT.test(t),
-  triggers: ['swap', 'exchange', 'convert', 'trade'],
+  match: (t) => SWAP_INTENT(t),
+  triggers: ['swap', 'exchange', 'convert', 'trade', 'buy', 'sell'],
   slots: [
     { name: 'from_asset', type: 'string', description: 'Asset to spend (BTC / USDT / XAUT)', required: true },
     { name: 'to_asset', type: 'string', description: 'Asset to receive (BTC / USDT / XAUT)', required: true },
-    { name: 'amount', type: 'number', description: 'Amount of from_asset to swap' },
+    { name: 'amount', type: 'number', description: 'The amount the user named' },
+    { name: 'amount_side', type: 'string', description: "Which leg the amount is on: 'from' (sell/swap) or 'to' (buy)" },
   ],
   extract: extractSwap,
   confident: (s) => !!s.from_asset && !!s.to_asset && !!s.amount,
@@ -67,6 +74,9 @@ export const kaleidoswapAtomicRecipe: Recipe = {
         from_asset: ctx.slots.from_asset,
         to_asset: ctx.slots.to_asset,
         amount: ctx.slots.amount,
+        // 'to' for buy ("buy 1 USDT" → amount is what you RECEIVE); default
+        // 'from' for sell/swap. The host puts the amount on the right leg.
+        amount_side: ctx.slots.amount_side ?? 'from',
       }),
     },
     // 2. MAKER locks the swap. SwapRequest is flat (asset ids + maker-unit

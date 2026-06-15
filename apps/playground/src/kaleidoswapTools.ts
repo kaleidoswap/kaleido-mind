@@ -65,7 +65,10 @@ const KALEIDOSWAP_ROUTES: Record<string, Route> = {
   kaleidoswap_get_pairs:    { method: 'GET',  path: '/api/v1/market/pairs' },
   kaleidoswap_get_quote: {
     method: 'POST', path: '/api/v1/market/quote',
-    body: (a) => ({ from_asset: leg(a.from_asset, a.amount), to_asset: leg(a.to_asset) }),
+    // amount_side picks which leg carries the amount: 'to' for buy, else 'from'.
+    body: (a) => a.amount_side === 'to'
+      ? { from_asset: leg(a.from_asset), to_asset: leg(a.to_asset, a.amount) }
+      : { from_asset: leg(a.from_asset, a.amount), to_asset: leg(a.to_asset) },
   },
   kaleidoswap_get_nodeinfo: { method: 'GET',  path: '/api/v1/swaps/nodeinfo' },
   kaleidoswap_place_order: {

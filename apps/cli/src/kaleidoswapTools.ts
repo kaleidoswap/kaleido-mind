@@ -187,13 +187,13 @@ const ROUTES: Record<string, Route> = {
   kaleidoswap_get_quote: {
     method: 'POST',
     path: '/api/v1/market/quote',
-    // Maker expects { from_asset: SwapLegInput, to_asset: SwapLegInput }
-    // where SwapLegInput = { asset_id, layer, amount? }. Amount lives on the
-    // FROM leg only.
-    body: (a) => ({
-      from_asset: leg(a.from_asset, a.amount),
-      to_asset: leg(a.to_asset),
-    }),
+    // Maker expects { from_asset: SwapLegInput, to_asset: SwapLegInput } where
+    // SwapLegInput = { asset_id, layer, amount? } and EXACTLY ONE leg carries
+    // the amount. `amount_side` picks the leg: 'to' for buy ("buy 1 USDT" → the
+    // 1 is what you receive), 'from' for sell/swap (the default).
+    body: (a) => a.amount_side === 'to'
+      ? { from_asset: leg(a.from_asset), to_asset: leg(a.to_asset, a.amount) }
+      : { from_asset: leg(a.from_asset, a.amount), to_asset: leg(a.to_asset) },
     // Precompute human amounts so the model reads a string, never does the
     // amount ÷ 10^precision math (a 0.6B parrots example numbers instead).
     transformResponse: enrichQuote,

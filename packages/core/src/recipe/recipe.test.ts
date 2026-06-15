@@ -89,11 +89,22 @@ describe('runRecipe — pay a contact', () => {
 });
 
 describe('extractSwap', () => {
-  it('parses "buy X <to> with <from>"', () => {
-    expect(extractSwap('buy 0.001 btc with usdt')).toEqual({ amount: 0.001, to_asset: 'BTC', from_asset: 'USDT' });
+  it('parses "buy X <to> with <from>" — amount on the TO leg', () => {
+    expect(extractSwap('buy 0.001 btc with usdt')).toEqual({ amount: 0.001, to_asset: 'BTC', from_asset: 'USDT', amount_side: 'to' });
   });
-  it('parses "swap X <from> for <to>"', () => {
-    expect(extractSwap('swap 10 usdt for btc')).toEqual({ amount: 10, from_asset: 'USDT', to_asset: 'BTC' });
+  it('parses "swap X <from> for <to>" — amount on the FROM leg', () => {
+    expect(extractSwap('swap 10 usdt for btc')).toEqual({ amount: 10, from_asset: 'USDT', to_asset: 'BTC', amount_side: 'from' });
+  });
+  it('parses "buy one usdt" — word-number, default funding asset, TO leg (the reported bug)', () => {
+    expect(extractSwap('buy one usdt from kaleido')).toEqual({ amount: 1, from_asset: 'BTC', to_asset: 'USDT', amount_side: 'to' });
+  });
+  it('parses "sell 100 usdt" — default target BTC, FROM leg', () => {
+    expect(extractSwap('sell 100 usdt')).toEqual({ amount: 100, from_asset: 'USDT', to_asset: 'BTC', amount_side: 'from' });
+  });
+  it('ignores a non-asset word as the funding asset ("from kaleido" → defaults BTC)', () => {
+    const r = extractSwap('buy 5 xaut from kaleido') as any;
+    expect(r.to_asset).toBe('XAUT');
+    expect(r.from_asset).toBe('BTC');
   });
   it('returns null for non-swap text', () => {
     expect(extractSwap('what is my balance')).toBeNull();

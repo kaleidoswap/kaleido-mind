@@ -54,6 +54,14 @@ describe('kaleidoswapAtomicRecipe — selection', () => {
     expect(kaleidoswapAtomicRecipe.match!('exchange 100000 sats for usdt')).toBe(true);
     expect(kaleidoswapAtomicRecipe.match!('convert btc to usdt')).toBe(true);
   });
+  it('triggers on buy/sell of a crypto asset (the reported bug)', () => {
+    expect(kaleidoswapAtomicRecipe.match!('buy one usdt from kaleido')).toBe(true);
+    expect(kaleidoswapAtomicRecipe.match!('sell 100 usdt')).toBe(true);
+  });
+  it('does NOT trigger on buying a gift card (that is commerce, not a swap)', () => {
+    expect(kaleidoswapAtomicRecipe.match!('buy a gift card')).toBe(false);
+    expect(kaleidoswapAtomicRecipe.match!('buy an amazon voucher')).toBe(false);
+  });
   it('does not trigger on a balance question', () => {
     expect(kaleidoswapAtomicRecipe.match!('what is my balance')).toBe(false);
   });
