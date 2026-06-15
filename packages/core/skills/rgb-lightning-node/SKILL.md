@@ -29,11 +29,28 @@ string, or sats balance. Never reuse a value from a previous turn.
 ## When to use each tool
 
 ### `rln_get_node_info` — no args
-Returns the node's pubkey, channel count, peer count, local balance. Call when:
-- The user asks about the node, pubkey, peers, channels, or balance.
+Returns:
+- `pubkey` — the node's identity (32-byte hex).
+- `num_channels` — total channels (may include unusable ones).
+- `num_usable_channels` — subset that can route a payment right now.
+- `local_balance_sat` — **sats YOU own** across all channels. This is your
+  **spend** capacity (outbound). It is **NOT** receive capacity, **NOT**
+  inbound liquidity, and **NOT** total channel capacity.
+- `pending_outbound_payments_sat` — in-flight, temporarily locked.
+- `num_peers` — currently connected peers.
+
+Call this when:
+- The user asks about the node, pubkey, peers, channel count, or how much
+  they can **spend**.
 - An atomic swap is in progress and the maker needs `taker_pubkey` —
   fetch the pubkey from this tool's `pubkey` field and pass it to
   `kaleidoswap_atomic_execute`.
+
+**Do NOT** use this tool's `local_balance_sat` to answer a question about
+**inbound liquidity / receive capacity** — that is a different quantity
+(the peer's side of each channel, not yours). For "how much can I receive?",
+the LSPS skill answers what's available to BUY (`lsp_get_info`); the current
+remote-balance breakdown isn't exposed by this skill's tools.
 
 ### `rln_whitelist_swap` — { swapstring } — 🔒 confirm-gated
 Tell the node "I accept this swap." Args: the `swapstring` returned by

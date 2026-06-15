@@ -20,14 +20,33 @@ KaleidoSwap maker by default, but the contract is LSP-agnostic (`lsp_*`).
 You have **no knowledge of LSP fees, channel sizes, or order status**. Every
 number, capacity, fee, or order id in your reply MUST come from a tool result
 returned in the CURRENT turn. Never quote a fee from memory. Never claim an
-order completed without calling `lsp_get_order`. Never reuse a number from a
-previous turn.
+order completed without calling `lsp_get_order`.
 
 **Calling the tool IS the answer.** Don't write "the LSP info is fetched with
 `lsp_get_info`" — call it.
 
 If a tool needs a required argument the user didn't give (e.g. an `order_id`
 when polling), ASK. Don't loop the same failing call.
+
+## What "inbound liquidity" / "receive capacity" actually means
+
+These three concepts get confused often. They are NOT the same number:
+
+| User says… | What they mean | How to answer |
+|---|---|---|
+| "how much can I **spend**?" | local balance (outbound) — sats YOU own across channels | NOT this skill — use the wallet skill / `rln_get_node_info.local_balance_sat`. |
+| "how much can I **receive**?" / "inbound liquidity?" / "receive limit?" | remote balance — sats your peers can pay you without opening a new channel | **Two cases:** (1) how much you HAVE today → sum of remote balances on your current channels (out of scope for this skill); (2) how much you can BUY from this LSP → `lsp_get_info` for the LSP's offer (min/max channel size, fees). |
+| "what does the LSP offer?" / "what's the LSPS1 info?" | the LSP's catalog — min/max sizes it sells, fees, terms | `lsp_get_info` (this is what it returns). |
+
+**Critical: `local_balance_sat` is NOT inbound capacity.** It is the SPEND
+side. If a user asks "how much can I receive?", DO NOT pull `local_balance_sat`
+from a previous nodeinfo call and report it — that's the wrong number. Call
+`lsp_get_info` (for buying more inbound) and say plainly that current-channels
+inbound isn't available via these tools.
+
+Same rule: any time you've seen a balance / channel number on a previous turn,
+that does NOT answer an "inbound" question. Inbound and balance are different
+quantities measured on different sides of the channel.
 
 ## Flow
 
