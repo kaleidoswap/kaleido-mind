@@ -1,0 +1,91 @@
+---
+name: rgb-lightning-node
+description: "Drive the user's local RGB Lightning Node (RLN) — read its pubkey/status, whitelist a swap, or create Lightning/RGB receive invoices. Triggers when the user asks about the node, needs an invoice, or is mid-atomic-swap and the maker needs the node pubkey or a swapstring whitelisted."
+tools: rln_get_node_info, rln_whitelist_swap, rln_create_ln_invoice, rln_create_rgb_invoice
+triggers: node, nodeinfo, pubkey, peer, channels, whitelist, taker, swapstring, invoice, receive, rgb invoice, ln invoice
+metadata:
+  author: kaleidoswap
+  version: "0.1.0"
+---
+
+# RGB Lightning Node (taker-side)
+
+You drive the **user's own** RGB Lightning Node running locally. In a KaleidoSwap
+atomic swap the **maker** owns init / execute / status (those are
+`kaleidoswap_atomic_*` tools, separate REST endpoints). The node's job in a
+swap is narrow: **expose its pubkey and whitelist the maker's swapstring**.
+The node does NOT init or execute swaps.
+
+## Critical rules
+
+You have **no knowledge** of the node's pubkey, channel state, balance, or any
+invoice contents. Every value in your reply MUST come from a tool result
+returned in the CURRENT turn — never invent a pubkey, channel id, invoice
+string, or sats balance. Never reuse a value from a previous turn.
+
+**Calling the tool IS the answer.** If the user asks "what's my pubkey?", call
+`rln_get_node_info` — do not describe how to fetch it.
+
+## When to use each tool
+
+### `rln_get_node_info` — no args
+Returns the node's pubkey, channel count, peer count, local balance. Call when:
+- The user asks about the node, pubkey, peers, channels, or balance.
+- An atomic swap is in progress and the maker needs `taker_pubkey` —
+  fetch the pubkey from this tool's `pubkey` field and pass it to
+  `kaleidoswap_atomic_execute`.
+
+### `rln_whitelist_swap` — { swapstring } — 🔒 confirm-gated
+Tell the node "I accept this swap." Args: the `swapstring` returned by
+`kaleidoswap_atomic_init`. The node validates and stores it; **no funds move
+here**, but the user is committing to the swap so the engine pauses for
+confirmation.
+
+Call this **after** `kaleidoswap_atomic_init` and **before**
+`kaleidoswap_atomic_execute`. Never call with an empty or invented swapstring
+— the node will reject it.
+
+### `rln_create_ln_invoice` — Lightning invoice for receiving sats
+Args:
+- `amount_sats` (optional) — omit for an amountless invoice.
+- `expiry_sec` (default 3600) — invoice TTL in seconds.
+- `asset_id` + `asset_amount` — optional, for RGB-over-Lightning.
+
+Use when the user wants to **receive** a Lightning payment. Do NOT call inside
+an atomic swap flow unless the user explicitly asked to invoice someone.
+
+### `rln_create_rgb_invoice` — on-chain RGB receive invoice
+Args:
+- `min_confirmations` (default 1).
+- `witness` (default false).
+- `asset_id` (optional — omit for an any-asset invoice).
+- `expiration_timestamp` (optional, Unix seconds).
+
+Use when the user wants to **receive** an RGB asset directly (not over
+Lightning). Outside the atomic swap flow.
+
+## The maker / node split
+
+A user-driven swap on KaleidoSwap is a two-service flow. Keep them straight:
+
+| Step | Owner | Tool |
+|------|-------|------|
+| Quote | maker | `kaleidoswap_get_quote` |
+| Init  | maker | `kaleidoswap_atomic_init` (returns swapstring + payment_hash) |
+| Pubkey | **node** | `rln_get_node_info` (read `pubkey`) |
+| Whitelist | **node** | `rln_whitelist_swap` (pass the swapstring) |
+| Execute | maker | `kaleidoswap_atomic_execute` (needs swapstring + taker_pubkey + payment_hash) |
+| Status | maker | `kaleidoswap_atomic_status` |
+
+The node's two contributions to the swap are the **pubkey** and the
+**whitelist ack** — nothing more. Don't reach for `/makerinit` or
+`/makerexecute`; those are for nodes that act AS the maker, which is not us.
+
+## Reply style
+
+- One short sentence built from the tool result.
+- Pubkeys are long hex strings — quote them in monospace if you can, never
+  truncate them when the user explicitly asked for them.
+- For `rln_get_node_info`, if the user just said "what's my node status?",
+  surface pubkey + num_usable_channels + local_balance_sat. Don't dump the
+  whole `details` object.

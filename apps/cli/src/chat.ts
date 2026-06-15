@@ -33,6 +33,7 @@ import { getModel } from './catalog.js';
 import { modelPath, isInstalled } from './models.js';
 import { buildKaleidoswapToolSource } from './kaleidoswapTools.js';
 import { buildLsps1ToolSource } from './lsps1Tools.js';
+import { buildRlnToolSource } from './rlnTools.js';
 import { btcMapLiveFetch, btcMapLiveLocation, defaultLocationFromEnv } from './btcmapLive.js';
 
 // BTC Map live mode is the default; set KALEIDO_BTCMAP_LIVE=0 to fall back to
@@ -41,6 +42,17 @@ const BTCMAP_LIVE = process.env.KALEIDO_BTCMAP_LIVE !== '0';
 
 const KALEIDOSWAP_BASE_URL = process.env.KALEIDOSWAP_BASE_URL ?? 'http://localhost:8000';
 const KALEIDOSWAP_API_KEY = process.env.KALEIDOSWAP_API_KEY;
+
+// RGB Lightning Node — taker-side ops (nodeinfo, taker-whitelist, receive
+// invoices). Atomic init/execute/status are owned by the maker, not the node.
+const RLN_BASE_URL = process.env.KALEIDO_RLN_URL ?? 'http://localhost:3001';
+const RLN_API_KEY = process.env.KALEIDO_RLN_API_KEY;
+const RLN_TOOL_NAMES = [
+  'rln_get_node_info',
+  'rln_whitelist_swap',
+  'rln_create_ln_invoice',
+  'rln_create_rgb_invoice',
+];
 
 /** Tool names from the canonical contracts — used as ambient-tool entries. */
 const KALEIDOSWAP_NAMES = KALEIDOSWAP_TOOLS.map((t) => t.name);
@@ -55,9 +67,9 @@ const PROFILE: AgentProfile = {
 const AMBIENT_TOOLS = [
   'remember', 'recall', 'search_knowledge', 'read_skill_reference',
   'find_merchant_locations', 'get_merchant_info',
-  // KaleidoSwap + LSPS1 tools — always callable; the trading / lsps skills
+  // KaleidoSwap + LSPS1 + RLN tools — always callable; the matching skills
   // give the model focused guidance when their triggers fire.
-  ...KALEIDOSWAP_NAMES, ...LSPS1_NAMES,
+  ...KALEIDOSWAP_NAMES, ...LSPS1_NAMES, ...RLN_TOOL_NAMES,
 ];
 
 const MOCK_TOOLS: InProcessTool[] = [
@@ -219,6 +231,9 @@ export async function buildAgent(cfg: CliConfig, opts: BuildOpts = {}): Promise<
     buildKaleidoswapToolSource({ baseUrl: KALEIDOSWAP_BASE_URL, apiKey: KALEIDOSWAP_API_KEY }),
     // LSPS1 channel orders — same base URL, LSP-agnostic tool names.
     buildLsps1ToolSource({ baseUrl: KALEIDOSWAP_BASE_URL, apiKey: KALEIDOSWAP_API_KEY }),
+    // RGB Lightning Node — taker-side: nodeinfo + /taker whitelist + receive
+    // invoices. Atomic init/execute are MAKER endpoints, not here.
+    buildRlnToolSource({ baseUrl: RLN_BASE_URL, apiKey: RLN_API_KEY }),
   ];
   if (retriever) sources.push(createRagToolSource(retriever));
 
