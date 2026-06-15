@@ -20,9 +20,10 @@
     "@modelcontextprotocol/sdk": "^1.0.0"
   },
   "peerDependencies": {
-    "@qvac/sdk": "*"
+    "@qvac/sdk": "^0.13.1"
   },
   "devDependencies": {
+    "@qvac/sdk": "^0.13.1",
     "@types/node": "^20.0.0",
     "tsx": "^4.7.0",
     "typescript": "^5.5.0"

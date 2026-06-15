@@ -36,6 +36,7 @@ import {
   type ToolSource,
 } from '@kaleidorg/mind';
 import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
+import { createQvacProvider, firewallFromKeyList } from '@kaleidorg/mind/qvac';
 
 // ─────────────────────────────────────────────────────────────────────
 // IO helpers
@@ -213,50 +214,26 @@ const DESKTOP_SYSTEM =
   'Use the available tools to take actions and answer questions; never invent balances, addresses or data — ' +
   'always call a tool and report what it returns. Keep replies concise.';
 
-const qvacProvider: LLMProvider = {
-  name: 'qvac',
-  async runTurn(input) {
-    if (!sdk || !state.qvacModelHandle) throw new Error('model not loaded');
-    const history = input.system
-      ? [{ role: 'system', content: input.system }, ...input.messages]
-      : input.messages;
-    const toolDefs = input.tools.map((t) => ({
-      name: t.name,
-      description: t.description,
-      parameters: t.parameters,
-    }));
-    const run: any = sdk.completion({
-      modelId: state.qvacModelHandle,
-      history,
-      stream: true,
-      tools: toolDefs.length ? toolDefs : undefined,
-    });
-    let streamed = '';
-    if (run?.events) {
-      for await (const ev of run.events) {
-        if (ev?.type === 'contentDelta') {
-          streamed += ev.text;
-          input.onToken?.(ev.text);
-        }
-      }
+// All QVAC completion logic lives in @kaleidorg/mind/qvac now (one place, shared
+// with the mobile app). We inject the lazily-loaded SDK functions: `completion`
+// is read at call time (the sidecar may start before @qvac/sdk finishes
+// loading), and `getModelId` returns the currently-loaded model handle so the
+// provider always runs against it. Cancellation isn't surfaced to the sidecar,
+// but we forward it to the SDK when available.
+const qvacProvider: LLMProvider = createQvacProvider({
+  completion: ((params: unknown) => {
+    if (!sdk) throw new Error('model not loaded');
+    return sdk.completion(params);
+  }) as Parameters<typeof createQvacProvider>[0]['completion'],
+  cancel: (async (opts: { requestId: string }) => {
+    try {
+      await sdkModule?.cancel?.(opts);
+    } catch {
+      /* non-fatal */
     }
-    const final = run?.final ? await run.final : null;
-    // Strip <think>…</think> reasoning blocks from the user-visible text;
-    // keep the raw frame (with framing) for history push-back.
-    const rawText = final?.contentText || streamed || '';
-    const text = rawText.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
-    return {
-      text,
-      rawContent: final?.raw?.fullText ?? rawText,
-      toolCalls: (final?.toolCalls || []).map((c: any) => ({
-        id: c.id,
-        name: c.name,
-        arguments: c.arguments ?? {},
-      })),
-      requestId: run?.requestId,
-    };
-  },
-};
+  }) as Parameters<typeof createQvacProvider>[0]['cancel'],
+  getModelId: () => state.qvacModelHandle,
+});
 
 /** Connect kaleido-mcp as a tool source if KALEIDO_MCP_PATH is configured. */
 async function connectMcpIfConfigured(): Promise<void> {
@@ -537,10 +514,23 @@ async function handleStart(modelId: string): Promise<void> {
 
     emit({ type: 'provider_loading', phase: 'starting_p2p', message: 'Connecting to Hyperswarm…' });
 
+    // Firewall: a QVAC provider is reachable by anyone who learns its public key,
+    // so by default any such peer can run inference here. Set KALEIDO_MIND_ALLOWED_KEYS
+    // (comma/space/newline-separated consumer public keys, e.g. the paired phone's)
+    // to allow-list ONLY those peers. Unset ⇒ open, with a loud warning.
+    const firewall = firewallFromKeyList(process.env.KALEIDO_MIND_ALLOWED_KEYS);
+    if (firewall) {
+      diag(`P2P firewall: allow-list of ${firewall.publicKeys.length} consumer key(s)`);
+    } else {
+      const msg = 'P2P firewall OPEN — KALEIDO_MIND_ALLOWED_KEYS unset; any peer with this public key can delegate inference here.';
+      diag(msg);
+      emit({ type: 'log', level: 'warn', message: msg });
+    }
+
     // 60 s ceiling on the P2P bootstrap — DHT can take ~30s on first run.
     let provider: any = null;
     try {
-      provider = await withTimeout(sdk.startQVACProvider({}), 60_000);
+      provider = await withTimeout(sdk.startQVACProvider(firewall ? { firewall } : {}), 60_000);
     } catch (e) {
       diag(`startQVACProvider threw: ${(e as Error).message}`);
     }

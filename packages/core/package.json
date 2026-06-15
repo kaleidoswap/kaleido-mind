@@ -1,6 +1,6 @@
 {
   "name": "@kaleidorg/mind",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Local-first reasoning + function-calling engine for KaleidoSwap. QVAC-powered.",
   "license": "Apache-2.0",
   "type": "module",
@@ -34,6 +34,11 @@
       "types": "./dist/logger.d.ts",
       "import": "./dist/logger.js",
       "default": "./dist/logger.js"
+    },
+    "./qvac": {
+      "types": "./dist/qvac/index.d.ts",
+      "import": "./dist/qvac/index.js",
+      "default": "./dist/qvac/index.js"
     }
   },
   "files": [
@@ -51,7 +56,16 @@
     "lint": "eslint src",
     "bundle-skills": "node scripts/bundle-skills.mjs"
   },
+  "peerDependencies": {
+    "@qvac/sdk": ">=0.12.2"
+  },
+  "peerDependenciesMeta": {
+    "@qvac/sdk": {
+      "optional": true
+    }
+  },
   "devDependencies": {
+    "@qvac/sdk": "^0.13.1",
     "@types/node": "^20.0.0",
     "vitest": "^1.6.0"
   }
