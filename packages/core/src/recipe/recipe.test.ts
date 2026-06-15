@@ -4,7 +4,7 @@ import { InProcessToolSource } from '../tools/in-process.js';
 import type { LLMProvider } from '../providers/types.js';
 import { runRecipe, RecipeRegistry } from './runner.js';
 import { paymentsRecipe, extractPayment } from './payments.js';
-import { swapRecipe, extractSwap } from './swap.js';
+import { swapRecipe, extractSwap, extractPriceQuery } from './swap.js';
 import { receiveRecipe, extractReceive } from './receive.js';
 import { assetSendRecipe, extractAssetSend } from './asset-send.js';
 import { paymentsRecipe as _pay } from './payments.js';
@@ -108,6 +108,51 @@ describe('extractSwap', () => {
   });
   it('returns null for non-swap text', () => {
     expect(extractSwap('what is my balance')).toBeNull();
+  });
+
+  // Price-flavoured phrasings belong to extractPriceQuery (separate recipe) —
+  // extractSwap returns null for them so the atomic recipe doesn't move funds
+  // on a question the user only meant as a rate lookup.
+  it('does NOT parse price/rate phrasings (those go to kaleidoswapPriceRecipe)', () => {
+    expect(extractSwap('what is the price of usdt in sats')).toBeNull();
+    expect(extractSwap('btc price')).toBeNull();
+    expect(extractSwap('how much sats for 1 usdt')).toBeNull();
+    expect(extractSwap('cost of xaut')).toBeNull();
+  });
+});
+
+describe('extractPriceQuery', () => {
+  it('parses the reported transcript case', () => {
+    expect(extractPriceQuery('what is the price of usdt in sats')).toEqual({
+      amount: 1, from_asset: 'BTC', to_asset: 'USDT', amount_side: 'to',
+    });
+  });
+  it('tolerates a "the" article', () => {
+    expect(extractPriceQuery('what is the price of the usdt in sats?')).toEqual({
+      amount: 1, from_asset: 'BTC', to_asset: 'USDT', amount_side: 'to',
+    });
+  });
+  it('"btc price" — funding defaults to USDT when pricing BTC', () => {
+    expect(extractPriceQuery('btc price')).toEqual({
+      amount: 1, from_asset: 'USDT', to_asset: 'BTC', amount_side: 'to',
+    });
+  });
+  it('"how much sats for 1 usdt" — denom inferred from the unit, not order', () => {
+    expect(extractPriceQuery('how much sats for 1 usdt')).toEqual({
+      amount: 1, from_asset: 'BTC', to_asset: 'USDT', amount_side: 'to',
+    });
+  });
+  it('handles "cost of xaut" and "how much does 1 btc cost"', () => {
+    expect((extractPriceQuery('cost of xaut') as any)?.to_asset).toBe('XAUT');
+    expect((extractPriceQuery('how much does 1 btc cost') as any)?.to_asset).toBe('BTC');
+  });
+  it('does NOT fire on a non-asset price question', () => {
+    expect(extractPriceQuery('what is the price of gas')).toBeNull();
+    expect(extractPriceQuery('how much does it cost')).toBeNull();
+  });
+  it('does NOT fire on a swap intent (those go to the atomic recipe)', () => {
+    expect(extractPriceQuery('swap 10 usdt to btc')).toBeNull();
+    expect(extractPriceQuery('buy one usdt')).toBeNull();
   });
 });
 

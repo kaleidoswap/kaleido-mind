@@ -81,7 +81,11 @@ export type {
   BindLsps1Options,
 } from './lsps1/contract.js';
 
-// ── KaleidoSwap atomic-swap recipe (opt-in — register via Funnel.recipes) ──
+// ── KaleidoSwap recipes (opt-in — register via Funnel.recipes) ──
+// price recipe is read-only (quote-only); atomic recipe runs the full swap.
+// Register the price recipe FIRST so phrasings like "BTC price" are answered
+// without firing any spend.
+export { kaleidoswapPriceRecipe } from './recipe/kaleidoswap-price.js';
 export { kaleidoswapAtomicRecipe } from './recipe/kaleidoswap-atomic.js';
 
 // ── Recipes (mobile multi-step: "recipes, not planning") ───────────────────

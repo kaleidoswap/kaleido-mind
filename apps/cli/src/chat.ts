@@ -15,6 +15,7 @@ import {
   createBtcMapToolSource,
   Retriever,
   BITCOIN_COPILOT_DOCS,
+  kaleidoswapPriceRecipe,
   kaleidoswapAtomicRecipe,
   paymentsRecipe,
   receiveRecipe,
@@ -232,14 +233,15 @@ export async function buildAgent(cfg: CliConfig, opts: BuildOpts = {}): Promise<
   const registry = new ToolRegistry(sources);
 
   // The tiered Funnel: T0 fast-path → T2 recipe → T1 skill-scoped agentic.
-  // Recipes are tried in order; kaleidoswapAtomicRecipe first so "swap …" is
-  // driven deterministically (quote → confirm once → init → whitelist →
-  // execute) rather than left to the small model to plan.
+  // Recipes are tried in order. Price recipe FIRST so "BTC price" / "price of
+  // USDT in sats" runs a read-only quote (no spend, no confirm). Atomic recipe
+  // next so "swap …" / "buy N USDT" runs quote → confirm → init → whitelist →
+  // execute deterministically rather than left to the small model to plan.
   const funnel = new Funnel({
     provider,
     tools: registry,
     skills: skills.list() as Skill[],
-    recipes: [kaleidoswapAtomicRecipe, paymentsRecipe, receiveRecipe, assetSendRecipe],
+    recipes: [kaleidoswapPriceRecipe, kaleidoswapAtomicRecipe, paymentsRecipe, receiveRecipe, assetSendRecipe],
     system:
       `${PROFILE.soul}\n${PROFILE.instructions ?? ''}`.trim(),
     getSettings: () => ({ ragEnabled: !!retriever }),

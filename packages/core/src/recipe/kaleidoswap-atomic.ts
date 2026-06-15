@@ -28,16 +28,20 @@
 import type { Recipe, RecipeContext } from './types.js';
 import { extractSwap } from './swap.js';
 
-// Fire on swap intent — "swap/exchange/convert/trade", OR "buy/sell/get" when a
+// Fire on swap intent — "swap/exchange/convert/trade", or "buy/sell/get" when a
 // crypto asset is named (so "buy one usdt" routes here, but "buy a gift card"
-// does not). The generic `swapRecipe` is for hosts wired to a different venue;
-// on the KaleidoSwap CLI this recipe is the swap.
+// does not). PRICE / rate / "how much" questions are read-only and go to
+// `kaleidoswapPriceRecipe` instead — keep them out of this match.
 const ASSET = /\b(btc|bitcoin|sats?|usdt|tether|xaut|gold)\b/i;
-const SWAP_INTENT = (t: string) =>
-  /\b(swap|exchange|convert|trade)\b/i.test(t) ||
-  (/\b(buy|sell|get|purchase|acquire)\b/i.test(t) &&
+const SWAP_INTENT = (t: string) => {
+  if (/\b(swap|exchange|convert|trade)\b/i.test(t)) return true;
+  if (
+    /\b(buy|sell|get|purchase|acquire)\b/i.test(t) &&
     ASSET.test(t) &&
-    !/\b(gift\s?card|top-?up|esim|voucher|invoice|address)\b/i.test(t));
+    !/\b(gift\s?card|top-?up|esim|voucher|invoice|address)\b/i.test(t)
+  ) return true;
+  return false;
+};
 
 interface QuoteResult {
   rfq_id?: string;

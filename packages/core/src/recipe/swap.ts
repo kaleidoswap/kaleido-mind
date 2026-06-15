@@ -85,7 +85,54 @@ export function extractSwap(text: string): Record<string, unknown> | null {
     if (from && to) return { amount: parseAmount(m[1]), from_asset: from, to_asset: to, amount_side: 'from' };
   }
 
+  // Price/rate questions are NOT swaps — they belong to extractPriceQuery +
+  // kaleidoswapPriceRecipe (read-only). Don't gobble them here.
   return null;
+}
+
+/**
+ * Parse a PRICE / rate / "how much" question — read-only intent.
+ *
+ * Distinct from extractSwap: never returns slots for swap/buy/sell phrasings.
+ * Always `amount: 1` on the asked-about asset (TO leg). Used by
+ * `kaleidoswapPriceRecipe` to fire a quote without moving funds.
+ *
+ *   "what is the price of usdt in sats"  → {from: BTC,  to: USDT, amount: 1, side: 'to'}
+ *   "btc price"                          → {from: USDT, to: BTC,  amount: 1, side: 'to'}
+ *   "how much sats for 1 usdt"           → {from: BTC,  to: USDT, amount: 1, side: 'to'}
+ */
+export function extractPriceQuery(text: string): Record<string, unknown> | null {
+  const t = text.trim();
+  // Reject swap intent — those go to the atomic recipe, not the price recipe.
+  if (/\b(swap|exchange|convert|trade|buy|sell|get|purchase|acquire)\b/i.test(t)) return null;
+
+  // ORDER MATTERS: "how much B for A" (first) must be checked BEFORE
+  // "how much X (in Y)?" — otherwise the latter would gobble the first asset
+  // and miss the "for/per" tail. Optional "the" article is tolerated
+  // ("price of THE usdt") — natural English the maker doesn't care about.
+  const priceLike =
+    t.match(/\bhow\s+(?:many|much)\s+(?:the\s+)?([a-z]+)\s+(?:for|per|in)\s+(?:1\s+|one\s+|the\s+)?([a-z]+)\b/i) ||
+    t.match(/\b(?:price|cost|worth)\s+of\s+(?:the\s+)?([a-z]+)(?:\s+in\s+(?:the\s+)?([a-z]+))?/i) ||
+    t.match(/\b(?:the\s+)?([a-z]+)\s+(?:price|cost)\b/i) ||
+    t.match(/\brate\s+of\s+(?:the\s+)?([a-z]+)(?:\s+(?:in|to|vs)\s+(?:the\s+)?([a-z]+))?/i) ||
+    t.match(/\b(?:the\s+)?([a-z]+)\s+(?:to|vs|in|\/)\s+([a-z]+)\s+rate\b/i) ||
+    t.match(/\bhow\s+much\s+(?:does\s+)?(?:1\s+|one\s+|the\s+)?([a-z]+)\s+cost\b/i) ||
+    t.match(/\bhow\s+much\s+(?:is\s+)?(?:1\s+|one\s+|the\s+)?([a-z]+)(?:\s+in\s+(?:the\s+)?([a-z]+))?\b/i);
+  if (!priceLike) return null;
+
+  const a = knownAsset(priceLike[1]);
+  const b = knownAsset(priceLike[2]);
+  let asset: string | undefined;
+  let denom: string | undefined;
+  if (/how\s+(?:many|much)\s+\w+\s+(?:for|per|in)/i.test(t) && b) {
+    // "how much B for A" — asset is A (the named priced one), denom is B (unit).
+    asset = b; denom = a;
+  } else {
+    asset = a; denom = b;
+  }
+  if (!asset) return null;
+  const from = denom ?? (asset === 'BTC' ? 'USDT' : 'BTC');
+  return { amount: 1, from_asset: from, to_asset: asset, amount_side: 'to' };
 }
 
 export const swapRecipe: Recipe = {
