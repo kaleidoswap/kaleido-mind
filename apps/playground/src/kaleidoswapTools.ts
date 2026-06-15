@@ -36,10 +36,27 @@ interface Route {
 function defaultLayer(asset: string): string {
   return asset.toUpperCase() === 'BTC' ? 'BTC_LN' : 'RGB_LN';
 }
+
+// Maker REST precision (verified against /api/v1/market/assets on localhost:8000)
+// and the unit users actually speak. Host scales user_amount × 10^(MP−UP) before
+// hitting the maker — otherwise "100,000 sats" gets quoted as 100 sats and "10 USDT"
+// as 0.00001 USDT (the maker takes amounts in its smallest unit).
+const MAKER_PRECISION: Record<string, number> = { BTC: 11, USDT: 6, XAUT: 9 };
+const USER_NATURAL_PRECISION: Record<string, number> = { BTC: 8, USDT: 0, XAUT: 0 };
+
+function scaleAmount(asset: string, amount: number): number {
+  if (!Number.isFinite(amount)) return amount;
+  const mp = MAKER_PRECISION[asset];
+  const up = USER_NATURAL_PRECISION[asset];
+  if (mp == null || up == null) return Math.round(amount);
+  if (amount >= 10 ** mp) return Math.round(amount); // already smallest-unit
+  return Math.round(amount * 10 ** (mp - up));
+}
+
 function leg(asset: unknown, amount?: unknown) {
   const id = String(asset ?? '').toUpperCase();
   const out: Record<string, unknown> = { asset_id: id, layer: defaultLayer(id) };
-  if (amount != null && amount !== '') out.amount = Number(amount);
+  if (amount != null && amount !== '') out.amount = scaleAmount(id, Number(amount));
   return out;
 }
 

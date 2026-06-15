@@ -40,14 +40,77 @@ interface Route {
   transformResponse?: (data: unknown) => unknown;
 }
 
-/** Scale a smallest-unit integer by its precision into a human decimal string. */
-function scaled(amount: unknown, precision: unknown): string | undefined {
+/**
+ * Per-asset precision used by the maker's REST API — what its `amount` fields
+ * are denominated in. Verified live via `/api/v1/market/assets`. The maker uses
+ * sub-sat resolution for BTC (precision 11 ≈ msats), so a raw "100000" sent
+ * for BTC is interpreted as 100 sats unless we scale.
+ */
+const MAKER_PRECISION: Record<string, number> = {
+  BTC: 11,
+  USDT: 6,
+  XAUT: 9,
+};
+
+/**
+ * Per-asset "user-natural" precision — the unit the user actually types in.
+ * BTC users count in sats (10⁻⁸ BTC); USDT/XAUT users count in whole units.
+ *
+ * The host scales an incoming user amount by 10^(MAKER_PRECISION − USER) so
+ * the maker receives the right magnitude. Discovered in milestone 1 testing:
+ * "100,000 sats" without this scaling came back quoted for ~100 sats, off by
+ * 1000×. With scaling the maker sees 100,000,000 (= 100,000 sats × 10³).
+ */
+const USER_NATURAL_PRECISION: Record<string, number> = {
+  BTC: 8,
+  USDT: 0,
+  XAUT: 0,
+};
+
+/**
+ * Scale a user-natural amount → maker smallest-unit integer.
+ *
+ * Anti-double-scale: if amount ≥ 10^MAKER_PRECISION (= 1 whole asset in
+ * smallest units), assume the caller already pre-scaled (e.g. the model
+ * echoed a smallest-unit value from a prior response) and pass through.
+ * The threshold sits well above any realistic user-natural input.
+ */
+function scaleAmount(asset: string, amount: number): number {
+  if (!Number.isFinite(amount)) return amount;
+  const mp = MAKER_PRECISION[asset];
+  const up = USER_NATURAL_PRECISION[asset];
+  if (mp == null || up == null) return Math.round(amount);
+  if (amount >= 10 ** mp) return Math.round(amount);
+  return Math.round(amount * 10 ** (mp - up));
+}
+
+/**
+ * Format a maker-smallest-unit amount back into the user's natural unit.
+ *   BTC  → "{N} sats"  (amount ÷ 10^(maker_precision − 8))
+ *   USDT → "{N} USDT"  (amount ÷ 10^maker_precision)
+ *   XAUT → "{N} XAUT"  (amount ÷ 10^maker_precision)
+ *
+ * Mirrors scaleAmount on the way out — the model reads these strings verbatim
+ * and never does precision math itself.
+ */
+/** Display digits per asset — how many fractional places to show. */
+function displayDigits(asset: string): number {
+  if (asset === 'BTC') return 0; // sats are integer
+  if (asset === 'USDT' || asset === 'XAUT') return 6; // stablecoin / gold sub-unit
+  return 4; // unknown assets — sensible default
+}
+
+function formatUserNatural(assetTicker: unknown, amount: unknown, makerPrecision: unknown): string | undefined {
   const a = Number(amount);
-  const p = Number(precision);
-  if (!Number.isFinite(a) || !Number.isFinite(p)) return undefined;
-  const v = a / 10 ** p;
-  // Trim trailing zeros but keep it readable.
-  return v.toLocaleString('en-US', { maximumFractionDigits: Math.min(p, 8) });
+  const mp = Number(makerPrecision);
+  if (!Number.isFinite(a) || !Number.isFinite(mp)) return undefined;
+  const id = String(assetTicker ?? '').toUpperCase();
+  const up = USER_NATURAL_PRECISION[id] ?? 0;
+  const value = a / 10 ** (mp - up);
+  const unit = id === 'BTC' ? 'sats' : id;
+  // toLocaleString strips trailing zeros up to maximumFractionDigits, so the
+  // output is "0.65 USDT" or "0.649150 USDT" but never "0.000000 USDT".
+  return `${value.toLocaleString('en-US', { maximumFractionDigits: displayDigits(id) })} ${unit}`.trim();
 }
 
 /**
@@ -61,14 +124,11 @@ function enrichQuote(data: unknown): unknown {
   const from = d.from_asset ?? {};
   const to = d.to_asset ?? {};
   const fee = d.fee ?? {};
-  const fromDisp = scaled(from.amount, from.precision);
-  const toDisp = scaled(to.amount, to.precision);
-  const feeDisp = scaled(fee.final_fee, fee.fee_asset_precision);
   return {
     ...d,
-    from_amount_display: fromDisp != null ? `${fromDisp} ${from.ticker ?? from.asset_id ?? ''}`.trim() : undefined,
-    to_amount_display: toDisp != null ? `${toDisp} ${to.ticker ?? to.asset_id ?? ''}`.trim() : undefined,
-    fee_display: feeDisp != null ? `${feeDisp} ${fee.fee_asset ?? ''}`.trim() : undefined,
+    from_amount_display: formatUserNatural(from.ticker ?? from.asset_id, from.amount, from.precision),
+    to_amount_display: formatUserNatural(to.ticker ?? to.asset_id, to.amount, to.precision),
+    fee_display: formatUserNatural(fee.fee_asset, fee.final_fee, fee.fee_asset_precision),
   };
 }
 
@@ -111,7 +171,7 @@ function normalizeAsset(asset: unknown): string {
 function leg(asset: unknown, amount?: unknown) {
   const id = normalizeAsset(asset);
   const out: Record<string, unknown> = { asset_id: id, layer: defaultLayer(id) };
-  if (amount != null && amount !== '') out.amount = Number(amount);
+  if (amount != null && amount !== '') out.amount = scaleAmount(id, Number(amount));
   return out;
 }
 
