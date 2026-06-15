@@ -43,6 +43,7 @@ that error to the user verbatim instead of inventing places.
   - "near me for lunch" or "around here" → start with empty or just a broad `query`; let the device location do the work. You may infer a reasonable city from prior turns ("you mentioned Lugano earlier") and pass `near_address`.
   - "ATMs or shops that take lightning" → `query: "atm"` or separate calls, or put "atm shop lightning" in `query`.
   - "the cheaper ones", "with websites", "open late", "good for dinner" → call the tool first (possibly broad), then in the same or follow-up turn use the returned list + any other context/memory to filter, rank or describe. Do not fabricate entries.
+  - **Critical for currency terms**: "where can I spend sats in turin", "bitcoin merchants in X", "places that accept crypto" are generic spend requests. **Do not** put "sats", "btc", "bitcoin", "spend" into `query` or invent a `category` (e.g. "shop"). Use only `near_address` (or empty). Putting currency words in query almost always returns zero results because the data source already only contains Bitcoin-accepting places.
 
 - Multi-turn and post-processing: After `find_merchant_locations` returns a list you may (and should) reason over it: rank by distance or relevance to the user's phrasing, surface `phone`/`website`/`opening_hours` when present, note accepts_lightning, suggest next actions ("want directions or to check one?"), or combine with `search_knowledge` / memory results if merchants have been ingested for the area.
 
@@ -54,9 +55,9 @@ that error to the user verbatim instead of inventing places.
 
 1. **Start with `find_merchant_locations`.** Map the user's words to fields using the guidance above. The schema accepts:
 
-   - `query` — free-text the user effectively named or implied (e.g. "coffee", "pizza", "food", "tapas", "atm"). Good place for terms that don't match a strict category. Omit for completely generic "merchants near me".
+   - `query` — free-text the user effectively named or implied (e.g. "coffee", "pizza", "food", "tapas", "atm"). Good place for terms that don't match a strict category. **Omit entirely** for generic "spend sats", "where can I spend", "merchants", "places to spend bitcoin", or "accept crypto". **Never** put "sats", "sat", "bitcoin", "btc", "crypto", "spend", or similar currency/verb terms here — the data source is already Bitcoin-only and this will usually return zero results.
 
-   - `category` — **exactly one** of the allowed values when it fits cleanly: `restaurant`, `cafe`, `bar`, `shop`, `grocery`, `lodging`, `atm`. Leave empty otherwise. Generic nouns like "merchant", "place", "store" belong in `query` (or omitted), never as the category.
+   - `category` — **exactly one** of the allowed values when it fits cleanly: `restaurant`, `cafe`, `bar`, `shop`, `grocery`, `lodging`, `atm`. Leave empty otherwise. **For any generic "spend sats / where can I spend bitcoin / merchants in X" request, leave category empty.** Do not guess a category just because the user wants to spend. Generic nouns like "merchant", "place", "store" belong in `query` (or omitted), never as the category.
 
    - `near_address` — city / neighborhood / address when the user named a place instead of (or in addition to) "near me". The host will geocode it.
 
@@ -66,6 +67,7 @@ that error to the user verbatim instead of inventing places.
 
    Positive examples (using understanding):
    - "where can I spend btc near me" → `find_merchant_locations({})`
+   - "where can I spend sats in turin" → `find_merchant_locations({ near_address: "Turin" })`   ← generic spend → minimal args, no query, no category
    - "where can I spend btc in Lugano" → `find_merchant_locations({ near_address: "Lugano" })`
    - "cafes in Lisbon" → `find_merchant_locations({ category: "cafe", near_address: "Lisbon" })`
    - "pizza places in Switzerland that take bitcoin" → `find_merchant_locations({ query: "pizza", near_address: "Switzerland" })`
@@ -75,9 +77,14 @@ that error to the user verbatim instead of inventing places.
 
    Things that are still wrong (schema or data reasons):
    - `category: "merchant"` or `"place"` (invalid per schema).
-   - `query: "btc"` or `"bitcoin"` (the whole dataset already accepts Bitcoin; this filter returns nothing useful).
+   - `query: "sats"`, `"btc"`, `"bitcoin"`, or any currency/spend verb (the dataset is already Bitcoin-only; these filters return nothing or almost nothing useful. "Spend sats" is a generic merchant request, not a filter term).
    - Guessing a tiny `radius_km` the user never mentioned (results will be empty).
-   - Inventing a `category` the user did not strongly imply when a broad `query` would have been better.
+   - Inventing a `category` (like "shop") for a completely generic "where can I spend sats" query — use no category and let the data speak.
+   - Adding constraints the user did not name when a minimal call would have returned more relevant places.
+
+   **Real bad example that causes zero results**:
+   - "where can I spend sats in turin" → bad: `{"query":"sats","category":"shop","near_address":"Turin","radius_km":5}`
+     ( "sats" in query + guessed category over-filters everything; correct is just the near_address or nothing).
 
 2. **Present the results.** Each row carries:
    - `name`, `category`, `address`
