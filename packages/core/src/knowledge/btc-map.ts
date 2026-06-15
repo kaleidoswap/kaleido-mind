@@ -121,16 +121,17 @@ export function createBtcMapToolSource(opts: BtcMapToolOptions = {}): ToolSource
       "Find Bitcoin-accepting merchants near the user using live BTC Map data " +
       "and the device's real location when available. Use when the user wants " +
       'merchants, shops, restaurants, cafes, bars, ATMs, or places to spend ' +
-      'Bitcoin nearby. Pass ONLY the fields the user actually named — do not ' +
-      'invent constraints. "where can I spend btc in Lugano" → ' +
-      '`{near_address:"Lugano"}` and NOTHING ELSE (no `category`, no ' +
-      '`radius_km`). Adding a category you guessed will exclude most results.',
+      'Bitcoin nearby. Use your understanding of the request to map natural language ' +
+      'to the smallest useful set of arguments. When uncertain, prefer fewer fields ' +
+      '(or none) rather than guessing values that would over-constrain results. ' +
+      'The returned merchants (or a clean error) are the only factual source — ' +
+      'never invent places.',
     parameters: {
       type: 'object',
       properties: {
-        query: { type: 'string', description: 'OPTIONAL — a name or food type the user literally named (e.g. "coffee", "pizza"). OMIT for "spend btc"/"merchants"/"places".' },
-        category: { type: 'string', description: 'OPTIONAL — set ONLY if the user named a specific kind of venue (restaurant, cafe, bar, shop, grocery, lodging, atm). NEVER guess from context. OMIT for generic "spend btc" / "merchants" / "places".' },
-        near_address: { type: 'string', description: 'City or address to search around when the user names a location. e.g. "Lugano", "Lisbon".' },
+        query: { type: 'string', description: 'OPTIONAL — a name, food type, or descriptive term implied by the user (e.g. "coffee", "pizza", "food", "atm", "shop"). Good for vague or natural phrasing. OMIT for completely generic "merchants near me" or "places to spend btc".' },
+        category: { type: 'string', description: 'OPTIONAL — set only when the request cleanly matches one specific allowed venue type: restaurant, cafe, bar, shop, grocery, lodging, atm. Leave empty for generic or mixed requests (e.g. "places to spend", "shops or atms"). Never use generic nouns like merchant/place/store as the category value.' },
+        near_address: { type: 'string', description: 'City or address to search around when the user names a location instead of (or with) "near me". e.g. "Lugano", "Lisbon", "the center". The host will attempt to geocode it.' },
         radius_km: { type: 'number', description: 'OPTIONAL — search radius in km (0.25–50). OMIT entirely unless the user explicitly named a distance ("within 2 km"). The default (5) is already applied server-side.' },
         limit: { type: 'number', description: 'OPTIONAL — max results (1–20, default 10). Omit unless the user named a count.' },
       },

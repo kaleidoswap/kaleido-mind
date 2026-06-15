@@ -175,8 +175,9 @@ async function main() {
       'Use tools to answer — never invent balances, addresses or amounts. ' +
       'Be concise, but ALWAYS report all balance components (confirmed + pending) ' +
       'when both are non-zero — confirmed is spendable, pending is not. ' +
-      'When the user asks where to spend Bitcoin or find Bitcoin-accepting places, ' +
-      'use find_merchant_locations.',
+      'For location / merchant questions ("where can I spend", "coffee near me", "bitcoin places in X") ' +
+      'the merchant-finder skill (when loaded) or the find_merchant_locations tool gives grounded live results. ' +
+      'Use your understanding of the request to form good arguments; never invent places.',
     defaultMaxTurns: 6,
   });
 

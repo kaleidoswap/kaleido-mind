@@ -179,7 +179,7 @@ that are useful *and* private:
 |---|---|---|
 | **Bitcoin / Lightning / RGB + KaleidoSwap docs** (BOLT specs, RGB, FAQs, glossary, app help, skill `references/`) | A private **Bitcoin copilot**: "I can send but not receive — what do I do?", "what's a submarine swap?", "explain this error" — answered offline | Mobile (personal tutor), General Purpose (advanced RAG over a large collection) |
 | **Your own wallet history + contacts + notes** | A **personal finance knowledge base**: "what did I spend on coffee last month?", "who did I pay 50k sats to?", "summarise my swaps" — never leaves the device | Mobile / General Purpose (privacy-first, personal knowledge base) |
-| **Merchant directory** (e.g. the Lugano dataset) | "where can I spend BTC near me for lunch?" | Mobile (travel assistant) |
+| **Merchant directory** (e.g. the Lugano dataset) | "where can I spend BTC near me for lunch?" (pairs well with the live `find_merchant_locations` tool + updated merchant-finder skill that lets the model interpret natural queries) | Mobile (travel assistant) |
 | **Skill reference docs** | the model pulls the right CLI/MCP instructions on demand instead of holding all 60 tools in context | internal — multi-agent tool use |
 | *(Psy track, separate product)* **personal health records + MedPsy** | a private on-device health assistant | Psy / Mobile |
 

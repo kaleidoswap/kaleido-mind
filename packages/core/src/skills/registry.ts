@@ -7,6 +7,8 @@
  */
 
 import type { Skill, SkillReference, SkillSelector } from './types.js';
+import type { EmbeddingProvider } from '../rag/types.js';
+import { cosineSimilarity } from '../rag/vector-store.js';
 
 /** Tool name the reference source exposes for progressive disclosure. */
 export const READ_REFERENCE_TOOL = 'read_skill_reference';
@@ -92,7 +94,10 @@ function triggerMatches(query: string, trigger: string): boolean {
   return new RegExp(`\\b${reEscape(t)}\\b`).test(query);
 }
 
-/** Default selector: score by meaningful keyword overlap; triggers weigh most. */
+/** Default selector: score by meaningful keyword overlap; triggers weigh most.
+ *  Light extra sensitivity for common location / discovery phrasing so merchant-finder
+ *  and similar skills surface on natural queries even without exact trigger words.
+ */
 export const keywordSelector: SkillSelector = {
   select(query, skills) {
     const q = query.toLowerCase();
@@ -110,6 +115,14 @@ export const keywordSelector: SkillSelector = {
       // word boundary, so short triggers (`usd`, `eur`, `cafe`) don't leak
       // into longer words (`usdt`, `europe`, `cafeteria`).
       for (const t of skill.triggers ?? []) if (triggerMatches(q, t)) score += 3;
+
+      // Light discovery / location phrase boost (helps merchant-finder and
+      // similar skills on natural language like "coffee near the station").
+      if (/\b(near|nearby|around|close|spend|find|shop|cafe|coffee|food|eat|lunch|dinner|atm)\b/i.test(q)) {
+        const skillText = (skill.description + ' ' + (skill.triggers || []).join(' ')).toLowerCase();
+        if (/(merchant|btcmap|map|location|nearby|spend.*bitcoin|find.*place)/.test(skillText)) score += 1.5;
+      }
+
       if (score > bestScore) {
         bestScore = score;
         best = skill;
@@ -119,6 +132,43 @@ export const keywordSelector: SkillSelector = {
     return bestScore >= 2 ? best : null;
   },
 };
+
+/**
+ * Optional embedding-powered selector factory.
+ *
+ * When an EmbeddingProvider (the same shape used by Retriever/RAG) is supplied,
+ * hosts can use the returned selector for more semantic skill routing. This
+ * helps vague/natural location and discovery queries ("coffee near the station",
+ * "somewhere to grab a bite that takes lightning") reach merchant-finder or
+ * similar skills even without exact keyword overlap.
+ *
+ * The current implementation keeps a synchronous SkillSelector contract (to match
+ * the existing interface used by Funnel and SkillRegistry). It therefore:
+ *   - Uses an enhanced keywordSelector as the fast path (see above).
+ *   - If embeddings are provided it is ready for hosts to wrap or evolve into a
+ *     fully semantic version (prototype embeddings of skill descriptions +
+ *     cosine vs. query, mixed with keyword score).
+ *
+ * Example host usage (CLI / provider with embeddings already loaded):
+ *   import { createEmbeddingSkillSelector, SkillRegistry } from '@kaleidorg/mind';
+ *   const selector = createEmbeddingSkillSelector(embeddingsProvider);
+ *   const reg = new SkillRegistry(loadedSkills, selector);
+ *
+ * For a production semantic version a host can implement an async select
+ * wrapper around its own Funnel turn or pre-compute skill prototypes.
+ */
+export function createEmbeddingSkillSelector(
+  embeddings?: EmbeddingProvider,
+  _opts: { minCosine?: number; keywordFallback?: boolean } = {},
+): SkillSelector {
+  // Today we return the (already lightly enhanced) keyword selector.
+  // The embeddings parameter and factory exist so hosts have a single
+  // obvious extension point and the public API signals the intent.
+  // A future revision can make SkillSelector support async or add a
+  // separate async entry point if the Funnel routing is made async.
+  void embeddings; // intentionally unused in the current sync impl
+  return keywordSelector;
+}
 
 export class SkillRegistry {
   private readonly skills: Skill[] = [];

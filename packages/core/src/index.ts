@@ -169,6 +169,7 @@ export {
   SkillRegistry,
   parseSkill,
   keywordSelector,
+  createEmbeddingSkillSelector,
   READ_REFERENCE_TOOL,
 } from './skills/registry.js';
 export { createSkillReferenceToolSource } from './skills/reference-source.js';

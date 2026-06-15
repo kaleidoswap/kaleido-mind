@@ -81,7 +81,9 @@ const MOCK_ROUTES: { re: RegExp; tool: string }[] = [
   // real mode passes it through normally.
   { re: /quote|swap|trade|price|worth|rate|how (many|much) sats/i, tool: 'kaleidoswap_get_quote' },
   { re: /how do|explain|what is|tell me about|look up|docs/i, tool: 'search_knowledge' },
-  { re: /merchant|spend bitcoin|accept bitcoin|near me|where can i|lightning caf[eé]|btc ?map/i, tool: 'find_merchant_locations' },
+  // Merchant/location phrases are routed to the (now more model-friendly) merchant-finder
+  // skill + find_merchant_locations tool. The live source is always injected below.
+  { re: /merchant|spend bitcoin|accept bitcoin|near me|where can i|lightning caf[eé]|btc ?map|coffee|cafe|shop.*near/i, tool: 'find_merchant_locations' },
 ];
 
 function mockProvider(): LLMProvider {
@@ -204,6 +206,9 @@ export async function buildAgent(cfg: CliConfig, opts: BuildOpts = {}): Promise<
   // is unreachable the tool returns a clean error rather than fake data.
   // KALEIDO_DEFAULT_LOCATION configures "near me" for the CLI which has no
   // GPS (set to a city name or "lat,lng").
+  // The merchant-finder skill (updated in 0.3.0) now gives the model more room
+  // to interpret natural location queries while still requiring the live tool
+  // (or RAG merchantsToDocuments) as the sole source of place facts.
   const defaultLoc = await defaultLocationFromEnv();
   const merchantSource = createBtcMapToolSource({
     fetch: btcMapLiveFetch,
@@ -228,10 +233,11 @@ export async function buildAgent(cfg: CliConfig, opts: BuildOpts = {}): Promise<
   const registry = new ToolRegistry(sources);
 
   // The tiered Funnel: T0 fast-path → T2 recipe → T1 skill-scoped agentic.
-  // Recipes are tried in order. Price recipe FIRST so "BTC price" / "price of
-  // USDT in sats" runs a read-only quote (no spend, no confirm). Atomic recipe
-  // next so "swap …" / "buy N USDT" runs quote → confirm → init → whitelist →
-  // execute deterministically rather than left to the small model to plan.
+  // Recipes (swaps, payments, etc.) are intentionally deterministic — the recipe
+  // owns the plan and the model only fills slots (see swap.ts + runner.ts).
+  // Merchant / location discovery intentionally routes through the (more model-
+  // leveraging) merchant-finder skill in the agentic tier so the LLM can apply
+  // natural language understanding to vague user phrasing.
   const funnel = new Funnel({
     provider,
     tools: registry,

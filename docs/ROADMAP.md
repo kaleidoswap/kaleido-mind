@@ -126,8 +126,9 @@ cross-cutting router/helpers: `resolve_contact`, `get_price(asset,fiat?)`,
 
 Ship in core; load identically on both surfaces. They are the routing playbooks
 **and** the multi-step recipes, with **few-shot** examples for small models:
-- **payments** (recipe), **receive** (recipe), **swap** (recipe)
+- **payments** (recipe), **receive** (recipe), **swap** (recipe) — these remain deliberately deterministic (recipe owns the plan; model only fills slots reliably on tiny models).
 - **per-layer** (`spark`, `rln`, `arkade`) — tool list + when to pick that rail
+- Discovery skills (e.g. merchant-finder for BTC Map location queries) are intentionally more model-leveraging: the skill + pluggable selectors let the LLM apply natural language understanding, context, and post-processing of results.
 - port **wallet-assistant** from kaleido-agent (already documents these flows)
 
 ---
