@@ -31,6 +31,7 @@ import type { Recipe } from './recipe/types.js';
 import { SkillRegistry } from './skills/registry.js';
 import type { Skill } from './skills/types.js';
 import type { LLMProvider } from './providers/types.js';
+import type { Retriever } from './rag/retriever.js';
 import type { ConfirmDecision, Message, ToolResult } from './types.js';
 
 /** Base system prompt for the wallet assistant. Hosts may override. */
@@ -134,6 +135,19 @@ export interface FunnelOptions {
   renderFast?: (intent: string, result: unknown) => string;
   /** Diagnostics sink (tier routing, tool calls). Default: silent. */
   log?: (message: string) => void;
+  /**
+   * Optional retriever for AUTO-injecting relevant knowledge chunks into the
+   * agentic-tier system prompt (T1 only — recipes/fast-path are deterministic
+   * and don't need it). When set, the top-`topKRag` chunks for the user's
+   * query are prepended as `## Relevant context`. Default: no auto-inject
+   * (the `search_knowledge` tool stays available for on-demand lookups).
+   *
+   * Small models often don't choose to call search_knowledge; auto-inject
+   * makes the corpus useful by default without the model having to opt in.
+   */
+  retriever?: Retriever;
+  /** How many chunks to auto-inject when `retriever` is set. Default 3. */
+  topKRag?: number;
 }
 
 function defaultRenderFast(intent: string, r: any): string {
@@ -159,6 +173,8 @@ export class Funnel {
   private readonly getSettings: () => FunnelSettings;
   private readonly renderFast: (intent: string, result: unknown) => string;
   private readonly log: (message: string) => void;
+  private readonly retriever?: Retriever;
+  private readonly topKRag: number;
 
   /** Skill registry, rebuilt only when the disabled-skills set changes. */
   private skillsCache: { key: string; reg: SkillRegistry } | null = null;
@@ -178,6 +194,8 @@ export class Funnel {
     this.getSettings = opts.getSettings ?? (() => ({}));
     this.renderFast = opts.renderFast ?? defaultRenderFast;
     this.log = opts.log ?? (() => {});
+    if (opts.retriever) this.retriever = opts.retriever;
+    this.topKRag = opts.topKRag ?? 3;
   }
 
   /** Skills currently enabled (e.g. for a skills sheet). */
@@ -237,13 +255,32 @@ export class Funnel {
     // ── T1: skill-scoped agentic loop ──
     const skills = this.skillsFor(settings.disabledSkills);
     const skill = skills.select(text);
-    const base = settings.persona ? `${this.system}\n\n## Your persona\n${settings.persona}` : this.system;
+    let base = settings.persona ? `${this.system}\n\n## Your persona\n${settings.persona}` : this.system;
+
+    // Auto-inject relevant knowledge chunks (best-effort — corpus is grounding
+    // truth, history is conversational context; both reach the model but the
+    // RAG block sits above history so the model treats it as authoritative).
+    // Only fires for agentic turns and only when the host opts in via
+    // `retriever` AND the user hasn't disabled RAG in settings.
+    const ragOn = settings.ragEnabled !== false;
+    if (this.retriever && ragOn && this.topKRag > 0) {
+      try {
+        const hits = await this.retriever.search(text, this.topKRag);
+        if (hits.length) {
+          const chunks = hits.map((h) => `- ${h.text}`).join('\n');
+          base = `${base}\n\n## Relevant context (read first; trust this over conversation history)\n${chunks}`;
+          this.log(`rag injected ${hits.length} chunks`);
+        }
+      } catch (e) {
+        this.log(`rag failed: ${(e as Error)?.message ?? e}`);
+      }
+    }
+
     const { system, allowedTools } = skills.compose(base, skill);
 
     // Ambient tools stay available even when a skill narrows the set — gated
     // by the user's memory/knowledge toggles (default on).
     const memoryOn = settings.memoryEnabled !== false;
-    const ragOn = settings.ragEnabled !== false;
     const ambient = [...(memoryOn ? AMBIENT_MEMORY : []), ...(ragOn ? AMBIENT_RAG : [])];
     const disabledAmbient = [...(memoryOn ? [] : AMBIENT_MEMORY), ...(ragOn ? [] : AMBIENT_RAG)];
     let scoped: string[] | undefined;

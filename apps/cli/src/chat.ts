@@ -243,6 +243,11 @@ export async function buildAgent(cfg: CliConfig, opts: BuildOpts = {}): Promise<
     system:
       `${PROFILE.soul}\n${PROFILE.instructions ?? ''}`.trim(),
     getSettings: () => ({ ragEnabled: !!retriever }),
+    // Auto-inject the top-3 BITCOIN_COPILOT_DOCS chunks into the agentic-tier
+    // system prompt. The corpus is the source of truth for concepts (e.g.
+    // local_balance ≠ inbound). Recipes/fast-path skip this — they're
+    // deterministic and don't need grounding.
+    ...(retriever ? { retriever, topKRag: 3 } : {}),
     log: (m) => { if (process.env.KALEIDO_VERBOSE === '1') console.error(c.dim(`[funnel] ${m}`)); },
   });
 
