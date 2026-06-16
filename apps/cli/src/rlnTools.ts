@@ -67,6 +67,34 @@ const ROUTES: Record<string, Route> = {
     path: '/nodeinfo',
     transformResponse: projectNodeInfo,
   },
+  rln_list_channels: {
+    method: 'GET',
+    path: '/listchannels',
+    // Project each channel to the capacity-relevant fields so the agent can
+    // verify a requested order against what actually opened. inbound/outbound
+    // come as msat — convert to sat for easy comparison with order sats.
+    transformResponse: (data: unknown) => {
+      const list = Array.isArray((data as any)?.channels)
+        ? (data as any).channels
+        : Array.isArray(data) ? data : [];
+      return {
+        channels: list.map((c: any) => ({
+          channel_id: c.channel_id,
+          peer_alias: c.peer_alias,
+          status: c.status,
+          ready: c.ready,
+          is_usable: c.is_usable,
+          capacity_sat: c.capacity_sat,
+          outbound_sat: c.outbound_balance_msat != null ? Math.round(c.outbound_balance_msat / 1000) : c.local_balance_sat,
+          inbound_sat: c.inbound_balance_msat != null ? Math.round(c.inbound_balance_msat / 1000) : undefined,
+          asset_id: c.asset_id,
+          asset_local_amount: c.asset_local_amount,
+          asset_remote_amount: c.asset_remote_amount,
+        })),
+        count: list.length,
+      };
+    },
+  },
   rln_whitelist_swap: {
     method: 'POST',
     path: '/taker',
@@ -163,6 +191,11 @@ const descriptions: Record<string, string> = {
     "Get the local RGB Lightning Node's info — pubkey, channel counts, balance. " +
     "Use BEFORE kaleidoswap_atomic_execute (the maker needs the pubkey as taker_pubkey) " +
     'or whenever the user asks about the node status.',
+  rln_list_channels:
+    "List the local node's Lightning channels with per-channel capacity_sat, " +
+    'inbound_sat, outbound_sat, status/ready, and RGB asset amounts. Use to ' +
+    'VERIFY a channel order opened with the requested capacity, or when the ' +
+    'user asks about their channels.',
   rln_whitelist_swap:
     'Whitelist a swapstring on the local node so it accepts the maker-driven swap. ' +
     'Call this AFTER kaleidoswap_atomic_init returned a swapstring and BEFORE ' +
@@ -189,6 +222,7 @@ const descriptions: Record<string, string> = {
 
 const schemas: Record<string, { type: 'object'; properties: Record<string, { type: string; description?: string }>; required?: string[] }> = {
   rln_get_node_info: { type: 'object', properties: {} },
+  rln_list_channels: { type: 'object', properties: {} },
   rln_whitelist_swap: {
     type: 'object',
     properties: {
