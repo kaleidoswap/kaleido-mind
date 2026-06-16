@@ -96,7 +96,11 @@ export function extractChannelOrder(text: string): Record<string, unknown> | nul
   if (lsp_balance_sat != null) out.lsp_balance_sat = lsp_balance_sat;
   if (client_balance_sat != null) out.client_balance_sat = client_balance_sat;
   if (channel_expiry_blocks != null) out.channel_expiry_blocks = channel_expiry_blocks;
-  return Object.keys(out).length > 0 ? out : { _intent: 'channel_order' };
+  // Return null when no concrete fields were extracted — the Funnel still
+  // fires the recipe because forceModelExtract + match() carry the intent.
+  // The runner's LLM extraction will populate slots; if even the LLM can't
+  // produce lsp_balance_sat, runRecipe returns status:'needs-info'.
+  return Object.keys(out).length > 0 ? out : null;
 }
 
 interface LspInfo {

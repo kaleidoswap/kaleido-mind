@@ -238,15 +238,21 @@ export class Funnel {
       return { text: this.renderFast(fast.intent.name, r), tier: 'fast', route: fast.intent.name, intent: fast.intent.name, data: r };
     }
 
-    // ── T2: recipe multi-step — fires only when the recipe is confident given
-    // its extracted slots (payments need a recipient; receive always fires),
-    // and the registry implements the recipe's final action.
+    // ── T2: recipe multi-step — fires when:
+    //   (a) the recipe is confident given its deterministic slots, OR
+    //   (b) `forceModelExtract` is on — the LLM does the actual extraction
+    //       inside runRecipe, so we don't gate on the regex result. If the
+    //       LLM still doesn't yield enough, runRecipe returns status:
+    //       'needs-info' with a friendly "please specify X" instead of
+    //       running steps with bad data.
+    // Either way the registry must implement the recipe's final action.
     const recipe = this.recipes.select(text);
     const slots = recipe?.extract?.(text) ?? null;
+    const deterministicallyConfident =
+      !!slots && (recipe?.confident ? recipe.confident(slots) : Object.keys(slots).length > 0);
     const fires =
       !!recipe &&
-      !!slots &&
-      (recipe.confident ? recipe.confident(slots) : Object.keys(slots).length > 0) &&
+      (recipe.forceModelExtract === true || deterministicallyConfident) &&
       !!(await this.registry.getDef(recipe.final.tool));
     if (recipe && fires) {
       this.log(`tier=recipe:${recipe.name} slots=${JSON.stringify(slots)}`);

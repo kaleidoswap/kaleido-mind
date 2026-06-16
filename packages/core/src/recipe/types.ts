@@ -85,7 +85,7 @@ export interface Recipe {
   confirm?: (ctx: RecipeContext) => string | null;
 }
 
-export type RecipeStatus = 'done' | 'cancelled' | 'error';
+export type RecipeStatus = 'done' | 'cancelled' | 'error' | 'needs-info';
 
 export interface RecipeResult {
   recipe: string;

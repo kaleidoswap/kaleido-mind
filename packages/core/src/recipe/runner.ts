@@ -117,6 +117,22 @@ export async function runRecipe(recipe: Recipe, text: string, opts: RunRecipeOpt
       inferences = ex.inferences;
     }
 
+    // Confidence re-check AFTER extraction (whether deterministic, LLM, or
+    // pre-supplied). When the recipe defines `confident()` and the extracted
+    // slots fail it, refuse to run the steps with bad data — surface a
+    // friendly "please specify <missing required slots>" message so the user
+    // can re-ask with the info instead of getting a maker 4xx mid-chain.
+    if (recipe.confident && !recipe.confident(ctx.slots)) {
+      const missing = recipe.slots
+        .filter((s) => s.required && (ctx.slots[s.name] == null || ctx.slots[s.name] === ''))
+        .map((s) => `${s.name} (${s.description})`);
+      const ask =
+        missing.length > 0
+          ? `I need a bit more info — please specify: ${missing.join('; ')}.`
+          : "I don't have enough info to do that — could you rephrase with the specifics?";
+      return { recipe: recipe.name, slots: ctx.slots, results: ctx.results, text: ask, status: 'needs-info', inferences };
+    }
+
     // Confirmation model:
     //  - Recipe with `confirm(ctx)`: fire ONE gate before the first spend step,
     //    showing the recipe-level summary; once approved, later spend steps run

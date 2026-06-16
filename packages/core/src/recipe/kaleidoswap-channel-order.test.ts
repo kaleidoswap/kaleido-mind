@@ -82,9 +82,12 @@ describe('extractChannelOrder — deterministic prefilter', () => {
     expect(r).toMatchObject({ lsp_balance_sat: 1_000_000, channel_expiry_blocks: 30 * 144 });
   });
 
-  it('catches "channel order" intent even without numbers', () => {
-    const r = extractChannelOrder('I want a channel order');
-    expect(r).not.toBeNull();
+  it('returns null when no concrete fields extractable (intent-only)', () => {
+    // The Funnel still fires the recipe via forceModelExtract + match(),
+    // so the LLM does the actual extraction. The extractor only contributes
+    // when it can pull a real value out.
+    expect(extractChannelOrder('I want a channel order')).toBeNull();
+    expect(extractChannelOrder('buy channel from kaleid')).toBeNull();
   });
 
   it('ignores unrelated text', () => {
@@ -164,6 +167,30 @@ describe('kaleidoswapChannelOrderRecipe — full chain', () => {
     });
     const pay = captured.find((c) => c.name === 'rln_pay_invoice')!;
     expect(pay.args).toEqual({ invoice: 'lnbc500400n1lspsorder' });
+  });
+});
+
+describe('kaleidoswapChannelOrderRecipe — missing info', () => {
+  it('returns status:needs-info (not error) when lsp_balance_sat is missing', async () => {
+    // LLM emits no slots → confident() fails → recipe asks the user instead
+    // of running the chain with bad data.
+    const emptyExtractProvider: LLMProvider = {
+      name: 'empty',
+      runTurn: async () => ({ text: '', rawContent: '', toolCalls: [] }),
+    };
+    const captured: { name: string; args: any }[] = [];
+    const tools = buildStubs(captured);
+
+    const res = await runRecipe(kaleidoswapChannelOrderRecipe, 'buy a channel from kaleid', {
+      provider: emptyExtractProvider,
+      tools,
+      onConfirm: async () => ({ approved: true }),
+    });
+
+    expect(res.status).toBe('needs-info');
+    expect(res.text).toMatch(/lsp_balance_sat|specify/i);
+    // No tools should have been called.
+    expect(captured.length).toBe(0);
   });
 });
 
