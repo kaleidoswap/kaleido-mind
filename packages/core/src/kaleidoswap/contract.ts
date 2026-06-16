@@ -100,7 +100,7 @@ export const KALEIDOSWAP_TOOLS: KaleidoswapToolDef[] = [
       order_id: { type: 'string', description: 'The order id returned by kaleidoswap_place_order.' },
       access_token: { type: 'string', description: 'The per-order access token returned by kaleidoswap_place_order. Required for status checks on the order.' },
     },
-    ['order_id']),
+    ['order_id', 'access_token']),
 
   t('orders',
     'kaleidoswap_get_order_history',
