@@ -163,9 +163,9 @@ device**.
 |---|---|---|
 | **1. Spec** | ARCHITECTURE.md + this plan | ✅ |
 | **2. Tool contract in core** | per-layer `ToolDef[]` + spend flags + missing fns | ✅ `wallet/contract.ts` |
-| **3a. Desktop binding** | `kaleido-mcp` namespaced tools + `kaleido` CLI | ▢ |
+| **3a. Desktop binding** | `kaleido-mcp` namespaced tools + `kaleido` CLI | ✅ `apps/provider` (Tauri sidecar, namespaced MCP) + `apps/cli` CLI host |
 | **3b. Mobile binding** | in-process handlers → Spark/RLN/Arkade WDK adapters | ✅ `rate/services/walletTools.ts` + screen + skill |
-| **4. Skills + recipes** | payments/receive/swap (recipe + few-shot) + per-layer; hybrid model use for discovery skills and complex recipe slot parsing | ◐ payments + atomic swap recipes done (with model-assisted extraction + precision safeguards for atomic); receive + few-shot next; merchant-finder made intentionally model-leveraging with pluggable selectors |
+| **4. Skills + recipes** | payments/receive/swap (recipe + few-shot) + per-layer; hybrid model use for discovery skills and complex recipe slot parsing | ✅ payments, receive, swap, atomic swap, LSPS1 channel-order, and asset-channel onboarding recipes shipped (model-assisted extraction + precision safeguards); merchant-finder intentionally model-leveraging with pluggable selectors |
 | **5. Mobile funnel** | deterministic fast-path + slot-filling + Recipe engine | ✅ Tier-0 fast-path + Tier-2 recipe + Recipe engine wired in rate |
 | **6. UX/perf** | warm-on-open, streaming, prefix-cache, idle-unload | ▢ |
 | **7. Safety wiring** | flag spend tools; `onConfirm` sheet (mobile) + dialog (desktop) | partial (gate exists) |
