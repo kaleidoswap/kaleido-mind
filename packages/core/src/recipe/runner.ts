@@ -58,10 +58,11 @@ export async function extractSlots(
   const system = [
     `Call ${EXTRACT_TOOL} with the fields from the user's message.`,
     recipe.description ? `This extraction is for: ${recipe.description}.` : '',
-    'Only emit values that match the field descriptions.',
+    'Only emit values that match the field descriptions. Use the examples and phrasings listed in each field\'s description (including context like "on the other" when "my side" appears).',
     'Canonical assets: BTC, USDT, XAUT (pass as strings like "BTC" or "USDT").',
     'amount_side: "to" when the named amount is what you receive/buy (e.g. "buy 1 USDT" → to_asset=USDT, amount=1, from_asset=BTC); "from" for sell/swap (amount on from_asset).',
     'The host binding handles per-asset precision scaling (BTC in sats → maker units; USDT/XAUT whole units). Pass the user\'s number as-is for the correct side.',
+    'If a value is ambiguous from the message, prefer the mapping from the field descriptions rather than guessing.',
     'Do not call any other tool and do not add commentary.',
   ].filter(Boolean).join(' ');
 

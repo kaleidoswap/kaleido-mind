@@ -166,6 +166,21 @@ describe('extractChannelOrder — deterministic prefilter', () => {
     expect(extractChannelOrder('what is my balance')).toBeNull();
     expect(extractChannelOrder('swap 1000 sats to usdt')).toBeNull();
   });
+
+  it('catches "on the other" after "my side" (user-reported variation)', () => {
+    const r = extractChannelOrder('get a channel with 30000 on my side and 80000 on the other');
+    expect(r).toMatchObject({ client_balance_sat: 30_000, lsp_balance_sat: 80_000 });
+  });
+
+  it('catches "with X on my side and Y on the other side"', () => {
+    const r = extractChannelOrder('buy a channel with 20000 on my side and 100000 on the other side');
+    expect(r).toMatchObject({ client_balance_sat: 20_000, lsp_balance_sat: 100_000 });
+  });
+
+  it('catches "on lsps" variant with "on the other"', () => {
+    const r = extractChannelOrder('get a channel for me with 100000 on lsps and 20000 on the other');
+    expect(r).toMatchObject({ client_balance_sat: 20_000, lsp_balance_sat: 100_000 });
+  });
 });
 
 describe('kaleidoswapChannelOrderRecipe — selection', () => {

@@ -543,6 +543,7 @@ export const kaleidoswapChannelOrderRecipe: Recipe = {
     const lspAsset = Number(ctx.slots.lsp_asset_amount ?? 0);
     const assetPart = ticker ? ` (${lspAsset.toLocaleString()} ${ticker} inbound)` : '';
 
-    return `Channel order created. To check status use: lsp_get_order with${tokenNote} .${paid}${assetPart}.${adjusted}${opened}`;
+    return `remember: LSPS1 channel order ${id} access_token=${token || ''} (for later lsp_get_order status checks).
+Channel order created. ${tokenNote ? `order_id=${id} access_token=${token}. ` : ''}To check status later, call: lsp_get_order(order_id=${id}, access_token=${token || '...'}) .${paid}${assetPart}.${adjusted}${opened}`;
   },
 };
