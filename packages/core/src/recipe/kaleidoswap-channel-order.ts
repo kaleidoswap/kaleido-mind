@@ -105,8 +105,27 @@ export function extractChannelOrder(text: string): Record<string, unknown> | nul
   const clientNum = t.match(/\b(\d[\d,.]*)\s*(k|m)?\s+(?:sats?\s+)?(?:on\s+(?:my|client|user)\s+side|on\s+my\b|on\s+mine\b|on\s+client|my\s+side|mine\b|as\s+push|push|outbound)\b/i);
   if (clientNum && clientNum[1]) client_balance_sat = parseAmountWord(clientNum[1], clientNum[2]);
 
-  const lspNum = t.match(/\b(\d[\d,.]*)\s*(k|m)?\s+(?:sats?\s+)?(?:on\s+(?:the\s+)?lsp|for\s+(?:the\s+)?lsp|as\s+inbound|inbound|lsp[_\s]+side)\b/i);
+  const lspNum = t.match(/\b(\d[\d,.]*)\s*(k|m)?\s+(?:sats?\s+)?(?:on\s+(?:the\s+)?lsps?|for\s+(?:the\s+)?lsps?|as\s+inbound|inbound|lsps?[_\s]+side)\b/i);
   if (lspNum && lspNum[1]) lsp_balance_sat = parseAmountWord(lspNum[1], lspNum[2]);
+
+  // "on the other" / "the other side" (when "my side" was mentioned) -> lsp side
+  if (client_balance_sat != null && lsp_balance_sat == null) {
+    const otherNum = t.match(/\b(\d[\d,.]*)\s*(k|m)?\s+(?:sats?\s+)?(?:on\s+the\s+other|the\s+other\s+side)\b/i);
+    if (otherNum && otherNum[1]) lsp_balance_sat = parseAmountWord(otherNum[1], otherNum[2]);
+  }
+
+  // If we have a "my side" client and a second untagged number, treat the second as lsp (the other side)
+  if (client_balance_sat != null && lsp_balance_sat == null) {
+    const allNumMatches = [...t.matchAll(/\b(\d[\d,.]*)\s*(k|m)?\b/gi)];
+    const clientStr = client_balance_sat.toString();
+    const otherMatch = allNumMatches.find(m => {
+      const n = parseAmountWord(m[1], m[2]);
+      return n != null && n.toString() !== clientStr && n > 0;
+    });
+    if (otherMatch) {
+      lsp_balance_sat = parseAmountWord(otherMatch[1], otherMatch[2]);
+    }
+  }
 
   // KEYWORD then NUMBER — programmatic phrasings ("client_balance 5000",
   // "lsp_balance 100000", "with 10k push"). Skip "my side" / "on lsp" here
@@ -121,8 +140,20 @@ export function extractChannelOrder(text: string): Record<string, unknown> | nul
     }
   }
   if (lsp_balance_sat == null) {
-    const lspKw = t.match(/(?:lsp[_\s]+balance|lsp[_\s]+side|inbound\s+capacity|inbound\s+of)\s*(?:of\s+)?(\d[\d,.]*)\s*(k|m)?\b/i);
+    const lspKw = t.match(/(?:lsp[_\s]+balance|lsp[_\s]+side|inbound\s+capacity|inbound\s+of|lsps?[_\s]+balance)\s*(?:of\s+)?(\d[\d,.]*)\s*(k|m)?\b/i);
     if (lspKw && lspKw[1]) lsp_balance_sat = parseAmountWord(lspKw[1], lspKw[2]);
+  }
+
+  // Flexible "lsp 100k" / "100k lsp" / "100k on lsp" / "on lsps" patterns (handles "lsps", "lsp's" etc.)
+  if (lsp_balance_sat == null) {
+    const lspNumFirst = t.match(/\b(\d[\d,.]*)\s*(k|m)?\s+(?:sats?\s+)?lsps?\b/i);
+    if (lspNumFirst && lspNumFirst[1]) lsp_balance_sat = parseAmountWord(lspNumFirst[1], lspNumFirst[2]);
+    const lspWordFirst = t.match(/\blsps?\s+(?:balance\s+)?(\d[\d,.]*)\s*(k|m)?\b/i);
+    if (lsp_balance_sat == null && lspWordFirst && lspWordFirst[1]) lsp_balance_sat = parseAmountWord(lspWordFirst[1], lspWordFirst[2]);
+    const lspOn = t.match(/\b(\d[\d,.]*)\s*(k|m)?\s+(?:sats?\s+)?on\s+lsps?\b/i);
+    if (lsp_balance_sat == null && lspOn && lspOn[1]) lsp_balance_sat = parseAmountWord(lspOn[1], lspOn[2]);
+    const lspAfter = t.match(/\b(\d[\d,.]*)\s*(k|m)?\s+lsps?\s*(?:side|balance)?\b/i);
+    if (lsp_balance_sat == null && lspAfter && lspAfter[1]) lsp_balance_sat = parseAmountWord(lspAfter[1], lspAfter[2]);
   }
 
   // SINGLE-amount default: if there's only one number and we couldn't tag it
@@ -184,6 +215,11 @@ export function extractChannelOrder(text: string): Record<string, unknown> | nul
   // fires the recipe because forceModelExtract + match() carry the intent.
   // The runner's LLM extraction populates slots; if even the LLM can't
   // produce lsp_balance_sat, runRecipe returns status:'needs-info'.
+  //
+  // Note: the deterministic extractor is intentionally "best effort" and a bit
+  // brittle for Funnel pre-filtering. The LLM (via forceModelExtract) is the
+  // primary slot parser for varied natural language. If you change sentence
+  // structure a lot, the LLM descriptions (with examples) are what save us.
   return Object.keys(out).length > 0 ? out : null;
 }
 
@@ -269,8 +305,10 @@ export const kaleidoswapChannelOrderRecipe: Recipe = {
       type: 'number',
       description:
         "Sats the LSP commits on THEIR side — the inbound capacity for the user. " +
-        "Phrasings: 'inbound', 'lsp side', 'their side', 'on lsp', 'X for lsp', 'lsp balance'. " +
-        "Example: in 'buy a channel, 20000 my side, 80000 on lsp', lsp_balance_sat = 80000.",
+        "Phrasings: 'inbound', 'lsp side', 'their side', 'on lsp', 'on lsps', 'X for lsp', 'lsp balance', 'lsp 100k', '100k lsp', '100k on lsp', 'on the other', 'the other side' (when 'my side' mentioned). " +
+        "Example: in 'buy a channel, 20000 my side, 80000 on lsp', lsp_balance_sat = 80000. " +
+        "Another: 'buy a channel for me with 100000 on lsps and 20000 on my side' → lsp_balance_sat = 100000. " +
+        "Example: 'get a channel with 30000 on my side and 80000 on the other' → lsp_balance_sat = 80000.",
       required: true,
     },
     {
@@ -278,8 +316,10 @@ export const kaleidoswapChannelOrderRecipe: Recipe = {
       type: 'number',
       description:
         "Sats the user PRE-FUNDS into the channel (push amount). 0 by default. " +
-        "Phrasings: 'my side', 'client side', 'outbound', 'push', 'I put in', 'X on my side'. " +
-        "Example: in 'buy a channel, 20000 my side, 80000 on lsp', client_balance_sat = 20000.",
+        "Phrasings: 'my side', 'client side', 'outbound', 'push', 'I put in', 'X on my side', 'on my side' (the other is lsp). " +
+        "Example: in 'buy a channel, 20000 my side, 80000 on lsp', client_balance_sat = 20000. " +
+        "Another: 'with 100000 on lsps and 20000 on my side' → client_balance_sat = 20000. " +
+        "Example: 'get a channel with 30000 on my side and 80000 on the other' → client_balance_sat = 30000.",
     },
     {
       name: 'channel_expiry_blocks',
@@ -456,7 +496,7 @@ export const kaleidoswapChannelOrderRecipe: Recipe = {
     const channels = ctx.results.channels as ChannelsResult | undefined;
     const id = order?.order_id ?? '?';
     const token = order?.access_token;
-    const tokenNote = token ? ` (access token: ${token} — save it for status checks)` : '';
+    const tokenNote = token ? ` order_id=${id} access_token=${token}` : '';
     const total = order?.payment?.bolt11?.order_total_sat;
     const paid = total != null ? `, paid ${total.toLocaleString()} sats` : '';
 
@@ -483,7 +523,7 @@ export const kaleidoswapChannelOrderRecipe: Recipe = {
     const beforeIds = new Set((before?.channels ?? []).map((c) => c.channel_id));
     const fresh = (channels?.channels ?? []).filter((c) => c.channel_id && !beforeIds.has(c.channel_id));
     const match = fresh[0];
-    let opened = ' The channel will open once the LSP confirms the payment — ask me to check its status (use the access token above with lsp_get_order).';
+    let opened = ' The channel will open once the LSP confirms the payment — ask me to check its status (call lsp_get_order with the exact order_id and access_token above).';
     if (match) {
       const cap = match.capacity_sat != null ? `${match.capacity_sat.toLocaleString()}-sat` : 'new';
       const ready = match.ready ? 'ready' : (match.status ?? 'opening');
@@ -495,6 +535,6 @@ export const kaleidoswapChannelOrderRecipe: Recipe = {
     const lspAsset = Number(ctx.slots.lsp_asset_amount ?? 0);
     const assetPart = ticker ? ` (${lspAsset.toLocaleString()} ${ticker} inbound)` : '';
 
-    return `Channel order ${id}${tokenNote} created${paid}${assetPart}.${adjusted}${opened}`;
+    return `Channel order created. To check status use: lsp_get_order with${tokenNote} .${paid}${assetPart}.${adjusted}${opened}`;
   },
 };
