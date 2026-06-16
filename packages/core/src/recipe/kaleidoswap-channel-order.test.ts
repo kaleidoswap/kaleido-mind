@@ -111,6 +111,19 @@ describe('extractChannelOrder — deterministic prefilter', () => {
     });
   });
 
+  it('catches dual-side asset: 100 USDT inbound + 20 USDT pushed to my side', () => {
+    const r = extractChannelOrder(
+      'buy a USDT channel: 5M sats lsp side, 100k sats my side, 100 USDT inbound, 20 USDT pushed to my side',
+    );
+    expect(r).toMatchObject({
+      lsp_balance_sat: 5_000_000,
+      client_balance_sat: 100_000,
+      asset_ticker: 'USDT',
+      lsp_asset_amount: 100,
+      client_asset_amount: 20,
+    });
+  });
+
   it('returns null when no concrete fields extractable (intent-only)', () => {
     // The Funnel still fires the recipe via forceModelExtract + match(),
     // so the LLM does the actual extraction. The extractor only contributes

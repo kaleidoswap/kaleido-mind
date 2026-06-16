@@ -141,11 +141,32 @@ export function extractChannelOrder(text: string): Record<string, unknown> | nul
   }
 
   let lsp_asset_amount: number | undefined;
-  // Asset amount keywords: "N USDT", "N usdt asset" (units NOT sats).
-  // Only match when there's no sats/k/m suffix immediately on the number.
+  let client_asset_amount: number | undefined;
+  // Asset amount keywords. "N USDT" alone is ambiguous; with side keywords
+  // we can disambiguate: "N USDT inbound" / "N USDT lsp side" → lsp side;
+  // "N USDT my side" / "N USDT pushed" / "pushed N USDT" → client side.
   if (asset_ticker) {
-    const am = t.match(/\b(\d[\d,.]*)\s*(usdt|tether|xaut|gold)\b/i);
-    if (am && am[1]) lsp_asset_amount = parseAmountWord(am[1]);
+    // CLIENT-side asset (push)
+    const pushAssetNum = t.match(/\b(\d[\d,.]*)\s+(?:usdt|tether|xaut|gold)\s+(?:on\s+my\s+side|on\s+(?:my|client|user)\s+side|my\s+side|pushed?(?:\s+to\s+(?:my|client)\s+side)?)\b/i);
+    if (pushAssetNum && pushAssetNum[1]) client_asset_amount = parseAmountWord(pushAssetNum[1]);
+    const pushAssetKw = t.match(/\bpush(?:ed)?\s+(\d[\d,.]*)\s*(?:usdt|tether|xaut|gold)\b/i);
+    if (client_asset_amount == null && pushAssetKw && pushAssetKw[1]) client_asset_amount = parseAmountWord(pushAssetKw[1]);
+
+    // LSP-side asset (inbound)
+    const lspAssetNum = t.match(/\b(\d[\d,.]*)\s+(?:usdt|tether|xaut|gold)\s+(?:inbound|on\s+(?:the\s+)?lsp(?:\s+side)?|for\s+(?:the\s+)?lsp|lsp[_\s]+side)\b/i);
+    if (lspAssetNum && lspAssetNum[1]) lsp_asset_amount = parseAmountWord(lspAssetNum[1]);
+
+    // Default: a single "N USDT" without a side keyword → lsp side (the
+    // inbound ask). Skip if we already captured client_asset_amount and the
+    // SAME number could be the user-side amount.
+    if (lsp_asset_amount == null) {
+      const allAssetMatches = t.match(/\b\d[\d,.]*\s*(?:usdt|tether|xaut|gold)\b/gi) ?? [];
+      const ambiguous = allAssetMatches.length > 1;
+      if (!ambiguous) {
+        const am = t.match(/\b(\d[\d,.]*)\s*(?:usdt|tether|xaut|gold)\b/i);
+        if (am && am[1]) lsp_asset_amount = parseAmountWord(am[1]);
+      }
+    }
   }
 
   const out: Record<string, unknown> = {};
@@ -154,6 +175,7 @@ export function extractChannelOrder(text: string): Record<string, unknown> | nul
   if (channel_expiry_blocks != null) out.channel_expiry_blocks = channel_expiry_blocks;
   if (asset_ticker != null) out.asset_ticker = asset_ticker;
   if (lsp_asset_amount != null) out.lsp_asset_amount = lsp_asset_amount;
+  if (client_asset_amount != null) out.client_asset_amount = client_asset_amount;
   // Return null when no concrete fields were extracted — the Funnel still
   // fires the recipe because forceModelExtract + match() carry the intent.
   // The runner's LLM extraction populates slots; if even the LLM can't
@@ -304,6 +326,28 @@ export const kaleidoswapChannelOrderRecipe: Recipe = {
       as: 'node',
       args: () => ({}),
     },
+    // 3b. Asset push leg: when client_asset_amount > 0, the maker requires
+    //     a fresh rfq_id from kaleidoswap_get_quote(BTC → asset) so the LSP
+    //     can lock the BTC price for the asset push. The maker's RFQ ↔
+    //     order asset-id check is strict, so pass the FULL rgb: URI (not
+    //     the ticker) as to_asset, matching what create_order will send.
+    //     Skip when there's no push asset.
+    {
+      tool: 'kaleidoswap_get_quote',
+      as: 'asset_quote',
+      args: (ctx) => {
+        const info = ctx.results.info as LspInfo | undefined;
+        const ticker = ctx.slots.asset_ticker ? String(ctx.slots.asset_ticker) : undefined;
+        const asset = findAsset(info, ticker);
+        return {
+          from_asset: 'BTC',
+          to_asset: asset?.asset_id ?? ticker ?? 'USDT',
+          amount: scaleAsset(Number(ctx.slots.client_asset_amount ?? 0), asset?.precision),
+          amount_side: 'to',
+        };
+      },
+      skipIf: (ctx) => Number(ctx.slots.client_asset_amount ?? 0) <= 0,
+    },
     // 4. Create the order. Spend → this is where the single confirm gate
     //    fires. For asset channels we resolve the ticker → asset_id from
     //    lsp_get_info.assets, and scale the agent-facing unit amount by the
@@ -329,9 +373,11 @@ export const kaleidoswapChannelOrderRecipe: Recipe = {
           if (lspAmt != null) body.lsp_asset_amount = lspAmt;
           if (cliAmt != null) body.client_asset_amount = cliAmt;
           // client_asset_amount > 0 requires an rfq_id from a BTC→asset quote.
-          // The model can pre-supply it; otherwise the maker will reject and
-          // the user re-runs after quoting. (Auto-quote is a follow-up M4.5.)
-          if (ctx.slots.rfq_id != null) body.rfq_id = String(ctx.slots.rfq_id);
+          // Auto-sourced from step 3b above; falls back to a user-supplied
+          // slot if step 3b was skipped or didn't return one.
+          const autoQuote = ctx.results.asset_quote as { rfq_id?: string } | undefined;
+          const rfq = autoQuote?.rfq_id ?? (ctx.slots.rfq_id != null ? String(ctx.slots.rfq_id) : undefined);
+          if (rfq) body.rfq_id = rfq;
         }
         return body;
       },
