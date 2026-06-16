@@ -62,7 +62,7 @@ interface QuoteResult {
   to_amount_display?: string;
   fee_display?: string;
 }
-interface InitResult { swapstring?: string; payment_hash?: string }
+interface InitResult { swapstring?: string; payment_hash?: string; atomic_id?: string }
 interface NodeInfo { pubkey?: string }
 
 export const kaleidoswapAtomicRecipe: Recipe = {
@@ -158,6 +158,9 @@ export const kaleidoswapAtomicRecipe: Recipe = {
     const q = ctx.results.quote as QuoteResult | undefined;
     const from = q?.from_amount_display ?? `${ctx.slots.amount} ${ctx.slots.from_asset}`;
     const to = q?.to_amount_display ?? String(ctx.slots.to_asset);
-    return `Swap submitted: ${from} → ${to}. Settling now — ask me to check the status.`;
+    const init = ctx.results.init as InitResult | undefined;
+    const id = init?.atomic_id || init?.payment_hash || '?';
+    return `remember: atomic swap atomic_id=${id} (for later kaleidoswap_atomic_status checks).
+Swap submitted: ${from} → ${to}. To check status later, call: kaleidoswap_atomic_status(atomic_id=${id}). Settling now — ask me to check the status.`;
   },
 };
