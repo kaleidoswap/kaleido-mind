@@ -114,16 +114,24 @@ export function extractChannelOrder(text: string): Record<string, unknown> | nul
     if (otherNum && otherNum[1]) lsp_balance_sat = parseAmountWord(otherNum[1], otherNum[2]);
   }
 
+  // Specific anchored pattern for "on my side X and Y on the other" or similar structures
+  if (client_balance_sat != null && lsp_balance_sat == null) {
+    const otherAfterMy = t.match(/on\s+my\s+side.*?\b(\d[\d,.]*)\s*(k|m)?\s+(?:sats?\s+)?on\s+the\s+other\b/i);
+    if (otherAfterMy && otherAfterMy[1]) {
+      lsp_balance_sat = parseAmountWord(otherAfterMy[1]!, otherAfterMy[2]);
+    }
+  }
+
   // If we have a "my side" client and a second untagged number, treat the second as lsp (the other side)
   if (client_balance_sat != null && lsp_balance_sat == null) {
     const allNumMatches = [...t.matchAll(/\b(\d[\d,.]*)\s*(k|m)?\b/gi)];
     const clientStr = client_balance_sat.toString();
     const otherMatch = allNumMatches.find(m => {
-      const n = parseAmountWord(m[1], m[2]);
+      const n = m[1] ? parseAmountWord(m[1], m[2]) : null;
       return n != null && n.toString() !== clientStr && n > 0;
     });
     if (otherMatch) {
-      lsp_balance_sat = parseAmountWord(otherMatch[1], otherMatch[2]);
+      lsp_balance_sat = parseAmountWord(otherMatch[1]!, otherMatch[2]);
     }
   }
 
