@@ -139,10 +139,10 @@ export async function runRecipe(recipe: Recipe, text: string, opts: RunRecipeOpt
     if (recipe.confident && !recipe.confident(ctx.slots)) {
       const missing = recipe.slots
         .filter((s) => s.required && (ctx.slots[s.name] == null || ctx.slots[s.name] === ''))
-        .map((s) => `${s.name} (${s.description})`);
+        .map((s) => s.name);
       const ask =
         missing.length > 0
-          ? `I need a bit more info — please specify: ${missing.join('; ')}.`
+          ? `I need a bit more info — please specify the ${missing.join(' and ')} (rephrase with the numbers, or use recall if this is a follow-up status check).`
           : "I don't have enough info to do that — could you rephrase with the specifics?";
       return { recipe: recipe.name, slots: ctx.slots, results: ctx.results, text: ask, status: 'needs-info', inferences };
     }
