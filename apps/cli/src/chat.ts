@@ -17,6 +17,7 @@ import {
   BITCOIN_COPILOT_DOCS,
   kaleidoswapPriceRecipe,
   kaleidoswapAtomicRecipe,
+  kaleidoswapChannelOrderRecipe,
   paymentsRecipe,
   receiveRecipe,
   assetSendRecipe,
@@ -242,7 +243,7 @@ export async function buildAgent(cfg: CliConfig, opts: BuildOpts = {}): Promise<
     provider,
     tools: registry,
     skills: skills.list() as Skill[],
-    recipes: [kaleidoswapPriceRecipe, kaleidoswapAtomicRecipe, paymentsRecipe, receiveRecipe, assetSendRecipe],
+    recipes: [kaleidoswapPriceRecipe, kaleidoswapAtomicRecipe, kaleidoswapChannelOrderRecipe, paymentsRecipe, receiveRecipe, assetSendRecipe],
     system:
       `${PROFILE.soul}\n${PROFILE.instructions ?? ''}`.trim(),
     getSettings: () => ({ ragEnabled: !!retriever }),

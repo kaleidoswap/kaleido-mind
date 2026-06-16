@@ -75,11 +75,12 @@ export async function extractSlots(
   let llmSlots: Record<string, unknown> = (call?.arguments as Record<string, unknown>) ?? {};
 
   // Safety net when forceModelExtract is active.
-  // - Use det as base (reliable for amount_side, defaults, and precision intent).
-  // - LLM can override assets/amount if it provides better values.
-  // - Specifically protect amount_side (critical for which leg gets the amount
-  //   and thus correct scaling/precision in quote bindings like for BTC/USDT).
-  // - If LLM output is incomplete or has invalid amount_side, fall back more.
+  // - The LLM is authoritative for the slots it filled — its output wins.
+  // - Det is used only to backfill required fields the LLM left empty.
+  // - The amount_side-specific check below applies ONLY to recipes that
+  //   actually declare an `amount_side` slot (swap-shaped recipes) — for
+  //   others (channel-order, etc.) it would clobber correct LLM extraction
+  //   because amount_side is always undefined.
   if (recipe.forceModelExtract && detValid) {
     const required = recipe.slots.filter((s) => s.required);
     const llmHasAllRequired = required.every((s) => {
@@ -87,19 +88,28 @@ export async function extractSlots(
       return v != null && v !== '';
     });
 
-    const llmSide = String(llmSlots.amount_side || '').toLowerCase();
-    const validSide = llmSide === 'from' || llmSide === 'to';
-
-    if (!llmHasAllRequired || !validSide) {
-      llmSlots = { ...det, ...llmSlots };
+    const recipeHasAmountSide = recipe.slots.some((s) => s.name === 'amount_side');
+    if (recipeHasAmountSide) {
+      const llmSide = String(llmSlots.amount_side || '').toLowerCase();
+      const validSide = llmSide === 'from' || llmSide === 'to';
+      if (!llmHasAllRequired || !validSide) {
+        llmSlots = { ...det, ...llmSlots };
+      } else {
+        llmSlots.amount_side = llmSide;
+      }
+      if (!validSide && det.amount_side) {
+        llmSlots.amount_side = det.amount_side;
+      }
     } else {
-      // LLM looks complete; still ensure amount_side is sane (prefer LLM if valid)
-      llmSlots.amount_side = llmSide;
-    }
-
-    // Always prefer det's amount_side if LLM didn't provide a valid one
-    if (!validSide && det.amount_side) {
-      llmSlots.amount_side = det.amount_side;
+      // Generic path: only backfill MISSING required fields from det.
+      // LLM wins on fields it actually filled.
+      if (!llmHasAllRequired) {
+        for (const s of required) {
+          if (llmSlots[s.name] == null || llmSlots[s.name] === '') {
+            if (det[s.name] != null && det[s.name] !== '') llmSlots[s.name] = det[s.name];
+          }
+        }
+      }
     }
   }
 

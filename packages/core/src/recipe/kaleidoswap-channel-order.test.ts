@@ -67,7 +67,7 @@ function buildStubs(captured: { name: string; args: any }[]) {
 }
 
 describe('extractChannelOrder — deterministic prefilter', () => {
-  it('catches "buy a 500k inbound channel"', () => {
+  it('catches single-amount "buy a 500k inbound channel"', () => {
     const r = extractChannelOrder('buy a 500k inbound channel');
     expect(r).toMatchObject({ lsp_balance_sat: 500_000 });
   });
@@ -82,12 +82,33 @@ describe('extractChannelOrder — deterministic prefilter', () => {
     expect(r).toMatchObject({ lsp_balance_sat: 1_000_000, channel_expiry_blocks: 30 * 144 });
   });
 
+  it('catches dual-amount with side keywords: "20000 on my side 80000 on lsp"', () => {
+    const r = extractChannelOrder('buy a channel for me 20000 on my side 80000 on lsp');
+    expect(r).toMatchObject({ client_balance_sat: 20_000, lsp_balance_sat: 80_000 });
+  });
+
+  it('catches "client_balance 5000 lsp_balance 100000"', () => {
+    const r = extractChannelOrder('open channel client_balance 5000 lsp_balance 100000');
+    expect(r).toMatchObject({ client_balance_sat: 5_000, lsp_balance_sat: 100_000 });
+  });
+
+  it('catches "with 10k push" + "500k inbound"', () => {
+    const r = extractChannelOrder('buy a channel with 10k push and 500k inbound');
+    expect(r).toMatchObject({ client_balance_sat: 10_000, lsp_balance_sat: 500_000 });
+  });
+
   it('returns null when no concrete fields extractable (intent-only)', () => {
     // The Funnel still fires the recipe via forceModelExtract + match(),
     // so the LLM does the actual extraction. The extractor only contributes
     // when it can pull a real value out.
     expect(extractChannelOrder('I want a channel order')).toBeNull();
     expect(extractChannelOrder('buy channel from kaleid')).toBeNull();
+  });
+
+  it('returns null on ambiguous dual-number phrasing (no side keywords)', () => {
+    // "buy channel 20000 80000" — could be either. Let the LLM decide via the
+    // recipe's forceModelExtract path.
+    expect(extractChannelOrder('buy channel 20000 80000')).toBeNull();
   });
 
   it('ignores unrelated text', () => {

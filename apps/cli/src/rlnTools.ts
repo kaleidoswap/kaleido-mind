@@ -98,6 +98,27 @@ const ROUTES: Record<string, Route> = {
         : {}),
     }),
   },
+  rln_pay_invoice: {
+    method: 'POST',
+    path: '/sendpayment',
+    spend: true,  // moves real funds — confirmation-gated by the recipe
+    body: (a) => ({ invoice: String(a.invoice ?? '') }),
+  },
+  rln_list_assets: {
+    method: 'POST',
+    path: '/listassets',
+    // The RLN node requires filter_asset_schemas; default to all standard schemas.
+    body: (a) => ({
+      filter_asset_schemas: Array.isArray(a.filter_asset_schemas)
+        ? a.filter_asset_schemas
+        : ['Nia', 'Cfa', 'Ifa', 'Uda'],
+    }),
+  },
+  rln_get_asset_balance: {
+    method: 'POST',
+    path: '/assetbalance',
+    body: (a) => ({ asset_id: String(a.asset_id ?? a.asset ?? '') }),
+  },
 };
 
 /** Build an InProcessToolSource that proxies every taker-side RLN tool over HTTP. */
@@ -155,6 +176,15 @@ const descriptions: Record<string, string> = {
     'Create an RGB receive invoice on the local node. Args: `min_confirmations` ' +
     '(default 1), `witness` (default false), optional `asset_id`, optional ' +
     '`expiration_timestamp`. Use for receiving RGB assets outside a maker swap.',
+  rln_pay_invoice:
+    "Pay a Lightning invoice from the local RLN node. SPEND: confirmation-gated. " +
+    'Args: `invoice` (BOLT11 string). Returns payment_hash + status on success.',
+  rln_list_assets:
+    "List RGB assets known to the local node — their asset_id, ticker, name, " +
+    'precision, and on-chain + off-chain balances. No args required.',
+  rln_get_asset_balance:
+    "Get the balance for one RGB asset on the local node, by asset_id. Returns " +
+    '`settled`, `future`, `spendable`, `offchain_outbound`, `offchain_inbound`.',
 };
 
 const schemas: Record<string, { type: 'object'; properties: Record<string, { type: string; description?: string }>; required?: string[] }> = {
@@ -183,5 +213,18 @@ const schemas: Record<string, { type: 'object'; properties: Record<string, { typ
       asset_id: { type: 'string', description: 'Optional RGB asset id (omit for an any-asset invoice).' },
       expiration_timestamp: { type: 'number', description: 'Unix seconds. Optional.' },
     },
+  },
+  rln_pay_invoice: {
+    type: 'object',
+    properties: {
+      invoice: { type: 'string', description: 'BOLT11 Lightning invoice to pay.' },
+    },
+    required: ['invoice'],
+  },
+  rln_list_assets: { type: 'object', properties: {} },
+  rln_get_asset_balance: {
+    type: 'object',
+    properties: { asset_id: { type: 'string', description: 'RGB asset id (e.g. rgb:...)' } },
+    required: ['asset_id'],
   },
 };

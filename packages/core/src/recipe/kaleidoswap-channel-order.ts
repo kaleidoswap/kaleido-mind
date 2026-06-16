@@ -69,13 +69,15 @@ export function extractChannelOrder(text: string): Record<string, unknown> | nul
   const t = text.trim();
   if (!CHANNEL_INTENT(t)) return null;
 
-  // Inbound capacity — look for the first number with sats/k/m near a
-  // channel-ish keyword.
-  let lsp_balance_sat: number | undefined;
-  const m = t.match(SATS_RE);
-  if (m && m[1]) lsp_balance_sat = parseAmountWord(m[1], m[2]);
+  // Count standalone numeric tokens. Two-or-more numbers (e.g.
+  // "20000 my side 80000 lsp") are ambiguous to the regex — bail out and
+  // let the LLM disambiguate; the Funnel still fires the recipe via
+  // forceModelExtract + match().
+  const numberTokens = t.match(/\b\d[\d,.]*\s*(?:k|m|million)?\b/gi) ?? [];
+  const multipleNumbers = numberTokens.length >= 2;
 
-  // Expiry in days/months/blocks → blocks (10 min ≈ 1 block).
+  // Expiry in days/months/blocks → blocks (10 min ≈ 1 block). Safe to parse
+  // independently of the balance numbers because the unit token disambiguates.
   let channel_expiry_blocks: number | undefined;
   const exp = t.match(/(\d+)\s*(day|days|week|weeks|month|months|block|blocks)\b/i);
   if (exp) {
@@ -87,10 +89,46 @@ export function extractChannelOrder(text: string): Record<string, unknown> | nul
     else if (/month/.test(unit)) channel_expiry_blocks = n * 144 * 30;
   }
 
-  // Push amount ("with 10k push" / "client balance 5000").
+  // Side-tagged amounts. We try KEYWORD-FIRST patterns ("on my side 5000",
+  // "lsp_balance 100000") before NUMBER-FIRST ("5000 on my side", "100k on lsp"),
+  // because "5000 lsp_balance 100000" is ambiguous to number-first regexes.
   let client_balance_sat: number | undefined;
-  const push = t.match(/(?:push|client\s+balance|outbound)\s*(?:of\s+)?(\d[\d,.]*)\s*(k|m)?/i);
-  if (push && push[1]) client_balance_sat = parseAmountWord(push[1], push[2]);
+  let lsp_balance_sat: number | undefined;
+
+  // NUMBER then KEYWORD — directional phrases ("X on my side", "X on lsp")
+  // read naturally in English with the number BEFORE the side word, so try
+  // these first.
+  const clientNum = t.match(/\b(\d[\d,.]*)\s*(k|m)?\s+(?:on\s+(?:my|client|user)\s+side|on\s+my|on\s+client|as\s+push|push|outbound)\b/i);
+  if (clientNum && clientNum[1]) client_balance_sat = parseAmountWord(clientNum[1], clientNum[2]);
+
+  const lspNum = t.match(/\b(\d[\d,.]*)\s*(k|m)?\s+(?:on\s+(?:the\s+)?lsp|for\s+(?:the\s+)?lsp|as\s+inbound|inbound|lsp[_\s]+side)\b/i);
+  if (lspNum && lspNum[1]) lsp_balance_sat = parseAmountWord(lspNum[1], lspNum[2]);
+
+  // KEYWORD then NUMBER — programmatic phrasings ("client_balance 5000",
+  // "lsp_balance 100000", "with 10k push"). Skip "my side" / "on lsp" here
+  // — those are number-first in real English (handled above).
+  if (client_balance_sat == null) {
+    const clientKw = t.match(/(?:client[_\s]+balance|push\s+of|outbound\s+of|with\s+(\d[\d,.]*)\s*(k|m)?\s+push)\s*(?:of\s+)?(\d[\d,.]*)?\s*(k|m)?\b/i);
+    if (clientKw) {
+      // Either "with N push" (groups 1+2) or "client_balance N" (groups 3+4).
+      const num = clientKw[1] ?? clientKw[3];
+      const suf = clientKw[1] ? clientKw[2] : clientKw[4];
+      if (num) client_balance_sat = parseAmountWord(num, suf);
+    }
+  }
+  if (lsp_balance_sat == null) {
+    const lspKw = t.match(/(?:lsp[_\s]+balance|lsp[_\s]+side|inbound\s+capacity|inbound\s+of)\s*(?:of\s+)?(\d[\d,.]*)\s*(k|m)?\b/i);
+    if (lspKw && lspKw[1]) lsp_balance_sat = parseAmountWord(lspKw[1], lspKw[2]);
+  }
+
+  // SINGLE-amount default: if there's only one number and we couldn't tag it
+  // as client/lsp by phrasing, treat it as lsp_balance_sat (the user is
+  // asking for inbound liquidity). With multiple numbers and no disambiguating
+  // phrasing, return null and let the LLM sort it out.
+  if (!lsp_balance_sat && !multipleNumbers) {
+    const m = t.match(/\b(\d[\d,.]*)\s*(k|m|million)?\b/i);
+    if (m && m[1]) lsp_balance_sat = parseAmountWord(m[1], m[2]);
+  }
 
   const out: Record<string, unknown> = {};
   if (lsp_balance_sat != null) out.lsp_balance_sat = lsp_balance_sat;
@@ -98,7 +136,7 @@ export function extractChannelOrder(text: string): Record<string, unknown> | nul
   if (channel_expiry_blocks != null) out.channel_expiry_blocks = channel_expiry_blocks;
   // Return null when no concrete fields were extracted — the Funnel still
   // fires the recipe because forceModelExtract + match() carry the intent.
-  // The runner's LLM extraction will populate slots; if even the LLM can't
+  // The runner's LLM extraction populates slots; if even the LLM can't
   // produce lsp_balance_sat, runRecipe returns status:'needs-info'.
   return Object.keys(out).length > 0 ? out : null;
 }
@@ -138,9 +176,30 @@ export const kaleidoswapChannelOrderRecipe: Recipe = {
   match: (t) => CHANNEL_INTENT(t),
   triggers: ['inbound', 'liquidity', 'channel order', 'lsps1', 'lsp', 'open channel'],
   slots: [
-    { name: 'lsp_balance_sat', type: 'number', description: 'Sats the LSP commits on their side (the inbound capacity for the user)', required: true },
-    { name: 'client_balance_sat', type: 'number', description: 'Sats the user pre-funds (push amount). Default 0.' },
-    { name: 'channel_expiry_blocks', type: 'number', description: 'Lease duration in blocks. Default 4320 (~30 days).' },
+    {
+      name: 'lsp_balance_sat',
+      type: 'number',
+      description:
+        "Sats the LSP commits on THEIR side — the inbound capacity for the user. " +
+        "Phrasings: 'inbound', 'lsp side', 'their side', 'on lsp', 'X for lsp', 'lsp balance'. " +
+        "Example: in 'buy a channel, 20000 my side, 80000 on lsp', lsp_balance_sat = 80000.",
+      required: true,
+    },
+    {
+      name: 'client_balance_sat',
+      type: 'number',
+      description:
+        "Sats the user PRE-FUNDS into the channel (push amount). 0 by default. " +
+        "Phrasings: 'my side', 'client side', 'outbound', 'push', 'I put in', 'X on my side'. " +
+        "Example: in 'buy a channel, 20000 my side, 80000 on lsp', client_balance_sat = 20000.",
+    },
+    {
+      name: 'channel_expiry_blocks',
+      type: 'number',
+      description:
+        "Lease duration in blocks (10 min per block). Default 4320 (~30 days). " +
+        "Map natural language: '1 month' → 4320, '1 week' → 1008, 'N days' → N*144.",
+    },
   ],
   extract: extractChannelOrder,
   forceModelExtract: true,
