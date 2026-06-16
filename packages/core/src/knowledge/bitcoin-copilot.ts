@@ -243,4 +243,46 @@ export const BITCOIN_COPILOT_DOCS: RagDocument[] = [
       'is always between two assets the maker prices.',
     metadata: { topic: 'usage' },
   },
+  {
+    id: 'asset-channel-prereq',
+    text:
+      'Why you must buy a channel BEFORE swapping an RGB asset. An RGB ' +
+      'Lightning swap moves an asset (USDT, XAUT, …) across a channel that ' +
+      'already carries that asset. If you have no USDT channel, the maker ' +
+      'cannot pay you USDT over Lightning — there is no rail to push it ' +
+      "down. Open a USDT channel from the LSP first (LSPS1 with `asset_id`, " +
+      '`lsp_asset_amount`) — the LSP funds the asset on their side, you get ' +
+      'inbound USDT capacity, and afterwards a BTC→USDT swap can settle into ' +
+      'that channel. Same for XAUT or any other RGB asset. You need ONE ' +
+      'channel per asset you want to receive over Lightning.',
+    metadata: { topic: 'rgb-channels' },
+  },
+  {
+    id: 'asset-channel-buy',
+    text:
+      "Buying a channel that already has an asset inside. Use LSPS1 with " +
+      "`asset_id` to ask the LSP to open a channel that's pre-funded on the " +
+      "LSP side with a specific RGB asset. `lsp_asset_amount` is the asset " +
+      "units the LSP commits on their side (your future inbound capacity " +
+      "in that asset). `lsp_balance_sat` is the sats the LSP commits for " +
+      "fees/anchor; `client_balance_sat` is what you push in sats. Common " +
+      "shape: lsp_balance_sat 5_000_000, client_balance_sat 100_000, " +
+      "asset_id <USDT id>, lsp_asset_amount 100_000_000 micro-USDT (= 100 " +
+      "USDT). Pay the resulting Lightning invoice and the channel opens " +
+      "with the asset pre-loaded.",
+    metadata: { topic: 'rgb-channels' },
+  },
+  {
+    id: 'asset-channel-with-push',
+    text:
+      "Receiving an asset balance ON your side at channel open. Beyond the " +
+      "LSP-funded asset, you can request the LSP push some asset balance to " +
+      "YOUR side during the open via `client_asset_amount`. This costs sats " +
+      "(BTC → asset at the maker rate), so the maker requires a fresh " +
+      "`rfq_id` from `kaleidoswap_get_quote(BTC → asset)` to lock the " +
+      "price. The order then charges the BTC equivalent on top of the " +
+      "channel fee. Use when you want spendable asset balance immediately " +
+      "(not just inbound capacity).",
+    metadata: { topic: 'rgb-channels' },
+  },
 ];

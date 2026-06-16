@@ -101,13 +101,16 @@ export async function extractSlots(
         llmSlots.amount_side = det.amount_side;
       }
     } else {
-      // Generic path: only backfill MISSING required fields from det.
-      // LLM wins on fields it actually filled.
-      if (!llmHasAllRequired) {
-        for (const s of required) {
-          if (llmSlots[s.name] == null || llmSlots[s.name] === '') {
-            if (det[s.name] != null && det[s.name] !== '') llmSlots[s.name] = det[s.name];
-          }
+      // Generic path: backfill ANY slot the LLM didn't populate from det's
+      // value, when det has one. LLM wins on every field it actually filled,
+      // but det shouldn't be silently erased — small models often omit
+      // non-required slots (e.g. asset_ticker on a USDT channel) that the
+      // deterministic regex caught reliably.
+      for (const s of recipe.slots) {
+        const llmVal = llmSlots[s.name];
+        const detVal = det[s.name];
+        if ((llmVal == null || llmVal === '') && detVal != null && detVal !== '') {
+          llmSlots[s.name] = detVal;
         }
       }
     }

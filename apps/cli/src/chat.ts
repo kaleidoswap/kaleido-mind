@@ -243,7 +243,10 @@ export async function buildAgent(cfg: CliConfig, opts: BuildOpts = {}): Promise<
     provider,
     tools: registry,
     skills: skills.list() as Skill[],
-    recipes: [kaleidoswapPriceRecipe, kaleidoswapAtomicRecipe, kaleidoswapChannelOrderRecipe, paymentsRecipe, receiveRecipe, assetSendRecipe],
+    // Order matters when two recipes' match() both fire — first wins.
+    // Channel-order must come BEFORE the atomic swap recipe so "buy a USDT
+    // channel" doesn't get misrouted as "buy USDT" (a swap).
+    recipes: [kaleidoswapPriceRecipe, kaleidoswapChannelOrderRecipe, kaleidoswapAtomicRecipe, paymentsRecipe, receiveRecipe, assetSendRecipe],
     system:
       `${PROFILE.soul}\n${PROFILE.instructions ?? ''}`.trim(),
     getSettings: () => ({ ragEnabled: !!retriever }),

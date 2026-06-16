@@ -44,7 +44,9 @@ const SWAP_INTENT = (t: string) => {
   if (
     /\b(buy|sell|get|purchase|acquire)\b/i.test(t) &&
     ASSET.test(t) &&
-    !/\b(gift\s?card|top-?up|esim|voucher|invoice|address)\b/i.test(t)
+    // Exclude commerce / receive / LSPS1 channel-order phrasings that share
+    // the buy/get verb. "Buy a USDT channel" is a channel order, not a swap.
+    !/\b(gift\s?card|top-?up|esim|voucher|invoice|address|channel|inbound|liquidity|lsps?\b)\b/i.test(t)
   ) return true;
   return false;
 };

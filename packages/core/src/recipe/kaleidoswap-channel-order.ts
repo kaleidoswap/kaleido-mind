@@ -95,13 +95,13 @@ export function extractChannelOrder(text: string): Record<string, unknown> | nul
   let client_balance_sat: number | undefined;
   let lsp_balance_sat: number | undefined;
 
-  // NUMBER then KEYWORD — directional phrases ("X on my side", "X on lsp")
-  // read naturally in English with the number BEFORE the side word, so try
-  // these first.
-  const clientNum = t.match(/\b(\d[\d,.]*)\s*(k|m)?\s+(?:on\s+(?:my|client|user)\s+side|on\s+my|on\s+client|as\s+push|push|outbound)\b/i);
+  // NUMBER then KEYWORD — directional phrases ("X on my side", "X on lsp",
+  // "X sats my side"). The (?:sats?\s+)? lets the user say the unit between
+  // the number and the side keyword: "100k sats my side" → 100000.
+  const clientNum = t.match(/\b(\d[\d,.]*)\s*(k|m)?\s+(?:sats?\s+)?(?:on\s+(?:my|client|user)\s+side|on\s+my|on\s+client|my\s+side|as\s+push|push|outbound)\b/i);
   if (clientNum && clientNum[1]) client_balance_sat = parseAmountWord(clientNum[1], clientNum[2]);
 
-  const lspNum = t.match(/\b(\d[\d,.]*)\s*(k|m)?\s+(?:on\s+(?:the\s+)?lsp|for\s+(?:the\s+)?lsp|as\s+inbound|inbound|lsp[_\s]+side)\b/i);
+  const lspNum = t.match(/\b(\d[\d,.]*)\s*(k|m)?\s+(?:sats?\s+)?(?:on\s+(?:the\s+)?lsp|for\s+(?:the\s+)?lsp|as\s+inbound|inbound|lsp[_\s]+side)\b/i);
   if (lspNum && lspNum[1]) lsp_balance_sat = parseAmountWord(lspNum[1], lspNum[2]);
 
   // KEYWORD then NUMBER — programmatic phrasings ("client_balance 5000",
@@ -130,10 +130,30 @@ export function extractChannelOrder(text: string): Record<string, unknown> | nul
     if (m && m[1]) lsp_balance_sat = parseAmountWord(m[1], m[2]);
   }
 
+  // RGB asset channel: a ticker (USDT/XAUT) plus an asset amount.
+  // We don't resolve the ticker → asset_id here — that happens deterministically
+  // from lsp_get_info during the recipe. We just record what the user said.
+  let asset_ticker: string | undefined;
+  const tickerMatch = t.match(/\b(usdt|tether|xaut|gold)\b/i);
+  if (tickerMatch) {
+    const x = tickerMatch[1]!.toLowerCase();
+    asset_ticker = /usdt|tether/.test(x) ? 'USDT' : 'XAUT';
+  }
+
+  let lsp_asset_amount: number | undefined;
+  // Asset amount keywords: "N USDT", "N usdt asset" (units NOT sats).
+  // Only match when there's no sats/k/m suffix immediately on the number.
+  if (asset_ticker) {
+    const am = t.match(/\b(\d[\d,.]*)\s*(usdt|tether|xaut|gold)\b/i);
+    if (am && am[1]) lsp_asset_amount = parseAmountWord(am[1]);
+  }
+
   const out: Record<string, unknown> = {};
   if (lsp_balance_sat != null) out.lsp_balance_sat = lsp_balance_sat;
   if (client_balance_sat != null) out.client_balance_sat = client_balance_sat;
   if (channel_expiry_blocks != null) out.channel_expiry_blocks = channel_expiry_blocks;
+  if (asset_ticker != null) out.asset_ticker = asset_ticker;
+  if (lsp_asset_amount != null) out.lsp_asset_amount = lsp_asset_amount;
   // Return null when no concrete fields were extracted — the Funnel still
   // fires the recipe because forceModelExtract + match() carry the intent.
   // The runner's LLM extraction populates slots; if even the LLM can't
@@ -141,6 +161,14 @@ export function extractChannelOrder(text: string): Record<string, unknown> | nul
   return Object.keys(out).length > 0 ? out : null;
 }
 
+interface LspAsset {
+  asset_id?: string;
+  ticker?: string;
+  name?: string;
+  precision?: number;
+  min_initial_lsp_amount?: number;
+  max_initial_lsp_amount?: number;
+}
 interface LspInfo {
   lsp_connection_url?: string;
   options?: {
@@ -148,6 +176,21 @@ interface LspInfo {
     max_initial_lsp_balance_sat?: number;
     max_channel_expiry_blocks?: number;
   };
+  assets?: LspAsset[];
+}
+
+/** Find the LSP's record for a ticker (USDT, XAUT). Case-insensitive. */
+function findAsset(info: LspInfo | undefined, ticker: string | undefined): LspAsset | undefined {
+  if (!info?.assets || !ticker) return undefined;
+  const t = ticker.toUpperCase();
+  return info.assets.find((a) => (a.ticker ?? '').toUpperCase() === t);
+}
+
+/** "100" USDT (precision 6) → 100_000_000 micro-USDT. */
+function scaleAsset(amount: number | undefined, precision: number | undefined): number | undefined {
+  if (amount == null) return undefined;
+  const p = Number(precision ?? 0);
+  return Math.round(amount * Math.pow(10, p));
 }
 interface FeesResult {
   setup_fee?: number;
@@ -200,6 +243,37 @@ export const kaleidoswapChannelOrderRecipe: Recipe = {
         "Lease duration in blocks (10 min per block). Default 4320 (~30 days). " +
         "Map natural language: '1 month' → 4320, '1 week' → 1008, 'N days' → N*144.",
     },
+    {
+      name: 'asset_ticker',
+      type: 'string',
+      description:
+        "RGB asset ticker for an asset channel (USDT or XAUT). Omit for a plain BTC channel. " +
+        "Recognise: 'USDT channel', 'a USDT channel', 'channel with USDT', 'Tether' → USDT; " +
+        "'gold', 'XAUT' → XAUT.",
+    },
+    {
+      name: 'lsp_asset_amount',
+      type: 'number',
+      description:
+        "Asset units the LSP commits on their side. UNITS, not micro-units (the host scales " +
+        "by the asset's precision). Example: '100 USDT' → lsp_asset_amount = 100. " +
+        "Only set when the user is buying an asset channel.",
+    },
+    {
+      name: 'client_asset_amount',
+      type: 'number',
+      description:
+        "Asset units the LSP pushes to the USER's side at channel open (costs sats at the " +
+        "current swap rate). UNITS, not micro-units. Default 0. Only set if the user wants " +
+        "spendable asset balance immediately, not just inbound capacity. Requires rfq_id.",
+    },
+    {
+      name: 'rfq_id',
+      type: 'string',
+      description:
+        "Quote id from a prior kaleidoswap_get_quote — required only when client_asset_amount > 0 " +
+        "so the LSP can price the asset push at a fixed rate. Omit otherwise.",
+    },
   ],
   extract: extractChannelOrder,
   forceModelExtract: true,
@@ -211,7 +285,10 @@ export const kaleidoswapChannelOrderRecipe: Recipe = {
       as: 'info',
       args: () => ({}),
     },
-    // 2. Fee estimate for the requested size.
+    // 2. Fee estimate for the requested size. For asset channels, the maker's
+    //    estimate_fees doesn't yet take asset_id (per the integration test
+    //    body) — the asset spec is on the create_order body. Estimate the
+    //    sats portion; the asset side is provisioned LSP-server-side.
     {
       tool: 'lsp_estimate_fees',
       as: 'fees',
@@ -227,18 +304,36 @@ export const kaleidoswapChannelOrderRecipe: Recipe = {
       as: 'node',
       args: () => ({}),
     },
-    // 4. Create the order. Spend → this is where the single confirm gate fires.
+    // 4. Create the order. Spend → this is where the single confirm gate
+    //    fires. For asset channels we resolve the ticker → asset_id from
+    //    lsp_get_info.assets, and scale the agent-facing unit amount by the
+    //    asset's precision (USDT precision=6 → ×1e6).
     {
       tool: 'lsp_create_order',
       as: 'order',
       args: (ctx) => {
         const node = ctx.results.node as NodeInfo | undefined;
-        return {
+        const info = ctx.results.info as LspInfo | undefined;
+        const tickerSlot = ctx.slots.asset_ticker ? String(ctx.slots.asset_ticker) : undefined;
+        const asset = findAsset(info, tickerSlot);
+        const body: Record<string, unknown> = {
           client_pubkey: node?.pubkey,
           lsp_balance_sat: Number(ctx.slots.lsp_balance_sat),
           client_balance_sat: Number(ctx.slots.client_balance_sat ?? 0),
           channel_expiry_blocks: Number(ctx.slots.channel_expiry_blocks ?? DEFAULT_EXPIRY_BLOCKS),
         };
+        if (asset?.asset_id && (ctx.slots.lsp_asset_amount != null || ctx.slots.client_asset_amount != null)) {
+          body.asset_id = asset.asset_id;
+          const lspAmt = scaleAsset(Number(ctx.slots.lsp_asset_amount ?? 0), asset.precision);
+          const cliAmt = scaleAsset(Number(ctx.slots.client_asset_amount ?? 0), asset.precision);
+          if (lspAmt != null) body.lsp_asset_amount = lspAmt;
+          if (cliAmt != null) body.client_asset_amount = cliAmt;
+          // client_asset_amount > 0 requires an rfq_id from a BTC→asset quote.
+          // The model can pre-supply it; otherwise the maker will reject and
+          // the user re-runs after quoting. (Auto-quote is a follow-up M4.5.)
+          if (ctx.slots.rfq_id != null) body.rfq_id = String(ctx.slots.rfq_id);
+        }
+        return body;
       },
     },
   ],
@@ -259,7 +354,13 @@ export const kaleidoswapChannelOrderRecipe: Recipe = {
     const expiry = Number(ctx.slots.channel_expiry_blocks ?? DEFAULT_EXPIRY_BLOCKS);
     const days = Math.round(expiry / 144);
     const feeStr = fees?.total_fee != null ? ` for ${fees.total_fee.toLocaleString()} sats` : '';
-    return `Buy a ${inbound.toLocaleString()}-sat inbound channel from the LSP (~${days} days)${feeStr}. Proceed?`;
+    const ticker = ctx.slots.asset_ticker ? String(ctx.slots.asset_ticker) : undefined;
+    const lspAsset = Number(ctx.slots.lsp_asset_amount ?? 0);
+    const cliAsset = Number(ctx.slots.client_asset_amount ?? 0);
+    const assetPart = ticker
+      ? ` + ${lspAsset.toLocaleString()} ${ticker} inbound${cliAsset > 0 ? ` and ${cliAsset.toLocaleString()} ${ticker} on your side` : ''}`
+      : '';
+    return `Buy a ${inbound.toLocaleString()}-sat${assetPart} channel from the LSP (~${days} days)${feeStr}. Proceed?`;
   },
   summary: (ctx) => {
     const order = ctx.results.order as OrderResult | undefined;
@@ -267,6 +368,10 @@ export const kaleidoswapChannelOrderRecipe: Recipe = {
     const id = order?.order_id ?? '?';
     const total = order?.payment?.bolt11?.order_total_sat;
     const paid = total != null ? `, paid ${total.toLocaleString()} sats` : '';
-    return `Channel order ${id} created${paid}. The channel will open once the LSP confirms the payment — ask "what's the status of my channel order?" to check.`;
+    const ticker = ctx.slots.asset_ticker ? String(ctx.slots.asset_ticker) : undefined;
+    const lspAsset = Number(ctx.slots.lsp_asset_amount ?? 0);
+    const assetPart = ticker ? ` (${lspAsset.toLocaleString()} ${ticker} inbound)` : '';
+    void inbound;
+    return `Channel order ${id} created${paid}${assetPart}. The channel will open once the LSP confirms the payment — ask "what's the status of my channel order?" to check.`;
   },
 };
