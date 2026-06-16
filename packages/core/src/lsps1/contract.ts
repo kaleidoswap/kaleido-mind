@@ -87,12 +87,12 @@ export const LSPS1_TOOLS: Lsps1ToolDef[] = [
     /* spend */ true),
 
   t('lsp_get_order',
-    'Check the status of an LSPS1 order. order_state progresses CREATED → CHANNEL_OPENING → COMPLETED (or FAILED). Pass the access_token from lsp_create_order.',
+    'Check the status of an LSPS1 order. order_state progresses CREATED → CHANNEL_OPENING → COMPLETED (or FAILED). ALWAYS pass BOTH the order_id and the access_token from lsp_create_order (the access_token is required for order status).',
     {
       order_id:     { type: 'string', description: 'The order id from lsp_create_order.' },
       access_token: { type: 'string', description: 'The per-order access token returned by lsp_create_order. Required for non-admin reads.' },
     },
-    ['order_id']),
+    ['order_id', 'access_token']),
 ];
 
 /** All LSPS1 tool names that move funds (confirmation-gated). */
