@@ -113,8 +113,12 @@ Only after `kaleidoswap_get_quote` returned an `rfq_id` THIS turn, and only when
 the user has explicitly approved the amount + direction. Pass the `rfq_id` as
 `quote_id`.
 
-### `kaleidoswap_get_order_status(order_id)`
-Poll after placing an order. Report status plainly — pending, settling,
+**Save the `order_id` AND `access_token` from the result** — you will need both
+for polling status later.
+
+### `kaleidoswap_get_order_status(order_id, access_token)`
+Poll after placing an order. **Pass both the order_id and the access_token**
+(saved from place_order). Report status plainly — pending, settling,
 completed, failed.
 
 ## Flow
@@ -124,7 +128,7 @@ completed, failed.
 3. **Read + present** — compute the receive amount + fee from the response (see
    "Reading the quote response"). **Never hide cost.**
 4. **Place** — spend-gated by the engine. The host pauses for the user.
-5. **Track** — poll `kaleidoswap_get_order_status` until it terminates.
+5. **Track** — poll `kaleidoswap_get_order_status(order_id, access_token)` (use both values saved from place_order) until it terminates.
 
 ## Don'ts
 

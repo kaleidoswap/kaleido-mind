@@ -62,6 +62,30 @@ function buildStubs(captured: { name: string; args: any }[]) {
     new InProcessToolSource('rln', [
       tool('rln_get_node_info', { pubkey: '03c31dae' }),
       tool('rln_pay_invoice', { status: 'SUCCESS', payment_hash: 'h' }, /* spend */ true),
+      // Stateful: first call (before snapshot) shows an existing channel;
+      // second call (after) shows the existing one PLUS the new one, so the
+      // diff identifies 'newch' as freshly opened.
+      {
+        name: 'rln_list_channels',
+        description: '',
+        parameters: { type: 'object', properties: {} },
+        handler: (() => {
+          let calls = 0;
+          return async (a: any) => {
+            captured.push({ name: 'rln_list_channels', args: a });
+            calls += 1;
+            const existing = { channel_id: 'oldch', capacity_sat: 2_000_000, inbound_sat: 1_800_000, ready: true, status: 'Opened' };
+            if (calls === 1) return { channels: [existing], count: 1 };
+            return {
+              channels: [
+                existing,
+                { channel_id: 'newch', capacity_sat: 500_000, inbound_sat: 495_000, outbound_sat: 0, ready: false, status: 'opening' },
+              ],
+              count: 2,
+            };
+          };
+        })(),
+      },
     ]),
   ]);
 }
@@ -193,9 +217,26 @@ describe('kaleidoswapChannelOrderRecipe — full chain', () => {
       'lsp_get_info',
       'lsp_estimate_fees',
       'rln_get_node_info',
+      'rln_list_channels', // before-snapshot
       'lsp_create_order',
       'rln_pay_invoice',
+      'rln_list_channels', // after — verification (read-only final)
     ]);
+  });
+
+  it('verification diff identifies the NEW channel (not pre-existing ones)', async () => {
+    const captured: { name: string; args: any }[] = [];
+    const tools = buildStubs(captured);
+    const res = await runRecipe(kaleidoswapChannelOrderRecipe, 'buy a 500000-sat inbound channel', {
+      provider: refusingProvider,
+      tools,
+      onConfirm: async () => ({ approved: true }),
+      slots: { lsp_balance_sat: 500_000 },
+    });
+    // The summary should reference the NEW channel (500k), not the old 2M one.
+    expect(res.text).toMatch(/New channel/);
+    expect(res.text).toMatch(/500,000-sat/);
+    expect(res.text).not.toMatch(/2,000,000/);
   });
 
   it("threads node.pubkey into lsp_create_order's client_pubkey", async () => {

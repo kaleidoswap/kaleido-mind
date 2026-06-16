@@ -102,7 +102,7 @@ export function extractChannelOrder(text: string): Record<string, unknown> | nul
   // NUMBER then KEYWORD — directional phrases ("X on my side", "X on lsp",
   // "X sats my side"). The (?:sats?\s+)? lets the user say the unit between
   // the number and the side keyword: "100k sats my side" → 100000.
-  const clientNum = t.match(/\b(\d[\d,.]*)\s*(k|m)?\s+(?:sats?\s+)?(?:on\s+(?:my|client|user)\s+side|on\s+my|on\s+client|my\s+side|as\s+push|push|outbound)\b/i);
+  const clientNum = t.match(/\b(\d[\d,.]*)\s*(k|m)?\s+(?:sats?\s+)?(?:on\s+(?:my|client|user)\s+side|on\s+my\b|on\s+mine\b|on\s+client|my\s+side|mine\b|as\s+push|push|outbound)\b/i);
   if (clientNum && clientNum[1]) client_balance_sat = parseAmountWord(clientNum[1], clientNum[2]);
 
   const lspNum = t.match(/\b(\d[\d,.]*)\s*(k|m)?\s+(?:sats?\s+)?(?:on\s+(?:the\s+)?lsp|for\s+(?:the\s+)?lsp|as\s+inbound|inbound|lsp[_\s]+side)\b/i);
@@ -229,6 +229,13 @@ interface OrderResult {
   order_id?: string;
   access_token?: string;
   order_state?: string;
+  // The maker echoes the capacities it ACCEPTED — may differ from what was
+  // requested (e.g. it can zero client_balance_sat). Used for verification.
+  lsp_balance_sat?: number;
+  client_balance_sat?: number;
+  asset_id?: string;
+  lsp_asset_amount?: number;
+  client_asset_amount?: number;
   payment?: {
     bolt11?: {
       invoice?: string;
@@ -237,6 +244,18 @@ interface OrderResult {
     };
   };
 }
+interface ChannelRow {
+  channel_id?: string;
+  capacity_sat?: number;
+  inbound_sat?: number;
+  outbound_sat?: number;
+  asset_id?: string;
+  asset_local_amount?: number;
+  asset_remote_amount?: number;
+  ready?: boolean;
+  status?: string;
+}
+interface ChannelsResult { channels?: ChannelRow[]; count?: number }
 
 export const kaleidoswapChannelOrderRecipe: Recipe = {
   name: 'kaleidoswap-channel-order',
@@ -330,6 +349,14 @@ export const kaleidoswapChannelOrderRecipe: Recipe = {
       as: 'node',
       args: () => ({}),
     },
+    // 3a. Snapshot existing channels so we can identify the NEW one after the
+    //     order opens (diff by channel_id). Without this, verification can't
+    //     tell the freshly-opened channel from pre-existing ones.
+    {
+      tool: 'rln_list_channels',
+      as: 'channels_before',
+      args: () => ({}),
+    },
     // 3b. Asset push leg: when client_asset_amount > 0, the maker requires
     //     a fresh rfq_id from kaleidoswap_get_quote(BTC → asset) so the LSP
     //     can lock the BTC price for the asset push. The maker's RFQ ↔
@@ -386,42 +413,88 @@ export const kaleidoswapChannelOrderRecipe: Recipe = {
         return body;
       },
     },
-  ],
-  // 5. Pay the LSP's Lightning invoice. Spend, but no second prompt — the
-  //    single recipe-level confirm covered the decision to commit funds.
-  final: {
-    tool: 'rln_pay_invoice',
-    args: (ctx) => {
-      const order = ctx.results.order as OrderResult | undefined;
-      return { invoice: order?.payment?.bolt11?.invoice };
+    // 5. Pay the LSP's Lightning invoice. Spend, but no second prompt — the
+    //    single recipe-level confirm covered the decision to commit funds.
+    {
+      tool: 'rln_pay_invoice',
+      as: 'paid',
+      args: (ctx) => {
+        const order = ctx.results.order as OrderResult | undefined;
+        return { invoice: order?.payment?.bolt11?.invoice };
+      },
     },
+  ],
+  // 6. VERIFY: list the node's channels so we can compare the requested
+  //    capacity against what actually opened. Read-only, so no gate. On
+  //    regtest the channel funds within seconds; on slower nets it may not
+  //    be visible yet — the summary reports either way.
+  final: {
+    tool: 'rln_list_channels',
+    as: 'channels',
+    args: () => ({}),
   },
   // ONE confirmation, fired after estimate_fees + get_node_info, before
-  // lsp_create_order. Shows the real total fee from the maker.
+  // lsp_create_order. Shows the real total fee + BOTH sides of the channel.
   confirm: (ctx: RecipeContext) => {
     const fees = ctx.results.fees as FeesResult | undefined;
     const inbound = Number(ctx.slots.lsp_balance_sat);
+    const mine = Number(ctx.slots.client_balance_sat ?? 0);
     const expiry = Number(ctx.slots.channel_expiry_blocks ?? DEFAULT_EXPIRY_BLOCKS);
     const days = Math.round(expiry / 144);
     const feeStr = fees?.total_fee != null ? ` for ${fees.total_fee.toLocaleString()} sats` : '';
+    const minePart = mine > 0 ? ` + ${mine.toLocaleString()} sats on your side` : '';
     const ticker = ctx.slots.asset_ticker ? String(ctx.slots.asset_ticker) : undefined;
     const lspAsset = Number(ctx.slots.lsp_asset_amount ?? 0);
     const cliAsset = Number(ctx.slots.client_asset_amount ?? 0);
     const assetPart = ticker
       ? ` + ${lspAsset.toLocaleString()} ${ticker} inbound${cliAsset > 0 ? ` and ${cliAsset.toLocaleString()} ${ticker} on your side` : ''}`
       : '';
-    return `Buy a ${inbound.toLocaleString()}-sat${assetPart} channel from the LSP (~${days} days)${feeStr}. Proceed?`;
+    return `Buy a channel: ${inbound.toLocaleString()} sats inbound${minePart}${assetPart} from the LSP (~${days} days)${feeStr}. Proceed?`;
   },
   summary: (ctx) => {
     const order = ctx.results.order as OrderResult | undefined;
-    const inbound = Number(ctx.slots.lsp_balance_sat);
+    const channels = ctx.results.channels as ChannelsResult | undefined;
     const id = order?.order_id ?? '?';
+    const token = order?.access_token;
+    const tokenNote = token ? ` (access token: ${token} — save it for status checks)` : '';
     const total = order?.payment?.bolt11?.order_total_sat;
     const paid = total != null ? `, paid ${total.toLocaleString()} sats` : '';
+
+    // VERIFY requested vs accepted (the maker echoes what it actually took).
+    const reqInbound = Number(ctx.slots.lsp_balance_sat);
+    const reqMine = Number(ctx.slots.client_balance_sat ?? 0);
+    const gotInbound = order?.lsp_balance_sat;
+    const gotMine = order?.client_balance_sat;
+    const mismatches: string[] = [];
+    if (gotInbound != null && gotInbound !== reqInbound) {
+      mismatches.push(`inbound ${reqInbound.toLocaleString()}→${gotInbound.toLocaleString()} sats`);
+    }
+    if (gotMine != null && gotMine !== reqMine) {
+      mismatches.push(`your side ${reqMine.toLocaleString()}→${gotMine.toLocaleString()} sats`);
+    }
+    const adjusted = mismatches.length
+      ? ` ⚠ the LSP adjusted: ${mismatches.join(', ')}.`
+      : '';
+
+    // VERIFY against the freshly-opened channel — identified by DIFF against
+    // the pre-order snapshot, so we never mistake a pre-existing channel for
+    // the new one.
+    const before = ctx.results.channels_before as ChannelsResult | undefined;
+    const beforeIds = new Set((before?.channels ?? []).map((c) => c.channel_id));
+    const fresh = (channels?.channels ?? []).filter((c) => c.channel_id && !beforeIds.has(c.channel_id));
+    const match = fresh[0];
+    let opened = ' The channel will open once the LSP confirms the payment — ask me to check its status (use the access token above with lsp_get_order).';
+    if (match) {
+      const cap = match.capacity_sat != null ? `${match.capacity_sat.toLocaleString()}-sat` : 'new';
+      const ready = match.ready ? 'ready' : (match.status ?? 'opening');
+      const inb = match.inbound_sat != null ? `, ${match.inbound_sat.toLocaleString()} sats inbound` : '';
+      opened = ` New channel ${cap} is open (${ready})${inb}.`;
+    }
+
     const ticker = ctx.slots.asset_ticker ? String(ctx.slots.asset_ticker) : undefined;
     const lspAsset = Number(ctx.slots.lsp_asset_amount ?? 0);
     const assetPart = ticker ? ` (${lspAsset.toLocaleString()} ${ticker} inbound)` : '';
-    void inbound;
-    return `Channel order ${id} created${paid}${assetPart}. The channel will open once the LSP confirms the payment — ask "what's the status of my channel order?" to check.`;
+
+    return `Channel order ${id}${tokenNote} created${paid}${assetPart}.${adjusted}${opened}`;
   },
 };
