@@ -86,7 +86,7 @@ export const KALEIDOSWAP_TOOLS: KaleidoswapToolDef[] = [
   // ─── orders (orderbook / market-order flow) ─────────────────────────────
   t('orders',
     'kaleidoswap_place_order',
-    'Place an order using an executable quote. Returns an order id. SPEND: the host pauses for user confirmation before the maker is called. Use only after kaleidoswap_get_quote and only when the user has explicitly approved the amount + destination.',
+    'Place an order using an executable quote. Returns order_id + access_token (save the token — required for get_order_status). SPEND: the host pauses for user confirmation before the maker is called. Use only after kaleidoswap_get_quote and only when the user has explicitly approved the amount + destination.',
     {
       quote_id: { type: 'string', description: 'The quote id returned by kaleidoswap_get_quote (must still be valid).' },
     },
@@ -95,9 +95,10 @@ export const KALEIDOSWAP_TOOLS: KaleidoswapToolDef[] = [
 
   t('orders',
     'kaleidoswap_get_order_status',
-    'Check the status of an order by id — pending / settling / completed / failed. Poll this after place_order until the order settles.',
+    'Check the status of an order by id — pending / settling / completed / failed. Poll this after place_order until the order settles. Requires the access_token returned by place_order for authenticated orders.',
     {
       order_id: { type: 'string', description: 'The order id returned by kaleidoswap_place_order.' },
+      access_token: { type: 'string', description: 'The per-order access token returned by kaleidoswap_place_order. Required for status checks on the order.' },
     },
     ['order_id']),
 
