@@ -226,6 +226,8 @@ export class Funnel {
 
   async runTurn(text: string, cbs: FunnelCallbacks = {}): Promise<FunnelResult> {
     const settings = this.getSettings();
+    const memoryOn = settings.memoryEnabled !== false;
+    const ragOn = settings.ragEnabled !== false;
 
     // ── T0: deterministic fast-path (no LLM) ──
     // Only fires when the host's registry actually implements the intent's
@@ -265,6 +267,26 @@ export class Funnel {
           cbs.onStep?.(name);
         },
       });
+      // Auto-remember ids/tokens from recipe summaries (the "remember: ..." lines)
+      // via the tool so status follow-ups can reliably recall even cross-session.
+      if (res.status === 'done' && memoryOn) {
+        try {
+          const hasRemember = await this.registry.getDef('remember');
+          if (hasRemember) {
+            const text = res.text || '';
+            const lines = text.split(/\n+/).filter((l) => /^\s*remember:/i.test(l));
+            for (const line of lines) {
+              const clean = line.trim();
+              if (clean.length > 8) {
+                void this.registry
+                  .execute('remember', { text: clean, kind: 'event', tags: ['recipe', 'order', 'status'] })
+                  .catch(() => {});
+                this.log(`auto-remembered: ${clean.slice(0, 80)}`);
+              }
+            }
+          }
+        } catch {}
+      }
       return { text: res.text, tier: 'recipe', route: recipe.name };
     }
 
@@ -278,7 +300,6 @@ export class Funnel {
     // RAG block sits above history so the model treats it as authoritative).
     // Only fires for agentic turns and only when the host opts in via
     // `retriever` AND the user hasn't disabled RAG in settings.
-    const ragOn = settings.ragEnabled !== false;
     if (this.retriever && ragOn && this.topKRag > 0) {
       try {
         const hits = await this.retriever.search(text, this.topKRag);
@@ -296,7 +317,6 @@ export class Funnel {
 
     // Ambient tools stay available even when a skill narrows the set — gated
     // by the user's memory/knowledge toggles (default on).
-    const memoryOn = settings.memoryEnabled !== false;
     const ambient = [...(memoryOn ? AMBIENT_MEMORY : []), ...(ragOn ? AMBIENT_RAG : [])];
     const disabledAmbient = [...(memoryOn ? [] : AMBIENT_MEMORY), ...(ragOn ? [] : AMBIENT_RAG)];
     let scoped: string[] | undefined;
