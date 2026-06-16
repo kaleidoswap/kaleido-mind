@@ -159,6 +159,16 @@ describe('kaleidoswapChannelOrderRecipe — selection', () => {
     expect(m('swap 1000 sats to usdt')).toBe(false);
     expect(m('what is a Lightning channel?')).toBe(false);
   });
+
+  it('does NOT trigger on explanatory questions about channels', () => {
+    const m = kaleidoswapChannelOrderRecipe.match!;
+    // These should route to RAG-backed knowledge answering, not the recipe.
+    expect(m('why do I need to buy a channel before swapping?')).toBe(false);
+    expect(m('how does an inbound channel work?')).toBe(false);
+    expect(m('what is inbound liquidity?')).toBe(false);
+    expect(m('do I need a channel to receive lightning payments?')).toBe(false);
+    expect(m('can I receive without an inbound channel?')).toBe(false);
+  });
 });
 
 describe('kaleidoswapChannelOrderRecipe — full chain', () => {

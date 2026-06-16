@@ -31,10 +31,14 @@ import type { Recipe, RecipeContext } from './types.js';
 const DEFAULT_EXPIRY_BLOCKS = 4320;
 
 /**
- * Fire on inbound-liquidity / channel-order intent. Excludes generic Lightning
- * questions ("what's a channel?") and the trading skill's territory.
+ * Fire on inbound-liquidity / channel-order intent. Excludes:
+ *   - explanatory / educational questions ("why do I need a channel?", "what
+ *     is a channel?") — those go to RAG-backed agentic answering.
+ *   - the trading skill's territory.
  */
 function CHANNEL_INTENT(t: string): boolean {
+  // Explanatory/question phrasing → not an order, let the agentic path handle it.
+  if (/\b(why|how|what|when|explain|tell\s+me|do\s+I\s+need|should\s+I|can\s+I)\b/i.test(t)) return false;
   // Explicit LSPS1 keywords always match.
   if (/\b(lsps1|lsp\s+order|channel\s+order)\b/i.test(t)) return true;
   // Inbound liquidity asks.

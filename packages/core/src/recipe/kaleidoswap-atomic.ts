@@ -40,6 +40,9 @@ import { extractSwap } from './swap.js';
 // `kaleidoswapPriceRecipe` instead — keep them out of this match.
 const ASSET = /\b(btc|bitcoin|sats?|usdt|tether|xaut|gold)\b/i;
 const SWAP_INTENT = (t: string) => {
+  // Explanatory / educational questions → route to RAG-backed agentic answer,
+  // not the deterministic spend chain.
+  if (/\b(why|how|what|when|explain|tell\s+me|do\s+I\s+need|should\s+I|can\s+I)\b/i.test(t)) return false;
   if (/\b(swap|exchange|convert|trade)\b/i.test(t)) return true;
   if (
     /\b(buy|sell|get|purchase|acquire)\b/i.test(t) &&
