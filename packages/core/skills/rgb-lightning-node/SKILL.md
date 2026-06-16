@@ -92,7 +92,7 @@ A user-driven swap on KaleidoSwap is a two-service flow. Keep them straight:
 | Pubkey | **node** | `rln_get_node_info` (read `pubkey`) |
 | Whitelist | **node** | `rln_whitelist_swap` (pass the swapstring) |
 | Execute | maker | `kaleidoswap_atomic_execute` (needs swapstring + taker_pubkey + payment_hash) |
-| Status | maker | `kaleidoswap_atomic_status` |
+| Status | maker | `kaleidoswap_atomic_status` (pass atomic_id or payment_hash from the atomic recipe summary or prior init result; see "remember" line in history) |
 
 The node's two contributions to the swap are the **pubkey** and the
 **whitelist ack** — nothing more. Don't reach for `/makerinit` or
