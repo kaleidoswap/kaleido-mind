@@ -9,8 +9,8 @@
  *   - eval    → stub handlers, also via `bindKaleidoswapTools`
  *
  * Because the schemas are identical everywhere, skills are portable and the
- * model comparison is honest. Tools are grouped (`market`, `orders`, `atomic`)
- * so a host can expose a read-only subset for sandbox/eval modes.
+ * model comparison is honest. Tools are grouped (`market`, `orders`, `atomic`,
+ * `liquidity`) so a host can expose a read-only subset for sandbox/eval modes.
  *
  * Spend tools (place an order, init/execute an atomic swap) carry
  * `spend: true` → `requiresConfirmation: true`, so the Engine always pauses
@@ -24,7 +24,7 @@ import { InProcessToolSource } from '../tools/in-process.js';
 import type { InProcessTool } from '../tools/in-process.js';
 
 /** Functional grouping for selective binding (e.g. read-only sandbox). */
-export type KaleidoswapGroup = 'market' | 'orders' | 'atomic';
+export type KaleidoswapGroup = 'market' | 'orders' | 'atomic' | 'liquidity';
 
 export interface KaleidoswapToolDef extends ToolDef {
   /** Functional group — lets a host expose a subset. */
@@ -137,6 +137,27 @@ export const KALEIDOSWAP_TOOLS: KaleidoswapToolDef[] = [
       atomic_id: { type: 'string', description: 'The atomic id from kaleidoswap_atomic_init.' },
     },
     ['atomic_id']),
+
+  // ─── liquidity (buy a NEW channel pre-loaded with an asset — onboarding) ──
+  t('liquidity',
+    'kaleidoswap_lsp_quote_asset_channel',
+    'Quote buying a NEW Lightning channel pre-loaded with an RGB asset (e.g. USDT, XAUT) from the maker LSP. This is the onboarding path for a user who has on-chain BTC but no channel yet and wants to hold an asset — they pay once to receive a channel that already holds the asset. Read-only: returns an rfq_id, the BTC price in sats, the channel/setup fee, the total to pay, and when the quote expires. Re-quote rather than reusing a stale rfq_id.',
+    {
+      asset:        { type: 'string', description: 'RGB asset to receive in the channel, e.g. "USDT" or "XAUT".' },
+      asset_amount: { type: 'number', description: 'How much of the asset to load into the channel, in the asset’s display units (e.g. 100 for 100 USDT).' },
+    },
+    ['asset', 'asset_amount']),
+
+  t('liquidity',
+    'kaleidoswap_lsp_create_asset_channel',
+    'Order a new Lightning channel pre-loaded with an RGB asset from the maker LSP, using a fresh rfq_id from kaleidoswap_lsp_quote_asset_channel. SPEND: confirmation-gated. Returns an order id and the payment (on-chain address or Lightning invoice) the user pays to open the channel; the channel opens only after the payment confirms. Poll kaleidoswap_lsp_get_order to track it.',
+    {
+      asset:        { type: 'string', description: 'RGB asset to receive (must match the quote).' },
+      asset_amount: { type: 'number', description: 'Asset amount in display units (must match the quote).' },
+      rfq_id:       { type: 'string', description: 'The rfq_id from kaleidoswap_lsp_quote_asset_channel (must still be valid).' },
+    },
+    ['asset', 'asset_amount', 'rfq_id'],
+    /* spend */ true),
 ];
 
 /** All tool names that move funds (confirmation-gated). */

@@ -31,6 +31,11 @@ import {
   ToolRegistry,
   SkillRegistry,
   createSkillReferenceToolSource,
+  buyAssetChannelRecipe,
+  kaleidoswapAtomicRecipe,
+  assetSendRecipe,
+  paymentsRecipe,
+  receiveRecipe,
   type LLMProvider,
   type Message,
   type ToolSource,
@@ -860,6 +865,18 @@ async function handleChat(prompt: string): Promise<{ text: string; latencyMs: nu
     system: DESKTOP_SYSTEM,
     maxTurns: 8,
     log: (m) => diag(m),
+    // Opt-in recipes (buy-asset-channel onboarding + atomic swap) drive the
+    // kaleidoswap_*/rln_* MCP tools, so they fire on desktop; the generic
+    // payments/receive/asset-send defaults stay registered too. A recipe only
+    // fires when its deterministic extractor is confident AND the MCP registry
+    // implements its final tool, so unmatched ones fall through to the agent.
+    recipes: [
+      buyAssetChannelRecipe,
+      kaleidoswapAtomicRecipe,
+      assetSendRecipe,
+      paymentsRecipe,
+      receiveRecipe,
+    ],
   });
 
   const res = await funnel.runTurn(prompt, {

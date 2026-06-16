@@ -92,6 +92,9 @@ export {
   extractChannelOrder,
 } from './recipe/kaleidoswap-channel-order.js';
 
+// ── Buy-an-asset-channel recipe (opt-in — register via Funnel.recipes) ─────
+export { buyAssetChannelRecipe, extractBuyAsset } from './recipe/buy-asset-channel.js';
+
 // ── Recipes (mobile multi-step: "recipes, not planning") ───────────────────
 export { runRecipe, extractSlots, RecipeRegistry } from './recipe/runner.js';
 export type { RunRecipeOptions } from './recipe/runner.js';
