@@ -249,15 +249,27 @@ export class Funnel {
     //       running steps with bad data.
     // Either way the registry must implement the recipe's final action.
     const recipe = this.recipes.select(text);
-    const slots = recipe?.extract?.(text) ?? null;
-    const deterministicallyConfident =
-      !!slots && (recipe?.confident ? recipe.confident(slots) : Object.keys(slots).length > 0);
+    // For forceModelExtract recipes (channel-order, atomic) the det extractor is
+    // de-emphasized: only used inside runRecipe as a backfill safety net; firing
+    // decision + log do not depend on brittle regex for varied NL.
+    let slotsForLog: any = null;
+    let detConfident = false;
+    if (recipe) {
+      if (recipe.forceModelExtract === true) {
+        slotsForLog = { forceModelExtract: true };
+        detConfident = true; // force path handles via LLM inside; prefilter only needs tool presence
+      } else {
+        const d = recipe.extract?.(text) ?? null;
+        slotsForLog = d;
+        detConfident = !!d && (recipe.confident ? recipe.confident(d) : Object.keys(d).length > 0);
+      }
+    }
     const fires =
       !!recipe &&
-      (recipe.forceModelExtract === true || deterministicallyConfident) &&
+      (recipe.forceModelExtract === true || detConfident) &&
       !!(await this.registry.getDef(recipe.final.tool));
     if (recipe && fires) {
-      this.log(`tier=recipe:${recipe.name} slots=${JSON.stringify(slots)}`);
+      this.log(`tier=recipe:${recipe.name} slots=${JSON.stringify(slotsForLog)}`);
       const res = await runRecipe(recipe, text, {
         provider: this.provider,
         tools: this.registry,
