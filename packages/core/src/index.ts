@@ -87,6 +87,10 @@ export type {
 // without firing any spend.
 export { kaleidoswapPriceRecipe } from './recipe/kaleidoswap-price.js';
 export { kaleidoswapAtomicRecipe } from './recipe/kaleidoswap-atomic.js';
+export {
+  kaleidoswapChannelOrderRecipe,
+  extractChannelOrder,
+} from './recipe/kaleidoswap-channel-order.js';
 
 // ── Recipes (mobile multi-step: "recipes, not planning") ───────────────────
 export { runRecipe, extractSlots, RecipeRegistry } from './recipe/runner.js';

@@ -1,75 +1,110 @@
 ---
 name: kaleido-lsps
-description: "Buy inbound Lightning channel capacity from a Lightning Service Provider (LSPS1). Quote, estimate fees, and create a channel order. Triggers when the user wants inbound liquidity, can't receive a payment, needs a channel, or asks about LSP fees."
-tools: lsp_get_info, lsp_get_network_info, lsp_estimate_fees, lsp_create_order, lsp_get_order
-triggers: inbound, liquidity, channel order, lsp, lsps1, receive limit, can't receive, open channel
+description: "Buy inbound Lightning channel capacity from a Lightning Service Provider (LSPS1). Quote a channel, estimate fees, and place a channel order. Triggers when the user wants inbound liquidity, says they can't receive a payment, needs a channel, or asks about LSP fees."
+tools: lsp_get_info, lsp_get_network_info, lsp_estimate_fees, lsp_create_order, lsp_get_order, rln_get_node_info, rln_pay_invoice
+triggers: inbound, liquidity, channel order, lsp, lsps1, receive limit, can't receive, open channel, channel from
 metadata:
   author: kaleidoswap
-  version: "0.1.0"
+  version: "0.2.0"
 ---
 
 # Lightning channel orders (LSPS1)
 
 Buy inbound Lightning channel capacity from a Lightning Service Provider when
-the user can't receive a payment (no inbound liquidity) or wants a bigger
-receive limit. The host binds these to whichever LSP it talks to — the
-KaleidoSwap maker by default, but the contract is LSP-agnostic (`lsp_*`).
+the user can't receive a payment, wants a bigger receive limit, or just wants
+to open a new channel from the LSP. The host binds these to whichever LSP it
+talks to — the KaleidoSwap maker by default. Tool names are LSP-agnostic
+(`lsp_*`), so the same skill works against any LSPS1-compliant LSP.
 
-## Critical rules
+## Critical rules — these override everything else
 
-You have **no knowledge of LSP fees, channel sizes, or order status**. Every
-number, capacity, fee, or order id in your reply MUST come from a tool result
-returned in the CURRENT turn. Never quote a fee from memory. Never claim an
-order completed without calling `lsp_get_order`.
+You have **no knowledge** of LSP capabilities, fees, channel sizes, or order
+status. Every number, capacity, fee, order id, or invoice in your reply MUST
+come from a tool result returned in the CURRENT turn. Never quote a fee from
+memory. Never claim an order completed without calling `lsp_get_order`.
+Never reuse a number from a previous turn.
 
 **Calling the tool IS the answer.** Don't write "the LSP info is fetched with
-`lsp_get_info`" — call it.
+`lsp_get_info`" — call it. Don't reveal tool names in your reply; describe
+what you're doing in plain language.
 
-If a tool needs a required argument the user didn't give (e.g. an `order_id`
-when polling), ASK. Don't loop the same failing call.
+If a tool needs a required argument the user didn't give (e.g. `client_pubkey`
+when creating an order — get it from `rln_get_node_info`), resolve it via the
+appropriate read tool. Don't ask the user for a pubkey.
 
-## What "inbound liquidity" / "receive capacity" actually means
+## Asset codes
 
-These three concepts get confused often. They are NOT the same number:
+The same conventions as trading apply:
+- `BTC` (sats) — the default for "inbound liquidity" / "channel capacity".
+- `USDT` / `XAUT` — for RGB asset channels (uses `asset_id` + `lsp_asset_amount`).
 
-| User says… | What they mean | How to answer |
-|---|---|---|
-| "how much can I **spend**?" | local balance (outbound) — sats YOU own across channels | NOT this skill — use the wallet skill / `rln_get_node_info.local_balance_sat`. |
-| "how much can I **receive**?" / "inbound liquidity?" / "receive limit?" | remote balance — sats your peers can pay you without opening a new channel | **Two cases:** (1) how much you HAVE today → sum of remote balances on your current channels (out of scope for this skill); (2) how much you can BUY from this LSP → `lsp_get_info` for the LSP's offer (min/max channel size, fees). |
-| "what does the LSP offer?" / "what's the LSPS1 info?" | the LSP's catalog — min/max sizes it sells, fees, terms | `lsp_get_info` (this is what it returns). |
+## Tools and the flow
 
-**Critical: `local_balance_sat` is NOT inbound capacity.** It is the SPEND
-side. If a user asks "how much can I receive?", DO NOT pull `local_balance_sat`
-from a previous nodeinfo call and report it — that's the wrong number. Call
-`lsp_get_info` (for buying more inbound) and say plainly that current-channels
-inbound isn't available via these tools.
+### Step 1 — `lsp_get_info`
+No args. Returns the LSP's `OrderOptions` (min/max channel size, min/max
+expiry, etc.) and the `assets` list. **Call it once before estimating** so you
+can validate the user's request against the LSP's limits.
 
-Same rule: any time you've seen a balance / channel number on a previous turn,
-that does NOT answer an "inbound" question. Inbound and balance are different
-quantities measured on different sides of the channel.
+If the user wants 1M sats inbound but `max_initial_lsp_balance_sat` is 500k,
+say so plainly and offer the maximum — don't push through and let the maker
+reject it.
 
-## Flow
+### Step 2 — `lsp_estimate_fees` (read-only)
+Required args: `lsp_balance_sat`, `client_balance_sat`, `channel_expiry_blocks`.
 
-1. **Check the LSP first.** Call `lsp_get_info` once per session to learn the
-   min/max channel size and the fee structure. Use those numbers to validate
-   the user's request (e.g. "200k sats" against `min_channel_sat`).
-2. **Estimate before ordering.** Call `lsp_estimate_fees` with the desired
-   `lsp_balance_sat`. Surface the total cost explicitly — never hide it.
-3. **Show + confirm.** State: inbound capacity requested, total fee, expiry
-   (if applicable), and the LSP node URI from `lsp_get_network_info` (so the
-   user knows the counterparty). The next step is spend-gated.
-4. **Create the order.** Call `lsp_create_order` with the same parameters.
-   The host pauses for explicit confirmation. Returns an `order_id` and a
-   Lightning invoice the user must pay to lock the order.
-5. **Track it.** Poll `lsp_get_order` until the channel opens (status
-   `completed`) or fails. Report the outcome plainly.
+Defaults you can use silently if the user didn't specify:
+- `client_balance_sat: 0` (pure inbound order — most common)
+- `channel_expiry_blocks: 4320` (~30 days)
 
-## Rules
+Returns `{setup_fee, capacity_fee, duration_fee, total_fee}` — surface
+`total_fee` to the user and the breakdown when relevant.
 
-- **Re-estimate when parameters change.** Don't reuse an estimate across
-  different channel sizes or expiries.
-- **Never invent capacity / fees / pubkeys.** Tool results are the truth.
-- **Lightning over on-chain for ordering.** LSPS1 orders are paid by
-  Lightning invoice; if Lightning isn't available, say so and stop.
-- **A channel order is not the same as a payment.** Make this explicit when
-  the user confuses them.
+### Step 3 — `rln_get_node_info`
+No args. Returns `{pubkey, ...}`. **Pubkey is required by `lsp_create_order` —
+fetch it deterministically. Never invent a pubkey.**
+
+### Step 4 — `lsp_create_order` 🔒 spend
+Required args: `client_pubkey` (from step 3), `lsp_balance_sat`. The maker
+also expects `client_balance_sat`, `required_channel_confirmations`,
+`funding_confirms_within_blocks`, `channel_expiry_blocks`, `announce_channel`
+— the host adapter fills sensible defaults (1, 6, 4320, true) when the user
+didn't specify, so just pass the values the user actually named.
+
+Returns:
+- `order_id`
+- `access_token` (save it — required for `lsp_get_order`)
+- `payment.bolt11.invoice` — Lightning invoice to pay
+- `payment.bolt11.order_total_sat` — the sats that need to flow
+- `payment.onchain.address` — optional on-chain fallback
+- `order_state: "CREATED"`
+
+### Step 5 — Pay the invoice with `rln_pay_invoice`
+Hand the `payment.bolt11.invoice` to `rln_pay_invoice`. This is a separate
+spend gate at the wallet contract; the user confirms paying the LSP.
+
+### Step 6 — `lsp_get_order` (poll)
+Args: `order_id`, `access_token`. `order_state` progresses
+`CREATED → CHANNEL_OPENING → COMPLETED` (or `FAILED`). Poll until terminal.
+Report the outcome plainly with the new channel id from
+`channel.channel_id` if present.
+
+## Don'ts
+
+- Don't invent capacity, fees, pubkeys, order_ids, or invoices.
+- Don't reuse a number from a previous turn — re-estimate when parameters
+  change (different size or expiry).
+- Don't describe how a tool works — call it.
+- Don't pay a Lightning invoice without confirming the amount + LSP — the
+  spend gate at `rln_pay_invoice` shows the user the destination.
+- Don't claim an order completed without polling `lsp_get_order` and seeing
+  `order_state: COMPLETED`.
+- Don't ask the user for their node pubkey — fetch it from `rln_get_node_info`.
+
+## When the deterministic recipe handles it
+
+For requests like "I need 500k inbound" or "buy a channel from the LSP", the
+`kaleidoswap-channel-order` recipe drives the whole chain (get_info →
+estimate_fees → get_node_info → create_order → pay_invoice) with a single
+confirmation gate showing the real fee. Use the agentic flow here only when
+the recipe didn't fire — typically for read-only questions ("what does the
+LSP offer?") or partial flows ("estimate fees for 200k inbound").

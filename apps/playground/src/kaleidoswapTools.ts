@@ -95,12 +95,56 @@ const KALEIDOSWAP_ROUTES: Record<string, Route> = {
   },
 };
 
+// LSPS1 defaults mirror apps/cli/src/lsps1Tools.ts.
+const LSPS1_DEFAULTS = {
+  client_balance_sat: 0,
+  required_channel_confirmations: 1,
+  funding_confirms_within_blocks: 6,
+  channel_expiry_blocks: 4320,
+  announce_channel: true,
+};
+const _n = (x: unknown, d: number) => (Number.isFinite(Number(x)) ? Number(x) : d);
+const _b = (x: unknown, d: boolean) => (typeof x === 'boolean' ? x : x === 'true' ? true : x === 'false' ? false : d);
+
 const LSPS1_ROUTES: Record<string, Route> = {
   lsp_get_info:         { method: 'GET',  path: '/api/v1/lsps1/get_info' },
   lsp_get_network_info: { method: 'GET',  path: '/api/v1/lsps1/network_info' },
-  lsp_estimate_fees:    { method: 'POST', path: '/api/v1/lsps1/estimate_fees' },
-  lsp_create_order:     { method: 'POST', path: '/api/v1/lsps1/create_order' },
-  lsp_get_order:        { method: 'POST', path: '/api/v1/lsps1/get_order' },
+  lsp_estimate_fees: {
+    method: 'POST', path: '/api/v1/lsps1/estimate_fees',
+    body: (a) => ({
+      lsp_balance_sat: _n(a.lsp_balance_sat, 0),
+      client_balance_sat: _n(a.client_balance_sat, LSPS1_DEFAULTS.client_balance_sat),
+      channel_expiry_blocks: _n(a.channel_expiry_blocks, LSPS1_DEFAULTS.channel_expiry_blocks),
+      ...(a.token != null ? { token: a.token } : {}),
+      ...(a.asset_id != null ? { asset_id: a.asset_id } : {}),
+      ...(a.lsp_asset_amount != null ? { lsp_asset_amount: a.lsp_asset_amount } : {}),
+      ...(a.client_asset_amount != null ? { client_asset_amount: a.client_asset_amount } : {}),
+      ...(a.rfq_id != null ? { rfq_id: a.rfq_id } : {}),
+    }),
+  },
+  lsp_create_order: {
+    method: 'POST', path: '/api/v1/lsps1/create_order',
+    body: (a) => ({
+      client_pubkey: String(a.client_pubkey ?? ''),
+      lsp_balance_sat: _n(a.lsp_balance_sat, 0),
+      client_balance_sat: _n(a.client_balance_sat, LSPS1_DEFAULTS.client_balance_sat),
+      required_channel_confirmations: _n(a.required_channel_confirmations, LSPS1_DEFAULTS.required_channel_confirmations),
+      funding_confirms_within_blocks: _n(a.funding_confirms_within_blocks, LSPS1_DEFAULTS.funding_confirms_within_blocks),
+      channel_expiry_blocks: _n(a.channel_expiry_blocks, LSPS1_DEFAULTS.channel_expiry_blocks),
+      announce_channel: _b(a.announce_channel, LSPS1_DEFAULTS.announce_channel),
+      ...(a.token != null ? { token: a.token } : {}),
+      ...(a.refund_onchain_address != null ? { refund_onchain_address: a.refund_onchain_address } : {}),
+      ...(a.asset_id != null ? { asset_id: a.asset_id } : {}),
+      ...(a.lsp_asset_amount != null ? { lsp_asset_amount: a.lsp_asset_amount } : {}),
+      ...(a.client_asset_amount != null ? { client_asset_amount: a.client_asset_amount } : {}),
+      ...(a.rfq_id != null ? { rfq_id: a.rfq_id } : {}),
+      ...(a.email != null ? { email: a.email } : {}),
+    }),
+  },
+  lsp_get_order: {
+    method: 'POST', path: '/api/v1/lsps1/get_order',
+    body: (a) => ({ order_id: String(a.order_id ?? ''), access_token: a.access_token != null ? String(a.access_token) : '' }),
+  },
 };
 
 function safeJson(s: string): unknown {
