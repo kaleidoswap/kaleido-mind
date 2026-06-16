@@ -63,6 +63,7 @@ export async function extractSlots(
     'amount_side: "to" when the named amount is what you receive/buy (e.g. "buy 1 USDT" → to_asset=USDT, amount=1, from_asset=BTC); "from" for sell/swap (amount on from_asset).',
     'The host binding handles per-asset precision scaling (BTC in sats → maker units; USDT/XAUT whole units). Pass the user\'s number as-is for the correct side.',
     'If a value is ambiguous from the message, prefer the mapping from the field descriptions rather than guessing.',
+    'For status-related follow-ups the history (or recall result) will contain explicit "order_id=... access_token=..." or "atomic_id=..." strings from prior summaries — when relevant extract them exactly.',
     'Do not call any other tool and do not add commentary.',
   ].filter(Boolean).join(' ');
 

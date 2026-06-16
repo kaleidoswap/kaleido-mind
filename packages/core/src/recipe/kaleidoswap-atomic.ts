@@ -72,10 +72,10 @@ export const kaleidoswapAtomicRecipe: Recipe = {
   match: (t) => SWAP_INTENT(t),
   triggers: ['swap', 'exchange', 'convert', 'trade', 'buy', 'sell'],
   slots: [
-    { name: 'from_asset', type: 'string', description: 'Asset to spend (BTC / USDT / XAUT)', required: true },
-    { name: 'to_asset', type: 'string', description: 'Asset to receive (BTC / USDT / XAUT)', required: true },
-    { name: 'amount', type: 'number', description: 'The amount the user named' },
-    { name: 'amount_side', type: 'string', description: "Which leg the amount is on: 'from' (sell/swap) or 'to' (buy)" },
+    { name: 'from_asset', type: 'string', description: 'Asset to spend (BTC / USDT / XAUT). Example: "swap 10 usdt to btc" → from_asset=USDT', required: true },
+    { name: 'to_asset', type: 'string', description: 'Asset to receive (BTC / USDT / XAUT). Example: "buy 1 usdt" → to_asset=USDT', required: true },
+    { name: 'amount', type: 'number', description: 'The amount the user named (in from_asset units for sell, to_asset for buy). E.g. "buy 1 usdt" amount=1; "swap 100000 sats" amount=100000' },
+    { name: 'amount_side', type: 'string', description: "Which leg the amount is on: 'from' (sell/swap) or 'to' (buy). Use examples in descriptions and 'buy X Y' means to_asset." },
   ],
   // Keep the fast `extract` for the Funnel's cheap pre-filter (so "buy 1 usdt"
   // reliably enters the recipe branch instead of falling to free agentic).
