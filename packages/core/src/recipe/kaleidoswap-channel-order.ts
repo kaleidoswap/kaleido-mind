@@ -531,7 +531,7 @@ export const kaleidoswapChannelOrderRecipe: Recipe = {
     const beforeIds = new Set((before?.channels ?? []).map((c) => c.channel_id));
     const fresh = (channels?.channels ?? []).filter((c) => c.channel_id && !beforeIds.has(c.channel_id));
     const match = fresh[0];
-    let opened = ' The channel will open once the LSP confirms the payment — ask me to check its status (call lsp_get_order with the exact order_id and access_token above).';
+    let opened = ' The channel will open once the LSP confirms the payment — say "check my channel status" (or "lsp status") and I will recall the details + poll lsp_get_order automatically.';
     if (match) {
       const cap = match.capacity_sat != null ? `${match.capacity_sat.toLocaleString()}-sat` : 'new';
       const ready = match.ready ? 'ready' : (match.status ?? 'opening');

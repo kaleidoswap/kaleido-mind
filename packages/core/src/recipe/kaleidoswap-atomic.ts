@@ -161,6 +161,6 @@ export const kaleidoswapAtomicRecipe: Recipe = {
     const init = ctx.results.init as InitResult | undefined;
     const id = init?.atomic_id || init?.payment_hash || '?';
     return `remember: atomic swap atomic_id=${id} (for later kaleidoswap_atomic_status checks).
-Swap submitted: ${from} → ${to}. To check status later, call: kaleidoswap_atomic_status(atomic_id=${id}). Settling now — ask me to check the status.`;
+Swap submitted: ${from} → ${to}. To check status later, call: kaleidoswap_atomic_status(atomic_id=${id}). Say "check my swap status" and I will recall + poll automatically.`;
   },
 };
