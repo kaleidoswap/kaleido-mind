@@ -59,7 +59,21 @@ export const WALLET_TOOLS: WalletToolDef[] = [
   t('spark', 'spark_get_balance', 'Get the Spark wallet BTC balance.'),
   t('spark', 'spark_get_address', 'Get a Spark deposit address to receive BTC.'),
   t('spark', 'spark_create_invoice', 'Create a Spark Lightning invoice to receive BTC.', { amount_sats: sats }),
-  t('spark', 'spark_send', 'Send BTC from Spark to an address or invoice.', { amount_sats: sats, to: { type: 'string', description: 'Address or invoice' } }, ['amount_sats', 'to'], true),
+  // Explicit Lightning-invoice payer. BOLT11 invoices encode the amount, so
+  // `amount_sats` is optional and only used for amount-less ("any-amount")
+  // invoices. Prefer this over `spark_send` when the destination is a BOLT11
+  // invoice — it removes ambiguity for small models and gives the cross-skill
+  // bitrefill flow a single, unambiguous target.
+  t('spark', 'spark_pay_invoice',
+    'Pay a Lightning (BOLT11) invoice from the Spark wallet. The invoice already encodes the amount; pass amount_sats ONLY for amount-less invoices. Use this for any BOLT11 destination (Bitrefill, contact, raw invoice).',
+    { invoice: { type: 'string', description: 'BOLT11 Lightning invoice (lnbc…/lntb…/lnbcrt…).' }, amount_sats: { type: 'number', description: 'Required ONLY when the invoice has no amount; omit otherwise.' } },
+    ['invoice'],
+    /* spend */ true),
+  t('spark', 'spark_send',
+    'Send BTC from Spark to an on-chain address (bc1…/tb1…). For BOLT11 invoices, prefer spark_pay_invoice.',
+    { amount_sats: sats, to: { type: 'string', description: 'On-chain Bitcoin address.' } },
+    ['amount_sats', 'to'],
+    /* spend */ true),
 
   // ── RLN / RGB ──────────────────────────────────────────────────────────
   t('rln', 'rln_get_balances', 'Get RLN node balances (BTC + RGB assets).'),

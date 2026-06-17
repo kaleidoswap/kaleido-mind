@@ -1,7 +1,7 @@
 ---
 name: bitrefill
 description: "Buy or browse Bitrefill — 1,500+ gift cards, mobile top-ups, and eSIMs across 180+ countries, payable in crypto, Lightning, USDC via x402, or pre-funded account balance. Use these tools to actually transact: bitrefill_search → bitrefill_get_product → bitrefill_create_invoice (spend, confirmed) → bitrefill_get_invoice/bitrefill_get_order for the redemption code."
-tools: bitrefill_search, bitrefill_get_product, bitrefill_get_balance, bitrefill_create_invoice, bitrefill_get_invoice, bitrefill_get_order
+tools: bitrefill_search, bitrefill_get_product, bitrefill_get_balance, bitrefill_create_invoice, bitrefill_get_invoice, bitrefill_get_order, spark_pay_invoice, spark_get_balance, rln_pay_invoice
 triggers: bitrefill, gift card, gift cards, giftcard, voucher, vouchers, top-up, topup, top up, refill, esim, e-sim, mobile plan, mobile top-up, prepaid, amazon, steam, google play, app store, itunes, playstation, xbox, netflix, spotify, uber
 compatibility: "Live REST adapter on the CLI/desktop when BITREFILL_API_KEY (Personal) or BITREFILL_API_ID + BITREFILL_API_SECRET (Business) are set. Without those env vars the tools aren't registered — tell the user and stop."
 metadata:
@@ -65,9 +65,9 @@ For a typical buy ("a $25 Amazon US gift card with my balance"):
    - `"balance"` + `auto_pay: true` — instant settlement from account
      balance. **Default** when the user says "with my balance" or doesn't
      specify and balance is sufficient.
-   - `"lightning"` — fastest crypto path. Response carries a BOLT11 invoice
-     the user pays out-of-band. **Requires `refund_address`** in case it
-     expires.
+   - `"lightning"` — fastest crypto path. Response carries a BOLT11
+     invoice the user pays out-of-band (see step 5b — Spark, if connected,
+     pays it directly). **Requires `refund_address`** in case it expires.
    - `"bitcoin"`, `"usdc_base"`, `"usdc_polygon"`, `"usdt_tron"`,
      `"usdt_ethereum"` — same pattern, slower confirmation; also need
      `refund_address`.
@@ -76,13 +76,23 @@ For a typical buy ("a $25 Amazon US gift card with my balance"):
    per invoice.
 
 5. **Settlement.**
-   - With `payment_method:"balance"` + `auto_pay:true` the invoice is
-     usually `complete` on creation — read its `order_id`(s) and go to
-     step 6.
-   - Otherwise relay the payment URI to the user and **poll**
-     `bitrefill_get_invoice({ invoice_id })` until `status:"complete"`.
-     Don't poll faster than every ~5s; give up after a few minutes and
-     hand the invoice id back to the user to check later.
+
+   a. **`balance` + `auto_pay:true`** — the invoice is usually `complete`
+      on creation. Read its `order_id`(s) and skip to step 6.
+
+   b. **`lightning` with Spark connected** — the response includes a BOLT11
+      invoice (commonly under `payment.lightning_invoice`, surface whatever
+      field the host returns). Pay it with **`spark_pay_invoice({ invoice:
+      <bolt11> })`** — that's one extra confirmation gate, and Spark settles
+      it in seconds. (Same pattern if RLN is the user's Lightning layer:
+      use `rln_pay_invoice`.) Then `bitrefill_get_invoice` should already
+      report `paid` / `complete`.
+
+   c. **`lightning` or on-chain without an on-device wallet** — relay the
+      payment URI to the user and **poll** `bitrefill_get_invoice({
+      invoice_id })` until `status:"complete"`. Don't poll faster than
+      every ~5s; give up after a few minutes and hand the invoice id back
+      to the user to check later.
 
 6. **`bitrefill_get_order({ order_id })`** — read `redemption_info`:
    - `.code` — the gift-card code or top-up PIN. The actual product.

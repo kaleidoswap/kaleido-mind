@@ -39,10 +39,20 @@ describe('WALLET_TOOLS contract', () => {
     expect(isSpendTool('rln_send_asset')).toBe(true);
     expect(isSpendTool('execute_swap')).toBe(true);
     expect(isSpendTool('spark_send')).toBe(true);
+    expect(isSpendTool('spark_pay_invoice')).toBe(true);
     // reads are not
     expect(isSpendTool('get_balances')).toBe(false);
     expect(isSpendTool('get_price')).toBe(false);
     expect([...SPEND_TOOLS].length).toBeGreaterThanOrEqual(5);
+  });
+
+  it('spark_pay_invoice is its own tool — BOLT11-shaped, amount optional', () => {
+    const def = getWalletTool('spark_pay_invoice');
+    expect(def?.layer).toBe('spark');
+    expect(def?.spend).toBe(true);
+    expect((def!.parameters as any).required).toEqual(['invoice']);
+    expect((def!.parameters as any).properties.invoice.type).toBe('string');
+    expect((def!.parameters as any).properties.amount_sats.type).toBe('number');
   });
 
   it('required args declared on the actionable tools', () => {
