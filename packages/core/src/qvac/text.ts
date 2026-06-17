@@ -15,6 +15,10 @@ export function cleanAssistantVisibleText(text: string): string {
     // Qwen-style reasoning sometimes arrives in contentText. Never show/speak it.
     .replace(/<think\b[\s\S]*?<\/think>/gi, ' ')
     .replace(/<think\b[\s\S]*$/gi, ' ')
+    // Tool calls some models emit as text (<tool_call>{…}</tool_call>) are
+    // extracted + executed by the Engine (see parse.ts); never show the tags.
+    .replace(/<tool_call\b[^>]*>[\s\S]*?<\/tool_call>/gi, ' ')
+    .replace(/<tool_call\b[^>]*>[\s\S]*$/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 
