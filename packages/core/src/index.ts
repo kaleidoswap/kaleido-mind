@@ -81,6 +81,20 @@ export type {
   BindLsps1Options,
 } from './lsps1/contract.js';
 
+// ── Bitrefill (gift cards / mobile top-ups / eSIMs) ─────────────────────────
+export {
+  BITREFILL_TOOLS,
+  BITREFILL_SPEND_TOOLS,
+  isBitrefillSpendTool,
+  getBitrefillTool,
+  bindBitrefillTools,
+} from './bitrefill/contract.js';
+export type {
+  BitrefillToolDef,
+  BitrefillHandler,
+  BindBitrefillOptions,
+} from './bitrefill/contract.js';
+
 // ── KaleidoSwap recipes (opt-in — register via Funnel.recipes) ──
 // price recipe is read-only (quote-only); atomic recipe runs the full swap.
 // Register the price recipe FIRST so phrasings like "BTC price" are answered

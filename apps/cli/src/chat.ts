@@ -39,6 +39,7 @@ import { modelPath, isInstalled } from './models.js';
 import { buildKaleidoswapToolSource } from './kaleidoswapTools.js';
 import { buildLsps1ToolSource } from './lsps1Tools.js';
 import { buildRlnToolSource } from './rlnTools.js';
+import { buildBitrefillToolSource } from './bitrefillTools.js';
 import { btcMapLiveFetch, btcMapLiveLocation, defaultLocationFromEnv } from './btcmapLive.js';
 
 const KALEIDOSWAP_BASE_URL = process.env.KALEIDOSWAP_BASE_URL ?? 'http://localhost:8000';
@@ -48,6 +49,14 @@ const KALEIDOSWAP_API_KEY = process.env.KALEIDOSWAP_API_KEY;
 // invoices). Atomic init/execute/status are owned by the maker, not the node.
 const RLN_BASE_URL = process.env.KALEIDO_RLN_URL ?? 'http://localhost:3001';
 const RLN_API_KEY = process.env.KALEIDO_RLN_API_KEY;
+
+// Bitrefill REST API — Personal Bearer token (or Business id/secret). Wired
+// only when a key is present, since every endpoint needs auth. Without it the
+// bitrefill skill simply tells the user to set the env var.
+const BITREFILL_BASE_URL = process.env.BITREFILL_BASE_URL;
+const BITREFILL_API_KEY = process.env.BITREFILL_API_KEY;
+const BITREFILL_API_ID = process.env.BITREFILL_API_ID;
+const BITREFILL_API_SECRET = process.env.BITREFILL_API_SECRET;
 
 const PROFILE: AgentProfile = {
   name: 'KaleidoMind',
@@ -229,6 +238,21 @@ export async function buildAgent(cfg: CliConfig, opts: BuildOpts = {}): Promise<
     // invoices. Atomic init/execute are MAKER endpoints, not here.
     buildRlnToolSource({ baseUrl: RLN_BASE_URL, apiKey: RLN_API_KEY }),
   ];
+  // Bitrefill REST — gift cards / top-ups / eSIMs. Wired ONLY when an API key
+  // (or Business id+secret) is present, because every endpoint needs auth.
+  // Without it, the bitrefill skill is still loaded but its tools aren't on
+  // the registry, so the model is told (by SKILL.md) to ask the user to set
+  // BITREFILL_API_KEY instead of inventing a purchase.
+  if (BITREFILL_API_KEY || (BITREFILL_API_ID && BITREFILL_API_SECRET)) {
+    sources.push(
+      buildBitrefillToolSource({
+        apiKey: BITREFILL_API_KEY ?? '',
+        apiId: BITREFILL_API_ID,
+        apiSecret: BITREFILL_API_SECRET,
+        ...(BITREFILL_BASE_URL ? { baseUrl: BITREFILL_BASE_URL } : {}),
+      }),
+    );
+  }
   if (retriever) sources.push(createRagToolSource(retriever));
 
   const registry = new ToolRegistry(sources);
