@@ -44,7 +44,7 @@ function buildStubs(captured: { name: string; args: any }[]) {
     ]),
     new InProcessToolSource('rln', [
       tool('rln_get_node_info', { pubkey: '03c31dae' }),
-      tool('rln_whitelist_swap', { ok: true }, /* spend */ true),
+      tool('rln_atomic_taker', { ok: true }, /* spend */ true),
     ]),
   ]);
 }
@@ -130,7 +130,7 @@ describe('kaleidoswapAtomicRecipe — full chain', () => {
       'kaleidoswap_get_quote',
       'kaleidoswap_atomic_init',
       'rln_get_node_info',
-      'rln_whitelist_swap',
+      'rln_atomic_taker',
       'kaleidoswap_atomic_execute',
     ]);
   });
@@ -157,7 +157,7 @@ describe('kaleidoswapAtomicRecipe — full chain', () => {
       provider: refusingProvider, tools, onConfirm: async () => ({ approved: true }),
       slots: { from_asset: 'USDT', to_asset: 'BTC', amount: 10, amount_side: 'from' },
     });
-    const whitelist = captured.find((c) => c.name === 'rln_whitelist_swap')!;
+    const whitelist = captured.find((c) => c.name === 'rln_atomic_taker')!;
     expect(whitelist.args).toEqual({ swapstring: 'SWAP/abc/def' });
     const exe = captured.find((c) => c.name === 'kaleidoswap_atomic_execute')!;
     expect(exe.args).toEqual({

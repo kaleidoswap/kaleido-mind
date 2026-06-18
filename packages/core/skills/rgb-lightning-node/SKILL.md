@@ -1,7 +1,7 @@
 ---
 name: rgb-lightning-node
 description: "Drive the user's local RGB Lightning Node (RLN) — read its pubkey/status, whitelist a swap, or create Lightning/RGB receive invoices. Triggers when the user asks about the node, needs an invoice, or is mid-atomic-swap and the maker needs the node pubkey or a swapstring whitelisted."
-tools: rln_get_node_info, wdk_get_node_info, rln_get_balances, wdk_get_balances, rln_list_channels, wdk_list_channels, rln_open_channel, wdk_open_channel, rln_close_channel, wdk_close_channel, rln_connect_peer, wdk_connect_peer, rln_get_channel_id, rln_whitelist_swap, rln_list_payments, wdk_list_payments, rln_create_ln_invoice, wdk_create_ln_invoice, rln_create_rgb_invoice, wdk_create_rgb_invoice
+tools: rln_get_node_info, wdk_get_node_info, rln_get_balances, wdk_get_balances, rln_list_channels, wdk_list_channels, rln_open_channel, wdk_open_channel, rln_close_channel, wdk_close_channel, rln_connect_peer, wdk_connect_peer, rln_get_channel_id, rln_atomic_taker, rln_list_payments, wdk_list_payments, rln_create_ln_invoice, wdk_create_ln_invoice, rln_create_rgb_invoice, wdk_create_rgb_invoice
 triggers: node, nodeinfo, pubkey, peer, channels, whitelist, taker, swapstring, invoice, receive, rgb invoice, ln invoice
 metadata:
   author: kaleidoswap
@@ -52,7 +52,7 @@ Call this when:
 the LSPS skill answers what's available to BUY (`lsp_get_info`); the current
 remote-balance breakdown isn't exposed by this skill's tools.
 
-### `rln_whitelist_swap` — { swapstring } — 🔒 confirm-gated
+### `rln_atomic_taker` — { swapstring } — 🔒 confirm-gated
 Tell the node "I accept this swap." Args: the `swapstring` returned by
 `kaleidoswap_atomic_init`. The node validates and stores it; **no funds move
 here**, but the user is committing to the swap so the engine pauses for
@@ -90,7 +90,7 @@ A user-driven swap on KaleidoSwap is a two-service flow. Keep them straight:
 | Quote | maker | `kaleidoswap_get_quote` |
 | Init  | maker | `kaleidoswap_atomic_init` (returns swapstring + payment_hash) |
 | Pubkey | **node** | `rln_get_node_info` (read `pubkey`) |
-| Whitelist | **node** | `rln_whitelist_swap` (pass the swapstring) |
+| Whitelist | **node** | `rln_atomic_taker` (pass the swapstring) |
 | Execute | maker | `kaleidoswap_atomic_execute` (needs swapstring + taker_pubkey + payment_hash) |
 | Status | maker | `kaleidoswap_atomic_status` |
 

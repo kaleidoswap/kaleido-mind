@@ -118,7 +118,7 @@ function buildMind(
       }),
       tool('kaleidoswap_atomic_init', { swapstring: 'SWAP/abc/def', payment_hash: 'ph-1' }, /* spend */ true),
       tool('rln_get_node_info', { pubkey: '030637ec' }),
-      tool('rln_whitelist_swap', { ok: true }, /* spend */ true),
+      tool('rln_atomic_taker', { ok: true }, /* spend */ true),
       tool('kaleidoswap_atomic_execute', { status: 200, message: 'Swap executed successfully.' }, /* spend */ true),
       // LSPS1 asset-channel onboarding (the rail "buy N USDT" routes to)
       tool('kaleidoswap_lsp_quote_asset_channel', {
@@ -221,7 +221,7 @@ describe('desktop mind — buy assets via atomic swap', () => {
       'kaleidoswap_get_quote',
       'kaleidoswap_atomic_init',
       'rln_get_node_info',
-      'rln_whitelist_swap',
+      'rln_atomic_taker',
       'kaleidoswap_atomic_execute',
     ]);
     // init sources the asset ids + maker-unit amounts straight from the quote.
@@ -265,7 +265,7 @@ describe('desktop mind — buy assets via atomic swap', () => {
       'kaleidoswap_get_quote',
       'kaleidoswap_atomic_init',
       'rln_get_node_info',
-      'rln_whitelist_swap',
+      'rln_atomic_taker',
       'kaleidoswap_atomic_execute',
     ]);
   });
