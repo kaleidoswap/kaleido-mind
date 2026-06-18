@@ -2,7 +2,7 @@
 name: wallet-assistant
 description: Everyday wallet tasks on this phone — check the BTC/asset balance, create an invoice to receive, send a payment, look up a contact, or quote a swap (e.g. "how many sats is 10 USDT?"). Triggers when the user asks about their balance, wants to receive or send money, pay an invoice, pay a contact, or convert between BTC and supported assets.
 tools: get_balances, resolve_contact, send_payment, rln_pay_invoice, rln_create_ln_invoice, spark_create_invoice, kaleidoswap_get_quote
-triggers: balance, pay, send, receive, address, invoice, transactions, contact, funds, money, sats
+triggers: balance, pay, send, receive, address, invoice, transactions, contact, funds, money
 ---
 
 # Wallet assistant
