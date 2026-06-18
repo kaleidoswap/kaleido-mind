@@ -1,8 +1,8 @@
 ---
 name: rgb-lightning-node
-description: "Drive the user's local RGB Lightning Node (RLN) — read its pubkey/status, whitelist a swap, or create Lightning/RGB receive invoices. Triggers when the user asks about the node, needs an invoice, or is mid-atomic-swap and the maker needs the node pubkey or a swapstring whitelisted."
-tools: rln_get_node_info, rln_whitelist_swap, rln_create_ln_invoice, rln_create_rgb_invoice
-triggers: node, nodeinfo, pubkey, peer, channels, whitelist, taker, swapstring, invoice, receive, rgb invoice, ln invoice
+description: "Drive the user's local RGB Lightning Node (RLN) — read its pubkey/status, list channels and their capacities, check RGB asset balances, whitelist a swap, or create Lightning/RGB receive invoices. Triggers when the user asks about the node, their channels or capacities, needs an invoice, or is mid-atomic-swap and the maker needs the node pubkey or a swapstring whitelisted."
+tools: rln_get_node_info, rln_list_channels, rln_list_assets, rln_get_asset_balance, rln_whitelist_swap, rln_create_ln_invoice, rln_create_rgb_invoice
+triggers: node, nodeinfo, pubkey, peer, channels, channel capacity, list channels, inbound, capacity, asset balance, whitelist, taker, swapstring, invoice, receive, rgb invoice, ln invoice
 metadata:
   author: kaleidoswap
   version: "0.1.0"
@@ -47,10 +47,37 @@ Call this when:
   `kaleidoswap_atomic_execute`.
 
 **Do NOT** use this tool's `local_balance_sat` to answer a question about
-**inbound liquidity / receive capacity** — that is a different quantity
-(the peer's side of each channel, not yours). For "how much can I receive?",
-the LSPS skill answers what's available to BUY (`lsp_get_info`); the current
-remote-balance breakdown isn't exposed by this skill's tools.
+**inbound liquidity / receive capacity** — that is a different quantity (the
+peer's side of each channel). For per-channel inbound/outbound and total
+capacity, use `rln_list_channels` (below), NOT this tool.
+
+### `rln_list_channels` — no args
+Returns `{ channels: [...], count }`. Each channel carries:
+- `channel_id`, `peer_alias`, `status`, `ready`, `is_usable`
+- `capacity_sat` — total channel size.
+- `outbound_sat` — what YOU can send (your local balance).
+- `inbound_sat` — what you can RECEIVE on this channel (the peer's side).
+- `asset_id`, `asset_local_amount`, `asset_remote_amount` — for RGB asset
+  channels: the asset and how much is on each side.
+
+Call this when the user asks to **list channels**, asks about **per-channel
+capacity**, **inbound/receive capacity**, or wants to **verify a channel they
+just bought** opened with the requested size. Report each channel as one line:
+`capacity_sat total — outbound_sat / inbound_sat (asset if present), status`.
+
+When verifying a freshly-bought channel: a channel order opens
+ASYNCHRONOUSLY (seconds to minutes after payment). If the new channel isn't
+listed yet, say it's still opening and suggest checking again — don't claim
+failure.
+
+### `rln_list_assets` — no args
+Lists RGB assets known to the node with per-asset balances (settled, future,
+spendable, offchain_outbound, offchain_inbound). Use for "what assets do I
+hold / what's my USDT balance".
+
+### `rln_get_asset_balance` — { asset_id }
+Balance for one RGB asset by id. Use after `rln_list_assets` gave you the id,
+or when the user names a specific asset.
 
 ### `rln_whitelist_swap` — { swapstring } — 🔒 confirm-gated
 Tell the node "I accept this swap." Args: the `swapstring` returned by
