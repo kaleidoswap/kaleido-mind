@@ -2,7 +2,7 @@
 name: spark-wallet
 description: "Operate the user's Spark BTC wallet on this device — check Spark balance, get a Spark deposit address, create a Spark Lightning invoice to receive, pay any BOLT11 Lightning invoice with Spark, or send BTC on-chain from Spark. Use this when the user names Spark explicitly OR when paying a Lightning invoice on a phone where Spark is the connected layer. Pairs with the bitrefill skill: a Bitrefill purchase that returns a Lightning invoice is paid with `spark_pay_invoice`."
 tools: spark_get_balance, spark_get_address, spark_create_invoice, spark_pay_invoice, spark_send, get_price, fiat_to_sats, bitrefill_search, bitrefill_get_product, bitrefill_get_balance, bitrefill_create_invoice, bitrefill_get_invoice, bitrefill_get_order
-triggers: spark, spark wallet, pay with spark, send with spark, spark balance, spark address, spark invoice, lightning invoice, pay invoice, bolt11, ln invoice, pay this invoice
+triggers: spark, sprak, spakr, spark wallet, pay with spark, send with spark, spark balance, spark address, spark invoice, lightning invoice, pay invoice, bolt11, ln invoice, pay this invoice
 metadata:
   author: kaleidoswap
   version: "1.0.0"
@@ -18,10 +18,37 @@ are in **satoshis** unless stated otherwise.
 
 ## Critical rules (read first)
 
-1. **Never invent a balance, invoice or address.** Every BTC number, BOLT11
+1. **Always re-fetch volatile state — every turn, every time.** Balance,
+   address, invoice status, and any number that can change MUST come from a
+   tool call THIS turn. Do NOT reuse a value from a previous turn, even if
+   the user asked the exact same question 30 seconds ago. The user wouldn't
+   ask twice if they didn't want a fresh check.
+
+   - "what's my balance?" → ALWAYS call `spark_get_balance`. Yes, even if
+     you just called it. The whole point of asking again is to get a new
+     reading.
+   - "give me my address" → ALWAYS call `spark_get_address`. Spark may
+     rotate or surface a fresh address.
+   - "did my invoice settle?" → ALWAYS re-fetch the invoice/order status.
+
+   The ONLY thing you can reuse from history is the user's own input
+   (e.g. "the invoice I just made" → look up its id in history and call
+   the status tool on it).
+
+2. **Never invent a balance, invoice or address.** Every BTC number, BOLT11
    string, and address in your reply MUST come from a Spark tool result
-   returned in the CURRENT turn.
-2. **Choose the right send tool by destination shape.**
+   returned in the CURRENT turn — never guessed, never quoted from memory.
+
+3. **Read the tool result exactly.** `spark_get_balance` returns
+   `{ total, layer, network, connected }`. `connected: true` means the
+   Spark wallet IS active and reachable; `total: 0` with `connected: true`
+   simply means the user has no sats yet (perfectly normal for a fresh
+   wallet on regtest). Do NOT say "your wallet isn't connected" unless
+   `connected: false` or the tool threw an error. Say "your Spark wallet
+   is connected but empty — fund it with `spark_get_address`" when
+   `total: 0, connected: true`.
+
+4. **Choose the right send tool by destination shape.**
    - Starts with `lnbc…` / `lntb…` / `lnbcrt…` → BOLT11 Lightning invoice → use
      **`spark_pay_invoice`**.
    - Starts with `bc1…` / `tb1…` / `bcrt1…` → on-chain Bitcoin address → use
@@ -29,24 +56,41 @@ are in **satoshis** unless stated otherwise.
    - Looks like `name@domain` (a Lightning address) → not a Spark target;
      either ask the host to resolve it first or use the cross-cutting
      `send_payment` router. Spark itself doesn't dereference LNURL.
-3. **BOLT11 invoices encode their amount.** Don't pass `amount_sats` to
+
+5. **BOLT11 invoices encode their amount.** Don't pass `amount_sats` to
    `spark_pay_invoice` unless the invoice is amount-less. Re-stating the
    amount can produce silently-wrong sends on amount-less invoices.
-4. **Confirm before spending.** `spark_pay_invoice` and `spark_send` are
+
+6. **Confirm before spending.** `spark_pay_invoice` and `spark_send` are
    confirmation-gated by the contract — the host fires the gate
    automatically. Before the call, summarize in one line:
    `Paying 12,540 sats to lnbc12540n… from Spark. Confirm?`
-5. **No Spark connected = stop, don't guess.** If `spark_get_balance` /
-   `spark_get_address` throws "Your SPARK wallet isn't connected yet", say so
-   plainly and stop — don't substitute RLN or Arkade silently. The user may
-   genuinely want Spark.
+
+7. **Spark genuinely unavailable = stop, don't guess.** If the tool
+   THROWS with "Your SPARK wallet isn't connected yet" (an actual error,
+   not a 0 balance), say so plainly and stop — don't substitute RLN or
+   Arkade silently. The user may genuinely want Spark.
+
+8. **Never refuse an action a listed tool performs.** If a tool in your
+   set does what the user asked, CALL IT — do not reason about whether
+   "get" means "create", whether the wording is an exact match, or
+   whether some other tool would be "more correct". The user asking to
+   "create an address" when you have `spark_get_address` means: call
+   `spark_get_address`. Refusing to use an available tool is always wrong.
 
 ## How to call the tools
 
 ### Reads
 
 - **`spark_get_balance({})`** — current spendable BTC in Spark (sats).
-- **`spark_get_address({})`** — a Spark deposit address. Surface as-is.
+- **`spark_get_address({})`** — a Spark address to receive on. This is the
+  ONE tool for every receive-address ask: "my address", "create an
+  address", "generate a new address", "where do I receive", "give me a
+  deposit address". Spark addresses are reusable, so **get and create are
+  the same operation** — there is no separate "create address" tool and no
+  reason to refuse. ALWAYS call `spark_get_address` and surface what it
+  returns. NEVER reply "I cannot create an address" — that tool IS how you
+  create one.
 
 ### Receive
 
