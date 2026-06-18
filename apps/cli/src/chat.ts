@@ -40,6 +40,8 @@ import { buildKaleidoswapToolSource } from './kaleidoswapTools.js';
 import { buildLsps1ToolSource } from './lsps1Tools.js';
 import { buildRlnToolSource } from './rlnTools.js';
 import { buildBitrefillToolSource } from './bitrefillTools.js';
+import { buildSparkWalletToolSource, SPARK_MNEMONIC_PATH } from './sparkWallet.js';
+import { buildFlashnetToolSource } from './flashnetTools.js';
 import { btcMapLiveFetch, btcMapLiveLocation, defaultLocationFromEnv } from './btcmapLive.js';
 
 const KALEIDOSWAP_BASE_URL = process.env.KALEIDOSWAP_BASE_URL ?? 'http://localhost:8000';
@@ -57,6 +59,14 @@ const BITREFILL_BASE_URL = process.env.BITREFILL_BASE_URL;
 const BITREFILL_API_KEY = process.env.BITREFILL_API_KEY;
 const BITREFILL_API_ID = process.env.BITREFILL_API_ID;
 const BITREFILL_API_SECRET = process.env.BITREFILL_API_SECRET;
+
+// Spark BTC wallet — on-device, regtest by default. Set KALEIDO_SPARK=0 to
+// opt out (the CLI then runs against the mock spark in MOCK_TOOLS). Network
+// can be overridden via KALEIDO_SPARK_NETWORK=MAINNET|TESTNET|REGTEST|SIGNET.
+const SPARK_ENABLED = process.env.KALEIDO_SPARK !== '0';
+// Flashnet AMM rides on the Spark wallet — wired automatically when Spark is
+// up. Set KALEIDO_FLASHNET=0 to disable.
+const FLASHNET_ENABLED = SPARK_ENABLED && process.env.KALEIDO_FLASHNET !== '0';
 
 const PROFILE: AgentProfile = {
   name: 'KaleidoMind',
@@ -260,6 +270,36 @@ export async function buildAgent(cfg: CliConfig, opts: BuildOpts = {}): Promise<
       }),
     );
   }
+
+  // Spark BTC wallet (regtest by default) + Flashnet AMM. Real on-device
+  // wallet — initializes from ~/.kaleido/spark.mnemonic (generates one on
+  // first run). When Spark boots successfully, its spark_* tools take
+  // precedence over the mock wdk_* tools below for "balance", "address",
+  // "invoice", "pay invoice" intents. If the SDK fails to load (peer dep
+  // mismatch, no network for SSP/regtest server, etc.), we log a warning
+  // and leave the mocks in place so the CLI still runs.
+  if (SPARK_ENABLED) {
+    try {
+      const sparkSource = await buildSparkWalletToolSource({
+        log: (m) => process.env.KALEIDO_VERBOSE === '1' && console.error(c.dim(`[spark] ${m}`)),
+      });
+      sources.push(sparkSource);
+      if (FLASHNET_ENABLED) {
+        try {
+          const flashnetSource = await buildFlashnetToolSource({
+            log: (m) => process.env.KALEIDO_VERBOSE === '1' && console.error(c.dim(`[flashnet] ${m}`)),
+          });
+          sources.push(flashnetSource);
+        } catch (e) {
+          console.error(c.yellow(`  (flashnet disabled: ${(e as Error)?.message ?? e})`));
+        }
+      }
+    } catch (e) {
+      console.error(c.yellow(`  (spark wallet disabled: ${(e as Error)?.message ?? e})`));
+      console.error(c.dim(`  mnemonic path: ${SPARK_MNEMONIC_PATH}`));
+    }
+  }
+
   if (retriever) sources.push(createRagToolSource(retriever));
 
   const registry = new ToolRegistry(sources);
@@ -411,4 +451,23 @@ export async function runChat(agent: Agent): Promise<void> {
   prompt();
   for await (const line of rl) { await handle(line); prompt(); }
   if (agent.sdk?.close) await agent.sdk.close();
+  // Best-effort teardown of the Spark wallet's background streams (periodic
+  // token sync, gRPC connection pool). cleanupConnections() doesn't always
+  // close every timer the SDK has open, so we still force-exit below.
+  if (SPARK_ENABLED) {
+    try {
+      const { getSparkWallet } = await import('./sparkWallet.js');
+      const { wallet } = await getSparkWallet();
+      await wallet?.cleanupConnections?.();
+    } catch { /* ignore — best-effort shutdown */ }
+    // Hard exit — the Spark SDK keeps a long-poll stream and a periodic
+    // token-output optimizer alive even after cleanupConnections returns.
+    // For a CLI that's done with the user, killing the loop is the right
+    // call (no in-flight writes to lose). Skip with KALEIDO_HARD_EXIT=0.
+    if (process.env.KALEIDO_HARD_EXIT !== '0') {
+      // Flush any pending stdout (a trailing readline echo) before exiting.
+      await new Promise<void>((r) => setImmediate(r));
+      process.exit(0);
+    }
+  }
 }
