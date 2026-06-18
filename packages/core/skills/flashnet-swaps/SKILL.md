@@ -17,6 +17,24 @@ sends it through a pool, and returns the other asset to the same wallet, in
 seconds. Two pool curve types exist (constant-product and V3 concentrated
 liquidity) — the model doesn't need to care; the pool id is enough.
 
+## What Flashnet trades (and what it does NOT)
+
+**Flashnet trades:**
+- **BTC** ↔ **Spark-native tokens**. The canonical example is **USDB**.
+- Whatever pools `flashnet_list_pools` returns — that list is the
+  authoritative answer to "what can I trade here?".
+
+**Flashnet does NOT trade:**
+- **RGB assets** (USDT, XAUT, …). RGB assets live on the RLN layer and
+  trade via the **KaleidoSwap maker** (`kaleido-trading` skill), not here.
+  USDT on Flashnet does not exist — never offer it.
+- Assets the user holds on Arkade, on-chain BTC reserves, or any external
+  chain. The trade-account is the Spark wallet.
+
+If the user asks for an asset you can't see in `flashnet_list_pools`, tell
+them so plainly and (if it's a known RGB asset like USDT/XAUT) point them
+at the kaleido-trading skill rather than inventing a Flashnet pool.
+
 ## Critical rules (read first)
 
 1. **Never invent a pool id, asset address, or amount.** Every `pool_id`,

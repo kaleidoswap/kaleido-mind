@@ -56,7 +56,7 @@ const asset = { type: 'string', description: "Asset ticker, e.g. 'USDT', 'XAUT',
 /** The full contract. Keep descriptions terse — small models read every word. */
 export const WALLET_TOOLS: WalletToolDef[] = [
   // ── Spark ──────────────────────────────────────────────────────────────
-  t('spark', 'spark_get_balance', 'Get the Spark wallet BTC balance. Use for ANY "balance / how much / what do I have on Spark" question — call it fresh every time, balances change.'),
+  t('spark', 'spark_get_balance', 'Get the Spark wallet BTC balance (sats). Use for ANY "balance / how much / what do I have on Spark" question — call it fresh every time, balances change. For Spark-native TOKEN balances (USDB etc.), use flashnet_get_balance; for RGB asset balances (USDT, XAUT), use the RLN tools — those assets are NOT on Spark.'),
   t('spark', 'spark_get_address', 'Get or create a Spark address to receive BTC. This is the ONE tool for "my address", "create/generate/give me an address", "where do I receive" — Spark addresses are reusable, so getting and creating are the same operation. ALWAYS call this; never claim you cannot create an address.'),
   t('spark', 'spark_create_invoice', 'Create a Spark Lightning invoice to receive BTC.', { amount_sats: sats }),
   // Explicit Lightning-invoice payer. BOLT11 invoices encode the amount, so

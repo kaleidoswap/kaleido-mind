@@ -16,6 +16,42 @@ on some hosts). It speaks Lightning natively — receive via `spark_create_invoi
 send via `spark_pay_invoice` (BOLT11) or `spark_send` (on-chain). All numbers
 are in **satoshis** unless stated otherwise.
 
+## What Spark holds (and what it does NOT)
+
+This is the single most important thing to get right when the user asks
+about "assets on Spark" or "what can I trade on Spark".
+
+**Spark holds:**
+- **BTC** (sats) — Spark's native on-chain-pegged BTC.
+- **Spark-native tokens** — e.g. **USDB**. These are tokens issued on the
+  Spark protocol itself, traded on **Flashnet** (Spark-native AMM).
+
+**Spark does NOT hold:**
+- **RGB assets** (USDT, XAUT, …). RGB assets are a DIFFERENT protocol on
+  Bitcoin/Lightning — they live on the user's **RLN** (RGB Lightning Node),
+  NOT Spark. A USDT balance, if the user has one, is on RLN — never on
+  Spark.
+- Tokens from any other chain (Ethereum USDT, Tron USDT, Solana, …). The
+  wallet does not custody those at all.
+
+**Asset → which skill / venue:**
+
+| Asset | Layer | Swap venue | Skill |
+|---|---|---|---|
+| BTC / sats | Spark / RLN / on-chain | Either (depends on direction) | spark-wallet (Spark side), wallet-assistant |
+| USDB (and other Spark tokens) | Spark | **Flashnet** (AMM) | **flashnet-swaps** |
+| USDT, XAUT (RGB assets) | RLN/RGB | **KaleidoSwap maker** | **kaleido-trading** |
+
+If the user asks "what can I trade on Spark?", the correct answer lists
+Spark-native tokens (BTC + USDB and anything else
+`flashnet_list_pools` shows). **Never** answer USDT/XAUT for Spark.
+Conversely, if asked "what can I trade on KaleidoSwap?", that's RGB
+assets (USDT, XAUT) — **not** USDB.
+
+When in doubt about what's actually tradeable, the source of truth is the
+TOOL, not your training data — call `flashnet_list_pools` (Spark side) or
+`kaleidoswap_get_assets` (RGB side) and report what comes back.
+
 ## Critical rules (read first)
 
 1. **Always re-fetch volatile state — every turn, every time.** Balance,

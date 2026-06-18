@@ -40,14 +40,27 @@ which pair + amount.
 
 ## Asset codes (canonical)
 
+KaleidoSwap is the maker for **BTC ↔ RGB asset** atomic swaps. The asset
+family is **RGB**: USDT, XAUT, and any other RGB asset the maker prices.
+The RGB assets live on the user's **RLN** (RGB Lightning Node) — NOT on
+Spark, Arkade, or any other chain.
+
 Only these codes are accepted:
 
 - `BTC` (Bitcoin, amounts always in satoshis)
-- `USDT` (Tether) — **not** `USD`, **not** `tether`
-- `XAUT` (Tether Gold) — **not** `XAU`, **not** `gold`
+- `USDT` (Tether, the RGB asset) — **not** `USD`, **not** `tether`
+- `XAUT` (Tether Gold, the RGB asset) — **not** `XAU`, **not** `gold`
 
 When the user types `USD` they almost always mean `USDT` — confirm before
 quoting. Same for `gold` → `XAUT`. Don't silently substitute.
+
+**Do NOT trade here:**
+
+- `USDB` and any other **Spark-native token** — those are on the Spark
+  layer and trade on **Flashnet** (skill: `flashnet-swaps`), not on
+  KaleidoSwap. Route the user there instead of inventing a maker pair.
+- Tokens from external chains (Ethereum USDT, Solana, etc.). They are
+  not in the maker's catalog and the wallet does not custody them.
 
 ## Tools
 
