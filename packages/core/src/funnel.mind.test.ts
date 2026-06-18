@@ -33,12 +33,13 @@ import type { LLMProvider, TurnInput, TurnOutput } from './providers/types.js';
 import type { ConfirmDecision, ToolCall } from './types.js';
 
 // The exact recipe set the desktop provider registers, in order. Order matters:
-// buyAssetChannelRecipe is FIRST, so "buy N USDT" routes to channel onboarding
-// while "swap … for USDT" routes to the atomic chain — both buy USDT, different
-// rails. (See the atomic vs channel-order test below.)
+// kaleidoswapAtomicRecipe is FIRST, so a plain "buy 1 USDT" on a funded node
+// routes to the atomic SWAP (BTC→USDT over existing liquidity). The
+// channel-onboarding recipe wins only for explicit channel/inbound/liquidity
+// phrasing, which the atomic matcher excludes. (See the routing tests below.)
 const DESKTOP_RECIPES = [
-  buyAssetChannelRecipe,
   kaleidoswapAtomicRecipe,
+  buyAssetChannelRecipe,
   assetSendRecipe,
   paymentsRecipe,
   receiveRecipe,
@@ -236,11 +237,46 @@ describe('desktop mind — buy assets via atomic swap', () => {
     expect(res.text).toMatch(/submitted|settling/i);
   });
 
-  it('routes "buy 1 usdt" to the channel-onboarding recipe, NOT the atomic swap', async () => {
-    // Documents the desktop routing: a bare "buy N USDT" (no source asset) is an
-    // LSPS1 asset-channel order, which is registered before the atomic recipe.
+  it('routes a plain "buy 1 usdt" to the ATOMIC swap (funded node), not channel onboarding', async () => {
+    // On a node with existing BTC liquidity, "buy 1 usdt" = swap BTC→USDT, NOT
+    // open a new channel. The model fills the implicit source (BTC) + buy leg.
+    const buyExtract: LLMProvider = {
+      name: 'extract',
+      async runTurn(input) {
+        if (input.tools?.some((t) => t.name === 'extract_request')) {
+          return {
+            text: '',
+            rawContent: '',
+            toolCalls: [
+              { id: 'ex1', name: 'extract_request', arguments: { from_asset: 'BTC', to_asset: 'USDT', amount: 1, amount_side: 'to' } },
+            ],
+          };
+        }
+        return { text: '', rawContent: '', toolCalls: [] };
+      },
+    };
+
+    const { funnel, calls } = buildMind(buyExtract);
+    const res = await funnel.runTurn('buy 1 usdt', { onConfirm: async () => ({ approved: true }) });
+
+    expect(res.tier).toBe('recipe');
+    expect(res.route).toBe('kaleidoswap-atomic');
+    expect(calls.map((c) => c.name)).toEqual([
+      'kaleidoswap_get_quote',
+      'kaleidoswap_atomic_init',
+      'rln_get_node_info',
+      'rln_whitelist_swap',
+      'kaleidoswap_atomic_execute',
+    ]);
+  });
+
+  it('routes explicit inbound-liquidity phrasing to channel onboarding', async () => {
+    // The channel-onboarding rail still wins for explicit channel/inbound
+    // phrasing (the atomic matcher excludes channel/inbound/liquidity).
     const { funnel } = buildMind(scripted([{ text: '' }]));
-    const res = await funnel.runTurn('buy 1 usdt', { onConfirm: async () => ({ approved: false }) });
+    const res = await funnel.runTurn('get 100 usdt inbound liquidity', {
+      onConfirm: async () => ({ approved: false }),
+    });
     expect(res.tier).toBe('recipe');
     expect(res.route).toBe(buyAssetChannelRecipe.name);
   });

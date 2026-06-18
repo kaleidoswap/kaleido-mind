@@ -873,14 +873,20 @@ async function handleChat(
     system: DESKTOP_SYSTEM,
     maxTurns: 8,
     log: (m) => diag(m),
-    // Opt-in recipes (buy-asset-channel onboarding + atomic swap) drive the
+    // Opt-in recipes (atomic swap + buy-asset-channel onboarding) drive the
     // kaleidoswap_*/rln_* MCP tools, so they fire on desktop; the generic
     // payments/receive/asset-send defaults stay registered too. A recipe only
     // fires when its deterministic extractor is confident AND the MCP registry
     // implements its final tool, so unmatched ones fall through to the agent.
+    //
+    // ORDER MATTERS: atomic swap is FIRST so a plain "buy 1 usdt" on a funded
+    // node means swap BTC→USDT over existing liquidity — NOT open a new channel.
+    // The channel-onboarding recipe still wins for explicit channel/inbound/
+    // liquidity phrasing ("buy a 100 usdt channel", "get usdt inbound"), which
+    // the atomic matcher deliberately excludes.
     recipes: [
-      buyAssetChannelRecipe,
       kaleidoswapAtomicRecipe,
+      buyAssetChannelRecipe,
       assetSendRecipe,
       paymentsRecipe,
       receiveRecipe,
