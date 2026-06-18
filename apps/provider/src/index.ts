@@ -206,6 +206,7 @@ const state = {
   skills: null as SkillRegistry | null,            // Agent Skills (loaded from skills/)
   refSource: null as ToolSource | null,            // read_skill_reference (progressive disclosure)
   chatHistory: [] as Message[],                    // rolling conversation (trimmed by the Funnel)
+  chatThinking: '',                                // current turn's <think> reasoning (surfaced to the UI)
 };
 
 // ─────────────────────────────────────────────────────────────────────
@@ -238,6 +239,11 @@ const qvacProvider: LLMProvider = createQvacProvider({
     }
   }) as Parameters<typeof createQvacProvider>[0]['cancel'],
   getModelId: () => state.qvacModelHandle,
+  // Accumulate the model's <think> reasoning for the current chat turn so the
+  // desktop UI can show it (collapsed by default). Reset per turn in handleChat.
+  onThinking: (token: string) => {
+    state.chatThinking += token;
+  },
 });
 
 /** Connect kaleido-mcp as a tool source if KALEIDO_MCP_PATH is configured. */
@@ -835,7 +841,9 @@ function requestToolConfirmation(call: {
   });
 }
 
-async function handleChat(prompt: string): Promise<{ text: string; latencyMs: number; tokensPerSecond: number }> {
+async function handleChat(
+  prompt: string,
+): Promise<{ text: string; thinking?: string; latencyMs: number; tokensPerSecond: number }> {
   const t0 = Date.now();
   if (MOCK || !sdk || !state.qvacModelHandle) {
     await new Promise((r) => setTimeout(r, 320));
@@ -879,6 +887,9 @@ async function handleChat(prompt: string): Promise<{ text: string; latencyMs: nu
     ],
   });
 
+  // Reset the per-turn reasoning buffer; the qvacProvider's onThinking appends
+  // the model's <think> tokens to state.chatThinking as it streams.
+  state.chatThinking = '';
   const res = await funnel.runTurn(prompt, {
     history: state.chatHistory,
     onConfirm: requestToolConfirmation,
@@ -893,6 +904,7 @@ async function handleChat(prompt: string): Promise<{ text: string; latencyMs: nu
 
   return {
     text,
+    thinking: state.chatThinking.trim() || undefined,
     latencyMs: Date.now() - t0,
     tokensPerSecond: state.tokensPerSecond ?? 0,
   };
