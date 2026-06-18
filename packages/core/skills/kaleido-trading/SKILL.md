@@ -1,7 +1,7 @@
 ---
 name: kaleido-trading
 description: "Trade on KaleidoSwap — quote and execute swaps between BTC and RGB assets (USDT, XAUT). Get assets and pairs, pull an executable quote, place a market order, or track an atomic swap end-to-end. Triggers when the user wants a quote, to swap or trade assets, or to rebalance between BTC and stablecoins."
-tools: kaleidoswap_get_assets, kaleidoswap_get_pairs, kaleidoswap_get_quote, kaleidoswap_get_nodeinfo, kaleidoswap_place_order, kaleidoswap_get_order_status, kaleidoswap_get_order_history
+tools: kaleidoswap_get_assets, kaleidoswap_get_pairs, kaleidoswap_get_quote, kaleidoswap_get_spreads, kaleidoswap_place_order, kaleidoswap_get_order_status, kaleidoswap_get_open_orders, kaleidoswap_cancel_order, kaleidoswap_get_position, kaleidoswap_atomic_init, kaleidoswap_atomic_execute, kaleidoswap_atomic_status, rln_get_node_info, rln_whitelist_swap, rln_atomic_taker, wdk_atomic_taker
 triggers: quote, swap, trade, rebalance, slippage, pair, pairs, usdt, xaut, kaleidoswap, rfq
 metadata:
   author: kaleidoswap

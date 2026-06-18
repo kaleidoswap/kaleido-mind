@@ -27,6 +27,8 @@ import { kaleidoswapAtomicRecipe } from './recipe/kaleidoswap-atomic.js';
 import { assetSendRecipe } from './recipe/asset-send.js';
 import { paymentsRecipe } from './recipe/payments.js';
 import { receiveRecipe } from './recipe/receive.js';
+import { loadSkillsDir, packagedSkillsDir } from './skills/loader.js';
+import type { Skill } from './skills/types.js';
 import type { LLMProvider, TurnInput, TurnOutput } from './providers/types.js';
 import type { ConfirmDecision, ToolCall } from './types.js';
 
@@ -78,7 +80,10 @@ function searchMerchants(query: string): string {
  * Build the desktop mind with canned MCP-named tools. Every call is recorded in
  * `calls` (name + args, in execution order) so we can assert routing + sequence.
  */
-function buildMind(provider: LLMProvider): { funnel: Funnel; calls: Array<{ name: string; args: any }> } {
+function buildMind(
+  provider: LLMProvider,
+  opts: { skills?: Skill[]; log?: (m: string) => void } = {},
+): { funnel: Funnel; calls: Array<{ name: string; args: any }> } {
   const calls: Array<{ name: string; args: any }> = [];
   const tool = (name: string, response: any, spend = false) => ({
     name,
@@ -135,7 +140,10 @@ function buildMind(provider: LLMProvider): { funnel: Funnel; calls: Array<{ name
     ]),
   ]);
 
-  return { funnel: new Funnel({ provider, tools, recipes: DESKTOP_RECIPES, maxTurns: 8 }), calls };
+  return {
+    funnel: new Funnel({ provider, tools, recipes: DESKTOP_RECIPES, maxTurns: 8, skills: opts.skills, log: opts.log }),
+    calls,
+  };
 }
 
 describe('desktop mind — balance', () => {
@@ -258,5 +266,80 @@ describe('desktop mind — find a merchant near a city', () => {
     expect(result).toMatch(/Bitcoin Caffè/);
     expect(result).toMatch(/Nakamoto Books/);
     expect(result).not.toMatch(/Satoshi Pizzeria|Milan/);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────
+// Skill scoping — the layer that actually caused the desktop "I cannot check
+// your balance, the tool is not available" bug. The agentic tier filters the
+// model's tools to the SELECTED SKILL's `tools:` allowlist (engine.ts honours
+// allowedTools). If a skill's allowlist names tools that don't exist on the
+// host (e.g. `get_balances` while the desktop MCP exposes `rln_get_balances`),
+// the real tool is filtered out and the model goes tool-less. These load the
+// REAL desktop skills and assert the needed tool survives scoping.
+// (The scenario tests above ran skill-LESS, which is exactly why they missed it.)
+// ─────────────────────────────────────────────────────────────────────
+describe('desktop mind — skill scoping (real skills)', () => {
+  const SKILLS = loadSkillsDir(packagedSkillsDir());
+
+  it('loads the real desktop skills', () => {
+    expect(SKILLS.length).toBeGreaterThan(0);
+    expect(SKILLS.map((s) => s.name)).toEqual(
+      expect.arrayContaining(['wallet-assistant', 'rgb-lightning-node', 'kaleido-trading']),
+    );
+  });
+
+  it('wallet-assistant (triggers on "balance") exposes the real rln_*/wdk_* tool names', () => {
+    const wallet = SKILLS.find((s) => s.name === 'wallet-assistant')!;
+    expect(wallet.tools).toEqual(expect.arrayContaining(['rln_get_balances', 'wdk_get_balances']));
+    expect(wallet.tools).toEqual(expect.arrayContaining(['rln_get_address', 'rln_send_btc', 'rln_create_ln_invoice']));
+  });
+
+  it('rgb-lightning-node (triggers on "channels") exposes rln_list_channels', () => {
+    const node = SKILLS.find((s) => s.name === 'rgb-lightning-node')!;
+    expect(node.tools).toEqual(expect.arrayContaining(['rln_list_channels', 'wdk_list_channels']));
+  });
+
+  it('kaleido-trading drops the phantom kaleidoswap_get_nodeinfo / get_order_history names', () => {
+    const trading = SKILLS.find((s) => s.name === 'kaleido-trading')!;
+    expect(trading.tools).not.toContain('kaleidoswap_get_nodeinfo');
+    expect(trading.tools).not.toContain('kaleidoswap_get_order_history');
+    expect(trading.tools).toEqual(expect.arrayContaining(['kaleidoswap_get_quote', 'kaleidoswap_get_open_orders']));
+  });
+
+  it('balance through the FULL mind WITH skills loaded still reaches rln_get_balances', async () => {
+    const logs: string[] = [];
+    const { funnel, calls } = buildMind(
+      scripted([
+        { text: '', toolCalls: [{ name: 'rln_get_balances', arguments: {} }] },
+        { text: 'You have 1,949,753 sats.' },
+      ]),
+      { skills: SKILLS, log: (m) => logs.push(m) },
+    );
+
+    const res = await funnel.runTurn("what's my balance?");
+
+    expect(res.tier).toBe('agentic');
+    // wallet-assistant is selected AND rln_get_balances survives its scoping…
+    const agenticLine = logs.find((l) => l.startsWith('tier=agentic'));
+    expect(agenticLine).toMatch(/skill=wallet-assistant/);
+    expect(agenticLine).toMatch(/rln_get_balances/);
+    // …and the tool actually executes (not narrated).
+    expect(calls.map((c) => c.name)).toContain('rln_get_balances');
+  });
+
+  it('list channels through the FULL mind WITH skills loaded reaches rln_list_channels', async () => {
+    const { funnel, calls } = buildMind(
+      scripted([
+        { text: '', toolCalls: [{ name: 'rln_list_channels', arguments: {} }] },
+        { text: 'You have 2 channels.' },
+      ]),
+      { skills: SKILLS },
+    );
+
+    const res = await funnel.runTurn('list my channels');
+
+    expect(res.tier).toBe('agentic');
+    expect(calls.map((c) => c.name)).toContain('rln_list_channels');
   });
 });

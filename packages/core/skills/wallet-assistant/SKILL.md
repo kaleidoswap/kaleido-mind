@@ -1,7 +1,7 @@
 ---
 name: wallet-assistant
 description: Everyday wallet tasks on this phone — check the BTC/asset balance, create an invoice to receive, send a payment, look up a contact, or quote a swap (e.g. "how many sats is 10 USDT?"). Triggers when the user asks about their balance, wants to receive or send money, pay an invoice, pay a contact, or convert between BTC and supported assets.
-tools: get_balances, resolve_contact, send_payment, rln_pay_invoice, rln_create_ln_invoice, spark_create_invoice, kaleidoswap_get_quote
+tools: get_balances, rln_get_balances, wdk_get_balances, spark_get_balance, rln_get_asset_balance, wdk_get_asset_balance, rln_list_assets, wdk_list_assets, rln_get_address, wdk_get_address, spark_get_address, resolve_contact, send_payment, rln_send_btc, wdk_send_btc, rln_send_asset, wdk_send_asset, spark_send_sats, rln_pay_invoice, wdk_pay_invoice, spark_pay_lightning_invoice, rln_create_ln_invoice, wdk_create_ln_invoice, spark_create_lightning_invoice, rln_create_rgb_invoice, wdk_create_rgb_invoice, rln_list_payments, wdk_list_payments, kaleidoswap_get_quote
 triggers: balance, pay, send, receive, address, invoice, transactions, contact, funds, money, sats
 ---
 

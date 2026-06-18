@@ -1,7 +1,7 @@
 ---
 name: rgb-lightning-node
 description: "Drive the user's local RGB Lightning Node (RLN) — read its pubkey/status, whitelist a swap, or create Lightning/RGB receive invoices. Triggers when the user asks about the node, needs an invoice, or is mid-atomic-swap and the maker needs the node pubkey or a swapstring whitelisted."
-tools: rln_get_node_info, rln_whitelist_swap, rln_create_ln_invoice, rln_create_rgb_invoice
+tools: rln_get_node_info, wdk_get_node_info, rln_get_balances, wdk_get_balances, rln_list_channels, wdk_list_channels, rln_open_channel, wdk_open_channel, rln_close_channel, wdk_close_channel, rln_connect_peer, wdk_connect_peer, rln_get_channel_id, rln_whitelist_swap, rln_list_payments, wdk_list_payments, rln_create_ln_invoice, wdk_create_ln_invoice, rln_create_rgb_invoice, wdk_create_rgb_invoice
 triggers: node, nodeinfo, pubkey, peer, channels, whitelist, taker, swapstring, invoice, receive, rgb invoice, ln invoice
 metadata:
   author: kaleidoswap
