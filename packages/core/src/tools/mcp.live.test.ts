@@ -90,6 +90,11 @@ describe.skipIf(!RUN)('MCP live integration (real RLN node)', () => {
     expect(src.has('kaleidoswap_get_quote')).toBe(true);
   });
 
+  it('preserves the confirmation gate on known spend tools', () => {
+    const spend = src.listTools().find((tool) => tool.name === 'rln_pay_invoice');
+    if (spend) expect(spend.requiresConfirmation).toBe(true);
+  });
+
   it('rln_get_node_info EXECUTES against the node (returns the live pubkey)', async () => {
     const out = await src.execute('rln_get_node_info', {});
     const text = typeof out === 'string' ? out : JSON.stringify(out);
