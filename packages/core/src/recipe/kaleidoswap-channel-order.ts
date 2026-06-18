@@ -37,16 +37,27 @@ const DEFAULT_EXPIRY_BLOCKS = 4320;
  *   - the trading skill's territory.
  */
 function CHANNEL_INTENT(t: string): boolean {
-  // Explanatory/question phrasing → not an order, let the agentic path handle it.
+  // Explanatory phrasing → not an order; let RAG / agentic answer.
   if (/\b(why|how|what|when|explain|tell\s+me|do\s+I\s+need|should\s+I|can\s+I)\b/i.test(t)) return false;
-  // Explicit LSPS1 keywords always match.
+  // Read / verify phrasing → route to rgb-lightning-node (rln_list_channels),
+  // NEVER to a spend. "list my channels", "do I have a channel", "show/check
+  // my channels", "channel status".
+  if (/\b(list|show|view|check|which)\b/i.test(t)) return false;
+  if (/\bdo\s+I\s+(already\s+)?have\b/i.test(t)) return false;
+  if (/\bmy\s+channels?\b/i.test(t)) return false;
+  if (/\b(channel|order|lsp)\s+status\b/i.test(t) || /\bstatus\s+of\b/i.test(t)) return false;
+
+  // Explicit LSPS1 order keywords → acquire.
   if (/\b(lsps1|lsp\s+order|channel\s+order)\b/i.test(t)) return true;
-  // Inbound liquidity asks.
-  if (/\binbound(\s+(liquidity|capacity|channel))?\b/i.test(t)) return true;
+  // "I can't receive" → wants inbound liquidity.
   if (/\bcan('?t| not)\s+receive\b/i.test(t)) return true;
-  // "Buy / open / get a channel from the LSP" (or just "from KaleidoSwap"
-  // when the keyword "channel" is present).
-  if (/\b(buy|open|get|order)\b.*\bchannel\b/i.test(t)) return true;
+
+  // Otherwise require an explicit ACQUIRE verb so a bare mention of "channel"
+  // or "inbound" in a question doesn't trigger a spend.
+  const acquire = /\b(buy|open|get|order|purchase|acquire|need|want|add|create)\b/i.test(t);
+  if (!acquire) return false;
+  if (/\bchannel\b/i.test(t)) return true;
+  if (/\binbound(\s+(liquidity|capacity))?\b/i.test(t)) return true;
   return false;
 }
 

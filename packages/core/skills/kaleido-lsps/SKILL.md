@@ -1,8 +1,8 @@
 ---
 name: kaleido-lsps
 description: "Buy inbound Lightning channel capacity from a Lightning Service Provider (LSPS1). Quote a channel, estimate fees, place a channel order, and check order status. Triggers when the user wants inbound liquidity, says they can't receive a payment, needs a channel, asks about LSP fees, or wants to check the status of a channel order / LSP order."
-tools: lsp_get_info, lsp_get_network_info, lsp_estimate_fees, lsp_create_order, lsp_get_order, rln_get_node_info, rln_pay_invoice
-triggers: inbound, liquidity, channel order, lsp, lsps1, receive limit, can't receive, open channel, channel from, check status, order status, check the order, channel status, lsp status, check my channel, check lsp order, did the channel open, lsp order status
+tools: lsp_get_info, lsp_get_network_info, lsp_estimate_fees, lsp_create_order, lsp_get_order, rln_get_node_info, rln_list_channels, rln_pay_invoice
+triggers: inbound, liquidity, channel order, lsp, lsps1, receive limit, can't receive, open channel, channel from, check status, order status, check the order, channel status, lsp status, check my channel, check lsp order, did the channel open, lsp order status, list my channels, my channels, channel capacity
 metadata:
   author: kaleidoswap
   version: "0.2.0"
@@ -81,6 +81,16 @@ Returns:
 ### Step 5 — Pay the invoice with `rln_pay_invoice`
 Hand the `payment.bolt11.invoice` to `rln_pay_invoice`. This is a separate
 spend gate at the wallet contract; the user confirms paying the LSP.
+
+### Verify the opened channel — `rln_list_channels`
+After an order completes (or when the user asks "do I have a channel with X
+inbound?", "list my channels", "did my channel open?"), call
+`rln_list_channels`. It returns each channel's `capacity_sat`, `inbound_sat`,
+`outbound_sat`, `ready`/`status`, and RGB `asset_*` amounts. Match the
+requested capacity against an actual channel to confirm it opened correctly.
+A freshly-bought channel opens ASYNCHRONOUSLY — if it isn't listed yet, say
+it's still opening, don't claim failure. Do NOT use `rln_get_node_info` for
+this (it only has counts + aggregate balance, not per-channel capacity).
 
 ### Step 6 — `lsp_get_order` (poll)
 **Args: `order_id`, `access_token` (BOTH required — never omit either).**

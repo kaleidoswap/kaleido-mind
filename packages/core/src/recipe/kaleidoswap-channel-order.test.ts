@@ -208,6 +208,29 @@ describe('kaleidoswapChannelOrderRecipe — selection', () => {
     expect(m('do I need a channel to receive lightning payments?')).toBe(false);
     expect(m('can I receive without an inbound channel?')).toBe(false);
   });
+
+  it('does NOT trigger on read/verify questions about EXISTING channels', () => {
+    const m = kaleidoswapChannelOrderRecipe.match!;
+    // A spend must never fire from a question about channels the user has.
+    // These route to rgb-lightning-node (rln_list_channels).
+    expect(m('list my channels')).toBe(false);
+    expect(m('list my channels and their capacities')).toBe(false);
+    expect(m('do I have a channel with about 60000 inbound and 15000 on my side?')).toBe(false);
+    expect(m('show my channels')).toBe(false);
+    expect(m('check my channel status')).toBe(false);
+    expect(m('which channels do I have')).toBe(false);
+    expect(m('what is the status of my channel order')).toBe(false);
+  });
+
+  it('STILL triggers on genuine acquire intents (regression guard)', () => {
+    const m = kaleidoswapChannelOrderRecipe.match!;
+    expect(m('buy me a channel: 60000 sats inbound and 15000 on my side')).toBe(true);
+    expect(m('buy a 500k inbound channel')).toBe(true);
+    expect(m('open a channel from the LSP, 200k inbound')).toBe(true);
+    expect(m('I need 1M inbound liquidity')).toBe(true);
+    expect(m("I can't receive payments")).toBe(true);
+    expect(m('order a lsps1 channel')).toBe(true);
+  });
 });
 
 describe('kaleidoswapChannelOrderRecipe — full chain', () => {
