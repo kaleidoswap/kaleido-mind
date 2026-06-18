@@ -22,6 +22,7 @@ import {
   receiveRecipe,
   assetSendRecipe,
   type AgentProfile,
+  type FastIntent,
   type InProcessTool,
   type LLMProvider,
   type EmbeddingProvider,
@@ -67,6 +68,54 @@ const SPARK_ENABLED = process.env.KALEIDO_SPARK !== '0';
 // Flashnet AMM rides on the Spark wallet — wired automatically when Spark is
 // up. Set KALEIDO_FLASHNET=0 to disable.
 const FLASHNET_ENABLED = SPARK_ENABLED && process.env.KALEIDO_FLASHNET !== '0';
+
+// ── Tier-0 fast-path intents (NO LLM) ──────────────────────────────────────
+// Balance + address are the most-asked, most-volatile reads. Small models
+// (0.6–1.7B) tend to re-emit a stale balance from chat history instead of
+// re-calling the tool. The fix is structural, not promptual: route these to
+// the deterministic fast-path so the model is NEVER in the loop — there is no
+// history to hallucinate from. The default WALLET_FAST_INTENTS point `balance`
+// at `get_balances` (the cross-layer aggregator), which this CLI never binds —
+// so balance fell through to the agentic tier and got parroted. Here we point
+// it at `spark_get_balance`, which IS bound, when Spark is on.
+const SPARK_ACTIONY = /\b(send|pay|transfer|swap|buy|sell|then|after that)\b/i;
+const SPARK_FAST_INTENTS: FastIntent[] = [
+  {
+    name: 'balance',
+    tool: 'spark_get_balance',
+    // Plain BTC-balance question. Defer token/Flashnet balances (those carry
+    // an asset and belong in the agentic tier with flashnet_get_balance).
+    match: (t) =>
+      !SPARK_ACTIONY.test(t) &&
+      !/\b(flashnet|token|usdb|usdt|xaut|rgb)\b/i.test(t) &&
+      /\b(balance|funds|how much (do i|have i|i have)|how much.*(do i have|in my wallet))\b/i.test(t),
+  },
+  {
+    name: 'address',
+    tool: 'spark_get_address',
+    // "my/receive/deposit address", and crucially "create/generate an address"
+    // — Spark addresses are reusable, so getting and creating are the same op.
+    // Fast-pathing it also kills the earlier "I cannot create an address"
+    // refusal (the model never runs).
+    match: (t) =>
+      !SPARK_ACTIONY.test(t) &&
+      /\b(receive address|deposit address|my address|an address|get .*address|where.* receive|spark address|create .*address|generate .*address|new address)\b/i.test(t),
+  },
+];
+
+/** Render a fast-path result as a one-line answer (no model involved). */
+function renderSparkFast(intent: string, r: any): string {
+  if (intent === 'balance') {
+    const sats = Number(r?.total ?? r?.total_sats ?? 0);
+    return `Your Spark wallet holds ${sats.toLocaleString()} sats.`;
+  }
+  if (intent === 'address') {
+    return r?.address
+      ? `Here's your Spark address:\n\n\`${r.address}\``
+      : 'No Spark address available right now.';
+  }
+  return typeof r === 'string' ? r : JSON.stringify(r);
+}
 
 const PROFILE: AgentProfile = {
   name: 'KaleidoMind',
@@ -318,6 +367,11 @@ export async function buildAgent(cfg: CliConfig, opts: BuildOpts = {}): Promise<
     // Channel-order must come BEFORE the atomic swap recipe so "buy a USDT
     // channel" doesn't get misrouted as "buy USDT" (a swap).
     recipes: [kaleidoswapPriceRecipe, kaleidoswapChannelOrderRecipe, kaleidoswapAtomicRecipe, paymentsRecipe, receiveRecipe, assetSendRecipe],
+    // T0 fast-path: when the Spark wallet is live, answer balance/address
+    // deterministically (no LLM → no history hallucination). Falls back to the
+    // built-in WALLET_FAST_INTENTS otherwise. A fast intent whose tool isn't
+    // bound is skipped by the Funnel, so this is safe to pass unconditionally.
+    ...(SPARK_ENABLED ? { fastIntents: SPARK_FAST_INTENTS, renderFast: renderSparkFast } : {}),
     system:
       `${PROFILE.soul}\n${PROFILE.instructions ?? ''}`.trim(),
     getSettings: () => ({ ragEnabled: !!retriever }),
