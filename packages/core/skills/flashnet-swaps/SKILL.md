@@ -41,6 +41,15 @@ at the kaleido-trading skill rather than inventing a Flashnet pool.
    `asset_in_address`, `asset_out_address`, `amount_in` you pass MUST come
    from `flashnet_list_pools` / `flashnet_simulate_swap` / a tool-returned
    value in the CURRENT turn — never from history, never guessed.
+   **ALWAYS start a swap by calling `flashnet_list_pools`** to get the real
+   pool id + asset addresses. You may pass `BTC` as a literal asset (the
+   host resolves it), but for any TOKEN you must use the exact
+   `asset_a_address` / `asset_b_address` the pool returned. Token tickers
+   (e.g. `USDB`) only resolve if the network publishes them or the host is
+   configured; if a ticker doesn't resolve, the result rows carry the
+   addresses — use those. Each pool row includes `asset_a_symbol` /
+   `asset_b_symbol` when known (e.g. `"BTC"`); pick the pool whose pair
+   matches the user's intent and read its addresses from that row.
 2. **Always simulate before executing.** Call `flashnet_simulate_swap` to
    get `amount_out` + `price_impact_pct`, show the user the rate in plain
    English, get explicit confirmation, then call `flashnet_execute_swap`.
@@ -60,6 +69,16 @@ at the kaleido-trading skill rather than inventing a Flashnet pool.
    `simulate_swap.price_impact_pct > 1.0`, surface it explicitly:
    "This trade would move the price by 1.7%. Continue?" Don't auto-execute
    anything with >2% impact without a clear user yes.
+6. **Get the direction right — `asset_in` is what the user SPENDS,
+   `asset_out` is what they GET.** Parse the request literally:
+   - "spend 2000 sats to get USDB" → asset_in = BTC, asset_out = USDB,
+     amount_in = 2000 (the sats spent).
+   - "swap 10 USDB to BTC" / "sell 10 USDB for sats" → asset_in = USDB,
+     asset_out = BTC, amount_in = the USDB amount.
+   - "buy USDB with 2000 sats" → asset_in = BTC, asset_out = USDB.
+   `amount_in` is ALWAYS denominated in `asset_in`. Double-check before
+   simulating: if the user said "spend N sats", asset_in MUST be BTC and
+   amount_in MUST be N.
 
 ## Happy-path playbook
 

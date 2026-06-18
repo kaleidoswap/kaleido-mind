@@ -33,7 +33,23 @@ function asClientEnv(n: SparkNetworkType): ClientEnvironment {
 }
 
 /** Best-effort symbol → address resolver. Pure host-side normalization. */
-function normalizeAssetAddress(input: unknown, btcConst: string | undefined, knownTokens: Record<string, string>): string {
+/** Does this string already look like a raw asset address (hex / bech32m)? */
+function looksLikeAddress(s: string): boolean {
+  return /^[0-9a-f]{40,}$/i.test(s) || /^[a-z0-9]{1,12}1[a-z0-9]{20,}$/i.test(s);
+}
+
+/**
+ * Strict resolver for swap legs — the asset MUST resolve to a real address.
+ * BTC → the constant; a known ticker → its address; a raw address → itself.
+ * An unknown short symbol THROWS with guidance (never silently pass a ticker
+ * the backend can't match — that produces opaque errors and risks a wrong
+ * swap). The skill is told to call flashnet_list_pools to discover addresses.
+ */
+function normalizeAssetAddress(
+  input: unknown,
+  btcConst: string | undefined,
+  symbolToAddr: Record<string, string>,
+): string {
   const s = String(input ?? '').trim();
   if (!s) throw new Error('asset address required');
   const upper = s.toUpperCase();
@@ -41,10 +57,27 @@ function normalizeAssetAddress(input: unknown, btcConst: string | undefined, kno
     if (!btcConst) throw new Error('BTC asset pubkey unavailable in this SDK build');
     return btcConst;
   }
-  // Common ticker shortcuts when the SDK knows the network's token address.
-  if (knownTokens[upper]) return knownTokens[upper];
-  // Otherwise assume the user passed a full address (hex or bech32m).
-  return s;
+  if (symbolToAddr[upper]) return symbolToAddr[upper];
+  if (looksLikeAddress(s)) return s;
+  throw new Error(
+    `Unknown asset "${s}". On this network it has no known ticker. Call ` +
+    `flashnet_list_pools to find the pool and use the asset address it returns ` +
+    `(or set KALEIDO_FLASHNET_TOKEN_${upper}=<address>).`,
+  );
+}
+
+/** Soft resolver for the list_pools FILTER — unknown symbol → undefined (omit
+ *  the filter) instead of throwing, so discovery still returns pools. */
+function softResolveAsset(
+  input: unknown,
+  btcConst: string | undefined,
+  symbolToAddr: Record<string, string>,
+): string | undefined {
+  try {
+    return normalizeAssetAddress(input, btcConst, symbolToAddr);
+  } catch {
+    return undefined;
+  }
 }
 
 function jsonSafe<T>(value: T): T {
@@ -79,26 +112,69 @@ export async function buildFlashnetToolSource(opts: { log?: (m: string) => void 
 
   // BTC constant comes from the SDK; fall back to undefined if it isn't exported.
   const btcConst: string | undefined = (sdk as any).BTC_ASSET_PUBKEY ?? (sdk as any).BTC_ASSET_ADDRESS ?? undefined;
-  const knownTokens: Record<string, string> = {};
-  // USDB has a known address per network on Flashnet. The SDK doesn't always
-  // export it directly — leave the slot open so users can override via env.
-  if (process.env.KALEIDO_FLASHNET_USDB_ADDRESS) {
-    knownTokens.USDB = process.env.KALEIDO_FLASHNET_USDB_ADDRESS;
+
+  // Symbol ↔ address maps, used to resolve tickers ("USDB") to addresses and
+  // to label pool rows. Three sources, later wins:
+  //   1. BTC constant.
+  //   2. Flashnet getAllowedAssets() — gives asset_name where the network has
+  //      one (mainnet/testnet). On regtest these are often null.
+  //   3. Env overrides KALEIDO_FLASHNET_TOKEN_<SYM>=<addr> (and the legacy
+  //      KALEIDO_FLASHNET_USDB_ADDRESS) — the only way to name tokens on
+  //      regtest, where the network exposes no symbols.
+  const symbolToAddr: Record<string, string> = {};
+  const addrToSymbol: Record<string, string> = {};
+  const bind = (sym: string, addr: string) => {
+    if (!sym || !addr) return;
+    symbolToAddr[sym.toUpperCase()] = addr;
+    if (!addrToSymbol[addr]) addrToSymbol[addr] = sym.toUpperCase();
+  };
+  if (btcConst) bind('BTC', btcConst);
+  try {
+    const allowed: Array<{ asset_identifier: string; asset_name: string | null }> =
+      await client.getAllowedAssets();
+    for (const it of allowed ?? []) {
+      if (it.asset_name) bind(it.asset_name, it.asset_identifier);
+    }
+  } catch (e) {
+    log(`getAllowedAssets failed (symbols unavailable): ${(e as Error)?.message ?? e}`);
   }
+  for (const [k, v] of Object.entries(process.env)) {
+    const m = k.match(/^KALEIDO_FLASHNET_TOKEN_([A-Z0-9]+)$/);
+    if (m && m[1] && v) bind(m[1], v);
+  }
+  if (process.env.KALEIDO_FLASHNET_USDB_ADDRESS) bind('USDB', process.env.KALEIDO_FLASHNET_USDB_ADDRESS);
+  log(`flashnet symbols: ${Object.keys(symbolToAddr).join(', ') || '(none — use addresses)'}`);
 
   const handlers: Record<string, FlashnetHandler> = {
     flashnet_list_pools: async (a) => {
-      const query: any = {};
-      if (a.asset_a) query.assetAAddress = normalizeAssetAddress(a.asset_a, btcConst, knownTokens);
-      if (a.asset_b) query.assetBAddress = normalizeAssetAddress(a.asset_b, btcConst, knownTokens);
-      if (a.sort) query.sort = String(a.sort);
-      query.limit = Math.min(50, Math.max(1, Number(a.limit ?? 10)));
-      const r = await client.listPools(query);
-      // Trim to the columns the model actually needs.
-      const pools = (r?.pools ?? []).slice(0, query.limit).map((p: any) => ({
+      const limit = Math.min(50, Math.max(1, Number(a.limit ?? 10)));
+      const base: any = { limit };
+      if (a.sort) base.sort = String(a.sort);
+      // Soft-resolve filters: an unknown ticker becomes "no filter" rather than
+      // an error, so discovery still returns pools.
+      const aAddr = a.asset_a ? softResolveAsset(a.asset_a, btcConst, symbolToAddr) : undefined;
+      const bAddr = a.asset_b ? softResolveAsset(a.asset_b, btcConst, symbolToAddr) : undefined;
+
+      let r = await client.listPools({
+        ...base,
+        ...(aAddr ? { assetAAddress: aAddr } : {}),
+        ...(bAddr ? { assetBAddress: bAddr } : {}),
+      });
+      // Pools store a pair in ONE order. If a two-sided filter found nothing,
+      // retry with the sides swapped (e.g. asked BTC/USDB but the pool is
+      // stored USDB/BTC). This is why an earlier BTC-on-side-A filter missed
+      // every pool — BTC is almost always asset_b.
+      if ((!r?.pools || r.pools.length === 0) && aAddr && bAddr) {
+        r = await client.listPools({ ...base, assetAAddress: bAddr, assetBAddress: aAddr });
+      }
+
+      const label = (addr: string | undefined) => (addr && addrToSymbol[addr]) || undefined;
+      const pools = (r?.pools ?? []).slice(0, limit).map((p: any) => ({
         pool_id: p.lpPublicKey ?? p.poolId ?? p.id,
         asset_a_address: p.assetAAddress,
+        asset_a_symbol: label(p.assetAAddress),
         asset_b_address: p.assetBAddress,
+        asset_b_symbol: label(p.assetBAddress),
         curve_type: p.curveType ?? p.type,
         tvl_asset_b: p.tvlAssetB,
         volume24h_asset_b: p.volume24hAssetB,
@@ -126,8 +202,8 @@ export async function buildFlashnetToolSource(opts: { log?: (m: string) => void 
     },
 
     flashnet_simulate_swap: async (a) => {
-      const assetIn = normalizeAssetAddress(a.asset_in_address, btcConst, knownTokens);
-      const assetOut = normalizeAssetAddress(a.asset_out_address, btcConst, knownTokens);
+      const assetIn = normalizeAssetAddress(a.asset_in_address, btcConst, symbolToAddr);
+      const assetOut = normalizeAssetAddress(a.asset_out_address, btcConst, symbolToAddr);
       const r = await client.simulateSwap({
         poolId: String(a.pool_id),
         assetInAddress: assetIn,
@@ -148,8 +224,8 @@ export async function buildFlashnetToolSource(opts: { log?: (m: string) => void 
     },
 
     flashnet_execute_swap: async (a) => {
-      const assetIn = normalizeAssetAddress(a.asset_in_address, btcConst, knownTokens);
-      const assetOut = normalizeAssetAddress(a.asset_out_address, btcConst, knownTokens);
+      const assetIn = normalizeAssetAddress(a.asset_in_address, btcConst, symbolToAddr);
+      const assetOut = normalizeAssetAddress(a.asset_out_address, btcConst, symbolToAddr);
       const r: any = await client.executeSwap({
         poolId: String(a.pool_id),
         assetInAddress: assetIn,
