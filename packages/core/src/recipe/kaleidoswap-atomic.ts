@@ -34,23 +34,33 @@
 import type { Recipe, RecipeContext } from './types.js';
 import { extractSwap } from './swap.js';
 
-// Fire on swap intent — "swap/exchange/convert/trade", or "buy/sell/get" when a
-// crypto asset is named (so "buy one usdt" routes here, but "buy a gift card"
-// does not). PRICE / rate / "how much" questions are read-only and go to
-// `kaleidoswapPriceRecipe` instead — keep them out of this match.
-const ASSET = /\b(btc|bitcoin|sats?|usdt|tether|xaut|gold)\b/i;
+// KaleidoSwap is a BTC↔RGB ATOMIC swap venue (maker + RLN node). It is NOT the
+// only swap venue anymore — Flashnet (Spark-native AMM, BTC↔Spark tokens like
+// USDB) is a sibling, handled by the agentic `flashnet-swaps` skill. The Funnel
+// runs recipes BEFORE skills, so a greedy "any swap word" match here would
+// monopolize every swap and starve Flashnet. To let both coexist, this recipe
+// only claims swaps that point at ITS venue:
+//   - names an RGB/maker asset or the venue itself (RGB_CUE), AND
+//   - does NOT name a Flashnet/Spark cue (FLASHNET_CUE → defer to the skill).
+// A bare "swap" with no venue cue falls through to the agentic tier, where the
+// skill selector disambiguates (or the model asks).
+const RGB_CUE = /\b(usdt|tether|xaut|gold|rgb|kaleidoswap|kaleido|atomic)\b/i;
+const FLASHNET_CUE = /\b(flashnet|usdb|spark)\b/i;
 const SWAP_INTENT = (t: string) => {
   // Explanatory / educational questions → route to RAG-backed agentic answer,
   // not the deterministic spend chain.
   if (/\b(why|how|what|when|explain|tell\s+me|do\s+I\s+need|should\s+I|can\s+I)\b/i.test(t)) return false;
-  if (/\b(swap|exchange|convert|trade)\b/i.test(t)) return true;
-  if (
+  // Flashnet owns its venue — defer to the flashnet-swaps skill.
+  if (FLASHNET_CUE.test(t)) return false;
+  const swapVerb = /\b(swap|exchange|convert|trade)\b/i.test(t);
+  const buyVerb =
     /\b(buy|sell|get|purchase|acquire)\b/i.test(t) &&
-    ASSET.test(t) &&
     // Exclude commerce / receive / LSPS1 channel-order phrasings that share
     // the buy/get verb. "Buy a USDT channel" is a channel order, not a swap.
-    !/\b(gift\s?card|top-?up|esim|voucher|invoice|address|channel|inbound|liquidity|lsps?\b)\b/i.test(t)
-  ) return true;
+    !/\b(gift\s?card|top-?up|esim|voucher|invoice|address|channel|inbound|liquidity|lsps?\b)\b/i.test(t);
+  // Only claim the swap when an RGB/maker asset (or the venue) is named, so a
+  // bare/ambiguous "swap" or a Flashnet-asset swap doesn't get grabbed here.
+  if (swapVerb || buyVerb) return RGB_CUE.test(t);
   return false;
 };
 
