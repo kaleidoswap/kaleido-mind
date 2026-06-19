@@ -67,6 +67,31 @@ describe('consumeRun', () => {
     expect(out.truncated).toBe(true);
   });
 
+  it('stops forwarding and flags when thinking exceeds maxThinkingTokens', async () => {
+    const thinking: string[] = [];
+    let exceeded = 0;
+    // 8-char deltas ≈ 2 tokens each; budget 4 tokens trips after the 2nd.
+    const run = fakeRun(
+      [
+        { type: 'thinkingDelta', text: 'aaaaaaaa' },
+        { type: 'thinkingDelta', text: 'bbbbbbbb' },
+        { type: 'thinkingDelta', text: 'cccccccc' },
+        { type: 'contentDelta', text: 'should-not-arrive' },
+      ],
+      { contentText: '', toolCalls: [], raw: { fullText: '' }, stopReason: 'cancelled' },
+    );
+    const out = await consumeRun(run, {
+      onThinking: (t) => thinking.push(t),
+      maxThinkingTokens: 4,
+      onThinkingBudgetExceeded: () => {
+        exceeded += 1;
+      },
+    });
+    expect(exceeded).toBe(1);
+    expect(out.thinkingBudgetExceeded).toBe(true);
+    expect(thinking).toEqual(['aaaaaaaa', 'bbbbbbbb']); // stopped at the trip
+  });
+
   it('ignores delta events with no text', async () => {
     const tokens: string[] = [];
     const run = fakeRun(

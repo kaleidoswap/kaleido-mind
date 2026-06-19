@@ -6,6 +6,21 @@
  */
 import { cleanAssistantVisibleText } from './text.js';
 
+/**
+ * Per-turn inference stats from a QVAC `completion().final.stats` frame. The
+ * authoritative source for which backend actually ran (`backendDevice`) and the
+ * real throughput — hosts surface these instead of guessing from load config.
+ */
+export interface QvacTurnStats {
+  /** The backend that actually executed this turn — the real "is GPU active". */
+  backendDevice?: 'cpu' | 'gpu';
+  tokensPerSecond?: number;
+  totalTokens?: number;
+  promptTokens?: number;
+  contextSize?: number;
+  totalTime?: number;
+}
+
 /** Structural subset of a QVAC `completion().final` we depend on. */
 export interface QvacFinalLike {
   /** Visible assistant text (excludes `<think>` reasoning). */
@@ -20,6 +35,8 @@ export interface QvacFinalLike {
    * it so the funnel can tell a truncated tool-call from a complete one.
    */
   stopReason?: 'length' | 'cancelled' | string;
+  /** Inference stats (backend device, throughput). Present on a natural finish. */
+  stats?: QvacTurnStats;
 }
 
 export interface ParsedTurn {
@@ -33,6 +50,8 @@ export interface ParsedTurn {
   truncated: boolean;
   /** Raw stop reason from the SDK, when provided. */
   stopReason?: string;
+  /** Inference stats for this turn (backend device, throughput), when provided. */
+  stats?: QvacTurnStats;
 }
 
 /** Parse the first balanced `{…}` from a string as a `{name, arguments}` call. */
@@ -119,5 +138,6 @@ export function finalToTurn(final: QvacFinalLike, streamed = ''): ParsedTurn {
     toolCalls,
     truncated: final.stopReason === 'length',
     stopReason: final.stopReason,
+    stats: final.stats,
   };
 }

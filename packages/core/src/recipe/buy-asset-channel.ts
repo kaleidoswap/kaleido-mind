@@ -48,13 +48,16 @@ const num = (s?: string): number | undefined => {
 /** Thousands separators, locale-independent (deterministic for tests). */
 const commas = (n: number): string => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
-/** "buy 100 usdt" / "get me 50 xaut" / "i want 200 usdt" / "purchase 10 xaut". */
+/** "buy 100 usdt" / "get me 50 xaut" / "buy a 100 usdt channel" / "purchase 10 xaut". */
 export function extractBuyAsset(text: string): Record<string, unknown> | null {
   const t = text.trim();
   if (NOT_BUY.test(t) || HAS_SOURCE.test(t)) return null;
   if (!RGB_ASSET.test(t)) return null;
-  // buy/get/want/acquire/purchase [me] <amount> <asset>
-  const m = t.match(/\b(?:buy|get|acquire|want|purchase|onboard|need)\b(?:\s+me)?\s+([\d.,]+)\s*([a-z]+)/i);
+  // buy/get/want/acquire/purchase [me|a|an|some|new]* <amount> <asset>
+  // Filler words (the article in "buy A 100 usdt channel") must not break extraction.
+  const m = t.match(
+    /\b(?:buy|get|acquire|want|purchase|onboard|need)\b(?:\s+(?:me|a|an|some|new)\b)*\s+([\d.,]+)\s*([a-z]+)/i,
+  );
   if (!m) return null;
   const asset = normAsset(m[2]);
   const amount = num(m[1]);

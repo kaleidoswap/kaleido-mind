@@ -331,16 +331,25 @@ describe('desktop mind — skill scoping (real skills)', () => {
     expect(wallet.tools).toEqual(expect.arrayContaining(['rln_get_address', 'rln_send_btc', 'rln_create_ln_invoice']));
   });
 
-  it('rgb-lightning-node (triggers on "channels") exposes rln_list_channels', () => {
+  it('rgb-lightning-node (triggers on "channels") exposes only canonical rln_* tools', () => {
     const node = SKILLS.find((s) => s.name === 'rgb-lightning-node')!;
-    expect(node.tools).toEqual(expect.arrayContaining(['rln_list_channels', 'wdk_list_channels']));
+    expect(node.tools).toContain('rln_list_channels');
+    expect(node.tools?.every((tool) => tool.startsWith('rln_'))).toBe(true);
   });
 
   it('kaleido-trading drops the phantom kaleidoswap_get_nodeinfo / get_order_history names', () => {
     const trading = SKILLS.find((s) => s.name === 'kaleido-trading')!;
     expect(trading.tools).not.toContain('kaleidoswap_get_nodeinfo');
     expect(trading.tools).not.toContain('kaleidoswap_get_order_history');
-    expect(trading.tools).toEqual(expect.arrayContaining(['kaleidoswap_get_quote', 'kaleidoswap_get_open_orders']));
+    expect(trading.tools).toEqual(expect.arrayContaining(['kaleidoswap_get_quote', 'kaleidoswap_place_order']));
+    expect(trading.tools).not.toEqual(
+      expect.arrayContaining([
+        'kaleidoswap_get_spreads',
+        'kaleidoswap_get_open_orders',
+        'kaleidoswap_cancel_order',
+        'kaleidoswap_get_position',
+      ]),
+    );
   });
 
   it('balance through the FULL mind WITH skills loaded still reaches rln_get_balances', async () => {

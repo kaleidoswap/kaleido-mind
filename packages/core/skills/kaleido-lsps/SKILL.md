@@ -1,7 +1,7 @@
 ---
 name: kaleido-lsps
 description: "Buy inbound Lightning channel capacity from a Lightning Service Provider (LSPS1). Quote a channel, estimate fees, place a channel order, and check order status. Triggers when the user wants inbound liquidity, says they can't receive a payment, needs a channel, asks about LSP fees, or wants to check the status of a channel order / LSP order."
-tools: lsp_get_info, lsp_get_network_info, lsp_estimate_fees, lsp_create_order, lsp_get_order, rln_get_node_info, rln_pay_invoice
+tools: kaleidoswap_lsp_get_info, kaleidoswap_lsp_estimate_fees, kaleidoswap_lsp_create_order, kaleidoswap_lsp_get_order, kaleidoswap_lsp_quote_asset_channel, kaleidoswap_lsp_create_asset_channel, lsp_get_info, lsp_estimate_fees, lsp_create_order, lsp_get_order, rln_get_node_info, rln_pay_invoice
 triggers: inbound, liquidity, channel order, lsp, lsps1, receive limit, can't receive, open channel, channel from, check status, order status, check the order, channel status, lsp status, check my channel
 metadata:
   author: kaleidoswap
@@ -21,11 +21,11 @@ talks to — the KaleidoSwap maker by default. Tool names are LSP-agnostic
 You have **no knowledge** of LSP capabilities, fees, channel sizes, or order
 status. Every number, capacity, fee, order id, or invoice in your reply MUST
 come from a tool result returned in the CURRENT turn. Never quote a fee from
-memory. Never claim an order completed without calling `lsp_get_order`.
+memory. Never claim an order completed without calling `kaleidoswap_lsp_get_order`.
 Never reuse a number from a previous turn.
 
 **Calling the tool IS the answer.** Don't write "the LSP info is fetched with
-`lsp_get_info`" — call it. Don't reveal tool names in your reply; describe
+`kaleidoswap_lsp_get_info`" — call it. Don't reveal tool names in your reply; describe
 what you're doing in plain language.
 
 If a tool needs a required argument the user didn't give (e.g. `client_pubkey`
@@ -40,7 +40,7 @@ The same conventions as trading apply:
 
 ## Tools and the flow
 
-### Step 1 — `lsp_get_info`
+### Step 1 — `kaleidoswap_lsp_get_info`
 No args. Returns the LSP's `OrderOptions` (min/max channel size, min/max
 expiry, etc.) and the `assets` list. **Call it once before estimating** so you
 can validate the user's request against the LSP's limits.
@@ -49,7 +49,7 @@ If the user wants 1M sats inbound but `max_initial_lsp_balance_sat` is 500k,
 say so plainly and offer the maximum — don't push through and let the maker
 reject it.
 
-### Step 2 — `lsp_estimate_fees` (read-only)
+### Step 2 — `kaleidoswap_lsp_estimate_fees` (read-only)
 Required args: `lsp_balance_sat`, `client_balance_sat`, `channel_expiry_blocks`.
 
 Defaults you can use silently if the user didn't specify:
@@ -60,10 +60,10 @@ Returns `{setup_fee, capacity_fee, duration_fee, total_fee}` — surface
 `total_fee` to the user and the breakdown when relevant.
 
 ### Step 3 — `rln_get_node_info`
-No args. Returns `{pubkey, ...}`. **Pubkey is required by `lsp_create_order` —
+No args. Returns `{pubkey, ...}`. **Pubkey is required by `kaleidoswap_lsp_create_order` —
 fetch it deterministically. Never invent a pubkey.**
 
-### Step 4 — `lsp_create_order` 🔒 spend
+### Step 4 — `kaleidoswap_lsp_create_order` 🔒 spend
 Required args: `client_pubkey` (from step 3), `lsp_balance_sat`. The maker
 also expects `client_balance_sat`, `required_channel_confirmations`,
 `funding_confirms_within_blocks`, `channel_expiry_blocks`, `announce_channel`
@@ -72,7 +72,7 @@ didn't specify, so just pass the values the user actually named.
 
 Returns:
 - `order_id`
-- `access_token` (save it — required for `lsp_get_order`)
+- `access_token` (save it — required for `kaleidoswap_lsp_get_order`)
 - `payment.bolt11.invoice` — Lightning invoice to pay
 - `payment.bolt11.order_total_sat` — the sats that need to flow
 - `payment.onchain.address` — optional on-chain fallback
@@ -82,11 +82,11 @@ Returns:
 Hand the `payment.bolt11.invoice` to `rln_pay_invoice`. This is a separate
 spend gate at the wallet contract; the user confirms paying the LSP.
 
-### Step 6 — `lsp_get_order` (poll)
+### Step 6 — `kaleidoswap_lsp_get_order` (poll)
 **Args: `order_id`, `access_token` (BOTH required — never omit either).**
 `order_state` progresses `CREATED → CHANNEL_OPENING → COMPLETED` (or `FAILED`).
 Poll until terminal. Always pass the exact order_id and access_token from the
-previous `lsp_create_order` result (or from the summary that listed them).
+previous `kaleidoswap_lsp_create_order` result (or from the summary that listed them).
 Report the outcome plainly with the new channel id from `channel.channel_id` if present.
 
 ## Don'ts
@@ -97,9 +97,9 @@ Report the outcome plainly with the new channel id from `channel.channel_id` if 
 - Don't describe how a tool works — call it.
 - Don't pay a Lightning invoice without confirming the amount + LSP — the
   spend gate at `rln_pay_invoice` shows the user the destination.
-- Don't claim an order completed without polling `lsp_get_order` with BOTH
+- Don't claim an order completed without polling `kaleidoswap_lsp_get_order` with BOTH
   `order_id` and `access_token` and seeing `order_state: COMPLETED`.
-- Never call `lsp_get_order` with only the access_token or only the order_id.
+- Never call `kaleidoswap_lsp_get_order` with only the access_token or only the order_id.
   Always extract the exact values from the previous turn's summary (the one that
   said "order_id=... access_token=...") and pass them as separate arguments.
 - Don't ask the user for their node pubkey — fetch it from `rln_get_node_info`.
