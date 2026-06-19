@@ -115,6 +115,7 @@ export type {
 // without firing any spend.
 export { kaleidoswapPriceRecipe } from './recipe/kaleidoswap-price.js';
 export { kaleidoswapAtomicRecipe } from './recipe/kaleidoswap-atomic.js';
+export { flashnetSwapRecipe } from './recipe/flashnet-swap.js';
 export {
   kaleidoswapChannelOrderRecipe,
   extractChannelOrder,

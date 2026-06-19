@@ -18,6 +18,7 @@ import {
   kaleidoswapPriceRecipe,
   kaleidoswapAtomicRecipe,
   kaleidoswapChannelOrderRecipe,
+  flashnetSwapRecipe,
   paymentsRecipe,
   receiveRecipe,
   assetSendRecipe,
@@ -384,7 +385,20 @@ export async function buildAgent(cfg: CliConfig, opts: BuildOpts = {}): Promise<
     // Order matters when two recipes' match() both fire — first wins.
     // Channel-order must come BEFORE the atomic swap recipe so "buy a USDT
     // channel" doesn't get misrouted as "buy USDT" (a swap).
-    recipes: [kaleidoswapPriceRecipe, kaleidoswapChannelOrderRecipe, kaleidoswapAtomicRecipe, paymentsRecipe, receiveRecipe, assetSendRecipe],
+    // Order matters when two recipes' match() both fire — first wins.
+    // flashnet-swap goes BEFORE kaleidoswap-atomic because the atomic recipe
+    // explicitly defers on Flashnet cues; this ordering is documentation,
+    // not a tiebreaker. Channel-order before atomic so "buy a USDT channel"
+    // isn't mistaken for a swap.
+    recipes: [
+      kaleidoswapPriceRecipe,
+      kaleidoswapChannelOrderRecipe,
+      flashnetSwapRecipe,
+      kaleidoswapAtomicRecipe,
+      paymentsRecipe,
+      receiveRecipe,
+      assetSendRecipe,
+    ],
     // T0 fast-path: when the Spark wallet is live, answer balance/address
     // deterministically (no LLM → no history hallucination). Falls back to the
     // built-in WALLET_FAST_INTENTS otherwise. A fast intent whose tool isn't
