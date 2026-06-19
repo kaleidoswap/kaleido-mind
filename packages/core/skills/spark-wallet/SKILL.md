@@ -158,7 +158,16 @@ TOOL, not your training data — call `flashnet_list_pools` (Spark side) or
 
 ### Reads
 
-- **`spark_get_balance({})`** — current spendable BTC in Spark (sats).
+- **`spark_get_balance({})`** — current Spark balances. Returns the BTC
+  balance (`total` in sats) AND every Spark-native **token** the wallet
+  holds (`tokens[]` — each with `address`, `balance`, optional `symbol`
+  and `decimals`). When the user asks "what do I have on Spark" or
+  "what's my Spark balance", surface BOTH the sats AND any non-zero
+  token balances; an answer that only mentions BTC when tokens are
+  present is incomplete.
+  - `flashnet_get_balance` returns the same numbers (it's the AMM-client
+    view of the same wallet) — there's no need to call it just to learn
+    the token balance.
 - **`spark_get_address({})`** — the user's **Spark identity**
   (`sparkrt1…`/`spark1…`), an OFF-CHAIN Spark-to-Spark receive target.
   Reusable — getting and creating are the same operation, so the right

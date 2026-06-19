@@ -121,7 +121,32 @@ const SPARK_FAST_INTENTS: FastIntent[] = [
 function renderSparkFast(intent: string, r: any): string {
   if (intent === 'balance') {
     const sats = Number(r?.total ?? r?.total_sats ?? 0);
-    return `Your Spark wallet holds ${sats.toLocaleString()} sats.`;
+    const tokens: Array<{ symbol?: string; balance?: string; decimals?: number; address?: string }> =
+      Array.isArray(r?.tokens) ? r.tokens : [];
+    // Filter to tokens with a non-zero balance (the SDK can list tokens the
+    // user has ever interacted with, including drained ones). Display:
+    //   "N TICKER" when the symbol is known + decimals fit a clean div,
+    //   "N units of <short-addr>" when the symbol is null on this network.
+    const lines: string[] = [];
+    for (const t of tokens) {
+      const raw = String(t?.balance ?? '0');
+      if (raw === '0' || raw === '') continue;
+      let display = raw;
+      const dec = Number(t?.decimals ?? NaN);
+      if (Number.isFinite(dec) && dec > 0) {
+        // Tokens use base units; render with up to `decimals` precision.
+        try {
+          const n = Number(BigInt(raw)) / Math.pow(10, dec);
+          display = n.toLocaleString('en-US', { maximumFractionDigits: dec });
+        } catch { /* keep raw */ }
+      } else {
+        try { display = Number(BigInt(raw)).toLocaleString('en-US'); } catch { /* keep raw */ }
+      }
+      const label = t.symbol || (t.address ? `${t.address.slice(0, 8)}…` : 'token');
+      lines.push(`• ${display} ${label}`);
+    }
+    const head = `Your Spark wallet holds ${sats.toLocaleString()} sats.`;
+    return lines.length ? `${head}\n${lines.join('\n')}` : head;
   }
   if (intent === 'address') {
     return r?.address

@@ -56,7 +56,7 @@ const asset = { type: 'string', description: "Asset ticker, e.g. 'USDT', 'XAUT',
 /** The full contract. Keep descriptions terse — small models read every word. */
 export const WALLET_TOOLS: WalletToolDef[] = [
   // ── Spark ──────────────────────────────────────────────────────────────
-  t('spark', 'spark_get_balance', 'Get the Spark wallet BTC balance (sats). Use for ANY "balance / how much / what do I have on Spark" question — call it fresh every time, balances change. For Spark-native TOKEN balances (USDB etc.), use flashnet_get_balance; for RGB asset balances (USDT, XAUT), use the RLN tools — those assets are NOT on Spark.'),
+  t('spark', 'spark_get_balance', 'Get the Spark wallet balances — BTC sats AND every Spark-native token (e.g. USDB). Returns `{ total: <sats>, tokens: [{ address, balance, symbol?, decimals?, available_to_send? }], connected, layer, network }`. Use for ANY "balance / how much / what do I have on Spark" question — call it fresh every time, balances change. The `tokens` array surfaces ALL Spark-native tokens the wallet holds, so you do NOT need to call flashnet_get_balance separately for that (flashnet_get_balance is the AMM-client view of the same wallet and returns the same numbers). For RGB asset balances (USDT, XAUT) use the RLN tools — RGB assets are NOT on Spark.'),
   // The user-facing "Spark address" — an off-chain Spark identity (sparkrt1…/
   // spark1…). For OFF-CHAIN peer transfers WITHIN Spark. NOT a Bitcoin
   // on-chain address. Use spark_get_onchain_address for the on-chain deposit

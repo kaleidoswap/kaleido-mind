@@ -110,13 +110,40 @@ export async function buildSparkWalletToolSource(opts: { log?: (m: string) => vo
   const handlers: Record<string, WalletHandler> = {
     spark_get_balance: async () => {
       const b: any = await wallet.getBalance();
-      // SDK returns { balance: bigint, tokenBalances: Map } — coerce to JSON-safe.
+      // SDK returns { balance: bigint, tokenBalances: Map<string,
+      // TokenBalance> }. Both need to be surfaced — Spark holds BTC AND
+      // Spark-native tokens (USDB, etc.). Dropping tokenBalances made every
+      // token balance invisible to the model.
       const total = typeof b?.balance === 'bigint' ? Number(b.balance) : Number(b?.balance ?? b?.sats ?? 0);
+      const tokens: Array<{
+        address: string;
+        balance: string;
+        available_to_send?: string;
+        symbol?: string;
+        name?: string;
+        decimals?: number;
+      }> = [];
+      const tb = b?.tokenBalances;
+      if (tb && typeof tb.forEach === 'function') {
+        tb.forEach((v: any, k: string) => {
+          tokens.push({
+            address: k,
+            balance: typeof v?.balance === 'bigint' ? v.balance.toString() : String(v?.balance ?? '0'),
+            available_to_send:
+              typeof v?.availableToSendBalance === 'bigint'
+                ? v.availableToSendBalance.toString()
+                : v?.availableToSendBalance != null ? String(v.availableToSendBalance) : undefined,
+            symbol: v?.tokenInfo?.tokenSymbol,
+            name: v?.tokenInfo?.tokenName,
+            decimals: v?.tokenInfo?.tokenDecimals,
+          });
+        });
+      }
       // `connected: true` tells the model the wallet is reachable. The
       // skill text relies on this to disambiguate "0 sats but live" from
       // "tool errored out". The handler ONLY returns this object on
       // success — adapter errors throw, surfaced as Error.message.
-      return { total, layer: 'spark', network, connected: true };
+      return { total, tokens, layer: 'spark', network, connected: true };
     },
     spark_get_address: async () => {
       const address = await wallet.getSparkAddress();
