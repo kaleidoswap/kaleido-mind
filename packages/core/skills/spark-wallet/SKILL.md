@@ -1,8 +1,8 @@
 ---
 name: spark-wallet
 description: "Operate the user's Spark BTC wallet on this device — check Spark balance, get a Spark deposit address, create a Spark Lightning invoice to receive, pay any BOLT11 Lightning invoice with Spark, or send BTC on-chain from Spark. Use this when the user names Spark explicitly OR when paying a Lightning invoice on a phone where Spark is the connected layer. Pairs with the bitrefill skill: a Bitrefill purchase that returns a Lightning invoice is paid with `spark_pay_invoice`."
-tools: spark_get_balance, spark_get_address, spark_create_invoice, spark_pay_invoice, spark_send, get_price, fiat_to_sats, bitrefill_search, bitrefill_get_product, bitrefill_get_balance, bitrefill_create_invoice, bitrefill_get_invoice, bitrefill_get_order
-triggers: spark, sprak, spakr, spark wallet, pay with spark, send with spark, spark balance, spark address, spark invoice, lightning invoice, pay invoice, bolt11, ln invoice, pay this invoice
+tools: spark_get_balance, spark_get_address, spark_get_onchain_address, spark_create_invoice, spark_pay_invoice, spark_send, get_price, fiat_to_sats, bitrefill_search, bitrefill_get_product, bitrefill_get_balance, bitrefill_create_invoice, bitrefill_get_invoice, bitrefill_get_order
+triggers: spark, sprak, spakr, spark wallet, pay with spark, send with spark, spark balance, spark address, spark invoice, lightning invoice, pay invoice, bolt11, ln invoice, pay this invoice, on-chain address, onchain address, deposit address, deposit btc, fund spark
 metadata:
   author: kaleidoswap
   version: "1.0.0"
@@ -15,6 +15,46 @@ Spark is one of the user's connected BTC layers (alongside RLN/RGB and Arkade
 on some hosts). It speaks Lightning natively — receive via `spark_create_invoice`,
 send via `spark_pay_invoice` (BOLT11) or `spark_send` (on-chain). All numbers
 are in **satoshis** unless stated otherwise.
+
+## Three "addresses", three different tools (read this carefully)
+
+The word "address" can mean three completely different things on Spark.
+Each has a DIFFERENT tool, a DIFFERENT shape, and a DIFFERENT use. If you
+return the wrong one, the user loses money on a bad deposit. Pick by what
+the user is trying to DO, not just by the word "address":
+
+| User intent | Tool | What you get | Looks like |
+|---|---|---|---|
+| Receive a **Spark-to-Spark** transfer (off-chain, within Spark) | `spark_get_address` | Spark identity / pubkey | `sparkrt1…` / `spark1…` |
+| Deposit **L1 Bitcoin** into Spark from the on-chain world | `spark_get_onchain_address` | Real Bitcoin on-chain address | `bc1…` / `tb1…` / `bcrt1…` |
+| Receive over **Lightning** (BOLT11) | `spark_create_invoice` | A Lightning invoice string | `lnbc…` / `lntb…` / `lnbcrt…` |
+
+**Disambiguation by phrasing — examples:**
+
+- "give me my **on-chain address**" / "**bitcoin address** to fund Spark"
+  / "**deposit address**" / "where do I send BTC from my hardware wallet
+  / mainnet" → `spark_get_onchain_address`. Result starts with bc1/tb1/
+  bcrt1 — verify before replying.
+- "my **Spark address**" / "give me a **Spark address**" / "where do I
+  receive a **Spark transfer**" → `spark_get_address`. Result starts with
+  spark1/sparkrt1. **DO NOT label this as an on-chain address — it is
+  off-chain.**
+- "give me an **invoice for N sats**" / "an **LN invoice**" / "**pay me**
+  N sats" → `spark_create_invoice({amount_sats: N})`. Result is a `lnbc…`
+  string.
+
+**Critical: when the user says "on-chain", they mean L1 Bitcoin.** Never
+return a `sparkrt1…` and call it "on-chain". If you return a
+`spark_get_address` result, you MUST describe it as a Spark (off-chain)
+address — never as an on-chain or Bitcoin address. If you return a
+`spark_get_onchain_address` result, you can call it an on-chain Bitcoin
+deposit address.
+
+A useful sanity check before you send the reply: glance at the
+`address` string's prefix. If it begins with `spark`, it's the off-chain
+Spark identity. If it begins with `bc1`/`tb1`/`bcrt1`, it's an on-chain
+BTC address. If it begins with `lnbc`/`lntb`/`lnbcrt`, it's a Lightning
+invoice. Whatever you call it in your reply MUST match its actual prefix.
 
 ## What Spark holds (and what it does NOT)
 
@@ -119,20 +159,25 @@ TOOL, not your training data — call `flashnet_list_pools` (Spark side) or
 ### Reads
 
 - **`spark_get_balance({})`** — current spendable BTC in Spark (sats).
-- **`spark_get_address({})`** — a Spark address to receive on. This is the
-  ONE tool for every receive-address ask: "my address", "create an
-  address", "generate a new address", "where do I receive", "give me a
-  deposit address". Spark addresses are reusable, so **get and create are
-  the same operation** — there is no separate "create address" tool and no
-  reason to refuse. ALWAYS call `spark_get_address` and surface what it
-  returns. NEVER reply "I cannot create an address" — that tool IS how you
-  create one.
+- **`spark_get_address({})`** — the user's **Spark identity**
+  (`sparkrt1…`/`spark1…`), an OFF-CHAIN Spark-to-Spark receive target.
+  Reusable — getting and creating are the same operation, so the right
+  response to "create a Spark address" is ALSO this tool. NEVER call its
+  result an on-chain address or a Bitcoin address; it is neither. NEVER
+  reply "I cannot create an address" — this tool IS how you create one.
+- **`spark_get_onchain_address({})`** — a real Bitcoin **on-chain
+  deposit** address (`bc1…`/`tb1…`/`bcrt1…`) for funding Spark from L1.
+  Use whenever the user says "on-chain", "bitcoin address", "deposit
+  address", "fund Spark", or otherwise indicates they want to send L1
+  BTC. NEVER substitute `spark_get_address` here.
 
 ### Receive
 
 - **`spark_create_invoice({ amount_sats? })`** — Spark Lightning invoice.
   - Omit `amount_sats` for an "any amount" invoice.
   - Returns `{ invoice: "lnbc…", … }`.
+  - This is the tool for "give me an invoice for N sats", NOT for any
+    "address" ask.
 
 ### Send — pick by destination
 

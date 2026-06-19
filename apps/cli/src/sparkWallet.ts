@@ -120,7 +120,25 @@ export async function buildSparkWalletToolSource(opts: { log?: (m: string) => vo
     },
     spark_get_address: async () => {
       const address = await wallet.getSparkAddress();
-      return { address, layer: 'spark', network, connected: true };
+      return {
+        address,
+        kind: 'spark_identity',
+        layer: 'spark',
+        network,
+        connected: true,
+        note: 'Off-chain Spark identity (sparkrt1…/spark1…). For receiving Spark-to-Spark transfers. NOT a Bitcoin on-chain address.',
+      };
+    },
+    spark_get_onchain_address: async () => {
+      const address = await wallet.getStaticDepositAddress();
+      return {
+        address,
+        kind: 'onchain_deposit',
+        layer: 'spark',
+        network,
+        connected: true,
+        note: 'Real Bitcoin on-chain address. Send L1 BTC here to deposit into Spark — the deposit becomes claimable once it confirms.',
+      };
     },
     spark_create_invoice: async ({ amount_sats }) => {
       const r = await wallet.createLightningInvoice({

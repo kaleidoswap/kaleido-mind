@@ -91,15 +91,28 @@ const SPARK_FAST_INTENTS: FastIntent[] = [
       /\b(balance|funds|how much (do i|have i|i have)|how much.*(do i have|in my wallet))\b/i.test(t),
   },
   {
-    name: 'address',
-    tool: 'spark_get_address',
-    // "my/receive/deposit address", and crucially "create/generate an address"
-    // — Spark addresses are reusable, so getting and creating are the same op.
-    // Fast-pathing it also kills the earlier "I cannot create an address"
-    // refusal (the model never runs).
+    // ON-CHAIN deposit address (bc1…/tb1…/bcrt1…). Matched FIRST because it's
+    // strictly more specific — phrases like "on-chain address", "deposit
+    // address", "bitcoin address" / "btc address", "fund spark", "deposit
+    // BTC" all want spark_get_onchain_address, NOT the Spark identity.
+    // Without this entry the model often answers the off-chain identity
+    // (sparkrt1…) and calls it "on-chain" — which is wrong.
+    name: 'onchain_address',
+    tool: 'spark_get_onchain_address',
     match: (t) =>
       !SPARK_ACTIONY.test(t) &&
-      /\b(receive address|deposit address|my address|an address|get .*address|where.* receive|spark address|create .*address|generate .*address|new address)\b/i.test(t),
+      /\b(on.?chain|onchain|on-chain|bitcoin address|btc address|deposit (?:address|btc|bitcoin|sats)|fund (?:spark|my wallet)|where (?:do|to|can) .*deposit)\b/i.test(t),
+  },
+  {
+    // Spark IDENTITY (sparkrt1…/spark1…). Off-chain Spark-to-Spark receive
+    // target. Only matches when on-chain phrasings are NOT present (the
+    // on-chain entry above wins by being listed first).
+    name: 'address',
+    tool: 'spark_get_address',
+    match: (t) =>
+      !SPARK_ACTIONY.test(t) &&
+      !/\b(on.?chain|onchain|on-chain|bitcoin address|btc address|deposit)\b/i.test(t) &&
+      /\b(receive address|my address|an address|get .*address|where.* receive|spark address|create .*address|generate .*address|new address)\b/i.test(t),
   },
 ];
 
@@ -111,8 +124,13 @@ function renderSparkFast(intent: string, r: any): string {
   }
   if (intent === 'address') {
     return r?.address
-      ? `Here's your Spark address:\n\n\`${r.address}\``
+      ? `Here's your Spark address (off-chain Spark identity — for Spark-to-Spark transfers, not an on-chain BTC address):\n\n\`${r.address}\``
       : 'No Spark address available right now.';
+  }
+  if (intent === 'onchain_address') {
+    return r?.address
+      ? `Here's your Spark on-chain deposit address (send Bitcoin L1 BTC here to fund Spark):\n\n\`${r.address}\``
+      : 'No Spark on-chain deposit address available right now.';
   }
   return typeof r === 'string' ? r : JSON.stringify(r);
 }
