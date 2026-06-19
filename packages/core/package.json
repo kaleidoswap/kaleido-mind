@@ -53,6 +53,7 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:live": "vitest run mcp.live",
     "lint": "eslint src",
     "bundle-skills": "node scripts/bundle-skills.mjs"
   },

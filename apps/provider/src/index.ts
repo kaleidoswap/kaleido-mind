@@ -18,6 +18,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import {
   type CatalogModel,
+  type CapabilityInfo,
   type Command,
   type Event,
   type InstalledModel,
@@ -185,6 +186,19 @@ const CATALOG: CatalogModel[] = [
 ];
 
 const MODELS_DIR = join(homedir(), '.kaleido', 'models');
+const CUSTOM_MODELS_FILE = join(MODELS_DIR, 'custom-models.json');
+const SETTINGS_FILE = join(homedir(), '.kaleido', 'mind-settings.json');
+
+interface SavedMcpServer {
+  id: string;
+  name: string;
+  url: string;
+}
+
+interface ProviderSettings {
+  disabledSkills: string[];
+  mcpServers: SavedMcpServer[];
+}
 
 // ─────────────────────────────────────────────────────────────────────
 // State
@@ -201,12 +215,109 @@ const state = {
   peers: new Map<string, PeerInfo>(),
   startedAt: null as number | null,
   tokensPerSecond: null as number | null,
+  inferenceDevice: null as 'gpu' | 'cpu' | 'mock' | null,
   mcpSource: null as ToolSource | null,            // kaleido-mcp tools, when configured
   bitrefillSource: null as ToolSource | null,      // bitrefill remote MCP, when enabled
   skills: null as SkillRegistry | null,            // Agent Skills (loaded from skills/)
   refSource: null as ToolSource | null,            // read_skill_reference (progressive disclosure)
   chatHistory: [] as Message[],                    // rolling conversation (trimmed by the Funnel)
+  chatThinking: '',                                // current turn's <think> reasoning (surfaced to the UI)
+  disabledSkills: new Set<string>(),
+  customMcpSources: new Map<string, ToolSource>(),
+  customMcpServers: new Map<string, SavedMcpServer>(),
+  customMcpErrors: new Map<string, string>(),
 };
+
+async function loadProviderSettings(): Promise<void> {
+  const fs = await import('node:fs/promises');
+  try {
+    const parsed = JSON.parse(await fs.readFile(SETTINGS_FILE, 'utf8')) as Partial<ProviderSettings>;
+    state.disabledSkills = new Set(
+      Array.isArray(parsed.disabledSkills) ? parsed.disabledSkills.filter((x): x is string => typeof x === 'string') : [],
+    );
+    for (const server of Array.isArray(parsed.mcpServers) ? parsed.mcpServers : []) {
+      if (server?.id && server?.name && server?.url) state.customMcpServers.set(server.id, server);
+    }
+  } catch {
+    // First run or malformed config: start with safe empty settings.
+  }
+}
+
+async function saveProviderSettings(): Promise<void> {
+  const fs = await import('node:fs/promises');
+  await fs.mkdir(join(homedir(), '.kaleido'), { recursive: true });
+  const settings: ProviderSettings = {
+    disabledSkills: [...state.disabledSkills],
+    mcpServers: [...state.customMcpServers.values()],
+  };
+  await fs.writeFile(SETTINGS_FILE, JSON.stringify(settings, null, 2), 'utf8');
+}
+
+function normalizeMcpUrl(raw: string): string {
+  const url = new URL(raw.trim());
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+    throw new Error('MCP URL must use http:// or https://.');
+  }
+  return url.toString();
+}
+
+async function connectCustomMcp(server: SavedMcpServer): Promise<void> {
+  const old = state.customMcpSources.get(server.id);
+  try {
+    await (old as unknown as { close?: () => Promise<void> } | undefined)?.close?.();
+  } catch {
+    // Reconnection is best-effort.
+  }
+  state.customMcpSources.delete(server.id);
+  state.customMcpErrors.delete(server.id);
+  try {
+    const { McpToolSource } = await import('@kaleidorg/mind/mcp');
+    const source = new McpToolSource({
+      id: `custom:${server.id}`,
+      transport: { kind: 'http', url: server.url },
+    });
+    await source.connect();
+    state.customMcpSources.set(server.id, source as unknown as ToolSource);
+    emit({
+      type: 'log',
+      level: 'info',
+      message: `MCP connected: ${server.name} (${source.listTools().length} tools)`,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    state.customMcpErrors.set(server.id, message);
+    emit({ type: 'log', level: 'warn', message: `MCP failed: ${server.name} — ${message}` });
+  }
+  emit({ type: 'capabilities_changed', capabilities: await capabilities() });
+}
+
+async function connectSavedMcps(): Promise<void> {
+  await Promise.all([...state.customMcpServers.values()].map(connectCustomMcp));
+}
+
+async function addMcpServer(name: string, rawUrl: string): Promise<void> {
+  const cleanName = name.trim();
+  if (!cleanName) throw new Error('MCP server name is required.');
+  const url = normalizeMcpUrl(rawUrl);
+  const id = `${cleanName}-${url}`.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const server = { id, name: cleanName, url };
+  state.customMcpServers.set(id, server);
+  await saveProviderSettings();
+  await connectCustomMcp(server);
+}
+
+async function removeMcpServer(id: string): Promise<void> {
+  const source = state.customMcpSources.get(id);
+  try {
+    await (source as unknown as { close?: () => Promise<void> } | undefined)?.close?.();
+  } catch {
+    // Removing local config must still succeed.
+  }
+  state.customMcpSources.delete(id);
+  state.customMcpServers.delete(id);
+  state.customMcpErrors.delete(id);
+  await saveProviderSettings();
+}
 
 // ─────────────────────────────────────────────────────────────────────
 // Shared @kaleido/mind engine — the SAME agentic loop the mobile app runs.
@@ -238,6 +349,11 @@ const qvacProvider: LLMProvider = createQvacProvider({
     }
   }) as Parameters<typeof createQvacProvider>[0]['cancel'],
   getModelId: () => state.qvacModelHandle,
+  // Accumulate the model's <think> reasoning for the current chat turn so the
+  // desktop UI can show it (collapsed by default). Reset per turn in handleChat.
+  onThinking: (token: string) => {
+    state.chatThinking += token;
+  },
 });
 
 /** Connect kaleido-mcp as a tool source if KALEIDO_MCP_PATH is configured. */
@@ -345,9 +461,54 @@ function snapshot(): ProviderStatusEvent {
     peers: Array.from(state.peers.values()),
     tokensPerSecond: state.tokensPerSecond,
     startedAt: state.startedAt,
+    inferenceDevice: state.inferenceDevice,
     sttReady: state.qvacSttHandle != null,
     ttsReady: state.qvacTtsHandle != null,
   };
+}
+
+async function customCatalog(): Promise<CatalogModel[]> {
+  const fs = await import('node:fs/promises');
+  try {
+    const parsed = JSON.parse(await fs.readFile(CUSTOM_MODELS_FILE, 'utf8'));
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+async function allCatalog(): Promise<CatalogModel[]> {
+  return [...CATALOG, ...(await customCatalog())];
+}
+
+async function addCustomModel(repo: string, file: string, displayName?: string): Promise<CatalogModel> {
+  const cleanRepo = repo.trim().replace(/^https?:\/\/huggingface\.co\//i, '').replace(/\/+$/, '');
+  const cleanFile = file.trim().replace(/^\/+/, '');
+  if (!/^[\w.-]+\/[\w.-]+$/.test(cleanRepo)) throw new Error('Use a Hugging Face repo like owner/model.');
+  if (!/^[\w.()+-]+\.gguf$/i.test(cleanFile)) {
+    throw new Error('Choose a top-level .gguf filename from that repo.');
+  }
+  const id = `hf-${cleanRepo}-${cleanFile}`.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const model: CatalogModel = {
+    id,
+    family: cleanRepo.split('/')[1] ?? 'custom',
+    displayName: displayName?.trim() || cleanFile.replace(/\.gguf$/i, ''),
+    quant: cleanFile.match(/(q\d(?:_[a-z0-9]+)+)/i)?.[1]?.toUpperCase() ?? 'GGUF',
+    sizeBytes: 0,
+    hfRepo: cleanRepo,
+    hfFile: cleanFile,
+    ramHintGb: 0,
+    notes: `Custom model from Hugging Face: ${cleanRepo}`,
+  };
+  const fs = await import('node:fs/promises');
+  await fs.mkdir(MODELS_DIR, { recursive: true });
+  const current = await customCatalog();
+  await fs.writeFile(
+    CUSTOM_MODELS_FILE,
+    JSON.stringify([...current.filter((m) => m.id !== id), model], null, 2),
+    'utf8',
+  );
+  return model;
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -362,10 +523,11 @@ async function listInstalledModels(): Promise<InstalledModel[]> {
   } catch {
     return [];
   }
+  const catalog = await allCatalog();
   const installed: InstalledModel[] = [];
   for (const entry of entries) {
     if (!entry.endsWith('.gguf')) continue;
-    const match = CATALOG.find((c) => c.hfFile === entry);
+    const match = catalog.find((c) => c.hfFile === entry);
     if (!match) continue;
     const path = join(MODELS_DIR, entry);
     try {
@@ -489,6 +651,7 @@ async function handleStart(modelId: string): Promise<void> {
     await new Promise((r) => setTimeout(r, 300));
     emit({ type: 'provider_loading', phase: 'model_loaded' });
     state.qvacModelHandle = `mock-${modelId}`;
+    state.inferenceDevice = 'mock';
     emit({ type: 'provider_loading', phase: 'starting_p2p' });
     await new Promise((r) => setTimeout(r, 200));
     state.publicKey = mockPubkey();
@@ -500,15 +663,27 @@ async function handleStart(modelId: string): Promise<void> {
         modelType: 'llm',
         // tools: true enables the llamacpp tool-calling grammar — required for
         // the agent to emit structured tool calls instead of talking about them.
-        modelConfig: { ctx_size: 16384, tools: true },
+        modelConfig: { ctx_size: 16384, tools: true, device: 'gpu', gpu_layers: 99 },
         onProgress: (p: { percentage: number }) => {
           diag(`load progress: ${p.percentage}%`);
           emit({ type: 'provider_loading', phase: 'loading_model', percentage: p.percentage });
         },
       });
+      state.inferenceDevice = 'gpu';
     } catch (e) {
-      emit({ type: 'provider_loading', phase: 'aborted', message: `Failed to load model: ${(e as Error).message}` });
-      throw new Error(`load failed: ${(e as Error).message}`);
+      diag(`GPU load failed, retrying on CPU: ${(e as Error).message}`);
+      emit({ type: 'log', level: 'warn', message: `Metal/GPU unavailable; retrying on CPU — ${(e as Error).message}` });
+      try {
+        state.qvacModelHandle = await sdk.loadModel({
+          modelSrc: model.path,
+          modelType: 'llm',
+          modelConfig: { ctx_size: 8192, tools: true, device: 'cpu', gpu_layers: 0 },
+        });
+        state.inferenceDevice = 'cpu';
+      } catch (cpuError) {
+        emit({ type: 'provider_loading', phase: 'aborted', message: `Failed to load model: ${(cpuError as Error).message}` });
+        throw new Error(`load failed: ${(cpuError as Error).message}`);
+      }
     }
 
     emit({ type: 'provider_loading', phase: 'model_loaded' });
@@ -584,6 +759,10 @@ async function handleStart(modelId: string): Promise<void> {
   loadSkills();
   await connectMcpIfConfigured();
   await connectBitrefillMcpIfEnabled();
+  // User-added MCP servers are optional capabilities. Reconnect them in the
+  // background so an offline/slow server can never block the model becoming
+  // usable or leave the Models screen stuck on "Loading".
+  void connectSavedMcps();
 
   if (state.publicKey) emit({ type: 'pubkey', value: state.publicKey });
   emit({ type: 'provider_loading', phase: 'ready' });
@@ -625,6 +804,14 @@ async function handleStop(): Promise<void> {
       state[key] = null;
     }
   }
+  for (const source of state.customMcpSources.values()) {
+    try {
+      await (source as unknown as { close?: () => Promise<void> }).close?.();
+    } catch {
+      /* ignore */
+    }
+  }
+  state.customMcpSources.clear();
   state.providerOn = false;
   state.publicKey = null;
   state.activeModelId = null;
@@ -635,6 +822,7 @@ async function handleStop(): Promise<void> {
   state.peers.clear();
   state.startedAt = null;
   state.tokensPerSecond = null;
+  state.inferenceDevice = null;
   emit(snapshot());
 }
 
@@ -662,7 +850,7 @@ async function handleDownload(modelId: string): Promise<void> {
     return;
   }
 
-  const model = CATALOG.find((c) => c.id === modelId);
+  const model = (await allCatalog()).find((c) => c.id === modelId);
   if (!model) throw new Error(`Unknown model: ${modelId}`);
 
   const fs = await import('node:fs');
@@ -678,7 +866,7 @@ async function handleDownload(modelId: string): Promise<void> {
   // Skip if already on disk and looks complete.
   try {
     const stat = await fsp.stat(finalPath);
-    if (stat.size >= model.sizeBytes * 0.99) {
+    if ((model.sizeBytes === 0 && stat.size > 1_000_000) || stat.size >= model.sizeBytes * 0.99) {
       diag(`already installed: ${finalPath}`);
       emit({
         type: 'download_progress',
@@ -835,7 +1023,9 @@ function requestToolConfirmation(call: {
   });
 }
 
-async function handleChat(prompt: string): Promise<{ text: string; latencyMs: number; tokensPerSecond: number }> {
+async function handleChat(
+  prompt: string,
+): Promise<{ text: string; thinking?: string; latencyMs: number; tokensPerSecond: number }> {
   const t0 = Date.now();
   if (MOCK || !sdk || !state.qvacModelHandle) {
     await new Promise((r) => setTimeout(r, 320));
@@ -856,29 +1046,39 @@ async function handleChat(prompt: string): Promise<{ text: string; latencyMs: nu
     state.mcpSource,
     state.bitrefillSource,
     state.refSource,
+    ...state.customMcpSources.values(),
   ].filter(Boolean) as ToolSource[];
 
   const funnel = new Funnel({
     provider: qvacProvider,
     tools: new ToolRegistry(sources),
-    skills: state.skills?.list() ?? [],
+    skills: (state.skills?.list() ?? []).filter((skill) => !state.disabledSkills.has(skill.name)),
     system: DESKTOP_SYSTEM,
     maxTurns: 8,
     log: (m) => diag(m),
-    // Opt-in recipes (buy-asset-channel onboarding + atomic swap) drive the
+    // Opt-in recipes (atomic swap + buy-asset-channel onboarding) drive the
     // kaleidoswap_*/rln_* MCP tools, so they fire on desktop; the generic
     // payments/receive/asset-send defaults stay registered too. A recipe only
     // fires when its deterministic extractor is confident AND the MCP registry
     // implements its final tool, so unmatched ones fall through to the agent.
+    //
+    // ORDER MATTERS: atomic swap is FIRST so a plain "buy 1 usdt" on a funded
+    // node means swap BTC→USDT over existing liquidity — NOT open a new channel.
+    // The channel-onboarding recipe still wins for explicit channel/inbound/
+    // liquidity phrasing ("buy a 100 usdt channel", "get usdt inbound"), which
+    // the atomic matcher deliberately excludes.
     recipes: [
-      buyAssetChannelRecipe,
       kaleidoswapAtomicRecipe,
+      buyAssetChannelRecipe,
       assetSendRecipe,
       paymentsRecipe,
       receiveRecipe,
     ],
   });
 
+  // Reset the per-turn reasoning buffer; the qvacProvider's onThinking appends
+  // the model's <think> tokens to state.chatThinking as it streams.
+  state.chatThinking = '';
   const res = await funnel.runTurn(prompt, {
     history: state.chatHistory,
     onConfirm: requestToolConfirmation,
@@ -891,10 +1091,53 @@ async function handleChat(prompt: string): Promise<{ text: string; latencyMs: nu
   const text = res.text || '(no response)';
   state.chatHistory.push({ role: 'user', content: prompt }, { role: 'assistant', content: text });
 
+  const latencyMs = Date.now() - t0;
+  const estimatedTokens = Math.max(1, Math.round((text.length + state.chatThinking.length) / 4));
+  state.tokensPerSecond = Number((estimatedTokens / Math.max(latencyMs / 1000, 0.001)).toFixed(1));
+  emit(snapshot());
+
   return {
     text,
-    latencyMs: Date.now() - t0,
+    thinking: state.chatThinking.trim() || undefined,
+    latencyMs,
     tokensPerSecond: state.tokensPerSecond ?? 0,
+  };
+}
+
+async function capabilities(): Promise<CapabilityInfo> {
+  const skills = state.skills?.list() ?? [];
+  const sources = [
+    state.mcpSource,
+    state.bitrefillSource,
+    state.refSource,
+    ...state.customMcpSources.values(),
+  ].filter(Boolean) as ToolSource[];
+  const tools = await new ToolRegistry(sources).listTools();
+  const mcpServers: CapabilityInfo['mcpServers'] = [];
+  for (const server of state.customMcpServers.values()) {
+    const source = state.customMcpSources.get(server.id);
+    const serverTools = source ? await source.listTools() : [];
+    mcpServers.push({
+      ...server,
+      connected: !!source,
+      toolCount: serverTools.length,
+      ...(state.customMcpErrors.has(server.id) ? { error: state.customMcpErrors.get(server.id) } : {}),
+    });
+  }
+  return {
+    skills: skills.map((skill) => ({
+      name: skill.name,
+      description: skill.description,
+      enabled: !state.disabledSkills.has(skill.name),
+      tools: skill.tools ?? [],
+    })),
+    tools: tools.map((tool) => ({
+      name: tool.name,
+      description: tool.description,
+      requiresConfirmation: !!tool.requiresConfirmation,
+    })),
+    mcpConnected: state.mcpSource != null,
+    mcpServers,
   };
 }
 
@@ -923,8 +1166,14 @@ async function dispatch(cmd: Command): Promise<void> {
         respondOk(cmd.id, await listInstalledModels());
         break;
       case 'list_catalog_models':
-        respondOk(cmd.id, CATALOG);
+        respondOk(cmd.id, await allCatalog());
         break;
+      case 'add_huggingface_model': {
+        const model = await addCustomModel(cmd.repo, cmd.file, cmd.displayName);
+        respondOk(cmd.id, model);
+        handleDownload(model.id).catch((e) => emit({ type: 'log', level: 'error', message: String(e) }));
+        break;
+      }
       case 'download_model':
         respondOk(cmd.id);              // ack immediately, progress streams as events
         handleDownload(cmd.modelId).catch((e) => emit({ type: 'log', level: 'error', message: String(e) }));
@@ -944,6 +1193,23 @@ async function dispatch(cmd: Command): Promise<void> {
       case 'chat':
         respondOk(cmd.id, await handleChat(cmd.prompt));
         break;
+      case 'list_capabilities':
+        respondOk(cmd.id, await capabilities());
+        break;
+      case 'set_skill_enabled':
+        if (cmd.enabled) state.disabledSkills.delete(cmd.name);
+        else state.disabledSkills.add(cmd.name);
+        await saveProviderSettings();
+        respondOk(cmd.id, await capabilities());
+        break;
+      case 'add_mcp_server':
+        await addMcpServer(cmd.name, cmd.url);
+        respondOk(cmd.id, await capabilities());
+        break;
+      case 'remove_mcp_server':
+        await removeMcpServer(cmd.serverId);
+        respondOk(cmd.id, await capabilities());
+        break;
       case 'tool_confirm': {
         const resolve = pendingConfirms.get(cmd.confirmId);
         if (resolve) {
@@ -962,11 +1228,8 @@ async function dispatch(cmd: Command): Promise<void> {
         break;
       case 'shutdown':
         respondOk(cmd.id);
-        await handleStop();
-        if (sdk?.close) {
-          try { await sdk.close(); } catch {}
-        }
-        process.exit(0);
+        await shutdownProvider('shutdown command');
+        return;
       default: {
         const exhaustive: never = cmd;
         respondErr((exhaustive as Command).id, `Unknown cmd: ${(exhaustive as Command).cmd}`);
@@ -992,10 +1255,25 @@ function mockPubkey(): string {
 // Boot
 // ─────────────────────────────────────────────────────────────────────
 
+let providerShuttingDown = false;
+
+async function shutdownProvider(reason: string): Promise<void> {
+  if (providerShuttingDown) return;
+  providerShuttingDown = true;
+  diag(`${reason} — shutting down`);
+  await handleStop();
+  if (sdk?.close) {
+    try { await sdk.close(); } catch {}
+  }
+  process.exit(0);
+}
+
 async function main(): Promise<void> {
+  await loadProviderSettings();
   await loadSdk();
   emit({ type: 'ready', version: '0.0.1' });
   emit(snapshot());
+  void connectSavedMcps();
 
   const rl = readline.createInterface({ input: process.stdin });
   rl.on('line', (line) => {
@@ -1009,11 +1287,12 @@ async function main(): Promise<void> {
     dispatch(cmd).catch((e) => diag(`dispatch error: ${(e as Error).message}`));
   });
 
-  process.on('SIGTERM', async () => {
-    diag('SIGTERM — shutting down');
-    await handleStop();
-    process.exit(0);
-  });
+  // The desktop app owns this process through stdin. If it is restarted,
+  // crashes, or is force-closed, the pipe closes; exit instead of leaving a
+  // QVAC worker behind holding the model lock.
+  rl.on('close', () => void shutdownProvider('stdin closed'));
+  process.on('SIGTERM', () => void shutdownProvider('SIGTERM'));
+  process.on('SIGINT', () => void shutdownProvider('SIGINT'));
 }
 
 main().catch((e) => {

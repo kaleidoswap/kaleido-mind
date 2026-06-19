@@ -19,10 +19,15 @@ export type Command =
   | { id: string; cmd: 'list_installed_models' }
   | { id: string; cmd: 'list_catalog_models' }
   | { id: string; cmd: 'download_model'; modelId: string }
+  | { id: string; cmd: 'add_huggingface_model'; repo: string; file: string; displayName?: string }
   | { id: string; cmd: 'cancel_download'; modelId: string }
   | { id: string; cmd: 'delete_model'; modelId: string }
   | { id: string; cmd: 'set_active_model'; modelId: string }
   | { id: string; cmd: 'chat'; prompt: string }
+  | { id: string; cmd: 'list_capabilities' }
+  | { id: string; cmd: 'set_skill_enabled'; name: string; enabled: boolean }
+  | { id: string; cmd: 'add_mcp_server'; name: string; url: string }
+  | { id: string; cmd: 'remove_mcp_server'; serverId: string }
   | { id: string; cmd: 'tool_confirm'; confirmId: string; approved: boolean; reason?: string }
   | { id: string; cmd: 'forget_peer'; shortKey: string }
   | { id: string; cmd: 'shutdown' };
@@ -40,10 +45,18 @@ export interface ProviderStatusEvent {
   peers: PeerInfo[];
   tokensPerSecond: number | null;
   startedAt: number | null;
+  inferenceDevice?: 'gpu' | 'cpu' | 'mock' | null;
   /** Whisper model loaded — phones can delegate speech-to-text to this provider. */
   sttReady?: boolean;
   /** TTS model loaded — phones can delegate text-to-speech to this provider. */
   ttsReady?: boolean;
+}
+
+export interface CapabilityInfo {
+  skills: Array<{ name: string; description: string; enabled: boolean; tools: string[] }>;
+  tools: Array<{ name: string; description: string; requiresConfirmation: boolean }>;
+  mcpConnected: boolean;
+  mcpServers: Array<{ id: string; name: string; url: string; connected: boolean; toolCount: number; error?: string }>;
 }
 
 export interface PeerInfo {
@@ -118,6 +131,7 @@ export type Event =
   | { type: 'peer_disconnected'; shortKey: string }
   | { type: 'download_progress'; progress: DownloadProgress }
   | { type: 'download_completed'; modelId: string }
+  | { type: 'capabilities_changed'; capabilities: CapabilityInfo }
   | { type: 'log'; level: 'debug' | 'info' | 'warn' | 'error'; message: string }
   | { type: 'response'; id: string; ok: true; data?: unknown }
   | { type: 'response'; id: string; ok: false; error: string }
