@@ -186,3 +186,44 @@ export type { Skill, SkillReference, SkillSelector } from './skills/types.js';
 
 export { TurnLogger, defaultMask } from './logger.js';
 export type { TurnLog, Device, LoggerIO, LoggerOptions } from './logger.js';
+
+// ── Autonomy (the task brain: scheduled tasks + run history + spend guardrails)
+// The operational half of the agent's memory — the state nanobot kept in
+// tasks.json + cron + run history, lifted into core (storage/timers injected).
+export {
+  InMemoryTaskStore,
+  defaultTaskSeeds,
+  TaskRunLog,
+  createTaskScheduler,
+  evaluateSpend,
+  DEFAULT_RISK_LIMITS,
+  buildTaskPrompt,
+  ZERO_ALLOCATION,
+} from './autonomy/index.js';
+export type {
+  TaskAllocation,
+  AgentTask,
+  NewTask,
+  TaskSeed,
+  TaskStore,
+  TaskStoreIO,
+  TaskStoreOptions,
+  TaskRunCost,
+  TaskStats,
+  TaskRunRecord,
+  RunLogSnapshot,
+  RunLogIO,
+  RunLogOptions,
+  TaskRunOutcome,
+  RunTask,
+  TimerHandle,
+  SchedulerOptions,
+  TaskScheduler,
+  SpendKind,
+  RiskLimits,
+  SpendAction,
+  RiskContext,
+  RiskOutcome,
+  RiskVerdict,
+  TaskPromptOptions,
+} from './autonomy/index.js';

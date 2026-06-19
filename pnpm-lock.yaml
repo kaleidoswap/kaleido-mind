@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@qvac/sdk':
-        specifier: ^0.12.0
-        version: 0.12.0(bare-buffer@3.6.1)(bare-url@2.4.3)(expo@56.0.8(@babel/core@7.29.7)(@expo/dom-webview@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(react@19.2.7))(react@19.2.7)(typescript@5.9.3))(react-native@0.85.3(@babel/core@7.29.7)(react@19.2.7))(react@19.2.7)(tsx@4.22.4)
+        specifier: ^0.13.1
+        version: 0.13.1(bare-buffer@3.6.1)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-link@3.2.2(bare-abort-controller@1.1.2)(bare-buffer@3.6.1)(bare-events@2.9.1(bare-abort-controller@1.1.2)))(bare-url@2.4.3)(expo-build-properties@0.12.5(expo@56.0.8(@babel/core@7.29.7)(@expo/dom-webview@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(react@19.2.7))(react@19.2.7)(typescript@5.9.3)))(expo-device@8.0.10(expo@56.0.8(@babel/core@7.29.7)(@expo/dom-webview@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(react@19.2.7))(react@19.2.7)(typescript@5.9.3)))(expo-file-system@56.0.7(expo@56.0.8(@babel/core@7.29.7)(@expo/dom-webview@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(react@19.2.7))(react@19.2.7)(typescript@5.9.3))(react-native@0.85.3(@babel/core@7.29.7)(react@19.2.7)))(pear-pipe@1.0.6(bare-abort-controller@1.1.2)(bare-buffer@3.6.1))(react-native-bare-kit@0.14.2(bare-abort-controller@1.1.2)(bare-buffer@3.6.1)(react-native@0.85.3(@babel/core@7.29.7)(react@19.2.7))(react@19.2.7))(tsx@4.22.4)
       require-asset:
         specifier: ^1.2.2
         version: 1.2.2(bare-url@2.4.3)
@@ -67,7 +67,7 @@ importers:
     dependencies:
       '@kaleidorg/mind':
         specifier: workspace:*
-        version: link:../../packages/core
+        version: file:packages/core(@qvac/sdk@0.13.1(bare-buffer@3.6.1)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-link@3.2.2(bare-abort-controller@1.1.2)(bare-buffer@3.6.1)(bare-events@2.9.1(bare-abort-controller@1.1.2)))(bare-url@2.4.3)(expo-build-properties@0.12.5(expo@56.0.8(@babel/core@7.29.7)(@expo/dom-webview@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(react@19.2.7))(react@19.2.7)(typescript@5.9.3)))(expo-device@8.0.10(expo@56.0.8(@babel/core@7.29.7)(@expo/dom-webview@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(react@19.2.7))(react@19.2.7)(typescript@5.9.3)))(expo-file-system@56.0.7(expo@56.0.8(@babel/core@7.29.7)(@expo/dom-webview@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(react@19.2.7))(react@19.2.7)(typescript@5.9.3))(react-native@0.85.3(@babel/core@7.29.7)(react@19.2.7)))(pear-pipe@1.0.6(bare-abort-controller@1.1.2)(bare-buffer@3.6.1))(react-native-bare-kit@0.14.2(bare-abort-controller@1.1.2)(bare-buffer@3.6.1)(react-native@0.85.3(@babel/core@7.29.7)(react@19.2.7))(react@19.2.7))(tsx@4.22.4))
       '@modelcontextprotocol/sdk':
         specifier: ^1.0.0
         version: 1.29.0(zod@4.4.3)
@@ -84,6 +84,9 @@ importers:
       typescript:
         specifier: ^5.5.0
         version: 5.9.3
+    dependenciesMeta:
+      '@kaleidorg/mind':
+        injected: true
 
   packages/core:
     devDependencies:
@@ -935,6 +938,14 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
+
+  '@kaleidorg/mind@file:packages/core':
+    resolution: {directory: packages/core, type: directory}
+    peerDependencies:
+      '@qvac/sdk': '>=0.12.2'
+    peerDependenciesMeta:
+      '@qvac/sdk':
+        optional: true
 
   '@modelcontextprotocol/sdk@1.29.0':
     resolution: {integrity: sha512-zo37mZA9hJWpULgkRpowewez1y6ML5GsXJPY8FI0tBBCd77HEvza4jDqRKOXgHNn867PVGCyTdzqpz0izu5ZjQ==}
@@ -5214,6 +5225,10 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
     optional: true
+
+  ? '@kaleidorg/mind@file:packages/core(@qvac/sdk@0.13.1(bare-buffer@3.6.1)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-link@3.2.2(bare-abort-controller@1.1.2)(bare-buffer@3.6.1)(bare-events@2.9.1(bare-abort-controller@1.1.2)))(bare-url@2.4.3)(expo-build-properties@0.12.5(expo@56.0.8(@babel/core@7.29.7)(@expo/dom-webview@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(react@19.2.7))(react@19.2.7)(typescript@5.9.3)))(expo-device@8.0.10(expo@56.0.8(@babel/core@7.29.7)(@expo/dom-webview@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(react@19.2.7))(react@19.2.7)(typescript@5.9.3)))(expo-file-system@56.0.7(expo@56.0.8(@babel/core@7.29.7)(@expo/dom-webview@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(react@19.2.7))(react@19.2.7)(typescript@5.9.3))(react-native@0.85.3(@babel/core@7.29.7)(react@19.2.7)))(pear-pipe@1.0.6(bare-abort-controller@1.1.2)(bare-buffer@3.6.1))(react-native-bare-kit@0.14.2(bare-abort-controller@1.1.2)(bare-buffer@3.6.1)(react-native@0.85.3(@babel/core@7.29.7)(react@19.2.7))(react@19.2.7))(tsx@4.22.4))'
+  : optionalDependencies:
+      '@qvac/sdk': 0.13.1(bare-buffer@3.6.1)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-link@3.2.2(bare-abort-controller@1.1.2)(bare-buffer@3.6.1)(bare-events@2.9.1(bare-abort-controller@1.1.2)))(bare-url@2.4.3)(expo-build-properties@0.12.5(expo@56.0.8(@babel/core@7.29.7)(@expo/dom-webview@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(react@19.2.7))(react@19.2.7)(typescript@5.9.3)))(expo-device@8.0.10(expo@56.0.8(@babel/core@7.29.7)(@expo/dom-webview@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(react@19.2.7))(react@19.2.7)(typescript@5.9.3)))(expo-file-system@56.0.7(expo@56.0.8(@babel/core@7.29.7)(@expo/dom-webview@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(react@19.2.7))(react@19.2.7)(typescript@5.9.3))(react-native@0.85.3(@babel/core@7.29.7)(react@19.2.7)))(pear-pipe@1.0.6(bare-abort-controller@1.1.2)(bare-buffer@3.6.1))(react-native-bare-kit@0.14.2(bare-abort-controller@1.1.2)(bare-buffer@3.6.1)(react-native@0.85.3(@babel/core@7.29.7)(react@19.2.7))(react@19.2.7))(tsx@4.22.4)
 
   '@modelcontextprotocol/sdk@1.29.0(zod@4.4.3)':
     dependencies:

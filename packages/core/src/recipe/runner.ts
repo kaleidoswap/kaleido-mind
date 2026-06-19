@@ -30,6 +30,12 @@ export interface RunRecipeOptions {
 }
 
 function toolFailure(result: unknown): string | null {
+  // A plain-string result (non-JSON MCP text, or a tool that returns prose):
+  // flag obvious error text so a failed action isn't reported as success.
+  if (typeof result === 'string') {
+    const s = result.trim();
+    return /^(error|failed|failure|exception)\b\s*[:\-]?/i.test(s) ? s : null;
+  }
   if (!result || typeof result !== 'object') return null;
   const r = result as Record<string, unknown>;
   if (typeof r.error === 'string' && r.error.trim()) return r.error;

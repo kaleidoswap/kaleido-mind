@@ -11,3 +11,5 @@ build
 coverage
 .turbo
 eval-results/
+apps/cli/*.out
+ln.html

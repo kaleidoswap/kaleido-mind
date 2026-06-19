@@ -18,6 +18,7 @@
  */
 import type * as QvacSdk from '@qvac/sdk';
 import type { LLMProvider, TurnInput, TurnOutput } from '../providers/types.js';
+import type { QvacTurnStats } from './parse.js';
 import { consumeRun } from './stream.js';
 
 type CompletionFn = typeof QvacSdk.completion;
@@ -38,16 +39,36 @@ export interface QvacProviderOptions {
   defaultTemperature?: number;
   /** Default max output tokens — caps a turn so it can't ramble. Omit for uncapped. */
   defaultMaxTokens?: number;
+  /**
+   * Cap `<think>` reasoning at this many TOKENS (not seconds — tok/s varies, and
+   * the SDK has no numeric reasoning budget). When a turn's thinking exceeds it,
+   * the run is cancelled and a short fallback is returned instead of hanging on
+   * "Thinking…". Omit for unlimited reasoning.
+   */
+  maxThinkingTokens?: number;
   /** Stream the model's `<think>` reasoning, when a host wants to surface it. */
   onThinking?: (token: string) => void;
+  /**
+   * Per-turn inference stats (real backend device + throughput), when a host
+   * wants to surface them. Fires once per turn after the `final` frame resolves.
+   */
+  onStats?: (stats: QvacTurnStats) => void;
 }
 
 /** TurnInput plus the per-call knobs the funnel/voice paths pass through. */
 export interface QvacTurnInput extends TurnInput {
   temperature?: number;
   maxTokens?: number;
+  /** Per-turn override of the thinking-token cap (see QvacProviderOptions). */
+  maxThinkingTokens?: number;
   onThinking?: (token: string) => void;
+  onStats?: (stats: QvacTurnStats) => void;
 }
+
+/** Shown when a turn is cut off because it blew its thinking-token budget. */
+const THINKING_BUDGET_FALLBACK =
+  'I spent my whole thinking budget on that one without landing an answer. ' +
+  'Try asking again, more specifically.';
 
 export function createQvacProvider(options: QvacProviderOptions): LLMProvider {
   return {
@@ -98,13 +119,28 @@ export function createQvacProvider(options: QvacProviderOptions): LLMProvider {
         ...(tools ? { tools } : {}),
       } as unknown as Parameters<CompletionFn>[0]);
 
+      const maxThinkingTokens = input.maxThinkingTokens ?? options.maxThinkingTokens;
       const result = await consumeRun(run, {
         onToken: input.onToken,
         onThinking: input.onThinking ?? options.onThinking,
+        maxThinkingTokens,
+        // Cancel the in-flight run the moment the thinking budget is blown — the
+        // SDK keeps generating otherwise. Fire-and-forget; `final` then resolves.
+        onThinkingBudgetExceeded: () => {
+          void options.cancel({ requestId: run.requestId }).catch(() => {});
+        },
       });
 
+      // Surface the real per-turn inference stats (backend device + throughput).
+      if (result.stats) (input.onStats ?? options.onStats)?.(result.stats);
+
+      // A turn cut off mid-reasoning has no visible answer — return a short note
+      // instead of an empty bubble so the agentic loop ends cleanly.
+      const text =
+        result.text || (result.thinkingBudgetExceeded ? THINKING_BUDGET_FALLBACK : result.text);
+
       return {
-        text: result.text,
+        text,
         rawContent: result.rawContent,
         toolCalls: result.toolCalls,
         requestId: result.requestId,

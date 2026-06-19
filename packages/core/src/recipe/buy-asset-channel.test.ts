@@ -54,6 +54,11 @@ describe('extractBuyAsset (deterministic Tier-0)', () => {
   it('handles comma grouping in the amount', () => {
     expect(extractBuyAsset('buy 1,000 usdt')).toEqual({ asset: 'USDT', asset_amount: 1000 });
   });
+  it('parses an article/filler between the verb and amount ("buy a 100 usdt channel")', () => {
+    expect(extractBuyAsset('buy a 100 usdt channel')).toEqual({ asset: 'USDT', asset_amount: 100 });
+    expect(extractBuyAsset('get a 100 usdt inbound channel')).toEqual({ asset: 'USDT', asset_amount: 100 });
+    expect(extractBuyAsset('buy and sell 100 usdt')).toBeNull(); // "and" is not filler
+  });
   it('null for a swap (a named source asset ⇒ swap owns it)', () => {
     expect(extractBuyAsset('buy 0.001 btc with usdt')).toBeNull();
     expect(extractBuyAsset('swap 10 usdt for btc')).toBeNull();

@@ -27,6 +27,7 @@ export {
   finalToTurn,
   type QvacFinalLike,
   type ParsedTurn,
+  type QvacTurnStats,
 } from './parse.js';
 
 export {

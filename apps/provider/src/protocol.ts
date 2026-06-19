@@ -8,6 +8,122 @@
 // stderr is reserved for human-readable diagnostics, never parsed.
 
 // ───────────────────────────────────────────────────────────────────────
+// Autonomy wire types — the agent's task brain (mirror @kaleidorg/mind/autonomy).
+// Structurally compatible with the core types so the sidecar passes core
+// objects straight onto the wire; the frontend mirrors these in api/mind.ts.
+// ───────────────────────────────────────────────────────────────────────
+
+export interface TaskAllocationWire {
+  btcSat: number;
+  usdt: number;
+  xaut: number;
+}
+
+export interface AgentTaskWire {
+  id: string;
+  name: string;
+  description: string;
+  skill: string;
+  scheduleSec: number;
+  runOnStartup: boolean;
+  allocation: TaskAllocationWire;
+  enabled: boolean;
+  createdAt: number;
+  lastRunAt: number | null;
+}
+
+export interface RiskLimitsWire {
+  dryRun: boolean;
+  minBtcReserveSat: number;
+  stopLossBtcSat: number;
+  maxSpendUsd: number;
+  autoApproveUnderUsd: number;
+  maxOpenOrders?: number;
+}
+
+/** Target portfolio weights the rebalance loop steers toward (percent). */
+export interface PortfolioTargetsWire {
+  btcPct: number;
+  usdtPct: number;
+  xautPct: number;
+  /** Rebalance only when an asset drifts more than this many points from target. */
+  driftThresholdPct: number;
+}
+
+export interface TaskRunCostWire {
+  usd: number;
+  inputTokens: number;
+  outputTokens: number;
+}
+
+export interface TaskStatsWire {
+  runs: number;
+  errors: number;
+  lastRunAt: number | null;
+  lastDurationMs: number | null;
+  lastToolCalls: number | null;
+  lastError: string | null;
+  lastText: string | null;
+}
+
+export interface TaskRunRecordWire {
+  taskId: string;
+  taskName: string;
+  startedAt: number;
+  durationMs: number;
+  toolCalls: number;
+  ok: boolean;
+  error: string | null;
+  text: string;
+  cost: TaskRunCostWire;
+}
+
+export interface AgentStateWire {
+  schedulerRunning: boolean;
+  risk: RiskLimitsWire;
+  targets: PortfolioTargetsWire;
+  /** Generation token caps (0 ⇒ uncapped). */
+  generation: { maxThinkingTokens: number; maxOutputTokens: number };
+  recent: TaskRunRecordWire[];
+  stats: Record<string, TaskStatsWire>;
+  cumulative: TaskRunCostWire;
+}
+
+/** What `create_task` accepts. */
+export interface NewTaskInput {
+  name: string;
+  description: string;
+  skill: string;
+  scheduleSec: number;
+  enabled: boolean;
+  runOnStartup?: boolean;
+  allocation?: TaskAllocationWire;
+  id?: string;
+}
+
+/** What `update_task` patches (all optional; id/createdAt immutable). */
+export interface TaskPatchInput {
+  name?: string;
+  description?: string;
+  skill?: string;
+  scheduleSec?: number;
+  runOnStartup?: boolean;
+  allocation?: TaskAllocationWire;
+  enabled?: boolean;
+}
+
+/** A one-tap starter the chat renders as a card on the empty/first screen. */
+export interface SuggestedAction {
+  id: string;
+  /** 'wallet' | 'node' | 'portfolio' | 'trade' — the UI maps these to an icon. */
+  icon: string;
+  title: string;
+  subtitle: string;
+  /** The chat prompt this card sends when tapped. */
+  prompt: string;
+}
+
+// ───────────────────────────────────────────────────────────────────────
 // Commands (Tauri → sidecar)
 // ───────────────────────────────────────────────────────────────────────
 
@@ -19,17 +135,32 @@ export type Command =
   | { id: string; cmd: 'list_installed_models' }
   | { id: string; cmd: 'list_catalog_models' }
   | { id: string; cmd: 'download_model'; modelId: string }
-  | { id: string; cmd: 'add_huggingface_model'; repo: string; file: string; displayName?: string }
+  | { id: string; cmd: 'add_huggingface_model'; url: string; displayName?: string }
   | { id: string; cmd: 'cancel_download'; modelId: string }
   | { id: string; cmd: 'delete_model'; modelId: string }
   | { id: string; cmd: 'set_active_model'; modelId: string }
-  | { id: string; cmd: 'chat'; prompt: string }
+  | { id: string; cmd: 'chat'; prompt: string; chatId?: string }
+  | { id: string; cmd: 'add_skill'; name: string; description: string; instructions: string; tools?: string[] }
+  | { id: string; cmd: 'delete_skill'; name: string }
   | { id: string; cmd: 'list_capabilities' }
   | { id: string; cmd: 'set_skill_enabled'; name: string; enabled: boolean }
   | { id: string; cmd: 'add_mcp_server'; name: string; url: string }
   | { id: string; cmd: 'remove_mcp_server'; serverId: string }
   | { id: string; cmd: 'tool_confirm'; confirmId: string; approved: boolean; reason?: string }
   | { id: string; cmd: 'forget_peer'; shortKey: string }
+  // ── Autonomy (the agent's task brain) ──
+  | { id: string; cmd: 'list_tasks' }
+  | { id: string; cmd: 'create_task'; task: NewTaskInput }
+  | { id: string; cmd: 'update_task'; taskId: string; patch: TaskPatchInput }
+  | { id: string; cmd: 'delete_task'; taskId: string }
+  | { id: string; cmd: 'run_task'; taskId: string }
+  | { id: string; cmd: 'set_scheduler'; running: boolean }
+  | { id: string; cmd: 'get_agent_state' }
+  | { id: string; cmd: 'set_risk_limits'; limits: Partial<RiskLimitsWire> }
+  | { id: string; cmd: 'set_portfolio_targets'; targets: Partial<PortfolioTargetsWire> }
+  // Token caps (0 ⇒ uncapped); read live each turn — no restart needed.
+  | { id: string; cmd: 'set_generation_limits'; maxThinkingTokens?: number; maxOutputTokens?: number }
+  | { id: string; cmd: 'get_suggested_actions' }
   | { id: string; cmd: 'shutdown' };
 
 // ───────────────────────────────────────────────────────────────────────
@@ -131,7 +262,19 @@ export type Event =
   | { type: 'peer_disconnected'; shortKey: string }
   | { type: 'download_progress'; progress: DownloadProgress }
   | { type: 'download_completed'; modelId: string }
+  | { type: 'chat_thinking_delta'; chatId: string; delta: string }
+  | { type: 'chat_content_delta'; chatId: string; delta: string }
+  | { type: 'chat_tool_call'; chatId: string; id: string; name: string; arguments: Record<string, unknown>; requiresConfirmation?: boolean }
+  | { type: 'chat_tool_result'; chatId: string; id: string; name: string; arguments: Record<string, unknown>; ok: boolean; result: unknown }
   | { type: 'capabilities_changed'; capabilities: CapabilityInfo }
+  // ── Autonomy events ──
+  | { type: 'tasks_changed'; tasks: AgentTaskWire[] }
+  | { type: 'task_run_started'; taskId: string; taskName: string; at: number }
+  | { type: 'task_run_finished'; record: TaskRunRecordWire }
+  | { type: 'agent_state'; state: AgentStateWire }
+  // A proactive, unprompted message from the agent (e.g. a task result/alert)
+  // the desktop appends to the chat as an assistant turn.
+  | { type: 'agent_message'; text: string; taskId?: string; taskName?: string; at: number }
   | { type: 'log'; level: 'debug' | 'info' | 'warn' | 'error'; message: string }
   | { type: 'response'; id: string; ok: true; data?: unknown }
   | { type: 'response'; id: string; ok: false; error: string }
