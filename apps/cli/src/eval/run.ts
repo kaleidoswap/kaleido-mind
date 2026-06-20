@@ -18,10 +18,12 @@ import {
   InProcessToolSource,
   SkillRegistry,
   type InProcessTool,
+  type InferenceMetrics,
   type LLMProvider,
   type ToolDef,
   type ToolSource,
 } from '@kaleidorg/mind';
+import { createQvacProvider } from '@kaleidorg/mind/qvac';
 import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
 import { getModel } from '../catalog.js';
 import { modelPath, isInstalled } from '../models.js';
@@ -90,6 +92,7 @@ export interface CaseResult {
   toolCalls: { name: string; arguments: Record<string, unknown> }[];
   text: string;
   latencyMs: number;
+  inference?: InferenceMetrics;
   applicable: boolean;
   selectionOk: boolean;
   argsOk: boolean;
@@ -148,14 +151,16 @@ export async function runCase(provider: LLMProvider, model: string, mech: Mechan
   const t0 = Date.now();
   let toolCalls: { name: string; arguments: Record<string, unknown> }[] = [];
   let text = '';
+  let inference: InferenceMetrics | undefined;
   try {
     const out = await provider.runTurn({ system, messages: [{ role: 'user', content: c.prompt }], tools: toolDefs });
     toolCalls = (out.toolCalls ?? []).map((t) => ({ name: t.name, arguments: t.arguments }));
     text = out.text ?? '';
+    inference = out.inference;
   } catch { /* record empty */ }
   const latencyMs = Date.now() - t0;
   const g = grade(c, toolCalls, text);
-  return { model, mechanism: mech, repeat, case: c, toolCalls, text, latencyMs, ...g };
+  return { model, mechanism: mech, repeat, case: c, toolCalls, text, latencyMs, inference, ...g };
 }
 
 // ── Mock provider (offline harness checks) ───────────────────────────────────
@@ -198,18 +203,12 @@ export async function loadProvider(modelId: string, sdk: any): Promise<{ provide
   const id: string = await sdk.loadModel({ modelSrc: modelPath(m), modelType: 'llm', modelConfig: { ctx_size: 8192, tools: true, ...(sdk.VERBOSITY ? { verbosity: sdk.VERBOSITY.ERROR } : {}) } });
   return {
     modelId: id,
-    provider: {
-      name: 'qvac',
-      async runTurn(input) {
-        const history = input.system ? [{ role: 'system', content: input.system }, ...input.messages] : input.messages;
-        const run: any = sdk.completion({
-          modelId: id, history, stream: false, temperature: 0, max_tokens: 512,
-          tools: input.tools.map((t) => ({ name: t.name, description: t.description, parameters: t.parameters })),
-        });
-        const final = await run.final;
-        const raw = final?.contentText || '';
-        return { text: raw.replace(/<think>[\s\S]*?<\/think>/g, '').trim(), rawContent: final?.raw?.fullText ?? raw, toolCalls: (final?.toolCalls || []).map((x: any) => ({ id: x.id, name: x.name, arguments: x.arguments ?? {} })) };
-      },
-    },
+    provider: createQvacProvider({
+      completion: sdk.completion,
+      cancel: sdk.cancel ?? (async () => {}),
+      getModelId: () => id,
+      defaultTemperature: 0,
+      defaultMaxTokens: 512,
+    }),
   };
 }

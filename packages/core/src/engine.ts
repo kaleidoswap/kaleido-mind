@@ -16,6 +16,7 @@
 
 import type { ConfirmDecision, Message, ToolResult } from './types.js';
 import type { LLMProvider } from './providers/types.js';
+import type { InferenceMetrics } from './providers/types.js';
 import type { ToolRegistry } from './tools/registry.js';
 
 export interface EngineOptions {
@@ -59,6 +60,8 @@ export interface AgenticResult {
   messages: Message[];
   /** Wall-clock duration of the whole agentic run, ms. */
   latencyMs: number;
+  /** One receipt per model call in this agentic run. */
+  inference: InferenceMetrics[];
 }
 
 export class Engine {
@@ -90,6 +93,7 @@ export class Engine {
     let lastRequestId: string | undefined;
     let finalText = '';
     let turns = 0;
+    const inference: InferenceMetrics[] = [];
 
     for (let turn = 1; turn <= maxTurns; turn++) {
       turns = turn;
@@ -104,6 +108,7 @@ export class Engine {
       });
 
       lastRequestId = out.requestId;
+      if (out.inference) inference.push(out.inference);
       if (out.requestId) opts.onStart?.(out.requestId, turn);
       finalText = (out.text || '').trim();
 
@@ -155,6 +160,7 @@ export class Engine {
       requestId: lastRequestId,
       messages: history,
       latencyMs: Date.now() - startedAt,
+      inference,
     };
   }
 

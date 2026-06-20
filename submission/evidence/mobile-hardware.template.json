@@ -1,0 +1,12 @@
+{
+  "schema": "kaleidomind.hardware.v1",
+  "surface": "mobile",
+  "device": "iPhone 17",
+  "iosVersion": "CAPTURE_ON_DEVICE",
+  "storageCapacityGb": "CAPTURE_ON_DEVICE",
+  "availableStorageGb": "CAPTURE_BEFORE_RUN",
+  "model": "CAPTURE_MODEL_FILENAME_AND_SHA256",
+  "power": "CAPTURE_BATTERY_PERCENT_AND_CHARGING_STATE",
+  "thermalState": "CAPTURE_BEFORE_AND_AFTER",
+  "notes": "Replace every CAPTURE_* field during the physical-device evidence run."
+}

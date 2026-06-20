@@ -30,9 +30,16 @@ import { wilson, ciLabel, differ } from './eval/stats.js';
 import { renderAnsi, summaryTable } from './eval/report.js';
 import { type Mechanism } from './eval/run.js';
 import { join } from 'node:path';
+import { writeFileSync } from 'node:fs';
 
 const hw = () => ({ ramBytes: os.totalmem(), cores: os.cpus().length, arch: os.arch(), platform: os.platform() });
 const ramGb = (b: number) => (b / 1024 ** 3).toFixed(1);
+
+function writeRawEvalEvidence(value: unknown): void {
+  const path = process.env.KALEIDO_EVAL_JSON;
+  if (!path) return;
+  writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
+}
 
 // The QVAC SDK is chatty on stdout ([sdk:…], [request-lifecycle], Bare worker
 // chatter). Drop those so the CLI shows only our own output (progress, matrix).
@@ -257,6 +264,7 @@ async function main(): Promise<void> {
       ui(c.dim(`\nlegend: % reliable = cases passing ALL repeats · bars = trial pass-rate · decision-only (graded the 1st tool call)`));
       ui(c.dim(`timing: total ${(run.timing.totalMs / 1000).toFixed(1)}s · load ${Object.entries(run.timing.perModelLoadMs).map(([m, ms]) => `${m} ${(ms / 1000).toFixed(1)}s`).join(' · ')}`));
       ui(`\n${c.green('✓')} report → ${c.bold(join(run.dir, 'report.html'))}  ${c.dim('· or: kaleido-mind serve')}`);
+      writeRawEvalEvidence({ schema: 'kaleidomind.eval.capability.v1', ...run });
       return;
     }
     case 'serve': {
@@ -282,6 +290,7 @@ async function main(): Promise<void> {
           if (s !== last) { last = s; if (process.stderr.isTTY) process.stderr.write('\r' + s.padEnd(58)); else if (p.done % 3 === 0) process.stderr.write(s + '\n'); }
         },
       });
+      writeRawEvalEvidence({ schema: 'kaleidomind.eval.multistep.v1', ...res });
       if (process.stderr.isTTY) process.stderr.write('\r' + ' '.repeat(60) + '\r');
       ui('');
       for (const model of [...new Set(res.cells.map((x) => x.model))]) {
@@ -313,6 +322,7 @@ async function main(): Promise<void> {
           if (s !== last) { last = s; if (process.stderr.isTTY) process.stderr.write('\r' + s.padEnd(58)); else if (p.done % 3 === 0) process.stderr.write(s + '\n'); }
         },
       });
+      writeRawEvalEvidence({ schema: 'kaleidomind.eval.safety.v1', ...res });
       if (process.stderr.isTTY) process.stderr.write('\r' + ' '.repeat(60) + '\r');
       ui('');
       for (const model of [...new Set(res.cells.map((x) => x.model))]) {
@@ -339,6 +349,7 @@ async function main(): Promise<void> {
         mock, models: valOf('--models')?.split(','), repeats: numOf('--repeats') ?? 3,
         onProgress: (p) => { const s = `${Math.round((p.done / p.total) * 100)}% · ${p.done}/${p.total} · ${p.model}`; if (s !== last) { last = s; if (process.stderr.isTTY) process.stderr.write('\r' + s.padEnd(50)); else if (p.done % 5 === 0) process.stderr.write(s + '\n'); } },
       });
+      writeRawEvalEvidence({ schema: 'kaleidomind.eval.quality.v1', ...res });
       if (process.stderr.isTTY) process.stderr.write('\r' + ' '.repeat(52) + '\r');
       ui('');
       for (const cell of res.cells) {

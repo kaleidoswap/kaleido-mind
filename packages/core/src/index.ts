@@ -17,7 +17,12 @@ export type {
   ConfirmDecision,
 } from './types.js';
 
-export type { LLMProvider, TurnInput, TurnOutput } from './providers/types.js';
+export type {
+  InferenceMetrics,
+  LLMProvider,
+  TurnInput,
+  TurnOutput,
+} from './providers/types.js';
 
 export type { ToolSource } from './tools/source.js';
 export { InProcessToolSource } from './tools/in-process.js';
@@ -186,6 +191,20 @@ export type { Skill, SkillReference, SkillSelector } from './skills/types.js';
 
 export { TurnLogger, defaultMask } from './logger.js';
 export type { TurnLog, Device, LoggerIO, LoggerOptions } from './logger.js';
+
+export {
+  EVIDENCE_SCHEMA,
+  EvidenceRecorder,
+  sanitizeEvidenceEvent,
+} from './evidence.js';
+export type {
+  EvidenceEvent,
+  EvidenceEventType,
+  EvidenceInput,
+  EvidenceIO,
+  EvidenceRecorderOptions,
+  EvidenceSurface,
+} from './evidence.js';
 
 // ── Autonomy (the task brain: scheduled tasks + run history + spend guardrails)
 // The operational half of the agent's memory — the state nanobot kept in

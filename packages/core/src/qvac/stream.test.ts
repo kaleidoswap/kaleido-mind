@@ -101,4 +101,15 @@ describe('consumeRun', () => {
     await consumeRun(run, { onToken: (t) => tokens.push(t) });
     expect(tokens).toEqual(['hi']);
   });
+
+  it('measures first-token and total completion timing', async () => {
+    const ticks = [100, 145, 190];
+    const out = await consumeRun(
+      fakeRun([{ type: 'thinkingDelta', text: 'plan' }, { type: 'contentDelta', text: 'answer' }], {
+        contentText: 'answer',
+      }),
+      { now: () => ticks.shift() ?? 190 },
+    );
+    expect(out.timing).toEqual({ ttftMs: 45, durationMs: 90 });
+  });
 });

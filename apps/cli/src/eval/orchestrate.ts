@@ -100,7 +100,8 @@ export async function runEvalSuite(opts: EvalOpts): Promise<EvalRun> {
   const agg = aggregate(results);
   const ts = Date.now();
   const timing: EvalTiming = { totalMs: ts - startedAt, perModelLoadMs };
-  const dir = await writeReport(join(MIND_DIR, 'logs'), results, agg, {
+  const reportRoot = process.env.KALEIDO_EVAL_REPORT_DIR ?? join(MIND_DIR, 'logs');
+  const dir = await writeReport(reportRoot, results, agg, {
     ts, dataset: cases.length, repeats, mode: opts.mock ? 'mock' : 'qvac',
     hardware: `${os.platform()}/${os.arch()} ${ramGb(os.totalmem())}GB`, timing,
   });

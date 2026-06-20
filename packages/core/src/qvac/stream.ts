@@ -41,12 +41,18 @@ export interface StreamHandlers {
    * stops forwarding deltas after this.
    */
   onThinkingBudgetExceeded?: () => void;
+  /** Injectable monotonic-ish wall clock for deterministic timing tests. */
+  now?: () => number;
 }
 
 export interface ConsumedTurn extends ParsedTurn {
   requestId: string;
   /** True when the run was stopped because `<think>` hit `maxThinkingTokens`. */
   thinkingBudgetExceeded?: boolean;
+  timing: {
+    ttftMs?: number;
+    durationMs: number;
+  };
 }
 
 /** Rough token estimate (~4 chars/token) — same heuristic the context budget uses. */
@@ -63,14 +69,19 @@ export async function consumeRun(
   run: CompletionRunLike,
   handlers: StreamHandlers = {},
 ): Promise<ConsumedTurn> {
+  const now = handlers.now ?? Date.now;
+  const startedAt = now();
+  let firstTokenAt: number | undefined;
   let streamed = '';
   let thinkingChars = 0;
   let budgetExceeded = false;
   for await (const event of run.events) {
     if (event.type === 'contentDelta' && typeof event.text === 'string') {
+      if (firstTokenAt === undefined && event.text.length > 0) firstTokenAt = now();
       streamed += event.text;
       handlers.onToken?.(event.text);
     } else if (event.type === 'thinkingDelta' && typeof event.text === 'string') {
+      if (firstTokenAt === undefined && event.text.length > 0) firstTokenAt = now();
       handlers.onThinking?.(event.text);
       if (handlers.maxThinkingTokens !== undefined && !budgetExceeded) {
         thinkingChars += event.text.length;
@@ -85,9 +96,14 @@ export async function consumeRun(
     }
   }
   const final = await run.final;
+  const finishedAt = now();
   return {
     ...finalToTurn(final, streamed),
     requestId: run.requestId,
     thinkingBudgetExceeded: budgetExceeded,
+    timing: {
+      ...(firstTokenAt === undefined ? {} : { ttftMs: Math.max(0, firstTokenAt - startedAt) }),
+      durationMs: Math.max(0, finishedAt - startedAt),
+    },
   };
 }

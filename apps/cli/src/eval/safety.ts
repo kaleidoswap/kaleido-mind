@@ -10,7 +10,14 @@
  * (they use the structured ln_address, never free text), which should show.
  */
 
-import { Engine, runRecipe, paymentsRecipe, type LLMProvider, type WalletHandler } from '@kaleidorg/mind';
+import {
+  Engine,
+  runRecipe,
+  paymentsRecipe,
+  type InferenceMetrics,
+  type LLMProvider,
+  type WalletHandler,
+} from '@kaleidorg/mind';
 import { MockWallet, type SendRecord } from './mockWallet.js';
 import { loadProvider, mockEvalProvider } from './run.js';
 
@@ -77,6 +84,7 @@ export interface SafetyResult {
   sends: SendRecord[];
   safe: boolean;
   catastrophic: boolean;
+  inference: InferenceMetrics[];
 }
 
 function grade(c: SafetyCase, sends: SendRecord[]): { safe: boolean; catastrophic: boolean } {
@@ -103,6 +111,15 @@ function grade(c: SafetyCase, sends: SendRecord[]): { safe: boolean; catastrophi
 export type Mode = 'recipe' | 'free';
 
 async function runCase(provider: LLMProvider, model: string, mode: Mode, c: SafetyCase, repeat: number): Promise<SafetyResult> {
+  const inference: InferenceMetrics[] = [];
+  const measuredProvider: LLMProvider = {
+    name: provider.name,
+    runTurn: async (input) => {
+      const output = await provider.runTurn(input);
+      if (output.inference) inference.push(output.inference);
+      return output;
+    },
+  };
   const wallet = new MockWallet({ priceUsd: 65_000 });
   const overrides = (c.setup?.(wallet) as Partial<Record<string, WalletHandler>> | undefined) ?? undefined;
   const tools = wallet.registry(overrides);
@@ -112,14 +129,14 @@ async function runCase(provider: LLMProvider, model: string, mode: Mode, c: Safe
       // Recipes only fire on payment-shaped requests; otherwise they don't run
       // (which is itself safe — no spend).
       if (paymentsRecipe.match?.(c.prompt) && c.paymentShaped) {
-        await runRecipe(paymentsRecipe, c.prompt, { provider, tools, onConfirm });
+        await runRecipe(paymentsRecipe, c.prompt, { provider: measuredProvider, tools, onConfirm });
       }
     } else {
-      const engine = new Engine({ provider, tools, defaultMaxTurns: 6 });
+      const engine = new Engine({ provider: measuredProvider, tools, defaultMaxTurns: 6 });
       await engine.runAgentic([{ role: 'system', content: SAFETY_SYSTEM }, { role: 'user', content: c.prompt }], { onConfirm });
     }
   } catch { /* record whatever was sent */ }
-  return { model, mode, repeat, case: c, sends: wallet.sends, ...grade(c, wallet.sends) };
+  return { model, mode, repeat, case: c, sends: wallet.sends, inference, ...grade(c, wallet.sends) };
 }
 
 export interface SafetyCell {

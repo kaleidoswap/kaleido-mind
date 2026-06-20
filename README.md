@@ -1,8 +1,8 @@
 # kaleido-mind
 
-> Sovereign AI for sovereign money. A local-first agent for Bitcoin, Lightning and RGB — voice-first, multi-L2, fully private. Runs on your phone and laptop, never in someone else's cloud.
+> Sovereign AI for sovereign money. A local-first agent for Bitcoin, Lightning and RGB — voice-first, multi-L2 and designed for user-controlled hardware.
 
-Built for the [QVAC Hackathon](https://dorahacks.io/hackathon/qvac-unleach-edge-ai-i/) by the [KaleidoSwap](https://kaleidoswap.com) team. All inference runs through the [QVAC SDK](https://www.npmjs.com/package/@qvac/sdk) — no cloud, no API keys.
+Built for the [QVAC Hackathon](https://dorahacks.io/hackathon/qvac-unleach-edge-ai-i/) by the [KaleidoSwap](https://kaleidoswap.com) team. LLM, embedding, STT and TTS inference runs through the [QVAC SDK](https://www.npmjs.com/package/@qvac/sdk), locally or on an explicitly paired user-controlled desktop. Optional wallet, trading, commerce and merchant-discovery tools may use the network and are [fully disclosed](./submission/remote-apis.yaml).
 
 ---
 
@@ -36,19 +36,20 @@ user request
 - **Tool sources** — in-process, MCP, CLI, and L402 (pay-per-call HTTP) — all behind one `ToolRegistry`.
 - **Memory + RAG** — long-term recall and injected-embedding retrieval (Bitcoin copilot, wallet history, BTC-map discovery), all through QVAC. Memory **consolidates** near-duplicates (cheap on-device dedup, optional LLM merge on capable/delegated devices) so it doesn't bloat.
 - **Hardware-aware** — picks the model + context budget for the device; P2P delegation for heavy work.
-- **A real eval** — three benchmark tracks with confidence intervals (below).
+- **A reproducible eval** — four benchmark tracks with raw logs, seeded datasets and confidence intervals.
 
 ## The eval (what makes the claims defensible)
 
-Three tracks via the `kaleido-mind` CLI, each with K repeats + Wilson 95% CIs. See [docs/BENCHMARK.md](./docs/BENCHMARK.md).
+Four tracks via the `kaleido-mind` CLI, each with repeated runs and raw evidence. See [docs/BENCHMARK.md](./docs/BENCHMARK.md).
 
 | Track | Question | Command |
 |---|---|---|
 | **A — capability** | One request → right tool + args? (fc / mcp / skill) | `kaleido-mind eval` |
 | **B — planning** | A chain → right final action? **recipe vs free-agentic** | `kaleido-mind multistep` |
 | **C — safety** | Right amounts, injection resistance, refusal? | `kaleido-mind safety` |
+| **D — quality** | Correct, grounded and concise explanations? | `kaleido-mind quality` |
 
-The headline result (from **preliminary** runs — small author-written sets, dev hardware, not independently verified; see [limitations](./docs/BENCHMARK.md#limitations--threats-to-validity)): **recipes resolve ≈100% at ~0 inferences across every model**, while free-agentic success drops on small models — directional evidence that the funnel is the right call for mobile. Track C is adversarial (prompt-injection via poisoned tool data, unit-error catastrophes) and caught a real 1000× under-send bug in development.
+The repository does not treat remembered or manually transcribed scores as evidence. Run `pnpm submission:evidence` to produce timestamped, unedited artifacts for the exact commit and hardware being submitted.
 
 ## Repo layout
 
@@ -77,8 +78,9 @@ npx tsx src/index.ts setup            # guided first-run: pick + pull a model
 npx tsx src/index.ts run "what's my balance?"
 npx tsx src/index.ts skills           # list installed skills
 
-# Benchmarks (all tracks; --mock runs offline with no model)
-./run-all-evals.sh                    # C → B → A, sequential (QVAC single-lock)
+# Benchmarks (all tracks; --mock validates the harness without a model)
+pnpm submission:evidence:mock
+pnpm submission:evidence             # C → B → D → A, sequential
 npx tsx src/index.ts multistep --mock # quick offline sanity check
 
 # Or exercise the engine directly against a model
@@ -95,10 +97,11 @@ pnpm play "pay bob 3 eur"
 
 ## Hackathon tracks
 
-- 📱 **Mobile** — the `rate` wallet runs the agent fully on-device (Qwen3-0.6B), funnel + recipes + confirm gate.
-- 🖥️ **General Purpose** — the desktop sidecar with a namespaced MCP, CLI, and bigger models for delegation.
-- 🩺 **Psy / MedPsy** — QVAC MedPsy models run through the same engine (benchmarked in Track A).
-- 🛠️ **Tinkerer** — the three-track eval harness, the Recipe engine, and the wallet tool contract are all reusable.
+- 📱 **Mobile** — the public `Rate` wallet runs the funnel, recipes, voice and confirmation gate on a physical iPhone through QVAC.
+- 🖥️ **General Purpose** — the desktop sidecar runs the same engine and can serve as a paired, user-controlled QVAC inference peer.
+
+The eval harness can test other QVAC-compatible GGUF models, but the submission
+does not claim the Psy or Tinkerer tracks.
 
 ## License
 

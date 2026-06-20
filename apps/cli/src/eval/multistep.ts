@@ -21,6 +21,7 @@ import {
   paymentsRecipe,
   swapRecipe,
   type LLMProvider,
+  type InferenceMetrics,
   type WalletHandler,
   type Recipe,
 } from '@kaleidorg/mind';
@@ -111,6 +112,7 @@ export interface MultiResult {
   finalArgs: Record<string, unknown> | null;
   inferences: number;
   latencyMs: number;
+  inference: InferenceMetrics[];
   gateFired: boolean;
   coverage: boolean;
   order: boolean;
@@ -149,7 +151,16 @@ function grade(c: MultiCase, calls: string[], finalArgs: Record<string, unknown>
 
 async function runCase(provider: LLMProvider, model: string, mode: Mode, c: MultiCase, repeat: number): Promise<MultiResult> {
   let inferences = 0;
-  const counting: LLMProvider = { name: provider.name, runTurn: (i) => { inferences++; return provider.runTurn(i); } };
+  const inference: InferenceMetrics[] = [];
+  const counting: LLMProvider = {
+    name: provider.name,
+    runTurn: async (i) => {
+      inferences++;
+      const output = await provider.runTurn(i);
+      if (output.inference) inference.push(output.inference);
+      return output;
+    },
+  };
   const tools = stubRegistry();
   const calls: string[] = [];
   let finalArgs: Record<string, unknown> | null = null;
@@ -182,7 +193,7 @@ async function runCase(provider: LLMProvider, model: string, mode: Mode, c: Mult
   } catch { /* record what we have */ }
   const latencyMs = Date.now() - t0;
   const g = grade(c, calls, finalArgs, gateFired);
-  return { model, mode, repeat, case: c, calls, finalArgs, inferences, latencyMs, gateFired, ...g };
+  return { model, mode, repeat, case: c, calls, finalArgs, inferences, latencyMs, inference, gateFired, ...g };
 }
 
 // ── Suite ────────────────────────────────────────────────────────────────────
