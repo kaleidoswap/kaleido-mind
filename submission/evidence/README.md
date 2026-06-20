@@ -32,8 +32,11 @@ pnpm submission:evidence -- --help
 pnpm submission:evidence -- --models qwen3-0.6b,qwen3-4b --repeats 5 --per 3
 ```
 
-Real evidence runs refuse a dirty worktree so the manifest maps to one exact
-commit. Use `--allow-dirty` only for a rehearsal; never submit that output.
+Real evidence runs refuse uncommitted changes to the CLI, core, runner or
+package manifests so benchmark behavior maps to one exact commit. Unrelated
+worktree changes are allowed but listed in `manifest.json`.
+Use `--allow-dirty` only for a rehearsal when benchmark inputs themselves are
+modified; never submit that output.
 
 Real results must state the exact commit, model filename/hash, OS, device,
 temperature, context size and thermal/power conditions. Never replace a failed

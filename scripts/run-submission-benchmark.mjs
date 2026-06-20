@@ -74,12 +74,33 @@ const qvacVersion =
 
 const git = (...args) =>
   spawnSync('git', args, { cwd: root, encoding: 'utf8' }).stdout?.trim() || 'unknown';
-const dirty = git('status', '--porcelain') !== '';
+const dirtyPaths = git('status', '--porcelain')
+  .split('\n')
+  .filter(Boolean)
+  .map((line) => line.slice(3).split(' -> ').at(-1))
+  .filter(Boolean);
+const benchmarkInputPrefixes = [
+  'apps/cli/',
+  'packages/core/',
+  'scripts/run-submission-benchmark.mjs',
+  'package.json',
+  'pnpm-lock.yaml',
+  'pnpm-workspace.yaml',
+];
+const dirtyBenchmarkInputs = dirtyPaths.filter((path) =>
+  benchmarkInputPrefixes.some((prefix) => path === prefix || path.startsWith(prefix)),
+);
+const dirty = dirtyPaths.length > 0;
 
-if (!mock && dirty && !allowDirty) {
-  console.error('Refusing a real evidence run from a dirty worktree.');
-  console.error('Commit the submission first, or use --allow-dirty for a rehearsal.');
+if (!mock && dirtyBenchmarkInputs.length && !allowDirty) {
+  console.error('Refusing a real evidence run with uncommitted benchmark inputs:');
+  console.error(dirtyBenchmarkInputs.map((path) => `- ${path}`).join('\n'));
+  console.error('Commit those files first, or use --allow-dirty for a rehearsal.');
   process.exit(2);
+}
+if (!mock && dirtyPaths.length && !dirtyBenchmarkInputs.length) {
+  console.warn('Continuing with unrelated worktree changes (recorded in manifest):');
+  console.warn(dirtyPaths.map((path) => `- ${path}`).join('\n'));
 }
 
 function macHardware() {
@@ -144,6 +165,8 @@ const manifest = {
     commit: git('rev-parse', 'HEAD'),
     branch: git('branch', '--show-current'),
     dirty,
+    dirtyPaths,
+    benchmarkInputsDirty: dirtyBenchmarkInputs.length > 0,
   },
   software: {
     node: process.version,
