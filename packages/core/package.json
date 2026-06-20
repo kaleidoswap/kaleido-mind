@@ -66,8 +66,8 @@
     }
   },
   "devDependencies": {
-    "@qvac/sdk": "^0.13.1",
-    "@types/node": "^20.0.0",
-    "vitest": "^1.6.0"
+    "@qvac/sdk": "^0.13.5",
+    "@types/node": "^20.19.43",
+    "vitest": "^1.6.1"
   }
 }

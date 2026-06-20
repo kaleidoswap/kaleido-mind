@@ -17,8 +17,8 @@
     "@qvac/sdk": "*"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
-    "tsx": "^4.7.0",
-    "typescript": "^5.5.0"
+    "@types/node": "^20.19.43",
+    "tsx": "^4.22.4",
+    "typescript": "^5.9.3"
   }
 }

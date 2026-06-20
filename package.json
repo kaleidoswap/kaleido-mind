@@ -17,12 +17,12 @@
   },
   "packageManager": "pnpm@9.0.0",
   "devDependencies": {
-    "@types/node": "^20.0.0",
-    "tsx": "^4.7.0",
-    "typescript": "^5.5.0"
+    "@types/node": "^20.19.43",
+    "tsx": "^4.22.4",
+    "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@qvac/sdk": "^0.13.1",
+    "@qvac/sdk": "^0.13.5",
     "require-asset": "^1.2.2"
   }
 }
