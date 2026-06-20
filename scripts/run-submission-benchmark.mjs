@@ -74,7 +74,11 @@ const qvacVersion =
 
 const git = (...args) =>
   spawnSync('git', args, { cwd: root, encoding: 'utf8' }).stdout?.trim() || 'unknown';
-const dirtyPaths = git('status', '--porcelain')
+const gitStatus = spawnSync('git', ['status', '--porcelain'], {
+  cwd: root,
+  encoding: 'utf8',
+}).stdout ?? '';
+const dirtyPaths = gitStatus
   .split('\n')
   .filter(Boolean)
   .map((line) => line.slice(3).split(' -> ').at(-1))
