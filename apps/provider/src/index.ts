@@ -453,7 +453,43 @@ const channelOrderRecipe = remapRecipeTools(kaleidoswapChannelOrderRecipe, {
   lsp_create_order: 'kaleidoswap_lsp_create_order',
 });
 
+// A pasted BOLT11 → pay it (confirmation-gated; rln_pay_invoice is a spend).
+// Without this, "pay this lnbc…" fell to the agentic loop and a small model
+// narrated "use your wallet" instead of calling the pay tool.
+const BOLT11_RE = /\b(ln(?:bc|tb|bcrt|sb)[0-9][a-z0-9]{40,})\b/i;
+const payInvoiceRecipe: Recipe = {
+  name: 'pay-invoice',
+  description: 'Pay a pasted BOLT11 Lightning invoice from the node.',
+  match: (t) => BOLT11_RE.test(t),
+  triggers: [],
+  slots: [
+    { name: 'invoice', type: 'string', description: 'BOLT11 invoice (lnbc…/lntb…/lnbcrt…)', required: true },
+  ],
+  extract: (t) => {
+    const m = t.match(BOLT11_RE);
+    return m ? { invoice: m[1] } : null;
+  },
+  confident: (s) => typeof s.invoice === 'string' && s.invoice.length > 30,
+  steps: [],
+  final: {
+    tool: 'rln_pay_invoice',
+    args: (ctx) => ({ invoice: String(ctx.slots.invoice) }),
+  },
+  confirm: (ctx) => {
+    const inv = String(ctx.slots.invoice);
+    return `Pay this Lightning invoice?\n\n${inv.slice(0, 32)}…${inv.slice(-8)}`;
+  },
+  summary: (_ctx, result) => {
+    const r = result as { payment_hash?: string; status?: string } | undefined;
+    return r?.payment_hash
+      ? `Paid ✅ — ${r.status ?? 'sent'} (payment ${r.payment_hash.slice(0, 12)}…).`
+      : 'Payment submitted — ask me to check its status.';
+  },
+};
+
 const DESKTOP_RECIPES = [
+  // Pasted-invoice pay first, so a bolt11 in the message always pays it.
+  payInvoiceRecipe,
   kaleidoswapAtomicRecipe,
   buyAssetChannelRecipe,
   // After buy-asset-channel (so "buy 100 USDT" stays an asset-channel buy),
