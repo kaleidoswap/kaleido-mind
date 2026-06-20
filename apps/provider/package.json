@@ -1,7 +1,6 @@
 {
   "name": "@kaleidorg/mind-provider",
-  "version": "0.0.1",
-  "private": true,
+  "version": "0.6.0",
   "description": "Node sidecar that runs @qvac/sdk startQVACProvider() and speaks JSON-RPC over stdio. Spawned by desktop-app/src-tauri/src/mind.rs.",
   "license": "Apache-2.0",
   "type": "module",
@@ -9,14 +8,26 @@
   "bin": {
     "kaleido-mind-provider": "./dist/index.js"
   },
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kaleidoswap/kaleido-mind",
+    "directory": "apps/provider"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@kaleidorg/mind": "workspace:*",
+    "@kaleidorg/mind": "workspace:^",
     "@modelcontextprotocol/sdk": "^1.29.0"
   },
   "peerDependencies": {
