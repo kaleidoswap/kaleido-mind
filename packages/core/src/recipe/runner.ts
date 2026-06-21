@@ -104,11 +104,21 @@ export async function extractSlots(
     'Do not call any other tool and do not add commentary.',
   ].filter(Boolean).join(' ');
 
-  const out = await provider.runTurn({
-    system,
-    messages: [{ role: 'user', content: text }],
-    tools: [extractTool],
-  });
+  let out: Awaited<ReturnType<LLMProvider['runTurn']>>;
+  try {
+    out = await provider.runTurn({
+      system,
+      messages: [{ role: 'user', content: text }],
+      tools: [extractTool],
+    });
+  } catch (err) {
+    // The forced extraction inference failed — on small on-device models this
+    // happens when the model rambles and the request is cancelled/times out.
+    // Don't fail a request the deterministic regex already understood: if det
+    // produced valid slots, degrade gracefully to them rather than erroring.
+    if (detValid) return { slots: det, inferences: 0 };
+    throw err;
+  }
 
   const call = out.toolCalls?.find((c) => c.name === EXTRACT_TOOL) ?? out.toolCalls?.[0];
   let llmSlots: Record<string, unknown> = (call?.arguments as Record<string, unknown>) ?? {};

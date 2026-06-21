@@ -128,6 +128,34 @@ describe('kaleidoswapAtomicRecipe — forceModelExtract (less deterministic slot
     // (The stub quote in the test is for USDT→BTC, but the point is the inference count + that it ran.)
     expect(captured[0].name).toBe('kaleidoswap_get_quote');
   });
+
+  it('degrades to the deterministic extractor when the forced inference is cancelled', async () => {
+    // On small on-device models the forced extraction inference can ramble and
+    // be cancelled/time out. That must NOT fail a request the regex understood:
+    // "buy 1 usdt" should still run the full chain off the deterministic slots.
+    const captured: { name: string; args: any }[] = [];
+    const tools = buildStubs(captured);
+    const cancellingProvider: LLMProvider = {
+      name: 'cancelling',
+      runTurn: async () => {
+        throw new Error('Inference request "abc" was cancelled before it could complete');
+      },
+    };
+
+    const res = await runRecipe(kaleidoswapAtomicRecipe, 'buy 1 usdt', {
+      provider: cancellingProvider,
+      tools,
+      onConfirm: async () => ({ approved: true }),
+    });
+
+    expect(res.status).toBe('done');
+    expect(res.inferences).toBe(0); // model never produced — fell back to regex
+    // Buy-side: amount on the receive leg, layers derived.
+    expect(captured.find((c) => c.name === 'kaleidoswap_get_quote')!.args).toEqual({
+      from_asset_id: 'BTC', to_asset_id: 'USDT',
+      from_layer: 'BTC_LN', to_layer: 'RGB_LN', to_amount: 1,
+    });
+  });
 });
 
 describe('kaleidoswapAtomicRecipe — full chain', () => {
