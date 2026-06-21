@@ -216,6 +216,7 @@
     <nav class="nav-links">
       <a href="#architecture">Architecture</a>
       <a href="#inside">Inside</a>
+      <a href="#mobile">Mobile</a>
       <a href="#evidence">Evidence</a>
       <a href="#roadmap">Roadmap</a>
       <a class="ghbtn" href="https://github.com/kaleidoswap/kaleido-mind" target="_blank" rel="noopener">GitHub</a>
@@ -310,7 +311,7 @@
         <div class="card">
           <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#15E99A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
           <h3>Desktop app</h3>
-          <p>A Tauri desktop wallet that hosts the engine as a namespaced MCP + CLI, manages the full QVAC model lifecycle, and doubles as the paired inference peer a phone can delegate heavy work to over P2P.</p>
+          <p>An RGB/Lightning trading wallet whose funds live on a local <strong>RGB Lightning Node (RLN)</strong> the app runs and unlocks. It hosts the engine as a namespaced MCP + CLI, drives the node via <code>rln_*</code> tools, manages the QVAC model lifecycle, and doubles as the paired inference peer a phone delegates to.</p>
         </div>
         <div class="card">
           <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#15E99A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/></svg></div>
@@ -359,6 +360,43 @@
 <span class="g">kaleido-mind</span> <span class="w">run --rag</span>       <span class="c"># chat with the full local agent</span>
 <span class="g">kaleido-mind</span> <span class="w">product-eval</span>    <span class="c"># production-funnel scenarios, outcome-graded</span>
 <span class="g">kaleido-mind</span> <span class="w">serve</span>           <span class="c"># browse + trigger eval runs in a dashboard</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- MOBILE -->
+  <section class="block" id="mobile">
+    <div class="wrap">
+      <div class="kicker">Mobile track — Rate</div>
+      <h2>Built to run on a phone</h2>
+      <p class="section-lede">On Rate the whole agent lives on the device — inference, voice and wallet execution. The hard part isn't features, it's making a tiny model reliable in a small window. Here's how.</p>
+      <div class="grid grid-2">
+        <div class="card">
+          <span class="pill">On-device execution</span>
+          <h3>WDK adapters, no round-trip</h3>
+          <p>The model emits a canonical tool call — <code>spark_*</code>, <code>rln_*</code>, <code>arkade_*</code> — and the host runs it through an in-process <strong>WDK adapter</strong> against the right L2. Tool execution is local code; only the chain backends are network calls.</p>
+        </div>
+        <div class="card violet">
+          <span class="pill">Voice mode</span>
+          <h3>A real hands-free loop</h3>
+          <p>QVAC's Whisper VAD transcribes raw mic frames, the engine reasons and picks tools, and on-device TTS speaks the reply — <em>listening → thinking → speaking</em>, mic-gated during playback. The confirm readback is spoken, so you hear a spend before it happens.</p>
+        </div>
+        <div class="card">
+          <span class="pill">Brain modes</span>
+          <h3>Local, delegated, or auto</h3>
+          <p><strong>Auto</strong> delegates heavy turns to a paired desktop when reachable; <strong>Always local</strong> never leaves the phone (privacy-max); <strong>Always desktop</strong> prefers the bigger model. A separate thinking-mode control trades latency for depth.</p>
+        </div>
+        <div class="card">
+          <span class="pill">Small-window optimization</span>
+          <h3>Make every token count</h3>
+          <p>A hardware-aware <strong>context budget</strong> orders and trims what enters the prompt, and <strong>tool-output compression</strong> dedupes and elides bulky tool results before they re-enter history — dependency-free, on-device, and never worse than the original.</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:20px">
+        <span class="pill">On-device model catalog</span>
+        <h3>One model loaded at a time, sized to the phone</h3>
+        <p>A curated, tiered catalog: <strong>Qwen3 1.7B</strong> for older phones, <strong>Qwen3 4B</strong> as the default on iPhone&nbsp;15+/Pixel&nbsp;8+, <strong>Qwen3 8B</strong> for flagships with ≥8&nbsp;GB RAM, plus function-call-tuned options (xLAM-2-3B, Hermes-3-Llama-3.2-3B). RAM allows one local model at a time; heavier reasoning runs on a paired desktop. Whisper handles speech-to-text. <span style="color:var(--muted)">Next: cross-turn prompt-cache reuse, retrieval-gated tool exposure, and fine-tuned small models that need fewer tokens per call.</span></p>
       </div>
     </div>
   </section>
@@ -441,6 +479,15 @@
           <p>Turn the evidence harness into a flywheel: sanitized trace collection, synthetic wallet-task datasets, fine-tuned small models, and a benchmark matrix across function-calling vs. MCP vs. skills and reasoning modes (no-think / short CoT / extended thinking) — so the Funnel routes each request to the cheapest mode that still succeeds.</p>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- HONEST BOUNDARY -->
+  <section class="block" id="boundary">
+    <div class="wrap">
+      <div class="kicker">Honest boundary</div>
+      <h2>What's hackathon work</h2>
+      <p class="section-lede">Both apps existed before the hackathon — as <em>wallets</em>, with no AI, agent or voice features. The desktop app was already an RGB/Lightning trading wallet over a local RLN node; Rate was already a multi-L2 mobile wallet. The entire intelligence layer is the hackathon contribution: the KaleidoMind engine, QVAC inference and P2P delegation, the tiered funnel, recipes, skills, the on-device voice loop, safety gates, the evidence telemetry and eval harness — and the integration that gives both wallets their agentic and voice capabilities. Public repository history is the audit trail for that line.</p>
     </div>
   </section>
 

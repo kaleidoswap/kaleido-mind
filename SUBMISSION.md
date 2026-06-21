@@ -36,14 +36,55 @@ listed in [`submission/remote-apis.yaml`](./submission/remote-apis.yaml).
 
 ## Product surfaces
 
-- **General Purpose:** desktop sidecar with local QVAC model lifecycle,
-  namespaced tools, skills, recipes, telemetry and phone pairing.
-- **Mobile:** Rate on a physical iPhone, with local QVAC inference, Whisper,
-  TTS, wallet tool execution and structural confirmation.
+- **General Purpose — desktop app:** an RGB/Lightning trading wallet whose funds
+  live on a local **RGB Lightning Node (RLN)** the app runs and unlocks. The
+  desktop hosts the engine as a namespaced MCP + CLI, drives the node through
+  `rln_*` tools, manages the QVAC model lifecycle, and can act as the paired
+  inference peer a phone delegates to.
+- **Mobile — Rate:** a React Native wallet on a physical iPhone. The agent runs
+  fully on-device (QVAC LLM + Whisper STT + neural TTS) and executes wallet
+  actions through **in-process WDK adapters** — no server round-trip for tool
+  execution. Voice mode is a real hands-free loop; see below.
 - **Agent:** an autonomous optimizer surface — risk-gated task scheduling, run
   logs and optimizer skills — that drives the same engine without a human in
   every loop, while spend-capable tools still pause for host confirmation.
 - **Engine:** `@kaleidorg/mind`, shared by all surfaces.
+
+## On mobile: WDK execution, voice and modes
+
+**WDK execution (on-device).** On Rate the model never reaches a wallet backend
+directly. It emits a canonical tool call (`spark_*`, `rln_*`, `arkade_*`); the
+host runs it through an in-process **WDK adapter** that talks to the right L2 —
+Spark, RGB Lightning, or Arkade — and returns a contract-shaped result. Tool
+*execution* is local code; only the underlying chain/wallet backends are
+network services (disclosed in [`submission/remote-apis.yaml`](./submission/remote-apis.yaml)).
+
+**Voice mode.** A genuine hands-free conversation loop: QVAC's Whisper VAD
+session transcribes raw-PCM mic frames, the engine reasons and selects tools,
+and on-device QVAC TTS (with a system-voice fallback) speaks the reply —
+*listening → thinking → speaking → listening*, mic-gated during playback. The
+confirm readback is spoken, so a spend is heard before it happens.
+
+**Brain modes.** A top-level toggle: **Auto** (delegates per query when a paired
+desktop is reachable and the work is heavy), **Always local** (privacy-max,
+never delegates), **Always desktop** (delegate when reachable, fall back to
+local). A separate **thinking-mode** control trades latency for reasoning depth.
+
+**Models.** A curated on-device catalog tiered **Mobile** / **Mobile-XL**: Qwen3
+1.7B (older phones), Qwen3 4B (default on iPhone 15+/Pixel 8+), Qwen3 8B
+(flagships with ≥8 GB RAM), plus function-call-tuned options (xLAM-2-3B,
+Hermes-3-Llama-3.2-3B). One local model is loaded at a time (RAM); heavier
+models run on a paired desktop via delegation. Whisper handles STT.
+
+**Optimizations for a small window.** Three layers keep tiny models viable:
+the **funnel** (most requests cost 0–1 inferences), a **hardware-aware context
+budget** (`ContextBuilder` assembles identity → instructions → skill → memory →
+knowledge and trims to a token budget sized from `ctx_size`), and **tool-output
+compression** (`compressToolResult`, a dependency-free on-device crusher that
+dedupes/elides bulky tool results before they re-enter history, and never
+regresses). Follow-ups: cross-turn KV/prompt-cache reuse, retrieval-gated tool
+exposure (inject only relevant tool schemas), dynamic context sizing, and
+fine-tuned small models that need fewer tokens per call.
 
 ## Auditable evidence
 
@@ -116,11 +157,18 @@ The hackathon build is a foundation. Two tracks follow directly from it:
 
 ## Prior work
 
-KaleidoSwap, Rate and parts of the wallet/tooling stack pre-date the hackathon.
-Hackathon work includes the shared KaleidoMind engine, QVAC inference and P2P
-delegation, tiered funnel, recipes, skills, safety gates, evidence telemetry,
-evaluation harness and cross-surface integration. Public repository history is
-the audit trail.
+Both consumer apps **pre-date the hackathon as wallets** and shipped with **no
+AI, agent or voice features**: the desktop app was already an RGB/Lightning
+trading wallet over a local RLN node, and Rate was already a multi-L2 mobile
+wallet. KaleidoSwap and parts of the wallet/tooling stack are likewise prior
+work.
+
+Hackathon work is the entire intelligence layer: the shared **KaleidoMind**
+engine, QVAC LLM/embedding/STT/TTS inference and P2P delegation, the tiered
+funnel, recipes, skills, the on-device voice loop, safety/confirmation gates,
+evidence telemetry, the evaluation harness, and the integration that gives both
+pre-existing wallets their agentic and voice capabilities. Public repository
+history is the audit trail for this boundary.
 
 ## Team
 
