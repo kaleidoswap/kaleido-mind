@@ -1,8 +1,8 @@
 # kaleido-mind
 
-> Sovereign AI for sovereign money. A local-first agent for Bitcoin, Lightning and RGB — voice-first, multi-L2, fully private. Runs on your phone and laptop, never in someone else's cloud.
+> Sovereign AI for sovereign money. A local-first agent for Bitcoin, Lightning and RGB — voice-first, multi-L2 and designed for user-controlled hardware.
 
-Built for the [QVAC Hackathon](https://dorahacks.io/hackathon/qvac-unleach-edge-ai-i/) by the [KaleidoSwap](https://kaleidoswap.com) team. All inference runs through the [QVAC SDK](https://www.npmjs.com/package/@qvac/sdk) — no cloud, no API keys.
+Built for the [QVAC Hackathon](https://dorahacks.io/hackathon/qvac-unleach-edge-ai-i/) by the [KaleidoSwap](https://kaleidoswap.com) team. LLM, embedding, STT and TTS inference runs through the [QVAC SDK](https://www.npmjs.com/package/@qvac/sdk), locally or on an explicitly paired user-controlled desktop. Optional wallet, trading, commerce and merchant-discovery tools may use the network and are [fully disclosed](./submission/remote-apis.yaml).
 
 ---
 
@@ -12,7 +12,7 @@ Built for the [QVAC Hackathon](https://dorahacks.io/hackathon/qvac-unleach-edge-
 
 Three ideas make that work:
 
-1. **One tool contract, many transports.** The model sees identical tool names + schemas everywhere; only execution differs (mobile = in-process WDK adapters, desktop = a namespaced MCP + CLI, eval = stubs). So skills are portable and benchmarks are honest.
+1. **One tool contract, many transports.** The model sees identical tool names + schemas everywhere; only execution differs (mobile = in-process WDK adapters, desktop = a namespaced MCP + CLI, eval = contract-faithful stateful simulators). So skills are portable and benchmarks are honest.
 2. **Recipes, not planning (with hybrid model use).** A small model can't reliably plan *"pay bob 3 EUR"* (resolve → price → convert → confirm → send). So a **skill carries the plan**; the model only fills the slots (~1 inference instead of 5, reliable on a 0.6B). For complex recipes (e.g. atomic swaps) slot extraction can be forced through the model for better natural-language understanding, with deterministic fallbacks to protect precision and reliability. Discovery skills (e.g. merchant-finder) are intentionally more model-leveraging.
 3. **A tiered funnel.** Most requests never reach the model at all.
 
@@ -36,19 +36,28 @@ user request
 - **Tool sources** — in-process, MCP, CLI, and L402 (pay-per-call HTTP) — all behind one `ToolRegistry`.
 - **Memory + RAG** — long-term recall and injected-embedding retrieval (Bitcoin copilot, wallet history, BTC-map discovery), all through QVAC. Memory **consolidates** near-duplicates (cheap on-device dedup, optional LLM merge on capable/delegated devices) so it doesn't bloat.
 - **Hardware-aware** — picks the model + context budget for the device; P2P delegation for heavy work.
-- **A real eval** — three benchmark tracks with confidence intervals (below).
+- **A product-level eval** — realistic scenarios run through the production
+  Funnel with canonical contracts, confirmation decisions, observable side
+  effects and raw local-inference receipts.
 
 ## The eval (what makes the claims defensible)
 
-Three tracks via the `kaleido-mind` CLI, each with K repeats + Wilson 95% CIs. See [docs/BENCHMARK.md](./docs/BENCHMARK.md).
+The headline benchmark is [Product Evaluation v3](./docs/EVALUATION_V3.md).
+Twelve realistic wallet, trading, node, discovery and safety scenarios run
+through the same production Funnel used by hosts. The harness binds canonical
+tool contracts to deterministic stateful services and grades the complete
+outcome: route, typed arguments, confirmation behavior, side effects and final
+response.
 
-| Track | Question | Command |
-|---|---|---|
-| **A — capability** | One request → right tool + args? (fc / mcp / skill) | `kaleido-mind eval` |
-| **B — planning** | A chain → right final action? **recipe vs free-agentic** | `kaleido-mind multistep` |
-| **C — safety** | Right amounts, injection resistance, refusal? | `kaleido-mind safety` |
+```bash
+kaleido-mind product-eval --models qwen3-0.6b
+```
 
-The headline result (from **preliminary** runs — small author-written sets, dev hardware, not independently verified; see [limitations](./docs/BENCHMARK.md#limitations--threats-to-validity)): **recipes resolve ≈100% at ~0 inferences across every model**, while free-agentic success drops on small models — directional evidence that the funnel is the right call for mobile. Track C is adversarial (prompt-injection via poisoned tool data, unit-error catastrophes) and caught a real 1000× under-send bug in development.
+The older capability, planning, adversarial and raw-knowledge tracks remain
+available as explicit engineering diagnostics. They are not combined into the
+headline product-reliability score. See [docs/BENCHMARK.md](./docs/BENCHMARK.md).
+
+The repository does not treat remembered or manually transcribed scores as evidence. Run `pnpm submission:evidence` to produce timestamped, unedited artifacts for the exact commit and hardware being submitted.
 
 ## Repo layout
 
@@ -58,7 +67,7 @@ kaleido-mind/
 │   └── core/            @kaleidorg/mind — the engine
 │       └── src/{wallet,recipe,fastpath,skills,tools,memory,rag,context,knowledge,providers}
 ├── apps/
-│   ├── cli/             @kaleidorg/mind-cli (`kaleido-mind`) — model mgmt + the 3 eval tracks
+│   ├── cli/             @kaleidorg/mind-cli (`kaleido-mind`) — model mgmt + product/diagnostic evals
 │   ├── provider/        desktop sidecar (Tauri) — namespaced MCP + CLI host
 │   └── playground/      exercise the engine against a real local model, no phone needed
 └── docs/                ARCHITECTURE · ROADMAP · BENCHMARK · MEMORY_RAG · INTEGRATION · …
@@ -77,9 +86,12 @@ npx tsx src/index.ts setup            # guided first-run: pick + pull a model
 npx tsx src/index.ts run "what's my balance?"
 npx tsx src/index.ts skills           # list installed skills
 
-# Benchmarks (all tracks; --mock runs offline with no model)
-./run-all-evals.sh                    # C → B → A, sequential (QVAC single-lock)
-npx tsx src/index.ts multistep --mock # quick offline sanity check
+# Product benchmark (--mock validates orchestration and grading without QVAC)
+pnpm submission:evidence:mock
+pnpm submission:evidence
+
+# Optional legacy research diagnostics
+pnpm submission:evidence -- --tracks safety,multistep,quality,capability
 
 # Or exercise the engine directly against a model
 pnpm play "pay bob 3 eur"
@@ -90,15 +102,17 @@ pnpm play "pay bob 3 eur"
 - [ARCHITECTURE.md](./docs/ARCHITECTURE.md) — cross-surface design + the tool contract
 - [ROADMAP.md](./docs/ROADMAP.md) — the master plan + phase status
 - [BENCHMARK.md](./docs/BENCHMARK.md) — eval methodology, results, limitations
+- [EVALUATION_V3.md](./docs/EVALUATION_V3.md) — product scenario schema and grading
 - [MEMORY_RAG.md](./docs/MEMORY_RAG.md) — memory + retrieval
 - [INTEGRATION.md](./docs/INTEGRATION.md) — embedding the engine in a host
 
 ## Hackathon tracks
 
-- 📱 **Mobile** — the `rate` wallet runs the agent fully on-device (Qwen3-0.6B), funnel + recipes + confirm gate.
-- 🖥️ **General Purpose** — the desktop sidecar with a namespaced MCP, CLI, and bigger models for delegation.
-- 🩺 **Psy / MedPsy** — QVAC MedPsy models run through the same engine (benchmarked in Track A).
-- 🛠️ **Tinkerer** — the three-track eval harness, the Recipe engine, and the wallet tool contract are all reusable.
+- 📱 **Mobile** — the public `Rate` wallet runs the funnel, recipes, voice and confirmation gate on a physical iPhone through QVAC.
+- 🖥️ **General Purpose** — the desktop sidecar runs the same engine and can serve as a paired, user-controlled QVAC inference peer.
+
+The eval harness can test other QVAC-compatible GGUF models, but the submission
+does not claim the Psy or Tinkerer tracks.
 
 ## License
 

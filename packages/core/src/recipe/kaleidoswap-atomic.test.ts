@@ -83,6 +83,10 @@ describe('kaleidoswapAtomicRecipe — selection', () => {
     expect(kaleidoswapAtomicRecipe.match!('swap 100000 sats to usdt')).toBe(true);
     expect(kaleidoswapAtomicRecipe.match!('convert btc to xaut')).toBe(true);
   });
+  it('does not turn portfolio review or explicit no-trade language into a swap', () => {
+    expect(kaleidoswapAtomicRecipe.match!('review my portfolio allocation but do not trade')).toBe(false);
+    expect(kaleidoswapAtomicRecipe.match!('analyze my holdings without trading')).toBe(false);
+  });
 });
 
 describe('kaleidoswapAtomicRecipe — forceModelExtract (less deterministic slot parsing)', () => {

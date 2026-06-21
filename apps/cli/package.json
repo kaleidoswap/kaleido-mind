@@ -13,6 +13,8 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "eval": "tsx src/index.ts eval",
+    "eval:product": "tsx src/index.ts product-eval",
+    "eval:product:mock": "tsx src/index.ts product-eval --mock",
     "eval:all": "bash run-eval.sh",
     "serve": "tsx src/index.ts serve"
   },

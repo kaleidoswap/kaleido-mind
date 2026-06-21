@@ -22,6 +22,22 @@ export interface TurnInput {
   signal?: AbortSignal;
 }
 
+/** Judge-auditable metrics for one provider inference request. */
+export interface InferenceMetrics {
+  requestId?: string;
+  backendDevice?: 'cpu' | 'gpu';
+  promptTokens?: number;
+  completionTokens?: number;
+  totalTokens?: number;
+  /** Milliseconds from completion() start to the first generated delta. */
+  ttftMs?: number;
+  /** End-to-end completion duration measured by the host. */
+  durationMs: number;
+  tokensPerSecond?: number;
+  stopReason?: string;
+  status: 'completed' | 'cancelled' | 'truncated' | 'failed';
+}
+
 export interface TurnOutput {
   /** Cleaned assistant content for display. */
   text: string;
@@ -36,6 +52,8 @@ export interface TurnOutput {
   toolCalls: ToolCall[];
   /** Provider request id, for cancellation. */
   requestId?: string;
+  /** Optional local-inference receipt. Hosts may persist this as JSONL evidence. */
+  inference?: InferenceMetrics;
 }
 
 export interface LLMProvider {

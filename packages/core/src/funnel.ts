@@ -32,6 +32,7 @@ import type { Recipe } from './recipe/types.js';
 import { SkillRegistry } from './skills/registry.js';
 import type { Skill } from './skills/types.js';
 import type { LLMProvider } from './providers/types.js';
+import type { InferenceMetrics } from './providers/types.js';
 import type { Retriever } from './rag/retriever.js';
 import type { ConfirmDecision, Message, ToolResult } from './types.js';
 
@@ -124,6 +125,8 @@ export interface FunnelResult {
   /** Agentic tier only: executed tool calls + reasoning turns. */
   toolCalls?: ToolResult[];
   turns?: number;
+  /** Agentic tier only: one local-inference receipt per model call. */
+  inference?: InferenceMetrics[];
 }
 
 export interface FunnelOptions {
@@ -390,6 +393,13 @@ export class Funnel {
       onToolResult: cbs.onToolResult,
       onConfirm: cbs.onConfirm,
     });
-    return { text: res.text ?? '', tier: 'agentic', route: skill?.name, toolCalls: res.toolCalls, turns: res.turns };
+    return {
+      text: res.text ?? '',
+      tier: 'agentic',
+      route: skill?.name,
+      toolCalls: res.toolCalls,
+      turns: res.turns,
+      inference: res.inference,
+    };
   }
 }

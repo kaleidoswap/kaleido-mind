@@ -1,0 +1,75 @@
+schema: kaleidomind.remote-apis.v1
+policy:
+  ai_inference: "All LLM, embedding, STT and TTS inference uses @qvac/sdk."
+  network_tools: "Ordinary network-backed wallet and discovery tools are optional and explicitly disclosed below."
+services:
+  - name: Hugging Face Hub
+    category: model-download
+    endpoints:
+      - "https://huggingface.co/**"
+    purpose: Download user-selected GGUF model weights before offline inference.
+    data_sent: Model identifier and standard HTTP metadata; no prompts or wallet keys.
+    authentication: None for public models.
+    optional: true
+    used_for_ai_inference: false
+
+  - name: KaleidoSwap maker
+    category: trading
+    endpoints:
+      - "Operator-configured KaleidoSwap maker HTTP endpoint"
+    purpose: Fetch assets/pairs, request executable quotes, place orders and query atomic-swap status.
+    data_sent: Pair, amount, quote/order identifiers and protocol messages; never seed phrases.
+    authentication: Order-scoped access token where required.
+    optional: true
+    used_for_ai_inference: false
+
+  - name: RGB Lightning Node
+    category: wallet-node
+    endpoints:
+      - "User-configured local or remote RLN endpoint"
+    purpose: Read balances/channels, create invoices and execute explicitly confirmed payments or RGB operations.
+    data_sent: Wallet RPC requests and transaction/protocol data; prompts are not sent.
+    authentication: User-configured node credentials.
+    optional: true
+    used_for_ai_inference: false
+
+  - name: Bitrefill MCP
+    category: commerce
+    endpoints:
+      - "User-configured Bitrefill MCP endpoint"
+    purpose: Search products and create purchases after confirmation.
+    data_sent: Product query, country/currency and confirmed order data.
+    authentication: MCP/server-specific credentials when configured.
+    optional: true
+    used_for_ai_inference: false
+
+  - name: BTC Map
+    category: merchant-discovery
+    endpoints:
+      - "https://api.btcmap.org/**"
+    purpose: Find Bitcoin-accepting merchants near a supplied or device-derived location.
+    data_sent: Approximate coordinates, radius and merchant query.
+    authentication: None.
+    optional: true
+    used_for_ai_inference: false
+
+  - name: Nominatim / OpenStreetMap
+    category: geocoding
+    endpoints:
+      - "https://nominatim.openstreetmap.org/**"
+    purpose: Convert a user-provided place name into approximate coordinates for merchant search.
+    data_sent: Place/address query and standard HTTP metadata.
+    authentication: None.
+    optional: true
+    used_for_ai_inference: false
+
+  - name: Hyperswarm QVAC delegation
+    category: peer-to-peer
+    endpoints:
+      - "QVAC SDK managed peer-to-peer transport"
+    purpose: Delegate inference to a user-paired desktop provider when explicitly enabled.
+    data_sent: Prompt, tool schemas and generated model stream to the paired peer.
+    authentication: Pairing public key and QVAC firewall policy.
+    optional: true
+    used_for_ai_inference: true
+    locality_note: "No hosted AI provider is used; inference executes on the paired user-controlled desktop."

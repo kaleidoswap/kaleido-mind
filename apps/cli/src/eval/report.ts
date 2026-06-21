@@ -16,6 +16,10 @@ export interface Cell {
   args: number;
   overTrigger: number;
   avgLatency: number;
+  avgTtft: number;
+  avgTokensPerSecond: number;
+  avgPromptTokens: number;
+  avgCompletionTokens: number;
   pct: number;          // pass / applicable * 100 (trial pass-rate)
   cases: number;        // distinct cases
   reliablePct: number;  // % of distinct cases that passed ALL repeats
@@ -51,6 +55,10 @@ export function aggregate(results: CaseResult[]): Aggregate {
         args: rs.filter((r) => r.argsOk).length,
         overTrigger: results.filter((r) => r.model === model && r.mechanism === mech && r.overTriggered).length,
         avgLatency: applicable ? Math.round(rs.reduce((s, r) => s + r.latencyMs, 0) / applicable) : 0,
+        avgTtft: avgMetric(rs.map((r) => r.inference?.ttftMs)),
+        avgTokensPerSecond: avgMetric(rs.map((r) => r.inference?.tokensPerSecond), 1),
+        avgPromptTokens: avgMetric(rs.map((r) => r.inference?.promptTokens)),
+        avgCompletionTokens: avgMetric(rs.map((r) => r.inference?.completionTokens)),
         pct: applicable ? Math.round((pass / applicable) * 100) : 0,
         cases: distinct,
         reliablePct: distinct ? Math.round((reliable / distinct) * 100) : 0,
@@ -65,6 +73,13 @@ export function aggregate(results: CaseResult[]): Aggregate {
         if (rs.length) byCategory.push({ model, mech, category, pct: Math.round((rs.filter((r) => r.pass).length / rs.length) * 100) });
       }
   return { models, cells, byCategory };
+}
+
+function avgMetric(values: Array<number | undefined>, decimals = 0): number {
+  const present = values.filter((value): value is number => typeof value === 'number');
+  if (!present.length) return 0;
+  const factor = 10 ** decimals;
+  return Math.round((present.reduce((sum, value) => sum + value, 0) / present.length) * factor) / factor;
 }
 
 export function renderAnsi(a: Aggregate): string {
@@ -96,7 +111,7 @@ function html(a: Aggregate, meta: ReportMeta): string {
         const cell = cellOf(a, model, mech);
         if (!cell || !cell.applicable) return `<td class="na">—</td>`;
         const ci = wilson(cell.pass, cell.applicable);
-        return `<td><div class="cell"><div class="bar"><i style="width:${cell.pct}%;background:${scoreColor(cell.pct)}"></i></div><span>${cell.pct}% <small class="frac">${cell.reliablePct}% rel</small></span><small>95% CI ${Math.round(ci.lo)}–${Math.round(ci.hi)} · sel ${pctOf(cell.selection, cell.applicable)}% · args ${pctOf(cell.args, cell.applicable)}% · ${cell.avgLatency}ms · ${cell.applicable} trials${cell.overTrigger ? ` · ⚠${cell.overTrigger}` : ''}</small></div></td>`;
+        return `<td><div class="cell"><div class="bar"><i style="width:${cell.pct}%;background:${scoreColor(cell.pct)}"></i></div><span>${cell.pct}% <small class="frac">${cell.reliablePct}% rel</small></span><small>95% CI ${Math.round(ci.lo)}–${Math.round(ci.hi)} · sel ${pctOf(cell.selection, cell.applicable)}% · args ${pctOf(cell.args, cell.applicable)}% · ${cell.avgLatency}ms · TTFT ${cell.avgTtft || '—'}ms · ${cell.avgTokensPerSecond || '—'} tok/s · ${cell.applicable} trials${cell.overTrigger ? ` · ⚠${cell.overTrigger}` : ''}</small></div></td>`;
       }).join('');
       const best = MECHANISMS.map((m) => cellOf(a, model, m)!).filter(Boolean).sort((x, y) => y.pct - x.pct)[0];
       return `<tr><th>${model}</th>${cells}<td class="best">${best ? `${best.mech} <b>${best.pct}%</b>` : ''}</td></tr>`;
@@ -190,11 +205,11 @@ export async function writeReport(
   await mkdir(dir, { recursive: true });
 
   const raw = results
-    .map((r) => JSON.stringify({ ts: meta.ts, model: r.model, mechanism: r.mechanism, repeat: r.repeat, id: r.case.id, intent: r.case.intent, category: r.case.category, prompt: r.case.prompt, expect: { skill: r.case.expectSkill, tool: r.case.expectTool }, got: { toolCalls: r.toolCalls, text: r.text, latencyMs: r.latencyMs }, grade: { applicable: r.applicable, selectionOk: r.selectionOk, argsOk: r.argsOk, skillOk: r.skillOk, overTriggered: r.overTriggered, pass: r.pass } }))
+    .map((r) => JSON.stringify({ ts: meta.ts, model: r.model, mechanism: r.mechanism, repeat: r.repeat, id: r.case.id, intent: r.case.intent, category: r.case.category, prompt: r.case.prompt, expect: { skill: r.case.expectSkill, tool: r.case.expectTool }, got: { toolCalls: r.toolCalls, text: r.text, latencyMs: r.latencyMs, inference: r.inference }, grade: { applicable: r.applicable, selectionOk: r.selectionOk, argsOk: r.argsOk, skillOk: r.skillOk, overTriggered: r.overTriggered, pass: r.pass } }))
     .join('\n');
   await writeFile(join(dir, 'raw.jsonl'), raw + '\n');
 
-  const csv = ['model,mechanism,applicable,pass,pct,selection,args,overTrigger,avgLatencyMs', ...a.cells.map((x) => `${x.model},${x.mech},${x.applicable},${x.pass},${x.pct},${x.selection},${x.args},${x.overTrigger},${x.avgLatency}`)].join('\n');
+  const csv = ['model,mechanism,applicable,pass,pct,selection,args,overTrigger,avgLatencyMs,avgTtftMs,avgTokensPerSecond,avgPromptTokens,avgCompletionTokens', ...a.cells.map((x) => `${x.model},${x.mech},${x.applicable},${x.pass},${x.pct},${x.selection},${x.args},${x.overTrigger},${x.avgLatency},${x.avgTtft},${x.avgTokensPerSecond},${x.avgPromptTokens},${x.avgCompletionTokens}`)].join('\n');
   await writeFile(join(dir, 'matrix.csv'), csv + '\n');
 
   // summary.json — what the web dashboard reads (matrix without the raw cases).

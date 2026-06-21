@@ -17,7 +17,7 @@
  * delegated to a desktop peer.
  */
 import type * as QvacSdk from '@qvac/sdk';
-import type { LLMProvider, TurnInput, TurnOutput } from '../providers/types.js';
+import type { InferenceMetrics, LLMProvider, TurnInput, TurnOutput } from '../providers/types.js';
 import type { QvacTurnStats } from './parse.js';
 import { consumeRun } from './stream.js';
 
@@ -138,12 +138,36 @@ export function createQvacProvider(options: QvacProviderOptions): LLMProvider {
       // instead of an empty bubble so the agentic loop ends cleanly.
       const text =
         result.text || (result.thinkingBudgetExceeded ? THINKING_BUDGET_FALLBACK : result.text);
+      const totalTokens = result.stats?.totalTokens;
+      const promptTokens = result.stats?.promptTokens;
+      const inference: InferenceMetrics = {
+        requestId: result.requestId,
+        durationMs: result.timing.durationMs,
+        status:
+          result.stopReason === 'cancelled'
+            ? 'cancelled'
+            : result.truncated
+              ? 'truncated'
+              : 'completed',
+        ...(result.stats?.backendDevice ? { backendDevice: result.stats.backendDevice } : {}),
+        ...(typeof promptTokens === 'number' ? { promptTokens } : {}),
+        ...(typeof totalTokens === 'number' ? { totalTokens } : {}),
+        ...(typeof totalTokens === 'number' && typeof promptTokens === 'number'
+          ? { completionTokens: Math.max(0, totalTokens - promptTokens) }
+          : {}),
+        ...(typeof result.timing.ttftMs === 'number' ? { ttftMs: result.timing.ttftMs } : {}),
+        ...(typeof result.stats?.tokensPerSecond === 'number'
+          ? { tokensPerSecond: result.stats.tokensPerSecond }
+          : {}),
+        ...(result.stopReason ? { stopReason: result.stopReason } : {}),
+      };
 
       return {
         text,
         rawContent: result.rawContent,
         toolCalls: result.toolCalls,
         requestId: result.requestId,
+        inference,
       };
     },
 

@@ -158,6 +158,11 @@ describe('extractPriceQuery', () => {
       amount: 1, from_asset: 'BTC', to_asset: 'USDT', amount_side: 'to',
     });
   });
+  it('parses a quantity quote with the amount on the priced asset', () => {
+    expect(extractPriceQuery('how many sats is 10 USDT worth?')).toEqual({
+      amount: 10, from_asset: 'BTC', to_asset: 'USDT', amount_side: 'to',
+    });
+  });
   it('handles "cost of xaut" and "how much does 1 btc cost"', () => {
     expect((extractPriceQuery('cost of xaut') as any)?.to_asset).toBe('XAUT');
     expect((extractPriceQuery('how much does 1 btc cost') as any)?.to_asset).toBe('BTC');

@@ -12,7 +12,7 @@
  *   - conciseness: answer stays within a word bound (small models ramble).
  */
 
-import type { LLMProvider } from '@kaleidorg/mind';
+import type { InferenceMetrics, LLMProvider } from '@kaleidorg/mind';
 import { loadProvider, mockEvalProvider } from './run.js';
 
 const SYSTEM =
@@ -48,6 +48,7 @@ export function qualityCases(): QualityCase[] {
 export interface QualityResult {
   model: string; repeat: number; case: QualityCase;
   response: string; words: number; latencyMs: number;
+  inference?: InferenceMetrics;
   coverage: number; hallucinated: boolean; concise: boolean; pass: boolean;
 }
 
@@ -66,12 +67,14 @@ function grade(c: QualityCase, response: string): Pick<QualityResult, 'coverage'
 async function runCase(provider: LLMProvider, model: string, c: QualityCase, repeat: number): Promise<QualityResult> {
   const t0 = Date.now();
   let response = '';
+  let inference: InferenceMetrics | undefined;
   try {
     const out = await provider.runTurn({ system: SYSTEM, messages: [{ role: 'user', content: c.prompt }], tools: [] });
     response = (out.text ?? '').trim();
+    inference = out.inference;
   } catch { /* empty */ }
   const latencyMs = Date.now() - t0;
-  return { model, repeat, case: c, response, latencyMs, ...grade(c, response) };
+  return { model, repeat, case: c, response, latencyMs, inference, ...grade(c, response) };
 }
 
 export interface QualityCell {

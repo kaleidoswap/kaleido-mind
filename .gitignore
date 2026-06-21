@@ -4,6 +4,7 @@ build
 .tsbuildinfo
 *.log
 .DS_Store
+**/.DS_Store
 .env
 .env.local
 .vscode
@@ -13,3 +14,7 @@ coverage
 eval-results/
 apps/cli/*.out
 ln.html
+submission/evidence/desktop-*/
+submission/evidence/desktop-*.partial/
+submission/evidence/mock-*/
+submission/evidence/mock-*.partial/
