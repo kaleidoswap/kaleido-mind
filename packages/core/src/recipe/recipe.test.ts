@@ -72,6 +72,22 @@ describe('runRecipe — pay a contact', () => {
     expect(sent).toHaveLength(0);
   });
 
+  it('never reports a failed wallet result as sent', async () => {
+    const tools = new ToolRegistry([new InProcessToolSource('wallet', [
+      { name: 'resolve_contact', description: '', parameters: { type: 'object', properties: {} }, handler: async ({ name }) => ({ name, ln_address: `${name}@kaleidoswap.com` }) },
+      { name: 'fiat_to_sats', description: '', parameters: { type: 'object', properties: {} }, handler: async ({ amount }) => ({ sats: Math.round(Number(amount) * 1000) }) },
+      { name: 'send_payment', description: '', parameters: { type: 'object', properties: {} }, requiresConfirmation: true, handler: async () => ({ success: false, message: 'insufficient balance' }) },
+    ])]);
+    const res = await runRecipe(paymentsRecipe, 'pay bob 3 eur', {
+      provider: approve,
+      tools,
+      onConfirm: async () => ({ approved: true }),
+    });
+    expect(res.status).toBe('error');
+    expect(res.text).toContain('insufficient balance');
+    expect(res.text).not.toContain('Sent');
+  });
+
   it('falls back to ONE LLM extraction when regex misses', async () => {
     const sent: any[] = [];
     const tools = stubTools({ send: (a) => sent.push(a) });

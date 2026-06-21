@@ -23,12 +23,14 @@ describe('KALEIDOSWAP_TOOLS — shape invariants', () => {
       'kaleidoswap_atomic_init',
       'kaleidoswap_atomic_execute',
       'kaleidoswap_atomic_status',
+      'kaleidoswap_lsp_quote_asset_channel',
+      'kaleidoswap_lsp_create_asset_channel',
     ]);
   });
 
   it('every tool has a group and a parameters object', () => {
     for (const t of KALEIDOSWAP_TOOLS) {
-      expect(['market', 'orders', 'atomic']).toContain(t.group);
+      expect(['market', 'orders', 'atomic', 'liquidity']).toContain(t.group);
       expect(t.parameters).toBeDefined();
       expect((t.parameters as any).type).toBe('object');
     }
@@ -43,10 +45,11 @@ describe('KALEIDOSWAP_TOOLS — shape invariants', () => {
   it('lists every spend tool exactly once in KALEIDOSWAP_SPEND_TOOLS', () => {
     const expected = KALEIDOSWAP_TOOLS.filter((t) => t.spend).map((t) => t.name).sort();
     expect([...KALEIDOSWAP_SPEND_TOOLS].sort()).toEqual(expected);
-    // Sanity: place_order, atomic_init, atomic_execute are spend; the rest aren't.
+    // Sanity: place_order, atomic_init/execute, create_asset_channel are spend; the rest aren't.
     expect(expected).toEqual([
       'kaleidoswap_atomic_execute',
       'kaleidoswap_atomic_init',
+      'kaleidoswap_lsp_create_asset_channel',
       'kaleidoswap_place_order',
     ]);
   });
@@ -95,6 +98,8 @@ describe('bindKaleidoswapTools', () => {
     kaleidoswap_atomic_init:       async (a) => ({ ok: true, tool: 'atomic_init', args: a }),
     kaleidoswap_atomic_execute:    async (a) => ({ ok: true, tool: 'atomic_execute', args: a }),
     kaleidoswap_atomic_status:     async (a) => ({ ok: true, tool: 'atomic_status', args: a }),
+    kaleidoswap_lsp_quote_asset_channel:  async (a) => ({ ok: true, tool: 'lsp_quote_asset_channel', args: a }),
+    kaleidoswap_lsp_create_asset_channel: async (a) => ({ ok: true, tool: 'lsp_create_asset_channel', args: a }),
   });
 
   it('binds every tool when all handlers are present', () => {

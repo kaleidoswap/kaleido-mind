@@ -29,6 +29,43 @@ export interface RunRecipeOptions {
   signal?: AbortSignal;
 }
 
+function toolFailure(result: unknown): string | null {
+  // A plain-string result (non-JSON MCP text, or a tool that returns prose):
+  // flag obvious error text so a failed action isn't reported as success.
+  if (typeof result === 'string') {
+    const s = result.trim();
+    return /^(error|failed|failure|exception)\b\s*[:\-]?/i.test(s) ? s : null;
+  }
+  if (!result || typeof result !== 'object') return null;
+  const r = result as Record<string, unknown>;
+  if (typeof r.error === 'string' && r.error.trim()) return r.error;
+  if (r.success === false || r.ok === false) {
+    return String(r.message ?? r.reason ?? 'The wallet action failed.');
+  }
+  const status = String(r.status ?? r.state ?? '').toLowerCase();
+  if (['error', 'failed', 'failure', 'rejected'].includes(status)) {
+    return String(r.message ?? r.reason ?? `The wallet returned status "${status}".`);
+  }
+  return null;
+}
+
+function failedResult(
+  recipe: Recipe,
+  ctx: RecipeContext,
+  inferences: number,
+  message: string,
+): RecipeResult {
+  return {
+    recipe: recipe.name,
+    slots: ctx.slots,
+    results: ctx.results,
+    text: `Couldn't complete that: ${message}`,
+    status: 'error',
+    error: message,
+    inferences,
+  };
+}
+
 /** Extract the recipe's slots — deterministic regex first, else ONE LLM call. */
 export async function extractSlots(
   provider: LLMProvider,
@@ -189,6 +226,8 @@ export async function runRecipe(recipe: Recipe, text: string, opts: RunRecipeOpt
       const result = await opts.tools.execute(step.tool, args);
       ctx.results[step.as ?? step.tool] = result;
       opts.onStep?.(step.tool, args, result);
+      const failure = toolFailure(result);
+      if (failure) return failedResult(recipe, ctx, inferences, failure);
     }
 
     // Final action.
@@ -197,6 +236,8 @@ export async function runRecipe(recipe: Recipe, text: string, opts: RunRecipeOpt
     const finalResult = await opts.tools.execute(recipe.final.tool, finalArgs);
     ctx.results[recipe.final.as ?? recipe.final.tool] = finalResult;
     opts.onStep?.(recipe.final.tool, finalArgs, finalResult);
+    const failure = toolFailure(finalResult);
+    if (failure) return failedResult(recipe, ctx, inferences, failure);
 
     const out = recipe.summary?.(ctx, finalResult) ?? 'Done.';
     return { recipe: recipe.name, slots: ctx.slots, results: ctx.results, final: finalResult, text: out, status: 'done', inferences };

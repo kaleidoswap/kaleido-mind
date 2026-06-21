@@ -20,6 +20,18 @@
 
 import type { ToolDef } from '../types.js';
 import type { ToolSource } from './source.js';
+import { isKaleidoswapSpendTool } from '../kaleidoswap/contract.js';
+import { isLsps1SpendTool } from '../lsps1/contract.js';
+import { isSpendTool } from '../wallet/contract.js';
+
+function toolRequiresConfirmation(name: string, description: string): boolean {
+  return (
+    isSpendTool(name) ||
+    isKaleidoswapSpendTool(name) ||
+    isLsps1SpendTool(name) ||
+    /\bSPEND\b.*\bconfirm/i.test(description)
+  );
+}
 
 export type McpTransport =
   | { kind: 'stdio'; command: string; args?: string[]; env?: Record<string, string> }
@@ -30,8 +42,45 @@ export interface McpToolSourceOptions {
   transport: McpTransport;
   /** Optional allowlist — only expose these tool names if provided. */
   allow?: string[];
+  /** Optional prefix denylist applied after discovery (for host-specific rails). */
+  denyPrefixes?: string[];
   /** Per-call timeout (ms). Default 60_000. */
   timeoutMs?: number;
+}
+
+/**
+ * Normalize an MCP `callTool` result into a structured value.
+ *
+ * Two fixes vs. returning the raw text content:
+ *  - `isError` (the MCP failure signal) becomes an `{ error }` object, so callers
+ *    — the recipe runner's `toolFailure`, the agent — treat it as a FAILURE
+ *    instead of a successful result. Without this the agent claimed a spend had
+ *    succeeded when the wallet actually rejected it.
+ *  - JSON text is PARSED, so recipes thread real fields (rfq_id, total_sat,
+ *    order_id) and any failure fields (error/status) are visible. A raw string
+ *    hid both — the quote's rfq_id never reached the create call, and the canned
+ *    success summary fired regardless. Non-JSON text passes through unchanged;
+ *    the engine re-stringifies objects when feeding the model.
+ *
+ * Exported for unit testing.
+ */
+export function parseMcpResult(res: unknown): unknown {
+  const r = res as { content?: Array<{ type?: string; text?: string }>; isError?: boolean } | null;
+  const text = Array.isArray(r?.content)
+    ? r!.content
+        .filter((c) => c?.type === 'text')
+        .map((c) => c?.text ?? '')
+        .join('\n')
+    : '';
+  if (r?.isError) return { error: text || 'The tool reported an error.' };
+  if (text) {
+    try {
+      return JSON.parse(text);
+    } catch {
+      return text;
+    }
+  }
+  return Array.isArray(r?.content) ? r!.content : res;
 }
 
 export class McpToolSource implements ToolSource {
@@ -71,12 +120,15 @@ export class McpToolSource implements ToolSource {
 
     const listed = await this.client.listTools();
     const allow = this.opts.allow ? new Set(this.opts.allow) : null;
+    const denied = this.opts.denyPrefixes ?? [];
     this.tools = (listed.tools ?? [])
       .filter((t: any) => !allow || allow.has(t.name))
+      .filter((t: any) => !denied.some((prefix) => t.name.startsWith(prefix)))
       .map((t: any) => ({
         name: t.name,
         description: t.description ?? '',
         parameters: t.inputSchema ?? { type: 'object', properties: {} },
+        requiresConfirmation: toolRequiresConfirmation(t.name, t.description ?? ''),
       }));
   }
 
@@ -95,15 +147,9 @@ export class McpToolSource implements ToolSource {
       undefined,
       { timeout: this.opts.timeoutMs ?? 60_000 },
     );
-    // MCP returns content blocks; surface text content as the tool result.
-    if (Array.isArray(res?.content)) {
-      const text = res.content
-        .filter((c: any) => c.type === 'text')
-        .map((c: any) => c.text)
-        .join('\n');
-      return text || res.content;
-    }
-    return res;
+    // Parse JSON + surface isError so recipes/agent get structured results and
+    // real failures (not an opaque string that hid both). See parseMcpResult.
+    return parseMcpResult(res);
   }
 
   async close(): Promise<void> {

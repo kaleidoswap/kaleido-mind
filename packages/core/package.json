@@ -1,6 +1,6 @@
 {
   "name": "@kaleidorg/mind",
-  "version": "0.4.0",
+  "version": "0.6.0",
   "description": "Local-first reasoning + function-calling engine for KaleidoSwap. QVAC-powered.",
   "license": "Apache-2.0",
   "type": "module",
@@ -53,6 +53,7 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:live": "vitest run mcp.live",
     "lint": "eslint src",
     "bundle-skills": "node scripts/bundle-skills.mjs"
   },
@@ -65,8 +66,8 @@
     }
   },
   "devDependencies": {
-    "@qvac/sdk": "^0.13.1",
-    "@types/node": "^20.0.0",
-    "vitest": "^1.6.0"
+    "@qvac/sdk": "^0.13.5",
+    "@types/node": "^20.19.43",
+    "vitest": "^1.6.1"
   }
 }

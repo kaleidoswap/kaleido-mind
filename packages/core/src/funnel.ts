@@ -334,6 +334,20 @@ export class Funnel {
     let scoped: string[] | undefined;
     if (allowedTools) {
       scoped = [...new Set([...allowedTools, ...ambient])];
+      // Resilience against host tool-name drift: a skill's allowlist may name
+      // tools that don't exist on this host (e.g. the skill says `get_balances`
+      // but the desktop MCP exposes `rln_get_balances`). engine.runAgentic
+      // filters the model's tools to this list, so a fully-mismatched skill
+      // leaves the model TOOL-LESS — it then narrates "the tool isn't available"
+      // instead of acting. If NONE of the scoped tools resolve against the live
+      // registry, widen to the full surface so the agent can still work.
+      const present = new Set((await this.registry.listTools()).map((t) => t.name));
+      if (!scoped.some((n) => present.has(n))) {
+        this.log(
+          `tier=agentic: skill '${skill?.name ?? '?'}' tools resolved to 0 live tools — using full tool surface`,
+        );
+        scoped = undefined;
+      }
     } else if (disabledAmbient.length) {
       // No skill matched but a toggle is off: expose everything except the
       // disabled ambient tools (the sources stay mounted — no rebuild).

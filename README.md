@@ -30,7 +30,8 @@ user request
 ## Features
 
 - **Multi-L2 wallet tool contract** — per-layer namespaced tools (`spark_*`, `rln_*`, `arkade_*`) + a cross-cutting router (`resolve_contact`, `get_price`, `fiat_to_sats`, `send_payment`, `get_swap_quote`/`execute_swap`). One source of truth in core.
-- **Recipe engine** — deterministic multi-step (payments, swaps) that works on a 0.6B model; slot extraction can be model-assisted for complex cases with precision safeguards.
+- **Recipe engine** — deterministic multi-step (payments, swaps, atomic swaps, channel orders, asset-channel onboarding) that works on a 0.6B model; slot extraction can be model-assisted for complex cases with precision safeguards.
+- **KaleidoSwap trading & onboarding** — one quote tool (`kaleidoswap_get_quote`) against the live maker; **atomic swaps** (RGB ↔ BTC) and **LSPS1 channel orders** (buy inbound liquidity, or a new asset channel pre-loaded with USDT/XAUT) drive the RGB Lightning Node — each a single confirm-gated recipe. *"buy 100 USDT"* onboards a channel-less user end to end.
 - **Skills** — Agent-Skills-spec playbooks (`SKILL.md` + progressive disclosure) that scope tools and carry recipes; bundled for React Native. Some (e.g. merchant-finder for location/BTC Map) are intentionally more model-leveraging for natural language understanding, context, and result post-processing (via pluggable selectors including embeddings).
 - **Tool sources** — in-process, MCP, CLI, and L402 (pay-per-call HTTP) — all behind one `ToolRegistry`.
 - **Memory + RAG** — long-term recall and injected-embedding retrieval (Bitcoin copilot, wallet history, BTC-map discovery), all through QVAC. Memory **consolidates** near-duplicates (cheap on-device dedup, optional LLM merge on capable/delegated devices) so it doesn't bloat.

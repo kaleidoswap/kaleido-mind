@@ -12,7 +12,7 @@
  *     ↓ [ONE confirmation gate — shows the real quote numbers]
  *   kaleidoswap_atomic_init      ← MAKER  locks the swap → swapstring, payment_hash
  *   rln_get_node_info            ← NODE   read pubkey (= taker_pubkey)
- *   rln_whitelist_swap           ← NODE   accept the swapstring
+ *   rln_atomic_taker             ← NODE   whitelist the swapstring (taker accepts)
  *   kaleidoswap_atomic_execute   ← MAKER  settle (final)
  *
  * `forceModelExtract` ensures the model is always consulted for slot parsing
@@ -132,10 +132,11 @@ export const kaleidoswapAtomicRecipe: Recipe = {
       as: 'node',
       args: () => ({}),
     },
-    // 4. NODE: whitelist the maker's swapstring (accept the swap). Ungated —
-    //    covered by the single confirm above.
+    // 4. NODE: the taker whitelists the maker's swapstring (accept the swap).
+    //    Exposed by kaleido-mcp as `rln_atomic_taker` (calls rln.whitelistSwap).
+    //    Ungated — covered by the single confirm above.
     {
-      tool: 'rln_whitelist_swap',
+      tool: 'rln_atomic_taker',
       as: 'whitelist',
       args: (ctx) => {
         const init = ctx.results.init as InitResult | undefined;

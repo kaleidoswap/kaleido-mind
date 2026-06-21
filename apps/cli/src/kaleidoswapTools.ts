@@ -57,9 +57,9 @@ const MAKER_PRECISION: Record<string, number> = {
  * BTC users count in sats (10⁻⁸ BTC); USDT/XAUT users count in whole units.
  *
  * The host scales an incoming user amount by 10^(MAKER_PRECISION − USER) so
- * the maker receives the right magnitude. Discovered in milestone 1 testing:
- * "100,000 sats" without this scaling came back quoted for ~100 sats, off by
- * 1000×. With scaling the maker sees 100,000,000 (= 100,000 sats × 10³).
+ * the maker receives the right magnitude. Without it, "100,000 sats" comes
+ * back quoted for ~100 sats — off by 1000×; with scaling the maker sees
+ * 100,000,000 (= 100,000 sats × 10³).
  */
 const USER_NATURAL_PRECISION: Record<string, number> = {
   BTC: 8,

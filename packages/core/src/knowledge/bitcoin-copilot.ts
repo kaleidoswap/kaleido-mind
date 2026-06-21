@@ -218,8 +218,8 @@ export const BITCOIN_COPILOT_DOCS: RagDocument[] = [
       'channel size you can buy, fees, accepted payment options). It is NOT ' +
       'your current inbound capacity — it describes what the LSP is willing ' +
       'to sell you. To learn your CURRENT receive capacity, sum the remote ' +
-      'balance of your existing channels; to BUY MORE, use lsp_get_info and ' +
-      'lsp_create_order.',
+      'balance of your existing channels; to BUY MORE, use kaleidoswap_lsp_get_info and ' +
+      'kaleidoswap_lsp_create_order.',
     metadata: { topic: 'channels' },
   },
   {
