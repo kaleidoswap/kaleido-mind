@@ -110,10 +110,8 @@ function buildMind(
       // atomic-swap chain (quote read; init/whitelist/execute are spends)
       tool('kaleidoswap_get_quote', {
         rfq_id: 'rfq-1',
-        from_asset: { asset_id: 'BTC', ticker: 'BTC', amount: 100_000 },
-        to_asset: { asset_id: 'rgb:USDT', ticker: 'USDT', amount: 1_000_000 },
-        from_amount_display: '100,000 sats',
-        to_amount_display: '1 USDT',
+        from_asset: { asset_id: 'BTC', ticker: 'BTC', layer: 'BTC_LN', amount_raw: 100_000, amount_display: '100,000 sats' },
+        to_asset: { asset_id: 'rgb:USDT', ticker: 'USDT', layer: 'RGB_LN', amount_raw: 1_000_000, amount_display: '1 USDT' },
         fee_display: '154 sats',
       }),
       tool('kaleidoswap_atomic_init', { swapstring: 'SWAP/abc/def', payment_hash: 'ph-1' }, /* spend */ true),
@@ -226,7 +224,7 @@ describe('desktop mind — buy assets via atomic swap', () => {
     ]);
     // init sources the asset ids + maker-unit amounts straight from the quote.
     const init = calls.find((c) => c.name === 'kaleidoswap_atomic_init')!;
-    expect(init.args).toMatchObject({ rfq_id: 'rfq-1', from_asset: 'BTC', to_asset: 'rgb:USDT' });
+    expect(init.args).toMatchObject({ rfq_id: 'rfq-1', from_asset_id: 'BTC', to_asset_id: 'rgb:USDT' });
     // execute carries the node pubkey as taker_pubkey + the maker's payment_hash.
     const exec = calls.find((c) => c.name === 'kaleidoswap_atomic_execute')!;
     expect(exec.args).toMatchObject({ swapstring: 'SWAP/abc/def', taker_pubkey: '030637ec', payment_hash: 'ph-1' });

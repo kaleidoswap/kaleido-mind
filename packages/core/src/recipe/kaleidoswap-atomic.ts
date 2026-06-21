@@ -71,12 +71,24 @@ const SWAP_INTENT = (t: string) => {
 
 interface QuoteResult {
   rfq_id?: string;
-  from_asset?: { asset_id?: string; ticker?: string; amount?: number };
-  to_asset?: { asset_id?: string; ticker?: string; amount?: number };
+  // kaleido-mcp `kaleidoswap_get_quote` echoes each leg with the resolved
+  // asset_id, ticker, layer, the raw integer amount (amount_raw) and a display string.
+  from_asset?: { asset_id?: string; ticker?: string; amount_raw?: number; amount_display?: string };
+  to_asset?: { asset_id?: string; ticker?: string; amount_raw?: number; amount_display?: string };
   from_amount_display?: string;
   to_amount_display?: string;
   fee_display?: string;
 }
+
+// KaleidoSwap atomic is a BTC ↔ RGB venue: BTC settles on Lightning, RGB
+// assets on RGB-over-Lightning. The maker/MCP layer is derived from the asset.
+const layerFor = (asset: unknown): string =>
+  /^btc$/i.test(String(asset)) ? 'BTC_LN' : 'RGB_LN';
+
+// Render a quote leg as "<amount> <TICKER>" from the MCP quote echo, or undefined
+// if the leg is missing (callers fall back to the user's slot values).
+const quoteLeg = (leg?: { ticker?: string; amount_display?: string }): string | undefined =>
+  leg?.amount_display != null ? `${leg.amount_display}${leg.ticker ? ` ${leg.ticker}` : ''}` : undefined;
 interface InitResult { swapstring?: string; payment_hash?: string; atomic_id?: string }
 interface NodeInfo { pubkey?: string }
 
@@ -105,14 +117,21 @@ export const kaleidoswapAtomicRecipe: Recipe = {
     {
       tool: 'kaleidoswap_get_quote',
       as: 'quote',
-      args: (ctx) => ({
-        from_asset: ctx.slots.from_asset,
-        to_asset: ctx.slots.to_asset,
-        amount: ctx.slots.amount,
-        // 'to' for buy ("buy 1 USDT" → amount is what you RECEIVE); default
-        // 'from' for sell/swap. The host puts the amount on the right leg.
-        amount_side: ctx.slots.amount_side ?? 'from',
-      }),
+      args: (ctx) => {
+        // 'to' for buy ("buy 1 USDT" → amount is what you RECEIVE) goes on the
+        // to_amount leg; 'from' (sell/swap) goes on from_amount. Layers are
+        // derived from the asset. Exactly one amount leg is set.
+        const side = ctx.slots.amount_side ?? 'from';
+        const base = {
+          from_asset_id: ctx.slots.from_asset,
+          to_asset_id: ctx.slots.to_asset,
+          from_layer: layerFor(ctx.slots.from_asset),
+          to_layer: layerFor(ctx.slots.to_asset),
+        };
+        return side === 'to'
+          ? { ...base, to_amount: ctx.slots.amount }
+          : { ...base, from_amount: ctx.slots.amount };
+      },
     },
     // 2. MAKER locks the swap. SwapRequest is flat (asset ids + maker-unit
     //    amounts) — sourced straight from the quote result, no re-scaling.
@@ -124,10 +143,10 @@ export const kaleidoswapAtomicRecipe: Recipe = {
         const q = ctx.results.quote as QuoteResult | undefined;
         return {
           rfq_id: q?.rfq_id,
-          from_asset: q?.from_asset?.asset_id,
-          from_amount: q?.from_asset?.amount,
-          to_asset: q?.to_asset?.asset_id,
-          to_amount: q?.to_asset?.amount,
+          from_asset_id: q?.from_asset?.asset_id,
+          from_amount_raw: q?.from_asset?.amount_raw,
+          to_asset_id: q?.to_asset?.asset_id,
+          to_amount_raw: q?.to_asset?.amount_raw,
         };
       },
     },
@@ -165,15 +184,15 @@ export const kaleidoswapAtomicRecipe: Recipe = {
   // ONE confirmation, fired after the quote / before init, with the real numbers.
   confirm: (ctx: RecipeContext) => {
     const q = ctx.results.quote as QuoteResult | undefined;
-    const from = q?.from_amount_display ?? `${ctx.slots.amount} ${ctx.slots.from_asset}`;
-    const to = q?.to_amount_display ?? String(ctx.slots.to_asset);
+    const from = quoteLeg(q?.from_asset) ?? `${ctx.slots.amount} ${ctx.slots.from_asset}`;
+    const to = quoteLeg(q?.to_asset) ?? String(ctx.slots.to_asset);
     const fee = q?.fee_display ? ` · fee ${q.fee_display}` : '';
     return `Swap ${from} → ${to}${fee} on KaleidoSwap. Proceed?`;
   },
   summary: (ctx) => {
     const q = ctx.results.quote as QuoteResult | undefined;
-    const from = q?.from_amount_display ?? `${ctx.slots.amount} ${ctx.slots.from_asset}`;
-    const to = q?.to_amount_display ?? String(ctx.slots.to_asset);
+    const from = quoteLeg(q?.from_asset) ?? `${ctx.slots.amount} ${ctx.slots.from_asset}`;
+    const to = quoteLeg(q?.to_asset) ?? String(ctx.slots.to_asset);
     const init = ctx.results.init as InitResult | undefined;
     const id = init?.atomic_id || init?.payment_hash || '?';
     return `remember: atomic swap atomic_id=${id} (for later kaleidoswap_atomic_status checks).
