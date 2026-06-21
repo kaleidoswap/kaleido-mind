@@ -1,6 +1,6 @@
 {
   "name": "@kaleidorg/mind-provider",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Node sidecar that runs @qvac/sdk startQVACProvider() and speaks JSON-RPC over stdio. Spawned by desktop-app/src-tauri/src/mind.rs.",
   "license": "Apache-2.0",
   "type": "module",
