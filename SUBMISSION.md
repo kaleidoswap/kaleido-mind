@@ -1,19 +1,32 @@
 # KaleidoMind — QVAC Hackathon Submission
 
 **Sovereign AI for sovereign money.** KaleidoMind is an Apache-2.0,
-local-first reasoning and tool-calling engine for a multi-layer Bitcoin wallet.
-The same engine powers a desktop application, the Rate React Native wallet and
-an autonomous wallet agent.
+local-first **agentic financial assistant for multi-layer Bitcoin wallets**. It
+runs on your own hardware, holds no keys of its own, and helps you trade, pay,
+onboard liquidity, discover merchants and read your portfolio across Bitcoin's
+L2s — Spark, RGB/Lightning and Arkade — by chat or by voice, with no cloud model
+and no custodian. The same assistant powers a desktop application, the Rate
+React Native wallet and an autonomous agent.
 
 **Tracks:** General Purpose and Mobile.
 
 **Project site:** <https://kaleidoswap.github.io/kaleido-mind/>
 
-## Why it exists
+## What it is
 
-Wallet requests are multi-step, money is unforgiving, and mobile-sized models
-are not reliable planners. KaleidoMind moves known workflows into deterministic
-recipes and reserves the model for intent, language and novel reasoning:
+A wallet you can talk to. Ask it to *"buy 100 USDT,"* *"swap 0.001 BTC,"*
+*"pay Alice 5,000 sats,"* or *"find somewhere to spend Bitcoin nearby,"* and it
+carries out the whole multi-L2 workflow on-device — choosing the right layer,
+pricing the trade, onboarding a channel if you need one, and reading the action
+back before it touches your money. It is an assistant first: voice-native,
+context-aware, and entirely yours.
+
+## How it stays reliable on a small on-device model
+
+The assistant is only as good as it is trustworthy with real money on a phone-
+sized model. KaleidoMind earns that trust with a tiered design — instant reads,
+deterministic recipes for known workflows, and the model reserved for intent,
+language and novel reasoning:
 
 ```text
 request

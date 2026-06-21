@@ -1,6 +1,6 @@
 # kaleido-mind
 
-> Sovereign AI for sovereign money. A local-first agent for Bitcoin, Lightning and RGB — voice-first, multi-L2 and designed for user-controlled hardware.
+> Sovereign AI for sovereign money. A local-first, agentic financial assistant for multi-layer Bitcoin wallets — trade, pay, onboard and discover merchants across Spark, RGB/Lightning and Arkade, by chat or voice, fully on-device.
 
 **🌐 Project site: [kaleidoswap.github.io/kaleido-mind](https://kaleidoswap.github.io/kaleido-mind/)**
 
