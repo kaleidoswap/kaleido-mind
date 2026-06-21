@@ -153,6 +153,18 @@
   .stat .n { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.02em; background: var(--grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
   .stat .l { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
 
+  .bench-wrap { margin-top: 28px; border: 1px solid var(--border-subtle); border-radius: var(--radius); overflow: hidden; }
+  table.bench { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+  table.bench th, table.bench td { text-align: right; padding: 13px 18px; border-bottom: 1px solid var(--border-subtle); }
+  table.bench th:first-child, table.bench td:first-child { text-align: left; }
+  table.bench thead th { color: var(--muted); font-weight: 500; font-size: 0.8rem; letter-spacing: 0.03em; text-transform: uppercase; background: var(--card); }
+  table.bench tbody tr:last-child td { border-bottom: none; }
+  table.bench tbody td:first-child { font-weight: 700; }
+  table.bench .num { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  table.bench .hi { color: var(--primary); }
+  .bench-note { color: var(--muted); font-size: 0.82rem; margin-top: 14px; }
+  .bench-note a { color: var(--primary); }
+
   /* ---------- roadmap ---------- */
   .road { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
   @media (max-width: 760px) { .road { grid-template-columns: 1fr; } }
@@ -203,7 +215,7 @@
     <a class="brand" href="#top"><svg><use href="#kmark"/></svg> KaleidoMind</a>
     <nav class="nav-links">
       <a href="#architecture">Architecture</a>
-      <a href="#surfaces">Surfaces</a>
+      <a href="#inside">Inside</a>
       <a href="#evidence">Evidence</a>
       <a href="#roadmap">Roadmap</a>
       <a class="ghbtn" href="https://github.com/kaleidoswap/kaleido-mind" target="_blank" rel="noopener">GitHub</a>
@@ -297,19 +309,56 @@
       <div class="grid grid-3">
         <div class="card">
           <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#15E99A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
-          <h3>Desktop</h3>
-          <p>A sidecar with full QVAC model lifecycle, namespaced MCP + CLI tools, skills, recipes, telemetry and phone pairing for delegated inference.</p>
+          <h3>Desktop app</h3>
+          <p>A Tauri desktop wallet that hosts the engine as a namespaced MCP + CLI, manages the full QVAC model lifecycle, and doubles as the paired inference peer a phone can delegate heavy work to over P2P.</p>
         </div>
         <div class="card">
           <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#15E99A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/></svg></div>
           <h3>Mobile — Rate</h3>
-          <p>A React Native wallet running local QVAC inference, Whisper STT and TTS on a physical iPhone, with in-process wallet tools and voice-first confirmation.</p>
+          <p>A public React Native wallet on a physical iPhone. Spark, RGB/Lightning and Arkade tools run in-process via WDK adapters; QVAC drives local inference, Whisper STT and TTS — all behind a voice-first confirmation gate.</p>
         </div>
         <div class="card violet">
           <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#A48AFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg></div>
           <h3>Autonomous agent</h3>
           <p>A risk-gated optimizer — task scheduling, run logs and optimizer skills — that drives the engine without a human in every loop. Spend tools still pause for confirmation.</p>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INSIDE THE REPO -->
+  <section class="block" id="inside">
+    <div class="wrap">
+      <div class="kicker">Inside kaleido-mind</div>
+      <h2>An engine, a CLI, and the hosts that ship it</h2>
+      <p class="section-lede">The repository is a small monorepo. <code>@kaleidorg/mind</code> is the engine; everything else drives it or ships it to a device. Two sibling repos — <strong>Rate</strong> (mobile) and the <strong>desktop app</strong> — bind the exact same contract.</p>
+      <div class="grid grid-2">
+        <div class="card">
+          <span class="pill">packages/core</span>
+          <h3>The engine — @kaleidorg/mind</h3>
+          <p>Wallet tool contract, recipe engine, tiered funnel, fast paths, skills, memory + RAG, on-device knowledge and pluggable QVAC providers. One source of truth, consumed identically on every device.</p>
+        </div>
+        <div class="card">
+          <span class="pill">apps/cli · kaleido-mind</span>
+          <h3>The CLI — develop on your Mac</h3>
+          <p>An interactive terminal harness that runs the <em>full</em> agent — QVAC, skills, memory, RAG and live wallet tools — on a laptop, so the whole stack is testable before it ever reaches a phone. It installs on-device models, runs the product eval, and serves an eval dashboard.</p>
+        </div>
+        <div class="card">
+          <span class="pill">apps/provider</span>
+          <h3>Desktop sidecar (Tauri)</h3>
+          <p>Hosts the engine as a namespaced MCP + CLI, and acts as the paired, user-controlled QVAC inference peer a phone delegates heavy reasoning to over P2P.</p>
+        </div>
+        <div class="card">
+          <span class="pill">apps/playground</span>
+          <h3>Playground</h3>
+          <p>Exercise the engine against a real local model with no phone in the loop — the fastest way to watch the funnel and recipes behave.</p>
+        </div>
+      </div>
+      <div class="codebox" style="margin-top:24px">
+<span class="g">kaleido-mind</span> <span class="w">setup</span>           <span class="c"># guided model install, sized to your hardware</span>
+<span class="g">kaleido-mind</span> <span class="w">run --rag</span>       <span class="c"># chat with the full local agent</span>
+<span class="g">kaleido-mind</span> <span class="w">product-eval</span>    <span class="c"># production-funnel scenarios, outcome-graded</span>
+<span class="g">kaleido-mind</span> <span class="w">serve</span>           <span class="c"># browse + trigger eval runs in a dashboard</span>
       </div>
     </div>
   </section>
@@ -323,7 +372,7 @@
       <div class="feat-list">
         <div class="feat"><div class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#15E99A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div><div><h4>Multi-L2 tool contract</h4><p>Per-layer namespaced tools plus a cross-cutting router — one source of truth in core.</p></div></div>
         <div class="feat"><div class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#15E99A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div><div><h4>Recipe engine</h4><p>Deterministic payments, swaps, atomic swaps and channel orders that work on a 0.6B model.</p></div></div>
-        <div class="feat"><div class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#15E99A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div><div><h4>Trading &amp; onboarding</h4><p>Live-maker quotes, RGB↔BTC atomic swaps, and LSPS1 channel orders. "buy 100 USDT" onboards a channel-less user end to end.</p></div></div>
+        <div class="feat"><div class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#15E99A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div><div><h4>Trading &amp; onboarding</h4><p>Live-maker quotes, RGB↔BTC atomic swaps, LSPS1 channel orders and Flashnet AMM swaps (Spark-native). "buy 100 USDT" onboards a channel-less user end to end.</p></div></div>
         <div class="feat"><div class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#15E99A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div><div><h4>Skills</h4><p>Agent-Skills-spec playbooks that scope tools and carry recipes, bundled for React Native.</p></div></div>
         <div class="feat"><div class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#15E99A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div><div><h4>Memory + RAG</h4><p>On-device recall and injected-embedding retrieval, with cheap dedup so memory doesn't bloat.</p></div></div>
         <div class="feat"><div class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#15E99A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div><div><h4>Hardware-aware</h4><p>Picks the model and context budget for the device; P2P-delegates heavy work to a paired desktop.</p></div></div>
@@ -357,6 +406,20 @@
           <div class="stat"><div class="n">Apache-2.0</div><div class="l">open engine, public audit trail</div></div>
         </div>
       </div>
+
+      <div class="bench-wrap">
+        <table class="bench">
+          <thead>
+            <tr><th>Model (Q4_K_M)</th><th>Time to first token</th><th>Throughput</th><th>Tool-call accuracy</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Qwen 3 · 0.6B</td><td class="num">0.79 s</td><td class="num hi">90 tok/s</td><td class="num">63%</td></tr>
+            <tr><td>Qwen 3 · 1.7B</td><td class="num">2.5 s</td><td class="num">46 tok/s</td><td class="num">63%</td></tr>
+            <tr><td>Qwen 3 · 4B</td><td class="num">6.8 s</td><td class="num">11 tok/s</td><td class="num hi">71%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="bench-note">A snapshot from one timestamped evidence run on the reference MacBook Air (Apple M4, 24&nbsp;GB), function-calling mechanism. The smallest model answers in under a second; accuracy is preliminary and exactly why the funnel keeps the model off the critical path. Raw runs, model hashes and exact commit live in <a href="https://github.com/kaleidoswap/kaleido-mind/tree/main/submission/evidence" target="_blank" rel="noopener">submission/evidence</a>.</p>
     </div>
   </section>
 

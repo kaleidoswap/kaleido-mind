@@ -6,8 +6,6 @@ const required = [
   'REPRODUCE.md',
   'submission/remote-apis.yaml',
   'submission/evidence/README.md',
-  'submission/video-script.md',
-  'submission/dorahacks.md',
 ];
 
 const errors = [];

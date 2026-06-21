@@ -17,9 +17,19 @@ services:
     category: trading
     endpoints:
       - "Operator-configured KaleidoSwap maker HTTP endpoint"
-    purpose: Fetch assets/pairs, request executable quotes, place orders and query atomic-swap status.
-    data_sent: Pair, amount, quote/order identifiers and protocol messages; never seed phrases.
+    purpose: Fetch assets/pairs for RGB Lightning assets, request executable quotes, place orders and query atomic-swap status.
+    data_sent: Pair, amount, quote/order identifiers and protocol messages.
     authentication: Order-scoped access token where required.
+    optional: true
+    used_for_ai_inference: false
+
+  - name: Flashnet
+    category: trading
+    endpoints:
+      - "Flashnet AMM API (via @flashnet/sdk), bound on top of the user's Spark wallet"
+    purpose: Quote and execute Spark-native AMM swaps (BTC ⇄ Spark tokens, e.g. USDB) directly from the on-device Spark wallet.
+    data_sent: Asset addresses/tickers, swap amounts and signed Spark swap requests; never seed phrases or prompts.
+    authentication: Spark wallet signatures; no separate account.
     optional: true
     used_for_ai_inference: false
 
