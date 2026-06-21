@@ -645,7 +645,10 @@ async function connectMcpIfConfigured(): Promise<void> {
       ...(RLN_ONLY ? { denyPrefixes: ['wdk_', 'spark_'] } : {}),
       transport: {
         kind: 'stdio',
-        command: 'node',
+        // Spawn the mcp with the SAME node that runs this provider
+        // (process.execPath) — a packaged desktop app has no system `node` on
+        // PATH, so `command: 'node'` would ENOENT and leave chat tool-less.
+        command: process.execPath,
         args: [mcpEntry],
         env: { ...process.env, WDK_SEED: process.env.WDK_SEED ?? '' } as Record<string, string>,
       },
