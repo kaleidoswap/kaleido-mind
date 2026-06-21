@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>KaleidoMind — Sovereign AI for sovereign money</title>
+<meta name="description" content="KaleidoMind is an Apache-2.0, local-first reasoning and tool-calling engine for a multi-layer Bitcoin wallet. On-device QVAC inference. One engine powers desktop, mobile and an autonomous agent." />
+
+<!-- Open Graph / social -->
+<meta property="og:type" content="website" />
+<meta property="og:title" content="KaleidoMind — Sovereign AI for sovereign money" />
+<meta property="og:description" content="Local-first reasoning + tool-calling engine for a multi-layer Bitcoin wallet. On-device QVAC inference, confirm-before-spend by construction." />
+<meta property="og:url" content="https://kaleidoswap.github.io/kaleido-mind/" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="KaleidoMind — Sovereign AI for sovereign money" />
+<meta name="twitter:description" content="Local-first reasoning + tool-calling engine for a multi-layer Bitcoin wallet." />
+
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 210 210'%3E%3Cpath d='M69.66 138.49V69.69l34.36 34.42z' fill='%2315E99A'/%3E%3Cpath d='M69.66 69.71v68.81L35.3 104.1z' fill='%2315E99A'/%3E%3Cpath d='M138.42 138.49h-68.78l34.39-34.34z' fill='%2315E99A'/%3E%3Cpath d='M138.42 69.71l-34.37 34.34-34.39-34.34z' fill='%2315E99A'/%3E%3Cpath d='M138.44.96v68.81L104.08 35.35z' fill='%2317B581'/%3E%3Cpath d='M138.42 138.55v68.8l-34.37-34.41z' fill='%2317B581'/%3E%3C/svg%3E" />
+
+<link rel="preconnect" href="https://api.fontshare.com" />
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet" />
+
+<style>
+  :root {
+    --bg: #0D1813;
+    --card: #111110;
+    --border: #3D3D3A;
+    --border-subtle: rgba(255,255,255,0.08);
+    --primary: #15E99A;
+    --secondary: #6F32FF;
+    --brand: #17B581;
+    --text: #FFFFFF;
+    --muted: #9A9A94;
+    --grad: linear-gradient(135deg, #15E99A 0%, #6F32FF 100%);
+    --radius: 0.75rem;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Satoshi', system-ui, sans-serif;
+    font-weight: 400;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  a { color: inherit; text-decoration: none; }
+
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+  /* ---------- nav ---------- */
+  header {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(13,24,19,0.72);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .nav { display: flex; align-items: center; justify-content: space-between; height: 68px; }
+  .brand { display: flex; align-items: center; gap: 12px; font-weight: 700; letter-spacing: -0.02em; font-size: 1.15rem; }
+  .brand svg { width: 30px; height: 30px; }
+  .nav-links { display: flex; align-items: center; gap: 30px; }
+  .nav-links a { color: var(--muted); font-weight: 500; font-size: 0.92rem; transition: color .15s ease; }
+  .nav-links a:hover { color: var(--text); }
+  .nav-links .ghbtn { color: var(--bg); background: var(--primary); padding: 9px 18px; border-radius: 8px; font-weight: 700; }
+  .nav-links .ghbtn:hover { color: var(--bg); opacity: .9; }
+  @media (max-width: 760px) { .nav-links a:not(.ghbtn) { display: none; } }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; padding: 110px 0 90px; text-align: center; overflow: hidden; }
+  .hero-glow {
+    position: absolute; top: -260px; left: 50%; transform: translateX(-50%);
+    width: 900px; height: 700px; pointer-events: none;
+    background: radial-gradient(closest-side, rgba(21,233,154,0.18), transparent 70%),
+                radial-gradient(closest-side, rgba(111,50,255,0.14), transparent 70%);
+    background-position: 30% 30%, 70% 50%;
+    background-repeat: no-repeat; filter: blur(8px);
+  }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    border: 1px solid var(--border); border-radius: 9999px;
+    padding: 6px 14px; font-size: 0.75rem; letter-spacing: 0.04em;
+    color: var(--muted); margin-bottom: 28px; font-weight: 500;
+  }
+  .eyebrow .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 10px var(--primary); }
+  h1.title {
+    font-size: clamp(2.4rem, 6vw, 3.6rem); font-weight: 700;
+    letter-spacing: -0.03em; line-height: 1.05; margin-bottom: 22px;
+  }
+  h1.title .grad { background: var(--grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .lede { font-size: clamp(1.05rem, 2.3vw, 1.3rem); color: var(--muted); max-width: 680px; margin: 0 auto 38px; }
+  .cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .btn { padding: 13px 26px; border-radius: 8px; font-weight: 700; font-size: 0.98rem; transition: transform .12s ease, opacity .15s ease; display: inline-flex; align-items: center; gap: 9px; }
+  .btn:hover { transform: translateY(-1px); }
+  .btn-primary { background: var(--primary); color: var(--bg); }
+  .btn-primary:hover { opacity: .92; }
+  .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  .btn-ghost:hover { border-color: var(--muted); }
+
+  /* ---------- generic section ---------- */
+  section.block { padding: 86px 0; border-top: 1px solid var(--border-subtle); }
+  .kicker { color: var(--primary); font-weight: 700; font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 14px; }
+  h2 { font-size: clamp(1.7rem, 4vw, 2.3rem); font-weight: 700; letter-spacing: -0.02em; line-height: 1.12; margin-bottom: 18px; }
+  .section-lede { color: var(--muted); font-size: 1.08rem; max-width: 720px; margin-bottom: 48px; }
+
+  /* ---------- funnel ---------- */
+  .funnel { display: grid; gap: 14px; }
+  .tier { display: grid; grid-template-columns: 56px 1fr; gap: 18px; align-items: start; background: var(--card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 22px 24px; transition: border-color .15s ease; }
+  .tier:hover { border-color: var(--border); }
+  .tier .tag { font-weight: 700; font-size: 0.85rem; color: var(--bg); background: var(--primary); border-radius: 7px; height: 34px; display: flex; align-items: center; justify-content: center; }
+  .tier.t2 .tag { background: var(--brand); color: var(--bg); }
+  .tier.t1 .tag { background: var(--secondary); color: #fff; }
+  .tier h3 { font-size: 1.08rem; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.01em; }
+  .tier p { color: var(--muted); font-size: 0.96rem; }
+  .tier .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--text); font-size: 0.88rem; }
+
+  /* ---------- surfaces / features grids ---------- */
+  .grid { display: grid; gap: 20px; }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 860px) { .grid-3, .grid-2 { grid-template-columns: 1fr; } }
+  .card { background: var(--card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 28px; transition: transform .15s ease, border-color .15s ease; }
+  .card:hover { transform: translateY(-3px); border-color: var(--border); }
+  .card .ic { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 18px; background: rgba(21,233,154,0.1); }
+  .card.violet .ic { background: rgba(111,50,255,0.14); }
+  .card .ic svg { width: 22px; height: 22px; }
+  .card h3 { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 8px; }
+  .card p { color: var(--muted); font-size: 0.96rem; }
+  .card .pill { display: inline-block; font-size: 0.7rem; letter-spacing: 0.04em; color: var(--primary); border: 1px solid rgba(21,233,154,0.3); border-radius: 9999px; padding: 3px 11px; margin-bottom: 16px; font-weight: 500; }
+  .card.violet .pill { color: #A48AFF; border-color: rgba(111,50,255,0.4); }
+
+  .feat-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px 28px; }
+  @media (max-width: 760px) { .feat-list { grid-template-columns: 1fr; } }
+  .feat { display: grid; grid-template-columns: 24px 1fr; gap: 14px; align-items: start; }
+  .feat .chk { width: 22px; height: 22px; border-radius: 6px; background: rgba(21,233,154,0.12); display: flex; align-items: center; justify-content: center; margin-top: 3px; }
+  .feat .chk svg { width: 13px; height: 13px; }
+  .feat h4 { font-weight: 700; font-size: 1rem; margin-bottom: 2px; }
+  .feat p { color: var(--muted); font-size: 0.92rem; }
+
+  /* ---------- evidence ---------- */
+  .ev-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 28px; align-items: stretch; }
+  @media (max-width: 860px) { .ev-grid { grid-template-columns: 1fr; } }
+  .codebox { background: #0a120e; border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 22px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85rem; line-height: 1.9; overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
+  .codebox .c { color: var(--muted); }
+  .codebox .g { color: var(--primary); }
+  .codebox .w { color: var(--text); }
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .stat { background: var(--card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 20px; }
+  .stat .n { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.02em; background: var(--grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .stat .l { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+
+  /* ---------- roadmap ---------- */
+  .road { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 760px) { .road { grid-template-columns: 1fr; } }
+  .road .card .num { font-family: ui-monospace, monospace; color: var(--secondary); font-weight: 700; font-size: 0.85rem; margin-bottom: 12px; }
+
+  /* ---------- cta band ---------- */
+  .band { border-top: 1px solid var(--border-subtle); padding: 90px 0; text-align: center; position: relative; overflow: hidden; }
+  .band-glow { position: absolute; inset: 0; background: radial-gradient(closest-side at 50% 120%, rgba(21,233,154,0.12), transparent 60%); pointer-events: none; }
+  .band h2 { margin-bottom: 14px; }
+  .band p { color: var(--muted); margin-bottom: 30px; }
+
+  /* ---------- footer ---------- */
+  footer { border-top: 1px solid var(--border-subtle); padding: 48px 0 60px; }
+  .foot { display: flex; justify-content: space-between; align-items: flex-start; gap: 30px; flex-wrap: wrap; }
+  .foot .brand { margin-bottom: 12px; }
+  .foot p { color: var(--muted); font-size: 0.88rem; max-width: 360px; }
+  .foot-links { display: flex; gap: 40px; flex-wrap: wrap; }
+  .foot-col h5 { font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+  .foot-col a { display: block; color: var(--text); font-size: 0.92rem; margin-bottom: 9px; opacity: .85; transition: opacity .15s; }
+  .foot-col a:hover { opacity: 1; color: var(--primary); }
+  .copy { margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border-subtle); color: var(--muted); font-size: 0.82rem; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+</style>
+</head>
+<body>
+
+<!-- shared K mark -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="kmark" viewBox="0 0 210 210">
+    <path d="M69.7141 207.3H0.908203L35.3243 172.936L69.7141 207.3Z" fill="#6F32FF"/>
+    <path d="M138.441 0.96106V69.767L104.078 35.3508L138.441 0.96106Z" fill="#17B581"/>
+    <path d="M138.415 138.547V207.352L104.051 172.936L138.415 138.547Z" fill="#17B581"/>
+    <path d="M138.441 69.7406V0.96106L172.804 35.3772L138.441 69.767V69.7406Z" fill="#17B581"/>
+    <path d="M69.6614 138.494V69.6879L104.025 104.104L69.6614 138.494Z" fill="#15E99A"/>
+    <path d="M69.6615 69.7142V138.52L35.2981 104.104L69.6615 69.7142Z" fill="#15E99A"/>
+    <path d="M138.467 207.379V138.573L172.831 172.989L138.467 207.379Z" fill="#17B581"/>
+    <path d="M0.908203 0.908325H69.7141L35.298 35.2718L0.908203 0.908325Z" fill="#6F32FF"/>
+    <path d="M207.22 207.3H138.415L172.831 172.936L207.22 207.3Z" fill="#17B581"/>
+    <path d="M138.415 0.987427H207.22L172.804 35.3509L138.415 0.987427Z" fill="#17B581"/>
+    <path d="M138.467 69.7143H69.6614L104.078 35.3508L138.467 69.7143Z" fill="#17B581"/>
+    <path d="M69.635 138.494H138.441L104.025 172.857L69.635 138.494Z" fill="#17B581"/>
+    <path d="M138.415 138.494H69.635L104.025 104.157L138.388 138.494H138.415Z" fill="#15E99A"/>
+    <path d="M138.415 69.7142L104.051 104.051L69.6614 69.7142H138.441H138.415Z" fill="#15E99A"/>
+  </symbol>
+</svg>
+
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="#top"><svg><use href="#kmark"/></svg> KaleidoMind</a>
+    <nav class="nav-links">
+      <a href="#architecture">Architecture</a>
+      <a href="#surfaces">Surfaces</a>
+      <a href="#evidence">Evidence</a>
+      <a href="#roadmap">Roadmap</a>
+      <a class="ghbtn" href="https://github.com/kaleidoswap/kaleido-mind" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-glow"></div>
+    <div class="wrap">
+      <span class="eyebrow"><span class="dot"></span> Built for the QVAC&nbsp;·&nbsp;Unleash Edge AI hackathon</span>
+      <h1 class="title">Sovereign AI for<br><span class="grad">sovereign money.</span></h1>
+      <p class="lede">An Apache-2.0, local-first reasoning and tool-calling engine for a multi-layer Bitcoin wallet. On-device inference. Confirm-before-spend by construction. One engine on your phone, your laptop, and an autonomous agent.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="https://github.com/kaleidoswap/kaleido-mind" target="_blank" rel="noopener">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.2.8-.5v-1.7c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.7 1.3 3.4 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.4-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.8 0C17.3 4.5 18.3 4.8 18.3 4.8c.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.6.8.5 4.6-1.5 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5Z"/></svg>
+          View on GitHub
+        </a>
+        <a class="btn btn-ghost" href="#architecture">How it works →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHY -->
+  <section class="block" id="why">
+    <div class="wrap">
+      <div class="kicker">The problem</div>
+      <h2>Wallet requests are multi-step.<br>Money is unforgiving.<br>Small models are weak planners.</h2>
+      <p class="section-lede">A 0.6B model can't reliably plan <em>"pay bob 3 EUR"</em> — resolve, price, convert, confirm, send — without dropping a step or mangling an argument. KaleidoMind moves known workflows into deterministic recipes and reserves the model for intent, language and genuinely novel reasoning. The result is reliable enough to put on the critical path of real money.</p>
+      <div class="grid grid-3">
+        <div class="card">
+          <span class="pill">Local-first</span>
+          <h3>No hosted AI</h3>
+          <p>Every LLM, embedding, speech-to-text and text-to-speech call runs through the QVAC SDK — on-device, or on an explicitly paired desktop you control.</p>
+        </div>
+        <div class="card violet">
+          <span class="pill">Structural safety</span>
+          <h3>Confirm before spend</h3>
+          <p>Every fund-moving tool is <code>requiresConfirmation</code> in the contract. The engine pauses for the host's confirm sheet — the model cannot bypass the gate.</p>
+        </div>
+        <div class="card">
+          <span class="pill">Portable</span>
+          <h3>One tool contract</h3>
+          <p>Identical tool names and schemas everywhere; only execution differs. Skills are portable across phone and laptop, and benchmarks stay honest.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ARCHITECTURE / FUNNEL -->
+  <section class="block" id="architecture">
+    <div class="wrap">
+      <div class="kicker">Architecture</div>
+      <h2>A tiered funnel</h2>
+      <p class="section-lede">Most requests never reach the model at all. Each tier spends only the inference it has to — instant reads, deterministic recipes, and a skill-scoped agent loop for the genuinely open-ended.</p>
+      <div class="funnel">
+        <div class="tier t0">
+          <div class="tag">T0</div>
+          <div>
+            <h3>Fast path — 0 inferences</h3>
+            <p><span class="mono">"balance" · "address" · "btc price"</span> resolve instantly with zero model calls.</p>
+          </div>
+        </div>
+        <div class="tier t2">
+          <div class="tag">T2</div>
+          <div>
+            <h3>Recipe — ~1 inference, deterministic, confirm-gated</h3>
+            <p><span class="mono">"pay bob 3 EUR" · "buy 100 USDT"</span> — a skill carries the plan; the model only fills the slots. Payments, swaps, atomic swaps and LSPS1 channel orders run as deterministic chains.</p>
+          </div>
+        </div>
+        <div class="tier t1">
+          <div class="tag">T1</div>
+          <div>
+            <h3>Agentic loop — skill-scoped model</h3>
+            <p>Everything novel. Hard chains can P2P-delegate to a paired desktop's larger model. Discovery flows (e.g. merchant search) intentionally lean on more model reasoning.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SURFACES -->
+  <section class="block" id="surfaces">
+    <div class="wrap">
+      <div class="kicker">One engine, three surfaces</div>
+      <h2>The same agent, everywhere</h2>
+      <p class="section-lede"><code>@kaleidorg/mind</code> is the shared core. Each surface differs only in how tools execute and how the user reaches them.</p>
+      <div class="grid grid-3">
+        <div class="card">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#15E99A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
+          <h3>Desktop</h3>
+          <p>A sidecar with full QVAC model lifecycle, namespaced MCP + CLI tools, skills, recipes, telemetry and phone pairing for delegated inference.</p>
+        </div>
+        <div class="card">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#15E99A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/></svg></div>
+          <h3>Mobile — Rate</h3>
+          <p>A React Native wallet running local QVAC inference, Whisper STT and TTS on a physical iPhone, with in-process wallet tools and voice-first confirmation.</p>
+        </div>
+        <div class="card violet">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#A48AFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg></div>
+          <h3>Autonomous agent</h3>
+          <p>A risk-gated optimizer — task scheduling, run logs and optimizer skills — that drives the engine without a human in every loop. Spend tools still pause for confirmation.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="block" id="features">
+    <div class="wrap">
+      <div class="kicker">Capabilities</div>
+      <h2>What's in the box</h2>
+      <p class="section-lede">A multi-L2 Bitcoin wallet brain — Spark · RLN/RGB · Arkade · Liquid — built around one hard constraint: don't ask a tiny model to do the slow, weak parts.</p>
+      <div class="feat-list">
+        <div class="feat"><div class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#15E99A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div><div><h4>Multi-L2 tool contract</h4><p>Per-layer namespaced tools plus a cross-cutting router — one source of truth in core.</p></div></div>
+        <div class="feat"><div class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#15E99A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div><div><h4>Recipe engine</h4><p>Deterministic payments, swaps, atomic swaps and channel orders that work on a 0.6B model.</p></div></div>
+        <div class="feat"><div class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#15E99A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div><div><h4>Trading &amp; onboarding</h4><p>Live-maker quotes, RGB↔BTC atomic swaps, and LSPS1 channel orders. "buy 100 USDT" onboards a channel-less user end to end.</p></div></div>
+        <div class="feat"><div class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#15E99A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div><div><h4>Skills</h4><p>Agent-Skills-spec playbooks that scope tools and carry recipes, bundled for React Native.</p></div></div>
+        <div class="feat"><div class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#15E99A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div><div><h4>Memory + RAG</h4><p>On-device recall and injected-embedding retrieval, with cheap dedup so memory doesn't bloat.</p></div></div>
+        <div class="feat"><div class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#15E99A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div><div><h4>Hardware-aware</h4><p>Picks the model and context budget for the device; P2P-delegates heavy work to a paired desktop.</p></div></div>
+        <div class="feat"><div class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#15E99A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div><div><h4>Voice-first readback</h4><p>The confirm sheet reads back the resolved call — not the model — so unit and recipient mistakes surface where they're caught.</p></div></div>
+        <div class="feat"><div class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#15E99A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div><div><h4>Plural tool sources</h4><p>In-process, MCP, CLI and L402 pay-per-call HTTP — all behind one registry.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- EVIDENCE -->
+  <section class="block" id="evidence">
+    <div class="wrap">
+      <div class="kicker">Defensible by construction</div>
+      <h2>Receipts, not remembered scores</h2>
+      <p class="section-lede">The headline benchmark is Product Evaluation v3 — twelve realistic scenarios run through the same production Funnel, graded on route, typed arguments, confirmation behavior and observable side effects. No score is claimed without its raw run, exact commit and hardware metadata.</p>
+      <div class="ev-grid">
+        <div class="codebox">
+<span class="c"># clean clone → deterministic checks</span>
+<span class="g">git</span> <span class="w">clone https://github.com/kaleidoswap/kaleido-mind</span>
+<span class="g">pnpm</span> <span class="w">install --frozen-lockfile</span>
+<span class="g">pnpm</span> <span class="w">build &amp;&amp; pnpm typecheck &amp;&amp; pnpm test</span>
+
+<span class="c"># real, timestamped QVAC evidence</span>
+<span class="g">pnpm</span> <span class="w">submission:evidence -- \</span>
+     <span class="w">--models qwen3-0.6b,qwen3-1.7b,qwen3-4b</span>
+        </div>
+        <div class="stat-grid">
+          <div class="stat"><div class="n">100%</div><div class="l">local inference via QVAC SDK</div></div>
+          <div class="stat"><div class="n">0.6–4B</div><div class="l">on-device model footprint</div></div>
+          <div class="stat"><div class="n">JSONL</div><div class="l">per-call telemetry: TTFT, TPS, backend</div></div>
+          <div class="stat"><div class="n">Apache-2.0</div><div class="l">open engine, public audit trail</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ROADMAP -->
+  <section class="block" id="roadmap">
+    <div class="wrap">
+      <div class="kicker">What's next</div>
+      <h2>Roadmap</h2>
+      <p class="section-lede">The hackathon build is a foundation. Two tracks follow directly from it.</p>
+      <div class="road">
+        <div class="card violet">
+          <div class="num">01</div>
+          <h3>A real local-first personal assistant</h3>
+          <p>Deepen the agentic tier into a genuine assistant: long-horizon planning and memory, on-device RAG over wallet history, documents and contacts, and a stronger autonomous mode that proposes and executes multi-step workflows — all under the same host-enforced confirmation gates.</p>
+        </div>
+        <div class="card violet">
+          <div class="num">02</div>
+          <h3>A measurement &amp; fine-tuning loop for edge models</h3>
+          <p>Turn the evidence harness into a flywheel: sanitized trace collection, synthetic wallet-task datasets, fine-tuned small models, and a benchmark matrix across function-calling vs. MCP vs. skills and reasoning modes (no-think / short CoT / extended thinking) — so the Funnel routes each request to the cheapest mode that still succeeds.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA BAND -->
+  <section class="band">
+    <div class="band-glow"></div>
+    <div class="wrap">
+      <h2>Open engine. Public history. Your keys, your model.</h2>
+      <p>Clone it, run the evidence harness, read every line.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="https://github.com/kaleidoswap/kaleido-mind" target="_blank" rel="noopener">Explore the repo</a>
+        <a class="btn btn-ghost" href="https://dorahacks.io/hackathon/qvac-unleach-edge-ai-i/" target="_blank" rel="noopener">QVAC Hackathon ↗</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <div class="brand"><svg width="28" height="28"><use href="#kmark"/></svg> KaleidoMind</div>
+        <p>Sovereign AI for sovereign money. A local-first agent for Bitcoin, Lightning and RGB — by the KaleidoSwap team, Italy / Europe.</p>
+      </div>
+      <div class="foot-links">
+        <div class="foot-col">
+          <h5>Project</h5>
+          <a href="https://github.com/kaleidoswap/kaleido-mind" target="_blank" rel="noopener">kaleido-mind</a>
+          <a href="https://github.com/kaleidoswap/Rate" target="_blank" rel="noopener">Rate (mobile)</a>
+          <a href="https://github.com/kaleidoswap/desktop-app" target="_blank" rel="noopener">Desktop app</a>
+        </div>
+        <div class="foot-col">
+          <h5>Resources</h5>
+          <a href="https://github.com/kaleidoswap/kaleido-mind/blob/main/SUBMISSION.md" target="_blank" rel="noopener">Submission</a>
+          <a href="https://github.com/kaleidoswap/kaleido-mind/blob/main/REPRODUCE.md" target="_blank" rel="noopener">Reproduce</a>
+          <a href="https://kaleidoswap.com" target="_blank" rel="noopener">KaleidoSwap</a>
+        </div>
+        <div class="foot-col">
+          <h5>Ecosystem</h5>
+          <a href="https://qvac.tether.io/" target="_blank" rel="noopener">QVAC SDK</a>
+          <a href="https://dorahacks.io/hackathon/qvac-unleach-edge-ai-i/" target="_blank" rel="noopener">QVAC Hackathon</a>
+          <a href="https://www.npmjs.com/package/@kaleidorg/mind" target="_blank" rel="noopener">npm package</a>
+        </div>
+      </div>
+    </div>
+    <div class="copy">
+      <span>© 2026 KaleidoSwap · Apache-2.0</span>
+      <span>Inference runs locally via QVAC. Optional network tools are fully disclosed.</span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

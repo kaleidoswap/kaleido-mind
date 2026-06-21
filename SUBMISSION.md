@@ -2,7 +2,8 @@
 
 **Sovereign AI for sovereign money.** KaleidoMind is an Apache-2.0,
 local-first reasoning and tool-calling engine for a multi-layer Bitcoin wallet.
-The same engine powers a desktop application and the Rate React Native wallet.
+The same engine powers a desktop application, the Rate React Native wallet and
+an autonomous wallet agent.
 
 **Tracks:** General Purpose and Mobile.
 
@@ -39,7 +40,10 @@ listed in [`submission/remote-apis.yaml`](./submission/remote-apis.yaml).
   namespaced tools, skills, recipes, telemetry and phone pairing.
 - **Mobile:** Rate on a physical iPhone, with local QVAC inference, Whisper,
   TTS, wallet tool execution and structural confirmation.
-- **Engine:** `@kaleidorg/mind`, shared by both surfaces.
+- **Agent:** an autonomous optimizer surface — risk-gated task scheduling, run
+  logs and optimizer skills — that drives the same engine without a human in
+  every loop, while spend-capable tools still pause for host confirmation.
+- **Engine:** `@kaleidorg/mind`, shared by all surfaces.
 
 ## Auditable evidence
 
@@ -90,6 +94,25 @@ pnpm typecheck
 pnpm test
 pnpm submission:evidence:mock
 ```
+
+## Roadmap
+
+The hackathon build is a foundation. Two tracks follow directly from it:
+
+- **A real local-first personal assistant.** Deepen the agentic tier into a
+  genuine assistant: long-horizon planning and memory, on-device retrieval
+  (local RAG over the user's wallet history, documents and contacts) and a
+  stronger autonomous mode that proposes and executes multi-step workflows under
+  the same host-enforced confirmation gates. The agent stops being a wallet
+  command line and becomes an assistant that holds context.
+
+- **A measurement and fine-tuning loop for edge models.** Turn the evidence
+  harness into a data and evaluation flywheel: collect anonymized, sanitized
+  traces; build synthetic datasets for wallet tasks; and fine-tune small,
+  shippable models. Run a benchmark matrix across the combinations that actually
+  decide reliability on-device — function calling vs. MCP vs. skills, and
+  reasoning modes (no-think, short chain-of-thought, extended thinking) — so the
+  Funnel can route each request to the cheapest mode that still succeeds.
 
 ## Prior work
 
