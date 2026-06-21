@@ -1,0 +1,63 @@
+<!doctype html><html><head><meta charset="utf-8"><title>KaleidoMind — Tool-Use Eval</title>
+<style>
+  :root{color-scheme:dark}
+  body{font:14px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;background:#0d1117;color:#e6edf3;margin:0;padding:32px;max-width:1000px;margin:auto}
+  h1{font-size:22px;margin:0 0 4px}.sub{color:#8b949e;margin:0 0 24px}
+  .grad{background:linear-gradient(90deg,#a371f7,#f778ba,#39d0d8);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800}
+  table{border-collapse:collapse;width:100%;margin:16px 0 32px}
+  th,td{padding:8px 10px;text-align:left;border-bottom:1px solid #21262d;vertical-align:middle}
+  thead th{color:#8b949e;font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+  tbody th{font-weight:700}
+  .cell{display:flex;flex-direction:column;gap:2px;min-width:120px}
+  .bar{height:8px;background:#21262d;border-radius:4px;overflow:hidden}
+  .bar i{display:block;height:100%}
+  .cell span{font-weight:700}.cell small{color:#8b949e;font-size:11px}
+  td.na{color:#484f58}.best b{color:#39d353}
+  td i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px;vertical-align:middle}
+  .meta{color:#8b949e;font-size:12px;border-top:1px solid #21262d;padding-top:16px;margin-top:24px}
+  h2{font-size:15px;margin:24px 0 4px}
+  .cell small.frac{font-weight:400;color:#8b949e}
+  .gloss{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:6px 18px;font-size:13px}
+  .gloss ul{margin:6px 0 12px;padding-left:18px;color:#c9d1d9}.gloss li{margin:3px 0}.gloss b{color:#e6edf3}
+  .note{color:#8b949e;font-size:12px}
+</style></head><body>
+  <h1><span class="grad">KaleidoMind</span> · Tool-Use Eval</h1>
+  <p class="sub">Which tool-use mechanism works best, per model — fully on-device via QVAC.</p>
+
+  <h2>Task success — model × mechanism</h2>
+  <table>
+    <thead><tr><th>model</th><th>fc</th><th>mcp</th><th>skill</th><th>best</th></tr></thead>
+    <tbody><tr><th>Qwen 3 · 0.6B</th><td><div class="cell"><div class="bar"><i style="width:63%;background:#e3b341"></i></div><span>63% <small class="frac">63% rel</small></span><small>95% CI 51–73 · sel 67% · args 100% · 2664ms · TTFT 790ms · 90 tok/s · 72 trials</small></div></td><td><div class="cell"><div class="bar"><i style="width:58%;background:#e3b341"></i></div><span>58% <small class="frac">58% rel</small></span><small>95% CI 47–69 · sel 67% · args 96% · 5711ms · TTFT 3517ms · 80.7 tok/s · 72 trials</small></div></td><td><div class="cell"><div class="bar"><i style="width:42%;background:#f85149"></i></div><span>42% <small class="frac">42% rel</small></span><small>95% CI 31–53 · sel 46% · args 100% · 4031ms · TTFT 1849ms · 87.3 tok/s · 72 trials</small></div></td><td class="best">fc <b>63%</b></td></tr><tr><th>Qwen 3 · 1.7B</th><td><div class="cell"><div class="bar"><i style="width:63%;background:#e3b341"></i></div><span>63% <small class="frac">63% rel</small></span><small>95% CI 51–73 · sel 75% · args 88% · 6840ms · TTFT 2457ms · 46.4 tok/s · 72 trials</small></div></td><td><div class="cell"><div class="bar"><i style="width:58%;background:#e3b341"></i></div><span>58% <small class="frac">58% rel</small></span><small>95% CI 47–69 · sel 75% · args 88% · 13412ms · TTFT 7799ms · 36.9 tok/s · 72 trials</small></div></td><td><div class="cell"><div class="bar"><i style="width:29%;background:#f85149"></i></div><span>29% <small class="frac">29% rel</small></span><small>95% CI 20–41 · sel 33% · args 100% · 11669ms · TTFT 5149ms · 34.9 tok/s · 72 trials</small></div></td><td class="best">fc <b>63%</b></td></tr><tr><th>Qwen 3 · 4B</th><td><div class="cell"><div class="bar"><i style="width:71%;background:#e3b341"></i></div><span>71% <small class="frac">71% rel</small></span><small>95% CI 60–80 · sel 79% · args 96% · 28759ms · TTFT 6829ms · 11.1 tok/s · 72 trials</small></div></td><td><div class="cell"><div class="bar"><i style="width:67%;background:#e3b341"></i></div><span>67% <small class="frac">67% rel</small></span><small>95% CI 55–77 · sel 75% · args 96% · 53101ms · TTFT 27514ms · 11.1 tok/s · 72 trials</small></div></td><td><div class="cell"><div class="bar"><i style="width:42%;background:#f85149"></i></div><span>42% <small class="frac">42% rel</small></span><small>95% CI 31–53 · sel 46% · args 100% · 44710ms · TTFT 14453ms · 10.4 tok/s · 72 trials</small></div></td><td class="best">fc <b>71%</b></td></tr></tbody>
+  </table>
+
+  <h2>Best mechanism by category</h2>
+  <table>
+    <thead><tr><th>model</th><th>wallet</th><th>trading</th><th>commerce</th><th>knowledge</th><th>memory</th><th>negative</th></tr></thead>
+    <tbody><tr><th>Qwen 3 · 0.6B</th><td><i style="background:#39d353"></i>90%</td><td><i style="background:#e3b341"></i>75%</td><td><i style="background:#e3b341"></i>50%</td><td><i style="background:#f85149"></i>0%</td><td><i style="background:#f85149"></i>25%</td><td><i style="background:#39d353"></i>100%</td></tr><tr><th>Qwen 3 · 1.7B</th><td><i style="background:#39d353"></i>80%</td><td><i style="background:#e3b341"></i>50%</td><td><i style="background:#e3b341"></i>50%</td><td><i style="background:#e3b341"></i>50%</td><td><i style="background:#f85149"></i>25%</td><td><i style="background:#39d353"></i>100%</td></tr><tr><th>Qwen 3 · 4B</th><td><i style="background:#39d353"></i>80%</td><td><i style="background:#e3b341"></i>50%</td><td><i style="background:#e3b341"></i>50%</td><td><i style="background:#e3b341"></i>50%</td><td><i style="background:#e3b341"></i>75%</td><td><i style="background:#39d353"></i>100%</td></tr></tbody>
+  </table>
+
+  <h2>Timing</h2><table><thead><tr><th>model</th><th>load time</th></tr></thead><tbody><tr><th>Qwen 3 · 0.6B</th><td>1.6s</td></tr><tr><th>Qwen 3 · 1.7B</th><td>2.1s</td></tr><tr><th>Qwen 3 · 4B</th><td>13.2s</td></tr><tr><th>total run</th><td>12322.1s</td></tr></tbody></table><p class="note">Per-turn latency (model thinking time) is shown in each matrix cell as <code>ms/turn</code>. Load time is one-off per model.</p>
+
+  <h2>How to read this</h2>
+  <div class="gloss">
+    <p><b>The question:</b> the same wallet capabilities are offered to each model three ways. Higher = the model picked the right tool more often. We grade the model's <b>first decision</b> (one inference, no execution) and run each case <b>3×</b> for confidence.</p>
+    <p><b>Mechanisms</b></p>
+    <ul>
+      <li><b>fc</b> — <i>function calling</i>: a few curated tool schemas. The clean baseline.</li>
+      <li><b>mcp</b> — the same tools <i>plus ~46 decoys (≈60 total)</i>, like a real MCP server. Tests selection under a large surface.</li>
+      <li><b>skill</b> — a skill narrows the tools to ~3–9 and injects a playbook (our portable default — works on mobile, where CLI doesn't exist; on desktop a skill can also drive a CLI).</li>
+    </ul>
+    <p><b>Metrics</b> (per cell)</p>
+    <ul>
+      <li><b>%</b> — task success across all repeats: right tool ✓ <i>and</i> right args ✓. The headline.</li>
+      <li><b>% rel</b> — <b>reliability</b>: share of cases that passed on <i>every</i> repeat (consistency, not luck).</li>
+      <li><b>sel</b> — picked the right tool (ignoring arguments). <b>args</b> — got the arguments right when it picked right.</li>
+      <li><b>ms</b> — average decision latency (model resident in RAM). <b>trials</b> = cases × repeats.</li>
+      <li><b>⚠</b> — over-trigger: called a tool on a greeting (should have just replied). Lower is better.</li>
+    </ul>
+    <p><b>Categories</b>: wallet, trading, commerce (Bitrefill), knowledge (explain → search), memory (remember/recall), negative (greetings → must NOT call a tool).</p>
+    <p class="note">No execution — we grade the model's chosen tool call directly, against a seeded dataset, with the model loaded once and reused. Reproducible; measures <i>decision quality</i>.</p>
+  </div>
+
+  <div class="meta">24 cases × 3 repeats · mode qvac · darwin/arm64 24.0GB · 2026-06-20 17:00</div>
+</body></html>

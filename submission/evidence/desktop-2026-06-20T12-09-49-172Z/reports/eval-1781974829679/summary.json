@@ -1,0 +1,503 @@
+{
+  "meta": {
+    "ts": 1781974829679,
+    "dataset": 24,
+    "repeats": 3,
+    "mode": "qvac",
+    "hardware": "darwin/arm64 24.0GB",
+    "timing": {
+      "totalMs": 12322063,
+      "perModelLoadMs": {
+        "Qwen 3 · 0.6B": 1559,
+        "Qwen 3 · 1.7B": 2069,
+        "Qwen 3 · 4B": 13150
+      }
+    }
+  },
+  "models": [
+    "Qwen 3 · 0.6B",
+    "Qwen 3 · 1.7B",
+    "Qwen 3 · 4B"
+  ],
+  "cells": [
+    {
+      "model": "Qwen 3 · 0.6B",
+      "mech": "fc",
+      "applicable": 72,
+      "pass": 45,
+      "selection": 48,
+      "args": 72,
+      "overTrigger": 0,
+      "avgLatency": 2664,
+      "avgTtft": 790,
+      "avgTokensPerSecond": 90,
+      "avgPromptTokens": 761,
+      "avgCompletionTokens": 0,
+      "pct": 63,
+      "cases": 24,
+      "reliablePct": 63
+    },
+    {
+      "model": "Qwen 3 · 0.6B",
+      "mech": "mcp",
+      "applicable": 72,
+      "pass": 42,
+      "selection": 48,
+      "args": 69,
+      "overTrigger": 0,
+      "avgLatency": 5711,
+      "avgTtft": 3517,
+      "avgTokensPerSecond": 80.7,
+      "avgPromptTokens": 2691,
+      "avgCompletionTokens": 0,
+      "pct": 58,
+      "cases": 24,
+      "reliablePct": 58
+    },
+    {
+      "model": "Qwen 3 · 0.6B",
+      "mech": "skill",
+      "applicable": 72,
+      "pass": 30,
+      "selection": 33,
+      "args": 72,
+      "overTrigger": 0,
+      "avgLatency": 4031,
+      "avgTtft": 1849,
+      "avgTokensPerSecond": 87.3,
+      "avgPromptTokens": 1483,
+      "avgCompletionTokens": 0,
+      "pct": 42,
+      "cases": 24,
+      "reliablePct": 42
+    },
+    {
+      "model": "Qwen 3 · 1.7B",
+      "mech": "fc",
+      "applicable": 72,
+      "pass": 45,
+      "selection": 54,
+      "args": 63,
+      "overTrigger": 0,
+      "avgLatency": 6840,
+      "avgTtft": 2457,
+      "avgTokensPerSecond": 46.4,
+      "avgPromptTokens": 761,
+      "avgCompletionTokens": 0,
+      "pct": 63,
+      "cases": 24,
+      "reliablePct": 63
+    },
+    {
+      "model": "Qwen 3 · 1.7B",
+      "mech": "mcp",
+      "applicable": 72,
+      "pass": 42,
+      "selection": 54,
+      "args": 63,
+      "overTrigger": 0,
+      "avgLatency": 13412,
+      "avgTtft": 7799,
+      "avgTokensPerSecond": 36.9,
+      "avgPromptTokens": 2691,
+      "avgCompletionTokens": 0,
+      "pct": 58,
+      "cases": 24,
+      "reliablePct": 58
+    },
+    {
+      "model": "Qwen 3 · 1.7B",
+      "mech": "skill",
+      "applicable": 72,
+      "pass": 21,
+      "selection": 24,
+      "args": 72,
+      "overTrigger": 0,
+      "avgLatency": 11669,
+      "avgTtft": 5149,
+      "avgTokensPerSecond": 34.9,
+      "avgPromptTokens": 1483,
+      "avgCompletionTokens": 0,
+      "pct": 29,
+      "cases": 24,
+      "reliablePct": 29
+    },
+    {
+      "model": "Qwen 3 · 4B",
+      "mech": "fc",
+      "applicable": 72,
+      "pass": 51,
+      "selection": 57,
+      "args": 69,
+      "overTrigger": 0,
+      "avgLatency": 28759,
+      "avgTtft": 6829,
+      "avgTokensPerSecond": 11.1,
+      "avgPromptTokens": 761,
+      "avgCompletionTokens": 0,
+      "pct": 71,
+      "cases": 24,
+      "reliablePct": 71
+    },
+    {
+      "model": "Qwen 3 · 4B",
+      "mech": "mcp",
+      "applicable": 72,
+      "pass": 48,
+      "selection": 54,
+      "args": 69,
+      "overTrigger": 0,
+      "avgLatency": 53101,
+      "avgTtft": 27514,
+      "avgTokensPerSecond": 11.1,
+      "avgPromptTokens": 2691,
+      "avgCompletionTokens": 0,
+      "pct": 67,
+      "cases": 24,
+      "reliablePct": 67
+    },
+    {
+      "model": "Qwen 3 · 4B",
+      "mech": "skill",
+      "applicable": 72,
+      "pass": 30,
+      "selection": 33,
+      "args": 72,
+      "overTrigger": 0,
+      "avgLatency": 44710,
+      "avgTtft": 14453,
+      "avgTokensPerSecond": 10.4,
+      "avgPromptTokens": 1483,
+      "avgCompletionTokens": 0,
+      "pct": 42,
+      "cases": 24,
+      "reliablePct": 42
+    }
+  ],
+  "byCategory": [
+    {
+      "model": "Qwen 3 · 0.6B",
+      "mech": "fc",
+      "category": "wallet",
+      "pct": 90
+    },
+    {
+      "model": "Qwen 3 · 0.6B",
+      "mech": "fc",
+      "category": "trading",
+      "pct": 75
+    },
+    {
+      "model": "Qwen 3 · 0.6B",
+      "mech": "fc",
+      "category": "commerce",
+      "pct": 50
+    },
+    {
+      "model": "Qwen 3 · 0.6B",
+      "mech": "fc",
+      "category": "knowledge",
+      "pct": 0
+    },
+    {
+      "model": "Qwen 3 · 0.6B",
+      "mech": "fc",
+      "category": "memory",
+      "pct": 0
+    },
+    {
+      "model": "Qwen 3 · 0.6B",
+      "mech": "fc",
+      "category": "negative",
+      "pct": 100
+    },
+    {
+      "model": "Qwen 3 · 0.6B",
+      "mech": "mcp",
+      "category": "wallet",
+      "pct": 90
+    },
+    {
+      "model": "Qwen 3 · 0.6B",
+      "mech": "mcp",
+      "category": "trading",
+      "pct": 50
+    },
+    {
+      "model": "Qwen 3 · 0.6B",
+      "mech": "mcp",
+      "category": "commerce",
+      "pct": 50
+    },
+    {
+      "model": "Qwen 3 · 0.6B",
+      "mech": "mcp",
+      "category": "knowledge",
+      "pct": 0
+    },
+    {
+      "model": "Qwen 3 · 0.6B",
+      "mech": "mcp",
+      "category": "memory",
+      "pct": 0
+    },
+    {
+      "model": "Qwen 3 · 0.6B",
+      "mech": "mcp",
+      "category": "negative",
+      "pct": 100
+    },
+    {
+      "model": "Qwen 3 · 0.6B",
+      "mech": "skill",
+      "category": "wallet",
+      "pct": 40
+    },
+    {
+      "model": "Qwen 3 · 0.6B",
+      "mech": "skill",
+      "category": "trading",
+      "pct": 50
+    },
+    {
+      "model": "Qwen 3 · 0.6B",
+      "mech": "skill",
+      "category": "commerce",
+      "pct": 50
+    },
+    {
+      "model": "Qwen 3 · 0.6B",
+      "mech": "skill",
+      "category": "knowledge",
+      "pct": 0
+    },
+    {
+      "model": "Qwen 3 · 0.6B",
+      "mech": "skill",
+      "category": "memory",
+      "pct": 25
+    },
+    {
+      "model": "Qwen 3 · 0.6B",
+      "mech": "skill",
+      "category": "negative",
+      "pct": 100
+    },
+    {
+      "model": "Qwen 3 · 1.7B",
+      "mech": "fc",
+      "category": "wallet",
+      "pct": 80
+    },
+    {
+      "model": "Qwen 3 · 1.7B",
+      "mech": "fc",
+      "category": "trading",
+      "pct": 50
+    },
+    {
+      "model": "Qwen 3 · 1.7B",
+      "mech": "fc",
+      "category": "commerce",
+      "pct": 50
+    },
+    {
+      "model": "Qwen 3 · 1.7B",
+      "mech": "fc",
+      "category": "knowledge",
+      "pct": 50
+    },
+    {
+      "model": "Qwen 3 · 1.7B",
+      "mech": "fc",
+      "category": "memory",
+      "pct": 25
+    },
+    {
+      "model": "Qwen 3 · 1.7B",
+      "mech": "fc",
+      "category": "negative",
+      "pct": 100
+    },
+    {
+      "model": "Qwen 3 · 1.7B",
+      "mech": "mcp",
+      "category": "wallet",
+      "pct": 80
+    },
+    {
+      "model": "Qwen 3 · 1.7B",
+      "mech": "mcp",
+      "category": "trading",
+      "pct": 50
+    },
+    {
+      "model": "Qwen 3 · 1.7B",
+      "mech": "mcp",
+      "category": "commerce",
+      "pct": 50
+    },
+    {
+      "model": "Qwen 3 · 1.7B",
+      "mech": "mcp",
+      "category": "knowledge",
+      "pct": 0
+    },
+    {
+      "model": "Qwen 3 · 1.7B",
+      "mech": "mcp",
+      "category": "memory",
+      "pct": 25
+    },
+    {
+      "model": "Qwen 3 · 1.7B",
+      "mech": "mcp",
+      "category": "negative",
+      "pct": 100
+    },
+    {
+      "model": "Qwen 3 · 1.7B",
+      "mech": "skill",
+      "category": "wallet",
+      "pct": 30
+    },
+    {
+      "model": "Qwen 3 · 1.7B",
+      "mech": "skill",
+      "category": "trading",
+      "pct": 25
+    },
+    {
+      "model": "Qwen 3 · 1.7B",
+      "mech": "skill",
+      "category": "commerce",
+      "pct": 0
+    },
+    {
+      "model": "Qwen 3 · 1.7B",
+      "mech": "skill",
+      "category": "knowledge",
+      "pct": 0
+    },
+    {
+      "model": "Qwen 3 · 1.7B",
+      "mech": "skill",
+      "category": "memory",
+      "pct": 25
+    },
+    {
+      "model": "Qwen 3 · 1.7B",
+      "mech": "skill",
+      "category": "negative",
+      "pct": 100
+    },
+    {
+      "model": "Qwen 3 · 4B",
+      "mech": "fc",
+      "category": "wallet",
+      "pct": 80
+    },
+    {
+      "model": "Qwen 3 · 4B",
+      "mech": "fc",
+      "category": "trading",
+      "pct": 50
+    },
+    {
+      "model": "Qwen 3 · 4B",
+      "mech": "fc",
+      "category": "commerce",
+      "pct": 50
+    },
+    {
+      "model": "Qwen 3 · 4B",
+      "mech": "fc",
+      "category": "knowledge",
+      "pct": 50
+    },
+    {
+      "model": "Qwen 3 · 4B",
+      "mech": "fc",
+      "category": "memory",
+      "pct": 75
+    },
+    {
+      "model": "Qwen 3 · 4B",
+      "mech": "fc",
+      "category": "negative",
+      "pct": 100
+    },
+    {
+      "model": "Qwen 3 · 4B",
+      "mech": "mcp",
+      "category": "wallet",
+      "pct": 80
+    },
+    {
+      "model": "Qwen 3 · 4B",
+      "mech": "mcp",
+      "category": "trading",
+      "pct": 50
+    },
+    {
+      "model": "Qwen 3 · 4B",
+      "mech": "mcp",
+      "category": "commerce",
+      "pct": 50
+    },
+    {
+      "model": "Qwen 3 · 4B",
+      "mech": "mcp",
+      "category": "knowledge",
+      "pct": 0
+    },
+    {
+      "model": "Qwen 3 · 4B",
+      "mech": "mcp",
+      "category": "memory",
+      "pct": 75
+    },
+    {
+      "model": "Qwen 3 · 4B",
+      "mech": "mcp",
+      "category": "negative",
+      "pct": 100
+    },
+    {
+      "model": "Qwen 3 · 4B",
+      "mech": "skill",
+      "category": "wallet",
+      "pct": 30
+    },
+    {
+      "model": "Qwen 3 · 4B",
+      "mech": "skill",
+      "category": "trading",
+      "pct": 25
+    },
+    {
+      "model": "Qwen 3 · 4B",
+      "mech": "skill",
+      "category": "commerce",
+      "pct": 0
+    },
+    {
+      "model": "Qwen 3 · 4B",
+      "mech": "skill",
+      "category": "knowledge",
+      "pct": 50
+    },
+    {
+      "model": "Qwen 3 · 4B",
+      "mech": "skill",
+      "category": "memory",
+      "pct": 75
+    },
+    {
+      "model": "Qwen 3 · 4B",
+      "mech": "skill",
+      "category": "negative",
+      "pct": 100
+    }
+  ]
+}

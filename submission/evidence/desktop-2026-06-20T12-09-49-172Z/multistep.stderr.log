@@ -1,0 +1,98 @@
+
+[38;5;141mTrack B — multi-step: recipe vs free-agentic[0m[2m  (stubbed execution, K repeats)[0m
+parse: load the model metadata from disk file.
+initFromConfig: load the model from disk file and apply lora adapter, if any.
+common_init_result: fitting params to device memory, for bugs during this step try to reproduce them with -fit off, or provide --verbose logs if the bug only occurs with -fit on
+common_init_result: added </s> logit bias = -inf
+common_init_result: added <|endoftext|> logit bias = -inf
+common_init_result: added <|im_end|> logit bias = -inf
+common_init_result: added <|fim_pad|> logit bias = -inf
+common_init_result: added <|repo_name|> logit bias = -inf
+common_init_result: added <|file_sep|> logit bias = -inf
+2% · 3/162 · qwen3-0.6b recipe
+4% · 6/162 · qwen3-0.6b recipe
+6% · 9/162 · qwen3-0.6b recipe
+7% · 12/162 · qwen3-0.6b recipe
+9% · 15/162 · qwen3-0.6b recipe
+11% · 18/162 · qwen3-0.6b recipe
+13% · 21/162 · qwen3-0.6b recipe
+15% · 24/162 · qwen3-0.6b recipe
+17% · 27/162 · qwen3-0.6b recipe
+19% · 30/162 · qwen3-0.6b free
+20% · 33/162 · qwen3-0.6b free
+22% · 36/162 · qwen3-0.6b free
+24% · 39/162 · qwen3-0.6b free
+26% · 42/162 · qwen3-0.6b free
+28% · 45/162 · qwen3-0.6b free
+30% · 48/162 · qwen3-0.6b free
+31% · 51/162 · qwen3-0.6b free
+33% · 54/162 · qwen3-0.6b free
+parse: load the model metadata from disk file.
+initFromConfig: load the model from disk file and apply lora adapter, if any.
+common_init_result: fitting params to device memory, for bugs during this step try to reproduce them with -fit off, or provide --verbose logs if the bug only occurs with -fit on
+common_init_result: added </s> logit bias = -inf
+common_init_result: added <|endoftext|> logit bias = -inf
+common_init_result: added <|im_end|> logit bias = -inf
+common_init_result: added <|fim_pad|> logit bias = -inf
+common_init_result: added <|repo_name|> logit bias = -inf
+common_init_result: added <|file_sep|> logit bias = -inf
+35% · 57/162 · qwen3-1.7b recipe
+37% · 60/162 · qwen3-1.7b recipe
+39% · 63/162 · qwen3-1.7b recipe
+41% · 66/162 · qwen3-1.7b recipe
+43% · 69/162 · qwen3-1.7b recipe
+44% · 72/162 · qwen3-1.7b recipe
+46% · 75/162 · qwen3-1.7b recipe
+48% · 78/162 · qwen3-1.7b recipe
+50% · 81/162 · qwen3-1.7b recipe
+52% · 84/162 · qwen3-1.7b free
+54% · 87/162 · qwen3-1.7b free
+56% · 90/162 · qwen3-1.7b free
+57% · 93/162 · qwen3-1.7b free
+59% · 96/162 · qwen3-1.7b free
+61% · 99/162 · qwen3-1.7b free
+63% · 102/162 · qwen3-1.7b free
+65% · 105/162 · qwen3-1.7b free
+67% · 108/162 · qwen3-1.7b free
+parse: load the model metadata from disk file.
+initFromConfig: load the model from disk file and apply lora adapter, if any.
+common_init_result: fitting params to device memory, for bugs during this step try to reproduce them with -fit off, or provide --verbose logs if the bug only occurs with -fit on
+common_init_result: added </s> logit bias = -inf
+common_init_result: added <|endoftext|> logit bias = -inf
+common_init_result: added <|im_end|> logit bias = -inf
+common_init_result: added <|fim_pad|> logit bias = -inf
+common_init_result: added <|repo_name|> logit bias = -inf
+common_init_result: added <|file_sep|> logit bias = -inf
+69% · 111/162 · qwen3-4b recipe
+70% · 114/162 · qwen3-4b recipe
+72% · 117/162 · qwen3-4b recipe
+74% · 120/162 · qwen3-4b recipe
+76% · 123/162 · qwen3-4b recipe
+78% · 126/162 · qwen3-4b recipe
+80% · 129/162 · qwen3-4b recipe
+81% · 132/162 · qwen3-4b recipe
+83% · 135/162 · qwen3-4b recipe
+85% · 138/162 · qwen3-4b free
+87% · 141/162 · qwen3-4b free
+89% · 144/162 · qwen3-4b free
+91% · 147/162 · qwen3-4b free
+93% · 150/162 · qwen3-4b free
+94% · 153/162 · qwen3-4b free
+96% · 156/162 · qwen3-4b free
+98% · 159/162 · qwen3-4b free
+100% · 162/162 · qwen3-4b free
+
+[1mqwen3-0.6b[0m
+  recipe  [38;5;141m██████████████████[0m[90m[0m 100%  [2m100% (88–100) pass · 100% reliable · 0 inf · 0ms · cov 100% ord 100% args 100%[0m
+  free    [38;5;141m[0m[90m░░░░░░░░░░░░░░░░░░[0m   0%  [2m0% (0–13) pass · 0% reliable · 2 inf · 5667ms · cov 11% ord 56% args 11%[0m
+[2m    recipe vs free: significant (p<0.05)[0m
+[1mqwen3-1.7b[0m
+  recipe  [38;5;141m██████████████████[0m[90m[0m 100%  [2m100% (88–100) pass · 100% reliable · 0 inf · 0ms · cov 100% ord 100% args 100%[0m
+  free    [38;5;141m██[0m[90m░░░░░░░░░░░░░░░░[0m  11%  [2m11% (4–28) pass · 11% reliable · 2 inf · 19209ms · cov 44% ord 44% args 11%[0m
+[2m    recipe vs free: significant (p<0.05)[0m
+[1mqwen3-4b[0m
+  recipe  [38;5;141m██████████████████[0m[90m[0m 100%  [2m100% (88–100) pass · 100% reliable · 0 inf · 0ms · cov 100% ord 100% args 100%[0m
+  free    [38;5;141m[0m[90m░░░░░░░░░░░░░░░░░░[0m   0%  [2m0% (0–13) pass · 0% reliable · 2 inf · 49604ms · cov 56% ord 56% args 0%[0m
+[2m    recipe vs free: significant (p<0.05)[0m
+[2m
+9 cases × 3 repeats · 95% CI (Wilson) · recipe = plan-in-skill (~0 inferences) · free = model plans every step[0m

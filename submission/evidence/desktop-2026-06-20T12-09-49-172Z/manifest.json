@@ -1,0 +1,105 @@
+{
+  "schema": "kaleidomind.benchmark.v1",
+  "startedAt": "2026-06-20T12:09:51.009Z",
+  "mode": "qvac",
+  "repository": {
+    "commit": "f2ce15b667263a64e5400a91c74d2078481ce200",
+    "branch": "codex/hackathon-submission",
+    "dirty": true,
+    "dirtyPaths": [
+      "apps/provider/src/index.ts"
+    ],
+    "benchmarkInputsDirty": false
+  },
+  "software": {
+    "node": "v24.12.0",
+    "mind": "0.6.1",
+    "qvacSdk": "^0.13.1"
+  },
+  "parameters": {
+    "models": [
+      "qwen3-0.6b",
+      "qwen3-1.7b",
+      "qwen3-4b"
+    ],
+    "repeats": 3,
+    "per": 2,
+    "quick": false,
+    "order": [
+      "safety",
+      "multistep",
+      "quality",
+      "capability"
+    ]
+  },
+  "models": [
+    {
+      "id": "qwen3-0.6b",
+      "filename": "Qwen3-0.6B-Q4_K_M.gguf",
+      "sha256": "ac2d97712095a558e31573f62f466a3f9d93990898b0ec79d7c974c1780d524a"
+    },
+    {
+      "id": "qwen3-1.7b",
+      "filename": "Qwen3-1.7B-Q4_K_M.gguf",
+      "sha256": "b139949c5bd74937ad8ed8c8cf3d9ffb1e99c866c823204dc42c0d91fa181897"
+    },
+    {
+      "id": "qwen3-4b",
+      "filename": "Qwen3-4B-Q4_K_M.gguf",
+      "sha256": "f6f851777709861056efcdad3af01da38b31223a3ba26e61a4f8bf3a2195813a"
+    }
+  ],
+  "hardware": {
+    "platform": "darwin",
+    "release": "25.5.0",
+    "cpu": "Apple M4",
+    "logicalCores": 10,
+    "totalMemoryBytes": 25769803776,
+    "freeMemoryBytesAtStart": 91373568,
+    "modelIdentifier": "Mac16,12",
+    "osVersion": "ProductName:\t\tmacOS\nProductVersion:\t\t26.5.1\nBuildVersion:\t\t25F80"
+  },
+  "tracks": [
+    {
+      "name": "safety",
+      "command": "node --import tsx src/index.ts safety --models qwen3-0.6b,qwen3-1.7b,qwen3-4b --repeats 3",
+      "startedAt": "2026-06-20T12:09:51.037Z",
+      "endedAt": "2026-06-20T12:46:51.167Z",
+      "durationMs": 2220130,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "name": "multistep",
+      "command": "node --import tsx src/index.ts multistep --models qwen3-0.6b,qwen3-1.7b,qwen3-4b --repeats 3",
+      "startedAt": "2026-06-20T12:46:51.168Z",
+      "endedAt": "2026-06-20T13:20:30.097Z",
+      "durationMs": 2018929,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "name": "quality",
+      "command": "node --import tsx src/index.ts quality --models qwen3-0.6b,qwen3-1.7b,qwen3-4b --repeats 3",
+      "startedAt": "2026-06-20T13:20:30.098Z",
+      "endedAt": "2026-06-20T13:35:07.065Z",
+      "durationMs": 876967,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "name": "capability",
+      "command": "node --import tsx src/index.ts eval --models qwen3-0.6b,qwen3-1.7b,qwen3-4b --per 2 --repeats 3",
+      "startedAt": "2026-06-20T13:35:07.066Z",
+      "endedAt": "2026-06-20T17:00:29.937Z",
+      "durationMs": 12322871,
+      "exitCode": 0,
+      "signal": null
+    }
+  ],
+  "endedAt": "2026-06-20T17:00:29.943Z",
+  "success": true,
+  "reports": [
+    "reports/eval-1781974829679"
+  ]
+}

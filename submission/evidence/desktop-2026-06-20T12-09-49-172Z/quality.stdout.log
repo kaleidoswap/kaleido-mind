@@ -1,0 +1,228 @@
+[sdk:server] 🐻 Hello from Bare
+[sdk:server] Parsed RPC configuration from arguments
+[sdk:server] Running in desktop mode, connecting to IPC socket: /var/folders/vk/_vfkw7d56x9f7qv8dt9xmvq00000gn/T/qvac-worker-53468-mqmdy2bb-8ea2.sock
+[sdk:server] Connecting to IPC socket at /var/folders/vk/_vfkw7d56x9f7qv8dt9xmvq00000gn/T/qvac-worker-53468-mqmdy2bb-8ea2.sock
+[sdk:server] Bare worker started and listening for RPC requests
+[sdk:server] Connected to IPC server
+[sdk:server] [request-lifecycle] begin requestId=f968b307-b6cc-4e0d-9d9b-75bd8f49d490 kind=loadModel modelId=- state=running
+[sdk:server] llamacpp-completion: Loading model b8718a60e1e8d4f6...
+[sdk:server] llamacpp-completion model b8718a60e1e8d4f6 loaded
+[sdk:server] Local model registered: b8718a60e1e8d4f6 -> /Users/walter/.kaleido/models/Qwen3-0.6B-Q4_K_M.gguf
+[sdk:server] [request-lifecycle] end requestId=f968b307-b6cc-4e0d-9d9b-75bd8f49d490 kind=loadModel modelId=- state=completed durationMs=620
+[sdk:server] [request-lifecycle] begin requestId=41b95046-fc01-4556-96c8-0e7f66911cb3 kind=completion modelId=b8718a60e1e8d4f6 state=running
+[sdk:server] [request-lifecycle] end requestId=41b95046-fc01-4556-96c8-0e7f66911cb3 kind=completion modelId=b8718a60e1e8d4f6 state=completed durationMs=1013
+[sdk:server] [request-lifecycle] begin requestId=2d59de92-28bb-4eff-b5d6-8c7dd0ce3a6f kind=completion modelId=b8718a60e1e8d4f6 state=running
+[sdk:server] [request-lifecycle] end requestId=2d59de92-28bb-4eff-b5d6-8c7dd0ce3a6f kind=completion modelId=b8718a60e1e8d4f6 state=completed durationMs=1414
+[sdk:server] [request-lifecycle] begin requestId=03c5846a-fc1a-4c58-8b40-8452c505261c kind=completion modelId=b8718a60e1e8d4f6 state=running
+[sdk:server] [request-lifecycle] end requestId=03c5846a-fc1a-4c58-8b40-8452c505261c kind=completion modelId=b8718a60e1e8d4f6 state=completed durationMs=2063
+[sdk:server] [request-lifecycle] begin requestId=fc069f56-c897-49cd-8346-a3d9597de259 kind=completion modelId=b8718a60e1e8d4f6 state=running
+[sdk:server] [request-lifecycle] end requestId=fc069f56-c897-49cd-8346-a3d9597de259 kind=completion modelId=b8718a60e1e8d4f6 state=completed durationMs=3671
+[sdk:server] [request-lifecycle] begin requestId=e83e70cc-de18-4791-9a7b-11071fe946ac kind=completion modelId=b8718a60e1e8d4f6 state=running
+[sdk:server] [request-lifecycle] end requestId=e83e70cc-de18-4791-9a7b-11071fe946ac kind=completion modelId=b8718a60e1e8d4f6 state=completed durationMs=3855
+[sdk:server] [request-lifecycle] begin requestId=527a37e4-ed62-457f-a9c4-5844b8fc8311 kind=completion modelId=b8718a60e1e8d4f6 state=running
+[sdk:server] [request-lifecycle] end requestId=527a37e4-ed62-457f-a9c4-5844b8fc8311 kind=completion modelId=b8718a60e1e8d4f6 state=completed durationMs=3806
+[sdk:server] [request-lifecycle] begin requestId=61b30889-2f07-46b5-8c68-4a7b38d7b37b kind=completion modelId=b8718a60e1e8d4f6 state=running
+[sdk:server] [request-lifecycle] end requestId=61b30889-2f07-46b5-8c68-4a7b38d7b37b kind=completion modelId=b8718a60e1e8d4f6 state=completed durationMs=1621
+[sdk:server] [request-lifecycle] begin requestId=3e51afc0-bbb5-4d6a-a64b-3ef8e7ff130f kind=completion modelId=b8718a60e1e8d4f6 state=running
+[sdk:server] [request-lifecycle] end requestId=3e51afc0-bbb5-4d6a-a64b-3ef8e7ff130f kind=completion modelId=b8718a60e1e8d4f6 state=completed durationMs=1619
+[sdk:server] [request-lifecycle] begin requestId=d6f7fb8e-1e78-4170-8fca-108b55cf0a77 kind=completion modelId=b8718a60e1e8d4f6 state=running
+[sdk:server] [request-lifecycle] end requestId=d6f7fb8e-1e78-4170-8fca-108b55cf0a77 kind=completion modelId=b8718a60e1e8d4f6 state=completed durationMs=1946
+[sdk:server] [request-lifecycle] begin requestId=7edeeb43-1e7f-469a-b52a-80dedc7d0c80 kind=completion modelId=b8718a60e1e8d4f6 state=running
+[sdk:server] [request-lifecycle] end requestId=7edeeb43-1e7f-469a-b52a-80dedc7d0c80 kind=completion modelId=b8718a60e1e8d4f6 state=completed durationMs=1321
+[sdk:server] [request-lifecycle] begin requestId=53bc8134-e52a-4af2-baab-9b348e2d5cd9 kind=completion modelId=b8718a60e1e8d4f6 state=running
+[sdk:server] [request-lifecycle] end requestId=53bc8134-e52a-4af2-baab-9b348e2d5cd9 kind=completion modelId=b8718a60e1e8d4f6 state=completed durationMs=1213
+[sdk:server] [request-lifecycle] begin requestId=e29aac6d-1ce3-4022-b2a6-58ad0cba0634 kind=completion modelId=b8718a60e1e8d4f6 state=running
+[sdk:server] [request-lifecycle] end requestId=e29aac6d-1ce3-4022-b2a6-58ad0cba0634 kind=completion modelId=b8718a60e1e8d4f6 state=completed durationMs=1416
+[sdk:server] [request-lifecycle] begin requestId=965aadb7-b2b5-4d09-8902-f152535dc58c kind=completion modelId=b8718a60e1e8d4f6 state=running
+[sdk:server] [request-lifecycle] end requestId=965aadb7-b2b5-4d09-8902-f152535dc58c kind=completion modelId=b8718a60e1e8d4f6 state=completed durationMs=3270
+[sdk:server] [request-lifecycle] begin requestId=8ba83d3f-3251-45f5-9ac5-329e2c55c79f kind=completion modelId=b8718a60e1e8d4f6 state=running
+[sdk:server] [request-lifecycle] end requestId=8ba83d3f-3251-45f5-9ac5-329e2c55c79f kind=completion modelId=b8718a60e1e8d4f6 state=completed durationMs=2845
+[sdk:server] [request-lifecycle] begin requestId=7dd46ca6-0605-4980-91f3-436efcb7e5b8 kind=completion modelId=b8718a60e1e8d4f6 state=running
+[sdk:server] [request-lifecycle] end requestId=7dd46ca6-0605-4980-91f3-436efcb7e5b8 kind=completion modelId=b8718a60e1e8d4f6 state=completed durationMs=3046
+[sdk:server] [request-lifecycle] begin requestId=1244bfcf-9733-43ba-a265-831abab9940c kind=completion modelId=b8718a60e1e8d4f6 state=running
+[sdk:server] [request-lifecycle] end requestId=1244bfcf-9733-43ba-a265-831abab9940c kind=completion modelId=b8718a60e1e8d4f6 state=completed durationMs=1311
+[sdk:server] [request-lifecycle] begin requestId=34c5b022-b582-4ed2-a13e-5c9266bfc68d kind=completion modelId=b8718a60e1e8d4f6 state=running
+[sdk:server] [request-lifecycle] end requestId=34c5b022-b582-4ed2-a13e-5c9266bfc68d kind=completion modelId=b8718a60e1e8d4f6 state=completed durationMs=1527
+[sdk:server] [request-lifecycle] begin requestId=5b6a2618-ce4a-4b88-8f96-4fe95f093774 kind=completion modelId=b8718a60e1e8d4f6 state=running
+[sdk:server] [request-lifecycle] end requestId=5b6a2618-ce4a-4b88-8f96-4fe95f093774 kind=completion modelId=b8718a60e1e8d4f6 state=completed durationMs=1415
+[sdk:server] [request-lifecycle] begin requestId=b4064399-2808-4344-a824-a1b918e536df kind=completion modelId=b8718a60e1e8d4f6 state=running
+[sdk:server] [request-lifecycle] end requestId=b4064399-2808-4344-a824-a1b918e536df kind=completion modelId=b8718a60e1e8d4f6 state=completed durationMs=1734
+[sdk:server] [request-lifecycle] begin requestId=b33dd2c6-9970-432d-86d2-fa00845e4a26 kind=completion modelId=b8718a60e1e8d4f6 state=running
+[sdk:server] [request-lifecycle] end requestId=b33dd2c6-9970-432d-86d2-fa00845e4a26 kind=completion modelId=b8718a60e1e8d4f6 state=completed durationMs=1413
+[sdk:server] [request-lifecycle] begin requestId=a0e96377-3d13-4fe8-bb4f-64d7d04e2134 kind=completion modelId=b8718a60e1e8d4f6 state=running
+[sdk:server] [request-lifecycle] end requestId=a0e96377-3d13-4fe8-bb4f-64d7d04e2134 kind=completion modelId=b8718a60e1e8d4f6 state=completed durationMs=1824
+[sdk:server] [request-lifecycle] begin requestId=ebdb8d27-92b7-40d3-82f7-a9692d1c2002 kind=completion modelId=b8718a60e1e8d4f6 state=running
+[sdk:server] [request-lifecycle] end requestId=ebdb8d27-92b7-40d3-82f7-a9692d1c2002 kind=completion modelId=b8718a60e1e8d4f6 state=completed durationMs=2575
+[sdk:server] [request-lifecycle] begin requestId=f9a5509d-f556-4d70-a9e6-991b257b819d kind=completion modelId=b8718a60e1e8d4f6 state=running
+[sdk:server] [request-lifecycle] end requestId=f9a5509d-f556-4d70-a9e6-991b257b819d kind=completion modelId=b8718a60e1e8d4f6 state=completed durationMs=2763
+[sdk:server] [request-lifecycle] begin requestId=153e8b3e-f4e9-4b7f-9221-180802aa1807 kind=completion modelId=b8718a60e1e8d4f6 state=running
+[sdk:server] [request-lifecycle] end requestId=153e8b3e-f4e9-4b7f-9221-180802aa1807 kind=completion modelId=b8718a60e1e8d4f6 state=completed durationMs=2498
+[sdk:server] [request-lifecycle] begin requestId=f9fbb85e-da6a-4622-9e91-db53fdac4546 kind=completion modelId=b8718a60e1e8d4f6 state=running
+[sdk:server] [request-lifecycle] end requestId=f9fbb85e-da6a-4622-9e91-db53fdac4546 kind=completion modelId=b8718a60e1e8d4f6 state=completed durationMs=2664
+[sdk:server] [request-lifecycle] begin requestId=92d6b9b2-8bab-4dd2-a8aa-96fe87f0a514 kind=completion modelId=b8718a60e1e8d4f6 state=running
+[sdk:server] [request-lifecycle] end requestId=92d6b9b2-8bab-4dd2-a8aa-96fe87f0a514 kind=completion modelId=b8718a60e1e8d4f6 state=completed durationMs=2392
+[sdk:server] [request-lifecycle] begin requestId=d11b445b-e8dd-4383-b417-44e4db79a75e kind=completion modelId=b8718a60e1e8d4f6 state=running
+[sdk:server] [request-lifecycle] end requestId=d11b445b-e8dd-4383-b417-44e4db79a75e kind=completion modelId=b8718a60e1e8d4f6 state=completed durationMs=2403
+[sdk:server] [request-lifecycle] begin requestId=18e74e0d-400b-4826-ad64-00764a3de8ce kind=completion modelId=b8718a60e1e8d4f6 state=running
+[sdk:server] [request-lifecycle] end requestId=18e74e0d-400b-4826-ad64-00764a3de8ce kind=completion modelId=b8718a60e1e8d4f6 state=completed durationMs=5911
+[sdk:server] [request-lifecycle] begin requestId=557b8a9e-d482-4d32-b371-2663eb373096 kind=completion modelId=b8718a60e1e8d4f6 state=running
+[sdk:server] [request-lifecycle] end requestId=557b8a9e-d482-4d32-b371-2663eb373096 kind=completion modelId=b8718a60e1e8d4f6 state=completed durationMs=4942
+[sdk:server] [request-lifecycle] begin requestId=af4ace3a-d064-452b-b79c-ffa5f27333e0 kind=completion modelId=b8718a60e1e8d4f6 state=running
+[sdk:server] [request-lifecycle] end requestId=af4ace3a-d064-452b-b79c-ffa5f27333e0 kind=completion modelId=b8718a60e1e8d4f6 state=completed durationMs=4890
+[sdk:server] Model b8718a60e1e8d4f6 unloaded
+[sdk:server] 🐻 Bare worker shutdown signal received, cleaning up...
+[sdk:server] 🧹 Cancelling 0 active downloads
+[sdk:server] Unloaded 0 models
+[sdk:server] ✅ Cleanup completed successfully
+[sdk:server] 🐻 Hello from Bare
+[sdk:server] Parsed RPC configuration from arguments
+[sdk:server] Running in desktop mode, connecting to IPC socket: /var/folders/vk/_vfkw7d56x9f7qv8dt9xmvq00000gn/T/qvac-worker-53468-mqmdzp1x-f90b.sock
+[sdk:server] Connecting to IPC socket at /var/folders/vk/_vfkw7d56x9f7qv8dt9xmvq00000gn/T/qvac-worker-53468-mqmdzp1x-f90b.sock
+[sdk:server] Bare worker started and listening for RPC requests
+[sdk:server] Connected to IPC server
+[sdk:server] [request-lifecycle] begin requestId=923ce0ec-b1d1-43bc-80d8-75810b51cc5d kind=loadModel modelId=- state=running
+[sdk:server] llamacpp-completion: Loading model 4f0da35bbd16c4cf...
+[sdk:server] llamacpp-completion model 4f0da35bbd16c4cf loaded
+[sdk:server] Local model registered: 4f0da35bbd16c4cf -> /Users/walter/.kaleido/models/Qwen3-1.7B-Q4_K_M.gguf
+[sdk:server] [request-lifecycle] end requestId=923ce0ec-b1d1-43bc-80d8-75810b51cc5d kind=loadModel modelId=- state=completed durationMs=1266
+[sdk:server] [request-lifecycle] begin requestId=723a5b4b-7230-44dd-8260-1b1d52d4a0aa kind=completion modelId=4f0da35bbd16c4cf state=running
+[sdk:server] [request-lifecycle] end requestId=723a5b4b-7230-44dd-8260-1b1d52d4a0aa kind=completion modelId=4f0da35bbd16c4cf state=completed durationMs=711
+[sdk:server] [request-lifecycle] begin requestId=13e03147-cac1-43c3-a19f-01903aa2cef7 kind=completion modelId=4f0da35bbd16c4cf state=running
+[sdk:server] [request-lifecycle] end requestId=13e03147-cac1-43c3-a19f-01903aa2cef7 kind=completion modelId=4f0da35bbd16c4cf state=completed durationMs=914
+[sdk:server] [request-lifecycle] begin requestId=18398070-78c8-4108-88cc-0d2376740076 kind=completion modelId=4f0da35bbd16c4cf state=running
+[sdk:server] [request-lifecycle] end requestId=18398070-78c8-4108-88cc-0d2376740076 kind=completion modelId=4f0da35bbd16c4cf state=completed durationMs=1834
+[sdk:server] [request-lifecycle] begin requestId=0b910b23-38ba-4014-8669-a89eeb50481c kind=completion modelId=4f0da35bbd16c4cf state=running
+[sdk:server] [request-lifecycle] end requestId=0b910b23-38ba-4014-8669-a89eeb50481c kind=completion modelId=4f0da35bbd16c4cf state=completed durationMs=5605
+[sdk:server] [request-lifecycle] begin requestId=4e988e21-f246-4e8f-a259-344cdd865865 kind=completion modelId=4f0da35bbd16c4cf state=running
+[sdk:server] [request-lifecycle] end requestId=4e988e21-f246-4e8f-a259-344cdd865865 kind=completion modelId=4f0da35bbd16c4cf state=completed durationMs=5471
+[sdk:server] [request-lifecycle] begin requestId=0e250b50-77a1-4301-9c3b-51b3c5371c81 kind=completion modelId=4f0da35bbd16c4cf state=running
+[sdk:server] [request-lifecycle] end requestId=0e250b50-77a1-4301-9c3b-51b3c5371c81 kind=completion modelId=4f0da35bbd16c4cf state=completed durationMs=5469
+[sdk:server] [request-lifecycle] begin requestId=e26d9d09-8c0f-47e6-9c2f-9056ffe0bef3 kind=completion modelId=4f0da35bbd16c4cf state=running
+[sdk:server] [request-lifecycle] end requestId=e26d9d09-8c0f-47e6-9c2f-9056ffe0bef3 kind=completion modelId=4f0da35bbd16c4cf state=completed durationMs=4552
+[sdk:server] [request-lifecycle] begin requestId=9a51c3f5-dba6-452d-a3fa-3c27713c33e7 kind=completion modelId=4f0da35bbd16c4cf state=running
+[sdk:server] [request-lifecycle] end requestId=9a51c3f5-dba6-452d-a3fa-3c27713c33e7 kind=completion modelId=4f0da35bbd16c4cf state=completed durationMs=4573
+[sdk:server] [request-lifecycle] begin requestId=862ec2d7-bbaf-4bb1-97ff-3104a64d9557 kind=completion modelId=4f0da35bbd16c4cf state=running
+[sdk:server] [request-lifecycle] end requestId=862ec2d7-bbaf-4bb1-97ff-3104a64d9557 kind=completion modelId=4f0da35bbd16c4cf state=completed durationMs=4562
+[sdk:server] [request-lifecycle] begin requestId=9a63ab41-0c4f-4bd5-a691-6fcd83a9db93 kind=completion modelId=4f0da35bbd16c4cf state=running
+[sdk:server] [request-lifecycle] end requestId=9a63ab41-0c4f-4bd5-a691-6fcd83a9db93 kind=completion modelId=4f0da35bbd16c4cf state=completed durationMs=808
+[sdk:server] [request-lifecycle] begin requestId=13d5c42b-1d12-4ef6-a6c4-f81dbf40d60e kind=completion modelId=4f0da35bbd16c4cf state=running
+[sdk:server] [request-lifecycle] end requestId=13d5c42b-1d12-4ef6-a6c4-f81dbf40d60e kind=completion modelId=4f0da35bbd16c4cf state=completed durationMs=709
+[sdk:server] [request-lifecycle] begin requestId=5e2ffc17-b4ff-4ed6-aa08-02592cc27d9d kind=completion modelId=4f0da35bbd16c4cf state=running
+[sdk:server] [request-lifecycle] end requestId=5e2ffc17-b4ff-4ed6-aa08-02592cc27d9d kind=completion modelId=4f0da35bbd16c4cf state=completed durationMs=814
+[sdk:server] [request-lifecycle] begin requestId=3f4fef15-6f85-4233-9156-614a4d91dd4a kind=completion modelId=4f0da35bbd16c4cf state=running
+[sdk:server] [request-lifecycle] end requestId=3f4fef15-6f85-4233-9156-614a4d91dd4a kind=completion modelId=4f0da35bbd16c4cf state=completed durationMs=7432
+[sdk:server] [request-lifecycle] begin requestId=d592491e-c298-46d7-ba0a-50011a68a86c kind=completion modelId=4f0da35bbd16c4cf state=running
+[sdk:server] [request-lifecycle] end requestId=d592491e-c298-46d7-ba0a-50011a68a86c kind=completion modelId=4f0da35bbd16c4cf state=completed durationMs=7575
+[sdk:server] [request-lifecycle] begin requestId=e70024b7-7b4c-4b73-b493-bda184528cf1 kind=completion modelId=4f0da35bbd16c4cf state=running
+[sdk:server] [request-lifecycle] end requestId=e70024b7-7b4c-4b73-b493-bda184528cf1 kind=completion modelId=4f0da35bbd16c4cf state=completed durationMs=7192
+[sdk:server] [request-lifecycle] begin requestId=527bd379-6e5d-41e1-be0b-e8850148129a kind=completion modelId=4f0da35bbd16c4cf state=running
+[sdk:server] [request-lifecycle] end requestId=527bd379-6e5d-41e1-be0b-e8850148129a kind=completion modelId=4f0da35bbd16c4cf state=completed durationMs=5271
+[sdk:server] [request-lifecycle] begin requestId=446b5e50-270f-40f8-b0fd-071351e3a79d kind=completion modelId=4f0da35bbd16c4cf state=running
+[sdk:server] [request-lifecycle] end requestId=446b5e50-270f-40f8-b0fd-071351e3a79d kind=completion modelId=4f0da35bbd16c4cf state=completed durationMs=5063
+[sdk:server] [request-lifecycle] begin requestId=001ac753-2f54-4bc9-ae85-8f940df8bc65 kind=completion modelId=4f0da35bbd16c4cf state=running
+[sdk:server] [request-lifecycle] end requestId=001ac753-2f54-4bc9-ae85-8f940df8bc65 kind=completion modelId=4f0da35bbd16c4cf state=completed durationMs=5166
+[sdk:server] [request-lifecycle] begin requestId=2c0133e6-880d-4ef0-9c70-46151f16da9a kind=completion modelId=4f0da35bbd16c4cf state=running
+[sdk:server] [request-lifecycle] end requestId=2c0133e6-880d-4ef0-9c70-46151f16da9a kind=completion modelId=4f0da35bbd16c4cf state=completed durationMs=5881
+[sdk:server] [request-lifecycle] begin requestId=a210a4be-3153-4835-80d9-cfb83393eae0 kind=completion modelId=4f0da35bbd16c4cf state=running
+[sdk:server] [request-lifecycle] end requestId=a210a4be-3153-4835-80d9-cfb83393eae0 kind=completion modelId=4f0da35bbd16c4cf state=completed durationMs=5791
+[sdk:server] [request-lifecycle] begin requestId=a83fb8e0-d340-404b-b5dc-afb651cb527b kind=completion modelId=4f0da35bbd16c4cf state=running
+[sdk:server] [request-lifecycle] end requestId=a83fb8e0-d340-404b-b5dc-afb651cb527b kind=completion modelId=4f0da35bbd16c4cf state=completed durationMs=6187
+[sdk:server] [request-lifecycle] begin requestId=bb9801f8-c181-40ee-bba4-60d581c44cb7 kind=completion modelId=4f0da35bbd16c4cf state=running
+[sdk:server] [request-lifecycle] end requestId=bb9801f8-c181-40ee-bba4-60d581c44cb7 kind=completion modelId=4f0da35bbd16c4cf state=completed durationMs=4250
+[sdk:server] [request-lifecycle] begin requestId=e5158014-c8d4-49b7-a3cb-15493048c5d2 kind=completion modelId=4f0da35bbd16c4cf state=running
+[sdk:server] [request-lifecycle] end requestId=e5158014-c8d4-49b7-a3cb-15493048c5d2 kind=completion modelId=4f0da35bbd16c4cf state=completed durationMs=4360
+[sdk:server] [request-lifecycle] begin requestId=98fa9ef3-38b8-445d-a3e6-b9ee9056a3aa kind=completion modelId=4f0da35bbd16c4cf state=running
+[sdk:server] [request-lifecycle] end requestId=98fa9ef3-38b8-445d-a3e6-b9ee9056a3aa kind=completion modelId=4f0da35bbd16c4cf state=completed durationMs=4354
+[sdk:server] [request-lifecycle] begin requestId=17044a96-12cd-4d59-8e66-8ccd3d70626b kind=completion modelId=4f0da35bbd16c4cf state=running
+[sdk:server] [request-lifecycle] end requestId=17044a96-12cd-4d59-8e66-8ccd3d70626b kind=completion modelId=4f0da35bbd16c4cf state=completed durationMs=8721
+[sdk:server] [request-lifecycle] begin requestId=427c7d62-14f3-412d-a897-cab6c3563d9d kind=completion modelId=4f0da35bbd16c4cf state=running
+[sdk:server] [request-lifecycle] end requestId=427c7d62-14f3-412d-a897-cab6c3563d9d kind=completion modelId=4f0da35bbd16c4cf state=completed durationMs=9139
+[sdk:server] [request-lifecycle] begin requestId=0026c1fb-6ca7-4256-b2bd-836684704ac8 kind=completion modelId=4f0da35bbd16c4cf state=running
+[sdk:server] [request-lifecycle] end requestId=0026c1fb-6ca7-4256-b2bd-836684704ac8 kind=completion modelId=4f0da35bbd16c4cf state=completed durationMs=8885
+[sdk:server] [request-lifecycle] begin requestId=bb08bc4b-5939-4bde-a07b-9fe63ad310f7 kind=completion modelId=4f0da35bbd16c4cf state=running
+[sdk:server] [request-lifecycle] end requestId=bb08bc4b-5939-4bde-a07b-9fe63ad310f7 kind=completion modelId=4f0da35bbd16c4cf state=completed durationMs=12784
+[sdk:server] [request-lifecycle] begin requestId=9f2a5dec-3a3f-4626-a4d4-4300f9cbfc68 kind=completion modelId=4f0da35bbd16c4cf state=running
+[sdk:server] [request-lifecycle] end requestId=9f2a5dec-3a3f-4626-a4d4-4300f9cbfc68 kind=completion modelId=4f0da35bbd16c4cf state=completed durationMs=12792
+[sdk:server] [request-lifecycle] begin requestId=58c6b63b-2284-40b6-8991-2ea214c635c0 kind=completion modelId=4f0da35bbd16c4cf state=running
+[sdk:server] [request-lifecycle] end requestId=58c6b63b-2284-40b6-8991-2ea214c635c0 kind=completion modelId=4f0da35bbd16c4cf state=completed durationMs=13639
+[sdk:server] Model 4f0da35bbd16c4cf unloaded
+[sdk:server] 🐻 Bare worker shutdown signal received, cleaning up...
+[sdk:server] 🧹 Cancelling 0 active downloads
+[sdk:server] Unloaded 0 models
+[sdk:server] ✅ Cleanup completed successfully
+[sdk:server] 🐻 Hello from Bare
+[sdk:server] Parsed RPC configuration from arguments
+[sdk:server] Running in desktop mode, connecting to IPC socket: /var/folders/vk/_vfkw7d56x9f7qv8dt9xmvq00000gn/T/qvac-worker-53468-mqme3eu5-ecb5.sock
+[sdk:server] Connecting to IPC socket at /var/folders/vk/_vfkw7d56x9f7qv8dt9xmvq00000gn/T/qvac-worker-53468-mqme3eu5-ecb5.sock
+[sdk:server] Bare worker started and listening for RPC requests
+[sdk:server] Connected to IPC server
+[sdk:server] [request-lifecycle] begin requestId=237865f8-2ebe-4dea-aaa3-b1ca023563f4 kind=loadModel modelId=- state=running
+[sdk:server] llamacpp-completion: Loading model 99c8c5fc4b5abdd7...
+[sdk:server] llamacpp-completion model 99c8c5fc4b5abdd7 loaded
+[sdk:server] Local model registered: 99c8c5fc4b5abdd7 -> /Users/walter/.kaleido/models/Qwen3-4B-Q4_K_M.gguf
+[sdk:server] [request-lifecycle] end requestId=237865f8-2ebe-4dea-aaa3-b1ca023563f4 kind=loadModel modelId=- state=completed durationMs=1827
+[sdk:server] [request-lifecycle] begin requestId=46bdfa09-59fb-4124-8c7d-66f9b2c7fccc kind=completion modelId=99c8c5fc4b5abdd7 state=running
+[sdk:server] [request-lifecycle] end requestId=46bdfa09-59fb-4124-8c7d-66f9b2c7fccc kind=completion modelId=99c8c5fc4b5abdd7 state=completed durationMs=13750
+[sdk:server] [request-lifecycle] begin requestId=7dd1a783-7419-4602-8740-6ff3c561699b kind=completion modelId=99c8c5fc4b5abdd7 state=running
+[sdk:server] [request-lifecycle] end requestId=7dd1a783-7419-4602-8740-6ff3c561699b kind=completion modelId=99c8c5fc4b5abdd7 state=completed durationMs=12786
+[sdk:server] [request-lifecycle] begin requestId=0b67e76d-1a0b-4fd7-897e-77d8c23e747e kind=completion modelId=99c8c5fc4b5abdd7 state=running
+[sdk:server] [request-lifecycle] end requestId=0b67e76d-1a0b-4fd7-897e-77d8c23e747e kind=completion modelId=99c8c5fc4b5abdd7 state=completed durationMs=12578
+[sdk:server] [request-lifecycle] begin requestId=f35965fa-d33a-481f-971a-0460f0f8feef kind=completion modelId=99c8c5fc4b5abdd7 state=running
+[sdk:server] [request-lifecycle] end requestId=f35965fa-d33a-481f-971a-0460f0f8feef kind=completion modelId=99c8c5fc4b5abdd7 state=completed durationMs=25709
+[sdk:server] [request-lifecycle] begin requestId=5b470b69-b203-4123-9009-32e298503ed2 kind=completion modelId=99c8c5fc4b5abdd7 state=running
+[sdk:server] [request-lifecycle] end requestId=5b470b69-b203-4123-9009-32e298503ed2 kind=completion modelId=99c8c5fc4b5abdd7 state=completed durationMs=21935
+[sdk:server] [request-lifecycle] begin requestId=c151e309-f6f2-4647-891c-d9ca26174bbf kind=completion modelId=99c8c5fc4b5abdd7 state=running
+[sdk:server] [request-lifecycle] end requestId=c151e309-f6f2-4647-891c-d9ca26174bbf kind=completion modelId=99c8c5fc4b5abdd7 state=completed durationMs=24064
+[sdk:server] [request-lifecycle] begin requestId=a7414b53-7e3e-4b85-a8ff-752fa915d435 kind=completion modelId=99c8c5fc4b5abdd7 state=running
+[sdk:server] [request-lifecycle] end requestId=a7414b53-7e3e-4b85-a8ff-752fa915d435 kind=completion modelId=99c8c5fc4b5abdd7 state=completed durationMs=28636
+[sdk:server] [request-lifecycle] begin requestId=c162804d-3c7f-42c6-b027-66387ca680e7 kind=completion modelId=99c8c5fc4b5abdd7 state=running
+[sdk:server] [request-lifecycle] end requestId=c162804d-3c7f-42c6-b027-66387ca680e7 kind=completion modelId=99c8c5fc4b5abdd7 state=completed durationMs=27495
+[sdk:server] [request-lifecycle] begin requestId=1009c79e-d493-443a-88bd-9a2644ac483b kind=completion modelId=99c8c5fc4b5abdd7 state=running
+[sdk:server] [request-lifecycle] end requestId=1009c79e-d493-443a-88bd-9a2644ac483b kind=completion modelId=99c8c5fc4b5abdd7 state=completed durationMs=29604
+[sdk:server] [request-lifecycle] begin requestId=f6918f26-c523-4c1e-a689-8cbf3cd742f9 kind=completion modelId=99c8c5fc4b5abdd7 state=running
+[sdk:server] [request-lifecycle] end requestId=f6918f26-c523-4c1e-a689-8cbf3cd742f9 kind=completion modelId=99c8c5fc4b5abdd7 state=completed durationMs=13699
+[sdk:server] [request-lifecycle] begin requestId=21af7542-9720-4666-aa75-a3d5090472d9 kind=completion modelId=99c8c5fc4b5abdd7 state=running
+[sdk:server] [request-lifecycle] end requestId=21af7542-9720-4666-aa75-a3d5090472d9 kind=completion modelId=99c8c5fc4b5abdd7 state=completed durationMs=14110
+[sdk:server] [request-lifecycle] begin requestId=10acced1-8592-4a38-83dc-c4d24e59fb31 kind=completion modelId=99c8c5fc4b5abdd7 state=running
+[sdk:server] [request-lifecycle] end requestId=10acced1-8592-4a38-83dc-c4d24e59fb31 kind=completion modelId=99c8c5fc4b5abdd7 state=completed durationMs=14129
+[sdk:server] [request-lifecycle] begin requestId=26fc9efe-9143-41ee-b9ac-9c39d01f43f8 kind=completion modelId=99c8c5fc4b5abdd7 state=running
+[sdk:server] [request-lifecycle] end requestId=26fc9efe-9143-41ee-b9ac-9c39d01f43f8 kind=completion modelId=99c8c5fc4b5abdd7 state=completed durationMs=16780
+[sdk:server] [request-lifecycle] begin requestId=c5168fb1-39e1-4fdd-8df0-c2345bf24e5a kind=completion modelId=99c8c5fc4b5abdd7 state=running
+[sdk:server] [request-lifecycle] end requestId=c5168fb1-39e1-4fdd-8df0-c2345bf24e5a kind=completion modelId=99c8c5fc4b5abdd7 state=completed durationMs=15644
+[sdk:server] [request-lifecycle] begin requestId=59996e29-1c83-4dfe-a8ca-9782d2017ab3 kind=completion modelId=99c8c5fc4b5abdd7 state=running
+[sdk:server] [request-lifecycle] end requestId=59996e29-1c83-4dfe-a8ca-9782d2017ab3 kind=completion modelId=99c8c5fc4b5abdd7 state=completed durationMs=17064
+[sdk:server] [request-lifecycle] begin requestId=d1993dfc-f724-4dc5-94bf-6ee74460ba98 kind=completion modelId=99c8c5fc4b5abdd7 state=running
+[sdk:server] [request-lifecycle] end requestId=d1993dfc-f724-4dc5-94bf-6ee74460ba98 kind=completion modelId=99c8c5fc4b5abdd7 state=completed durationMs=23144
+[sdk:server] [request-lifecycle] begin requestId=2296533d-9108-4812-a8b0-a3560fb98ffc kind=completion modelId=99c8c5fc4b5abdd7 state=running
+[sdk:server] [request-lifecycle] end requestId=2296533d-9108-4812-a8b0-a3560fb98ffc kind=completion modelId=99c8c5fc4b5abdd7 state=completed durationMs=22171
+[sdk:server] [request-lifecycle] begin requestId=39a16507-dc13-4061-8502-11f8dcd2e17f kind=completion modelId=99c8c5fc4b5abdd7 state=running
+[sdk:server] [request-lifecycle] end requestId=39a16507-dc13-4061-8502-11f8dcd2e17f kind=completion modelId=99c8c5fc4b5abdd7 state=completed durationMs=23164
+[sdk:server] [request-lifecycle] begin requestId=c2b68ef1-f735-4154-946f-ad845b0fc2ab kind=completion modelId=99c8c5fc4b5abdd7 state=running
+[sdk:server] [request-lifecycle] end requestId=c2b68ef1-f735-4154-946f-ad845b0fc2ab kind=completion modelId=99c8c5fc4b5abdd7 state=completed durationMs=30248
+[sdk:server] [request-lifecycle] begin requestId=317c0223-0dda-4c71-96dc-89a5dbfb09a2 kind=completion modelId=99c8c5fc4b5abdd7 state=running
+[sdk:server] [request-lifecycle] end requestId=317c0223-0dda-4c71-96dc-89a5dbfb09a2 kind=completion modelId=99c8c5fc4b5abdd7 state=completed durationMs=29781
+[sdk:server] [request-lifecycle] begin requestId=870e927d-96db-4b85-ba95-9d2305930ca1 kind=completion modelId=99c8c5fc4b5abdd7 state=running
+[sdk:server] [request-lifecycle] end requestId=870e927d-96db-4b85-ba95-9d2305930ca1 kind=completion modelId=99c8c5fc4b5abdd7 state=completed durationMs=28326
+[sdk:server] [request-lifecycle] begin requestId=d82e378a-90d5-4f05-bd4a-bbf93d38545e kind=completion modelId=99c8c5fc4b5abdd7 state=running
+[sdk:server] [request-lifecycle] end requestId=d82e378a-90d5-4f05-bd4a-bbf93d38545e kind=completion modelId=99c8c5fc4b5abdd7 state=completed durationMs=14628
+[sdk:server] [request-lifecycle] begin requestId=e7f3597f-7698-497e-a44f-9c7d95243ee2 kind=completion modelId=99c8c5fc4b5abdd7 state=running
+[sdk:server] [request-lifecycle] end requestId=e7f3597f-7698-497e-a44f-9c7d95243ee2 kind=completion modelId=99c8c5fc4b5abdd7 state=completed durationMs=15034
+[sdk:server] [request-lifecycle] begin requestId=9955ac51-11f7-4785-981d-cee4f9bb3b25 kind=completion modelId=99c8c5fc4b5abdd7 state=running
+[sdk:server] [request-lifecycle] end requestId=9955ac51-11f7-4785-981d-cee4f9bb3b25 kind=completion modelId=99c8c5fc4b5abdd7 state=completed durationMs=15333
+[sdk:server] [request-lifecycle] begin requestId=595b9043-8bb8-4597-8817-559b0922deb0 kind=completion modelId=99c8c5fc4b5abdd7 state=running
+[sdk:server] [request-lifecycle] end requestId=595b9043-8bb8-4597-8817-559b0922deb0 kind=completion modelId=99c8c5fc4b5abdd7 state=completed durationMs=12792
+[sdk:server] [request-lifecycle] begin requestId=598d245e-d89d-4489-b4cf-13c93a36d5b3 kind=completion modelId=99c8c5fc4b5abdd7 state=running
+[sdk:server] [request-lifecycle] end requestId=598d245e-d89d-4489-b4cf-13c93a36d5b3 kind=completion modelId=99c8c5fc4b5abdd7 state=completed durationMs=11972
+[sdk:server] [request-lifecycle] begin requestId=45efb7a1-88cd-4191-9657-7a893f18cd21 kind=completion modelId=99c8c5fc4b5abdd7 state=running
+[sdk:server] [request-lifecycle] end requestId=45efb7a1-88cd-4191-9657-7a893f18cd21 kind=completion modelId=99c8c5fc4b5abdd7 state=completed durationMs=12374
+[sdk:server] [request-lifecycle] begin requestId=fd0bc0d4-e6a6-41b3-ad65-c028cf259c54 kind=completion modelId=99c8c5fc4b5abdd7 state=running
+[sdk:server] [request-lifecycle] end requestId=fd0bc0d4-e6a6-41b3-ad65-c028cf259c54 kind=completion modelId=99c8c5fc4b5abdd7 state=completed durationMs=33694
+[sdk:server] [request-lifecycle] begin requestId=f5ed53b7-f700-4922-bc43-a9016e72ccc9 kind=completion modelId=99c8c5fc4b5abdd7 state=running
+[sdk:server] [request-lifecycle] end requestId=f5ed53b7-f700-4922-bc43-a9016e72ccc9 kind=completion modelId=99c8c5fc4b5abdd7 state=completed durationMs=31600
+[sdk:server] [request-lifecycle] begin requestId=0fc37ca4-168f-4c9d-8dc4-488b130a90a7 kind=completion modelId=99c8c5fc4b5abdd7 state=running
+[sdk:server] [request-lifecycle] end requestId=0fc37ca4-168f-4c9d-8dc4-488b130a90a7 kind=completion modelId=99c8c5fc4b5abdd7 state=completed durationMs=30672
+[sdk:server] Model 99c8c5fc4b5abdd7 unloaded
+[sdk:server] 🐻 Bare worker shutdown signal received, cleaning up...
+[sdk:server] 🧹 Cancelling 0 active downloads
+[sdk:server] Unloaded 0 models
+[sdk:server] ✅ Cleanup completed successfully

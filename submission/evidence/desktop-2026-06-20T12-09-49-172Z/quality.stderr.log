@@ -1,0 +1,53 @@
+
+[38;5;141mTrack D — response quality[0m[2m  (knowledge/reasoning · fact-coverage + no-hallucination)[0m
+parse: load the model metadata from disk file.
+initFromConfig: load the model from disk file and apply lora adapter, if any.
+common_init_result: fitting params to device memory, for bugs during this step try to reproduce them with -fit off, or provide --verbose logs if the bug only occurs with -fit on
+common_init_result: added </s> logit bias = -inf
+common_init_result: added <|endoftext|> logit bias = -inf
+common_init_result: added <|im_end|> logit bias = -inf
+common_init_result: added <|fim_pad|> logit bias = -inf
+common_init_result: added <|repo_name|> logit bias = -inf
+common_init_result: added <|file_sep|> logit bias = -inf
+6% · 5/90 · qwen3-0.6b
+11% · 10/90 · qwen3-0.6b
+17% · 15/90 · qwen3-0.6b
+22% · 20/90 · qwen3-0.6b
+28% · 25/90 · qwen3-0.6b
+33% · 30/90 · qwen3-0.6b
+parse: load the model metadata from disk file.
+initFromConfig: load the model from disk file and apply lora adapter, if any.
+common_init_result: fitting params to device memory, for bugs during this step try to reproduce them with -fit off, or provide --verbose logs if the bug only occurs with -fit on
+common_init_result: added </s> logit bias = -inf
+common_init_result: added <|endoftext|> logit bias = -inf
+common_init_result: added <|im_end|> logit bias = -inf
+common_init_result: added <|fim_pad|> logit bias = -inf
+common_init_result: added <|repo_name|> logit bias = -inf
+common_init_result: added <|file_sep|> logit bias = -inf
+39% · 35/90 · qwen3-1.7b
+44% · 40/90 · qwen3-1.7b
+50% · 45/90 · qwen3-1.7b
+56% · 50/90 · qwen3-1.7b
+61% · 55/90 · qwen3-1.7b
+67% · 60/90 · qwen3-1.7b
+parse: load the model metadata from disk file.
+initFromConfig: load the model from disk file and apply lora adapter, if any.
+common_init_result: fitting params to device memory, for bugs during this step try to reproduce them with -fit off, or provide --verbose logs if the bug only occurs with -fit on
+common_init_result: added </s> logit bias = -inf
+common_init_result: added <|endoftext|> logit bias = -inf
+common_init_result: added <|im_end|> logit bias = -inf
+common_init_result: added <|fim_pad|> logit bias = -inf
+common_init_result: added <|repo_name|> logit bias = -inf
+common_init_result: added <|file_sep|> logit bias = -inf
+72% · 65/90 · qwen3-4b
+78% · 70/90 · qwen3-4b
+83% · 75/90 · qwen3-4b
+89% · 80/90 · qwen3-4b
+94% · 85/90 · qwen3-4b
+100% · 90/90 · qwen3-4b
+
+  qwen3-0.6b   [38;5;141m███████████[0m[90m░░░░░░░[0m  60%  [2m60% (42–75) pass · coverage 62% · halluc 0% · 32w · 2482ms[0m
+  qwen3-1.7b   [38;5;141m██████████████[0m[90m░░░░[0m  80%  [2m80% (63–91) pass · coverage 80% · halluc 0% · 34w · 5686ms[0m
+  qwen3-4b     [38;5;141m████████████████[0m[90m░░[0m  90%  [2m90% (74–97) pass · coverage 87% · halluc 0% · 33w · 20768ms[0m
+[2m
+10 cases × 3 repeats · 95% CI · pass = ≥50% facts covered & no hallucination[0m

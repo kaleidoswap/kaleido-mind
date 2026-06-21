@@ -1,0 +1,6720 @@
+{
+  "schema": "kaleidomind.eval.multistep.v1",
+  "cells": [
+    {
+      "model": "qwen3-0.6b",
+      "mode": "recipe",
+      "cases": 9,
+      "trials": 27,
+      "pass": 27,
+      "pct": 100,
+      "reliablePct": 100,
+      "avgInferences": 0,
+      "avgLatency": 0,
+      "coverage": 100,
+      "order": 100,
+      "finalOk": 100,
+      "gate": 100
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "free",
+      "cases": 9,
+      "trials": 27,
+      "pass": 0,
+      "pct": 0,
+      "reliablePct": 0,
+      "avgInferences": 2,
+      "avgLatency": 5667,
+      "coverage": 11,
+      "order": 56,
+      "finalOk": 11,
+      "gate": 56
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "recipe",
+      "cases": 9,
+      "trials": 27,
+      "pass": 27,
+      "pct": 100,
+      "reliablePct": 100,
+      "avgInferences": 0,
+      "avgLatency": 0,
+      "coverage": 100,
+      "order": 100,
+      "finalOk": 100,
+      "gate": 100
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "free",
+      "cases": 9,
+      "trials": 27,
+      "pass": 3,
+      "pct": 11,
+      "reliablePct": 11,
+      "avgInferences": 2,
+      "avgLatency": 19209,
+      "coverage": 44,
+      "order": 44,
+      "finalOk": 11,
+      "gate": 44
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "recipe",
+      "cases": 9,
+      "trials": 27,
+      "pass": 27,
+      "pct": 100,
+      "reliablePct": 100,
+      "avgInferences": 0,
+      "avgLatency": 0,
+      "coverage": 100,
+      "order": 100,
+      "finalOk": 100,
+      "gate": 100
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "free",
+      "cases": 9,
+      "trials": 27,
+      "pass": 0,
+      "pct": 0,
+      "reliablePct": 0,
+      "avgInferences": 2,
+      "avgLatency": 49604,
+      "coverage": 56,
+      "order": 56,
+      "finalOk": 0,
+      "gate": 56
+    }
+  ],
+  "results": [
+    {
+      "model": "qwen3-0.6b",
+      "mode": "recipe",
+      "repeat": 0,
+      "case": {
+        "id": "fiat-0",
+        "kind": "pay",
+        "prompt": "pay bob 3 eur",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "bob@kaleidoswap.com",
+        "amount_sats": 5000
+      },
+      "inferences": 0,
+      "latencyMs": 6,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "recipe",
+      "repeat": 1,
+      "case": {
+        "id": "fiat-0",
+        "kind": "pay",
+        "prompt": "pay bob 3 eur",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "bob@kaleidoswap.com",
+        "amount_sats": 5000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "recipe",
+      "repeat": 2,
+      "case": {
+        "id": "fiat-0",
+        "kind": "pay",
+        "prompt": "pay bob 3 eur",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "bob@kaleidoswap.com",
+        "amount_sats": 5000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "recipe",
+      "repeat": 0,
+      "case": {
+        "id": "fiat-1",
+        "kind": "pay",
+        "prompt": "pay alice 10 usd",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 16667
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "alice@kaleidoswap.com",
+        "amount_sats": 16667
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "recipe",
+      "repeat": 1,
+      "case": {
+        "id": "fiat-1",
+        "kind": "pay",
+        "prompt": "pay alice 10 usd",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 16667
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "alice@kaleidoswap.com",
+        "amount_sats": 16667
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "recipe",
+      "repeat": 2,
+      "case": {
+        "id": "fiat-1",
+        "kind": "pay",
+        "prompt": "pay alice 10 usd",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 16667
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "alice@kaleidoswap.com",
+        "amount_sats": 16667
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "recipe",
+      "repeat": 0,
+      "case": {
+        "id": "fiat-2",
+        "kind": "pay",
+        "prompt": "pay carol 25 eur",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 41667
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "carol@kaleidoswap.com",
+        "amount_sats": 41667
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "recipe",
+      "repeat": 1,
+      "case": {
+        "id": "fiat-2",
+        "kind": "pay",
+        "prompt": "pay carol 25 eur",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 41667
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "carol@kaleidoswap.com",
+        "amount_sats": 41667
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "recipe",
+      "repeat": 2,
+      "case": {
+        "id": "fiat-2",
+        "kind": "pay",
+        "prompt": "pay carol 25 eur",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 41667
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "carol@kaleidoswap.com",
+        "amount_sats": 41667
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "recipe",
+      "repeat": 0,
+      "case": {
+        "id": "sats-0",
+        "kind": "pay",
+        "prompt": "send 5000 sats to alice",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "alice@kaleidoswap.com",
+        "amount_sats": 5000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "recipe",
+      "repeat": 1,
+      "case": {
+        "id": "sats-0",
+        "kind": "pay",
+        "prompt": "send 5000 sats to alice",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "alice@kaleidoswap.com",
+        "amount_sats": 5000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "recipe",
+      "repeat": 2,
+      "case": {
+        "id": "sats-0",
+        "kind": "pay",
+        "prompt": "send 5000 sats to alice",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "alice@kaleidoswap.com",
+        "amount_sats": 5000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "recipe",
+      "repeat": 0,
+      "case": {
+        "id": "sats-1",
+        "kind": "pay",
+        "prompt": "send 21000 sats to carol",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 21000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "carol@kaleidoswap.com",
+        "amount_sats": 21000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "recipe",
+      "repeat": 1,
+      "case": {
+        "id": "sats-1",
+        "kind": "pay",
+        "prompt": "send 21000 sats to carol",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 21000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "carol@kaleidoswap.com",
+        "amount_sats": 21000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "recipe",
+      "repeat": 2,
+      "case": {
+        "id": "sats-1",
+        "kind": "pay",
+        "prompt": "send 21000 sats to carol",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 21000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "carol@kaleidoswap.com",
+        "amount_sats": 21000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "recipe",
+      "repeat": 0,
+      "case": {
+        "id": "sats-2",
+        "kind": "pay",
+        "prompt": "send 100000 sats to bob",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 100000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "bob@kaleidoswap.com",
+        "amount_sats": 100000
+      },
+      "inferences": 0,
+      "latencyMs": 1,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "recipe",
+      "repeat": 1,
+      "case": {
+        "id": "sats-2",
+        "kind": "pay",
+        "prompt": "send 100000 sats to bob",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 100000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "bob@kaleidoswap.com",
+        "amount_sats": 100000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "recipe",
+      "repeat": 2,
+      "case": {
+        "id": "sats-2",
+        "kind": "pay",
+        "prompt": "send 100000 sats to bob",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 100000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "bob@kaleidoswap.com",
+        "amount_sats": 100000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "recipe",
+      "repeat": 0,
+      "case": {
+        "id": "swap-0",
+        "kind": "swap",
+        "prompt": "swap 10 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {
+        "quote_id": "q-stub",
+        "from_asset": "USDT",
+        "to_asset": "BTC",
+        "amount": 10
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "recipe",
+      "repeat": 1,
+      "case": {
+        "id": "swap-0",
+        "kind": "swap",
+        "prompt": "swap 10 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {
+        "quote_id": "q-stub",
+        "from_asset": "USDT",
+        "to_asset": "BTC",
+        "amount": 10
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "recipe",
+      "repeat": 2,
+      "case": {
+        "id": "swap-0",
+        "kind": "swap",
+        "prompt": "swap 10 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {
+        "quote_id": "q-stub",
+        "from_asset": "USDT",
+        "to_asset": "BTC",
+        "amount": 10
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "recipe",
+      "repeat": 0,
+      "case": {
+        "id": "swap-1",
+        "kind": "swap",
+        "prompt": "swap 25 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {
+        "quote_id": "q-stub",
+        "from_asset": "USDT",
+        "to_asset": "BTC",
+        "amount": 25
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "recipe",
+      "repeat": 1,
+      "case": {
+        "id": "swap-1",
+        "kind": "swap",
+        "prompt": "swap 25 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {
+        "quote_id": "q-stub",
+        "from_asset": "USDT",
+        "to_asset": "BTC",
+        "amount": 25
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "recipe",
+      "repeat": 2,
+      "case": {
+        "id": "swap-1",
+        "kind": "swap",
+        "prompt": "swap 25 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {
+        "quote_id": "q-stub",
+        "from_asset": "USDT",
+        "to_asset": "BTC",
+        "amount": 25
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "recipe",
+      "repeat": 0,
+      "case": {
+        "id": "swap-2",
+        "kind": "swap",
+        "prompt": "swap 0.005 btc for usdt",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "BTC",
+        "expectTo": "USDT"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {
+        "quote_id": "q-stub",
+        "from_asset": "BTC",
+        "to_asset": "USDT",
+        "amount": 0.005
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "recipe",
+      "repeat": 1,
+      "case": {
+        "id": "swap-2",
+        "kind": "swap",
+        "prompt": "swap 0.005 btc for usdt",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "BTC",
+        "expectTo": "USDT"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {
+        "quote_id": "q-stub",
+        "from_asset": "BTC",
+        "to_asset": "USDT",
+        "amount": 0.005
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "recipe",
+      "repeat": 2,
+      "case": {
+        "id": "swap-2",
+        "kind": "swap",
+        "prompt": "swap 0.005 btc for usdt",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "BTC",
+        "expectTo": "USDT"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {
+        "quote_id": "q-stub",
+        "from_asset": "BTC",
+        "to_asset": "USDT",
+        "amount": 0.005
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "free",
+      "repeat": 0,
+      "case": {
+        "id": "fiat-0",
+        "kind": "pay",
+        "prompt": "pay bob 3 eur",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [],
+      "finalArgs": null,
+      "inferences": 1,
+      "latencyMs": 6376,
+      "inference": [
+        {
+          "requestId": "bdfffcee-fa27-41be-9acd-d8d074e0820c",
+          "durationMs": 6373,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 454,
+          "ttftMs": 312,
+          "tokensPerSecond": 86.10819225268449
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "free",
+      "repeat": 1,
+      "case": {
+        "id": "fiat-0",
+        "kind": "pay",
+        "prompt": "pay bob 3 eur",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [],
+      "finalArgs": null,
+      "inferences": 1,
+      "latencyMs": 7038,
+      "inference": [
+        {
+          "requestId": "c3c073df-2ef8-4893-a087-47a184c04937",
+          "durationMs": 7038,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 454,
+          "ttftMs": 510,
+          "tokensPerSecond": 79.91475343411021
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "free",
+      "repeat": 2,
+      "case": {
+        "id": "fiat-0",
+        "kind": "pay",
+        "prompt": "pay bob 3 eur",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [],
+      "finalArgs": null,
+      "inferences": 1,
+      "latencyMs": 6929,
+      "inference": [
+        {
+          "requestId": "b61b61c8-12f2-47bd-bc84-d0e9346f7139",
+          "durationMs": 6928,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 454,
+          "ttftMs": 510,
+          "tokensPerSecond": 81.47738875153725
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "free",
+      "repeat": 0,
+      "case": {
+        "id": "fiat-1",
+        "kind": "pay",
+        "prompt": "pay alice 10 usd",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 16667
+      },
+      "calls": [
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "alice",
+        "amount_sats": 16667
+      },
+      "inferences": 3,
+      "latencyMs": 6921,
+      "inference": [
+        {
+          "requestId": "8f126dad-69b2-46bb-8cef-b0c37de3008a",
+          "durationMs": 2134,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 455,
+          "ttftMs": 410,
+          "tokensPerSecond": 93.88801014229715
+        },
+        {
+          "requestId": "d1cd0c44-23e1-4255-96b3-dea9b85ef0b1",
+          "durationMs": 2649,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 638,
+          "ttftMs": 717,
+          "tokensPerSecond": 79.36236804692366
+        },
+        {
+          "requestId": "38e9e406-046d-4200-86ed-ca6de71ff436",
+          "durationMs": 2136,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 814,
+          "ttftMs": 817,
+          "tokensPerSecond": 91.54986632099167
+        }
+      ],
+      "gateFired": true,
+      "coverage": false,
+      "order": true,
+      "finalOk": true,
+      "pass": false
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "free",
+      "repeat": 1,
+      "case": {
+        "id": "fiat-1",
+        "kind": "pay",
+        "prompt": "pay alice 10 usd",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 16667
+      },
+      "calls": [
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "alice",
+        "amount_sats": 16667
+      },
+      "inferences": 3,
+      "latencyMs": 6591,
+      "inference": [
+        {
+          "requestId": "73c370c4-364b-433c-ae91-7cd2c34b101a",
+          "durationMs": 2128,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 455,
+          "ttftMs": 408,
+          "tokensPerSecond": 94.2113430457027
+        },
+        {
+          "requestId": "9b6ef367-e10c-43fa-9882-090e3e447eeb",
+          "durationMs": 2232,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 638,
+          "ttftMs": 611,
+          "tokensPerSecond": 94.89937837764798
+        },
+        {
+          "requestId": "79b0b74d-082d-48cc-8cd3-bc8dee6395a4",
+          "durationMs": 2231,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 814,
+          "ttftMs": 813,
+          "tokensPerSecond": 86.07274441803018
+        }
+      ],
+      "gateFired": true,
+      "coverage": false,
+      "order": true,
+      "finalOk": true,
+      "pass": false
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "free",
+      "repeat": 2,
+      "case": {
+        "id": "fiat-1",
+        "kind": "pay",
+        "prompt": "pay alice 10 usd",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 16667
+      },
+      "calls": [
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "alice",
+        "amount_sats": 16667
+      },
+      "inferences": 3,
+      "latencyMs": 7310,
+      "inference": [
+        {
+          "requestId": "59321611-1e2f-4a59-b98e-c12b142962c1",
+          "durationMs": 2487,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 455,
+          "ttftMs": 409,
+          "tokensPerSecond": 76.33955249462583
+        },
+        {
+          "requestId": "dc1a362a-84fe-47c4-a2ac-28e25322b1f1",
+          "durationMs": 2567,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 638,
+          "ttftMs": 510,
+          "tokensPerSecond": 78.05444892266769
+        },
+        {
+          "requestId": "4ddd6852-989d-4356-aa27-097b6c5ecfc9",
+          "durationMs": 2254,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 814,
+          "ttftMs": 815,
+          "tokensPerSecond": 83.78892013877818
+        }
+      ],
+      "gateFired": true,
+      "coverage": false,
+      "order": true,
+      "finalOk": true,
+      "pass": false
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "free",
+      "repeat": 0,
+      "case": {
+        "id": "fiat-2",
+        "kind": "pay",
+        "prompt": "pay carol 25 eur",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 41667
+      },
+      "calls": [],
+      "finalArgs": null,
+      "inferences": 1,
+      "latencyMs": 6292,
+      "inference": [
+        {
+          "requestId": "d47c8ba0-2eb6-4afa-a141-7c6d8931a974",
+          "durationMs": 6292,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 456,
+          "ttftMs": 408,
+          "tokensPerSecond": 81.3209485585906
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "free",
+      "repeat": 1,
+      "case": {
+        "id": "fiat-2",
+        "kind": "pay",
+        "prompt": "pay carol 25 eur",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 41667
+      },
+      "calls": [],
+      "finalArgs": null,
+      "inferences": 1,
+      "latencyMs": 6348,
+      "inference": [
+        {
+          "requestId": "c18a2e6e-967f-40c7-95a2-2e532a885961",
+          "durationMs": 6348,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 456,
+          "ttftMs": 410,
+          "tokensPerSecond": 78.43514901912677
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "free",
+      "repeat": 2,
+      "case": {
+        "id": "fiat-2",
+        "kind": "pay",
+        "prompt": "pay carol 25 eur",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 41667
+      },
+      "calls": [],
+      "finalArgs": null,
+      "inferences": 1,
+      "latencyMs": 6153,
+      "inference": [
+        {
+          "requestId": "2d5655a6-bb5f-4164-8418-59a576ac5aac",
+          "durationMs": 6152,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 456,
+          "ttftMs": 511,
+          "tokensPerSecond": 83.46950692335199
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "free",
+      "repeat": 0,
+      "case": {
+        "id": "sats-0",
+        "kind": "pay",
+        "prompt": "send 5000 sats to alice",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [
+        "send_payment"
+      ],
+      "finalArgs": {
+        "amount": "5000"
+      },
+      "inferences": 2,
+      "latencyMs": 3863,
+      "inference": [
+        {
+          "requestId": "8b7376d2-a2dc-456f-b679-81c443839a2f",
+          "durationMs": 1928,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 458,
+          "ttftMs": 512,
+          "tokensPerSecond": 88.83324181877319
+        },
+        {
+          "requestId": "76e5df88-e0d3-46e9-82df-cc88d2a3b10e",
+          "durationMs": 1934,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 608,
+          "ttftMs": 609,
+          "tokensPerSecond": 81.90958546923954
+        }
+      ],
+      "gateFired": true,
+      "coverage": false,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "free",
+      "repeat": 1,
+      "case": {
+        "id": "sats-0",
+        "kind": "pay",
+        "prompt": "send 5000 sats to alice",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [
+        "send_payment"
+      ],
+      "finalArgs": {
+        "amount": "5000"
+      },
+      "inferences": 2,
+      "latencyMs": 3755,
+      "inference": [
+        {
+          "requestId": "b449e591-f7c3-46f8-b492-73ed0e78dabf",
+          "durationMs": 1826,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 458,
+          "ttftMs": 305,
+          "tokensPerSecond": 89.12537132647324
+        },
+        {
+          "requestId": "3a8eecaf-8364-4fd5-a04f-3e4b02029d39",
+          "durationMs": 1927,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 608,
+          "ttftMs": 609,
+          "tokensPerSecond": 84.13967185527977
+        }
+      ],
+      "gateFired": true,
+      "coverage": false,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "free",
+      "repeat": 2,
+      "case": {
+        "id": "sats-0",
+        "kind": "pay",
+        "prompt": "send 5000 sats to alice",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [
+        "send_payment"
+      ],
+      "finalArgs": {
+        "amount": "5000"
+      },
+      "inferences": 2,
+      "latencyMs": 3548,
+      "inference": [
+        {
+          "requestId": "803ed4ca-8797-4ad4-b886-05a9a1ed686a",
+          "durationMs": 1721,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 458,
+          "ttftMs": 408,
+          "tokensPerSecond": 98.12860255597965
+        },
+        {
+          "requestId": "347ac98b-cca5-4256-bdfd-d7d4fec6ef19",
+          "durationMs": 1827,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 608,
+          "ttftMs": 612,
+          "tokensPerSecond": 94.0190806500897
+        }
+      ],
+      "gateFired": true,
+      "coverage": false,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "free",
+      "repeat": 0,
+      "case": {
+        "id": "sats-1",
+        "kind": "pay",
+        "prompt": "send 21000 sats to carol",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 21000
+      },
+      "calls": [
+        "send_payment"
+      ],
+      "finalArgs": {
+        "amount": "21000"
+      },
+      "inferences": 2,
+      "latencyMs": 4066,
+      "inference": [
+        {
+          "requestId": "bf373b2d-8aaf-4d0a-8d41-9e32cbb80e5e",
+          "durationMs": 2030,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 460,
+          "ttftMs": 408,
+          "tokensPerSecond": 102.65509629670183
+        },
+        {
+          "requestId": "a02d8fb3-edfb-4814-a74e-238fe93ce09d",
+          "durationMs": 2036,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 648,
+          "ttftMs": 712,
+          "tokensPerSecond": 81.0344627993934
+        }
+      ],
+      "gateFired": true,
+      "coverage": false,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "free",
+      "repeat": 1,
+      "case": {
+        "id": "sats-1",
+        "kind": "pay",
+        "prompt": "send 21000 sats to carol",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 21000
+      },
+      "calls": [
+        "send_payment"
+      ],
+      "finalArgs": {
+        "amount": "21000"
+      },
+      "inferences": 2,
+      "latencyMs": 4058,
+      "inference": [
+        {
+          "requestId": "8e6c32af-1360-47e4-a9ad-6591fba2e046",
+          "durationMs": 2129,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 460,
+          "ttftMs": 407,
+          "tokensPerSecond": 96.82428094768086
+        },
+        {
+          "requestId": "968ad425-576c-42d8-858e-2c47dc39546f",
+          "durationMs": 1929,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 648,
+          "ttftMs": 509,
+          "tokensPerSecond": 77.62873061499698
+        }
+      ],
+      "gateFired": true,
+      "coverage": false,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "free",
+      "repeat": 2,
+      "case": {
+        "id": "sats-1",
+        "kind": "pay",
+        "prompt": "send 21000 sats to carol",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 21000
+      },
+      "calls": [
+        "send_payment"
+      ],
+      "finalArgs": {
+        "amount": "21000"
+      },
+      "inferences": 2,
+      "latencyMs": 3848,
+      "inference": [
+        {
+          "requestId": "9f095c61-62fa-4e9d-913e-ab30d8f6a908",
+          "durationMs": 2022,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 460,
+          "ttftMs": 406,
+          "tokensPerSecond": 102.78484639894847
+        },
+        {
+          "requestId": "01d19296-b5ea-46fb-a0bc-23821daa2615",
+          "durationMs": 1824,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 648,
+          "ttftMs": 610,
+          "tokensPerSecond": 91.59538219699812
+        }
+      ],
+      "gateFired": true,
+      "coverage": false,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "free",
+      "repeat": 0,
+      "case": {
+        "id": "sats-2",
+        "kind": "pay",
+        "prompt": "send 100000 sats to bob",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 100000
+      },
+      "calls": [
+        "send_payment"
+      ],
+      "finalArgs": {
+        "amount": "100000"
+      },
+      "inferences": 2,
+      "latencyMs": 4253,
+      "inference": [
+        {
+          "requestId": "188e1328-9f83-4581-a206-7e949e7042b4",
+          "durationMs": 2428,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 460,
+          "ttftMs": 407,
+          "tokensPerSecond": 93.78101481088079
+        },
+        {
+          "requestId": "11cb1ec4-0caf-4bc2-a5bf-994116b15a47",
+          "durationMs": 1825,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 670,
+          "ttftMs": 613,
+          "tokensPerSecond": 92.73419177093643
+        }
+      ],
+      "gateFired": true,
+      "coverage": false,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "free",
+      "repeat": 1,
+      "case": {
+        "id": "sats-2",
+        "kind": "pay",
+        "prompt": "send 100000 sats to bob",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 100000
+      },
+      "calls": [
+        "send_payment"
+      ],
+      "finalArgs": {
+        "amount": "100000"
+      },
+      "inferences": 2,
+      "latencyMs": 4369,
+      "inference": [
+        {
+          "requestId": "1667e492-9737-43cb-ba1f-bbc763b75875",
+          "durationMs": 2337,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 460,
+          "ttftMs": 410,
+          "tokensPerSecond": 101.32519263978135
+        },
+        {
+          "requestId": "42d9d42f-6809-4be7-8a8c-c0bd9478632b",
+          "durationMs": 2032,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 670,
+          "ttftMs": 611,
+          "tokensPerSecond": 78.9667133766741
+        }
+      ],
+      "gateFired": true,
+      "coverage": false,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "free",
+      "repeat": 2,
+      "case": {
+        "id": "sats-2",
+        "kind": "pay",
+        "prompt": "send 100000 sats to bob",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 100000
+      },
+      "calls": [
+        "send_payment"
+      ],
+      "finalArgs": {
+        "amount": "100000"
+      },
+      "inferences": 2,
+      "latencyMs": 4361,
+      "inference": [
+        {
+          "requestId": "7938b8cd-cf5b-48a5-9747-4412e3fa67f7",
+          "durationMs": 2231,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 460,
+          "ttftMs": 408,
+          "tokensPerSecond": 102.41833233379613
+        },
+        {
+          "requestId": "7779b40d-5740-425a-95af-0ae5b7c255af",
+          "durationMs": 2130,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 670,
+          "ttftMs": 716,
+          "tokensPerSecond": 78.92824059623828
+        }
+      ],
+      "gateFired": true,
+      "coverage": false,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "free",
+      "repeat": 0,
+      "case": {
+        "id": "swap-0",
+        "kind": "swap",
+        "prompt": "swap 10 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [
+        "get_swap_quote"
+      ],
+      "finalArgs": null,
+      "inferences": 2,
+      "latencyMs": 4707,
+      "inference": [
+        {
+          "requestId": "f4c2804f-6eba-4a04-b5e9-ecfb24daf836",
+          "durationMs": 2262,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 456,
+          "ttftMs": 433,
+          "tokensPerSecond": 85.88300719879848
+        },
+        {
+          "requestId": "ff6a97f0-4868-461b-8809-85cc26e179c7",
+          "durationMs": 2443,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 651,
+          "ttftMs": 613,
+          "tokensPerSecond": 88.39860192444904
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "free",
+      "repeat": 1,
+      "case": {
+        "id": "swap-0",
+        "kind": "swap",
+        "prompt": "swap 10 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [
+        "get_swap_quote"
+      ],
+      "finalArgs": null,
+      "inferences": 2,
+      "latencyMs": 4574,
+      "inference": [
+        {
+          "requestId": "02f6fb8c-8499-4423-81bd-31eac8958fdd",
+          "durationMs": 2239,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 456,
+          "ttftMs": 306,
+          "tokensPerSecond": 89.87671910030076
+        },
+        {
+          "requestId": "0213f5db-c18b-47c1-abca-713afc5f052d",
+          "durationMs": 2334,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 651,
+          "ttftMs": 611,
+          "tokensPerSecond": 90.88012085875813
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "free",
+      "repeat": 2,
+      "case": {
+        "id": "swap-0",
+        "kind": "swap",
+        "prompt": "swap 10 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [
+        "get_swap_quote"
+      ],
+      "finalArgs": null,
+      "inferences": 2,
+      "latencyMs": 4563,
+      "inference": [
+        {
+          "requestId": "d82ea6f3-c896-49c0-8e56-cd031eed949a",
+          "durationMs": 2332,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 456,
+          "ttftMs": 406,
+          "tokensPerSecond": 85.92186202221876
+        },
+        {
+          "requestId": "dc30e6f2-a005-4cf8-9dc6-4f04bb2f9c76",
+          "durationMs": 2229,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 651,
+          "ttftMs": 611,
+          "tokensPerSecond": 96.52455202265944
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "free",
+      "repeat": 0,
+      "case": {
+        "id": "swap-1",
+        "kind": "swap",
+        "prompt": "swap 25 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {
+        "amount": "25",
+        "swap_id": "q-stub"
+      },
+      "inferences": 3,
+      "latencyMs": 8207,
+      "inference": [
+        {
+          "requestId": "e3f8c0aa-baf4-4c38-94bb-81381611daf4",
+          "durationMs": 2229,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 456,
+          "ttftMs": 408,
+          "tokensPerSecond": 92.64385837001628
+        },
+        {
+          "requestId": "6e27aa17-535e-40dc-a04f-8e7855e485f5",
+          "durationMs": 3137,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 658,
+          "ttftMs": 809,
+          "tokensPerSecond": 96.92903157275099
+        },
+        {
+          "requestId": "075c759f-1376-4680-b4b7-d53c119b5e74",
+          "durationMs": 2841,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 900,
+          "ttftMs": 1222,
+          "tokensPerSecond": 93.23109427698958
+        }
+      ],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "free",
+      "repeat": 1,
+      "case": {
+        "id": "swap-1",
+        "kind": "swap",
+        "prompt": "swap 25 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {
+        "amount": "25",
+        "swap_id": "q-stub"
+      },
+      "inferences": 3,
+      "latencyMs": 7751,
+      "inference": [
+        {
+          "requestId": "728712fe-b365-490e-b123-803fa36be3bd",
+          "durationMs": 2125,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 456,
+          "ttftMs": 407,
+          "tokensPerSecond": 96.75088764645736
+        },
+        {
+          "requestId": "68c45541-dbce-4047-86d9-8f114a99f17e",
+          "durationMs": 3035,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 658,
+          "ttftMs": 713,
+          "tokensPerSecond": 100.1416157918298
+        },
+        {
+          "requestId": "b2dcabf8-e56d-47a8-a86c-2a4652975fb3",
+          "durationMs": 2590,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 900,
+          "ttftMs": 1020,
+          "tokensPerSecond": 93.33361377236062
+        }
+      ],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "free",
+      "repeat": 2,
+      "case": {
+        "id": "swap-1",
+        "kind": "swap",
+        "prompt": "swap 25 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {
+        "amount": "25",
+        "swap_id": "q-stub"
+      },
+      "inferences": 3,
+      "latencyMs": 8018,
+      "inference": [
+        {
+          "requestId": "427c5182-d4aa-4d09-aa2a-c6ba8af77896",
+          "durationMs": 2336,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 456,
+          "ttftMs": 408,
+          "tokensPerSecond": 90.17859096218422
+        },
+        {
+          "requestId": "114a932d-0747-4d94-bdc6-b78ab67ebcef",
+          "durationMs": 3040,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 658,
+          "ttftMs": 612,
+          "tokensPerSecond": 92.43868444978723
+        },
+        {
+          "requestId": "508fe10d-8481-4c7c-acb4-c4817d1220e9",
+          "durationMs": 2642,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 900,
+          "ttftMs": 1021,
+          "tokensPerSecond": 92.30381214744169
+        }
+      ],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "free",
+      "repeat": 0,
+      "case": {
+        "id": "swap-2",
+        "kind": "swap",
+        "prompt": "swap 0.005 btc for usdt",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "BTC",
+        "expectTo": "USDT"
+      },
+      "calls": [
+        "get_swap_quote"
+      ],
+      "finalArgs": null,
+      "inferences": 2,
+      "latencyMs": 6190,
+      "inference": [
+        {
+          "requestId": "719a6434-b148-4b55-8165-005bc5d941c0",
+          "durationMs": 3043,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 459,
+          "ttftMs": 305,
+          "tokensPerSecond": 88.00177561104772
+        },
+        {
+          "requestId": "1ef1fa57-3a1c-434f-adc7-01303590f083",
+          "durationMs": 3145,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 715,
+          "ttftMs": 713,
+          "tokensPerSecond": 91.79380248668569
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "free",
+      "repeat": 1,
+      "case": {
+        "id": "swap-2",
+        "kind": "swap",
+        "prompt": "swap 0.005 btc for usdt",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "BTC",
+        "expectTo": "USDT"
+      },
+      "calls": [
+        "get_swap_quote"
+      ],
+      "finalArgs": null,
+      "inferences": 2,
+      "latencyMs": 6739,
+      "inference": [
+        {
+          "requestId": "03ebd736-0cc9-4b45-831e-006b26056c4a",
+          "durationMs": 3492,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 459,
+          "ttftMs": 307,
+          "tokensPerSecond": 74.01493005589109
+        },
+        {
+          "requestId": "2e8aed69-c17d-46a7-88b9-aecc42d1a706",
+          "durationMs": 3246,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 715,
+          "ttftMs": 713,
+          "tokensPerSecond": 88.41987597692808
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-0.6b",
+      "mode": "free",
+      "repeat": 2,
+      "case": {
+        "id": "swap-2",
+        "kind": "swap",
+        "prompt": "swap 0.005 btc for usdt",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "BTC",
+        "expectTo": "USDT"
+      },
+      "calls": [
+        "get_swap_quote"
+      ],
+      "finalArgs": null,
+      "inferences": 2,
+      "latencyMs": 6177,
+      "inference": [
+        {
+          "requestId": "a2d5d199-d7fe-4fd6-86d3-1bbace720066",
+          "durationMs": 2838,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 459,
+          "ttftMs": 407,
+          "tokensPerSecond": 95.63316134879994
+        },
+        {
+          "requestId": "ee5bd5d5-06df-4db6-a92f-007756740684",
+          "durationMs": 3339,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 715,
+          "ttftMs": 814,
+          "tokensPerSecond": 89.00618470498125
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "recipe",
+      "repeat": 0,
+      "case": {
+        "id": "fiat-0",
+        "kind": "pay",
+        "prompt": "pay bob 3 eur",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "bob@kaleidoswap.com",
+        "amount_sats": 5000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "recipe",
+      "repeat": 1,
+      "case": {
+        "id": "fiat-0",
+        "kind": "pay",
+        "prompt": "pay bob 3 eur",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "bob@kaleidoswap.com",
+        "amount_sats": 5000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "recipe",
+      "repeat": 2,
+      "case": {
+        "id": "fiat-0",
+        "kind": "pay",
+        "prompt": "pay bob 3 eur",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "bob@kaleidoswap.com",
+        "amount_sats": 5000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "recipe",
+      "repeat": 0,
+      "case": {
+        "id": "fiat-1",
+        "kind": "pay",
+        "prompt": "pay alice 10 usd",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 16667
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "alice@kaleidoswap.com",
+        "amount_sats": 16667
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "recipe",
+      "repeat": 1,
+      "case": {
+        "id": "fiat-1",
+        "kind": "pay",
+        "prompt": "pay alice 10 usd",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 16667
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "alice@kaleidoswap.com",
+        "amount_sats": 16667
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "recipe",
+      "repeat": 2,
+      "case": {
+        "id": "fiat-1",
+        "kind": "pay",
+        "prompt": "pay alice 10 usd",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 16667
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "alice@kaleidoswap.com",
+        "amount_sats": 16667
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "recipe",
+      "repeat": 0,
+      "case": {
+        "id": "fiat-2",
+        "kind": "pay",
+        "prompt": "pay carol 25 eur",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 41667
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "carol@kaleidoswap.com",
+        "amount_sats": 41667
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "recipe",
+      "repeat": 1,
+      "case": {
+        "id": "fiat-2",
+        "kind": "pay",
+        "prompt": "pay carol 25 eur",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 41667
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "carol@kaleidoswap.com",
+        "amount_sats": 41667
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "recipe",
+      "repeat": 2,
+      "case": {
+        "id": "fiat-2",
+        "kind": "pay",
+        "prompt": "pay carol 25 eur",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 41667
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "carol@kaleidoswap.com",
+        "amount_sats": 41667
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "recipe",
+      "repeat": 0,
+      "case": {
+        "id": "sats-0",
+        "kind": "pay",
+        "prompt": "send 5000 sats to alice",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "alice@kaleidoswap.com",
+        "amount_sats": 5000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "recipe",
+      "repeat": 1,
+      "case": {
+        "id": "sats-0",
+        "kind": "pay",
+        "prompt": "send 5000 sats to alice",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "alice@kaleidoswap.com",
+        "amount_sats": 5000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "recipe",
+      "repeat": 2,
+      "case": {
+        "id": "sats-0",
+        "kind": "pay",
+        "prompt": "send 5000 sats to alice",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "alice@kaleidoswap.com",
+        "amount_sats": 5000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "recipe",
+      "repeat": 0,
+      "case": {
+        "id": "sats-1",
+        "kind": "pay",
+        "prompt": "send 21000 sats to carol",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 21000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "carol@kaleidoswap.com",
+        "amount_sats": 21000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "recipe",
+      "repeat": 1,
+      "case": {
+        "id": "sats-1",
+        "kind": "pay",
+        "prompt": "send 21000 sats to carol",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 21000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "carol@kaleidoswap.com",
+        "amount_sats": 21000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "recipe",
+      "repeat": 2,
+      "case": {
+        "id": "sats-1",
+        "kind": "pay",
+        "prompt": "send 21000 sats to carol",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 21000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "carol@kaleidoswap.com",
+        "amount_sats": 21000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "recipe",
+      "repeat": 0,
+      "case": {
+        "id": "sats-2",
+        "kind": "pay",
+        "prompt": "send 100000 sats to bob",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 100000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "bob@kaleidoswap.com",
+        "amount_sats": 100000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "recipe",
+      "repeat": 1,
+      "case": {
+        "id": "sats-2",
+        "kind": "pay",
+        "prompt": "send 100000 sats to bob",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 100000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "bob@kaleidoswap.com",
+        "amount_sats": 100000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "recipe",
+      "repeat": 2,
+      "case": {
+        "id": "sats-2",
+        "kind": "pay",
+        "prompt": "send 100000 sats to bob",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 100000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "bob@kaleidoswap.com",
+        "amount_sats": 100000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "recipe",
+      "repeat": 0,
+      "case": {
+        "id": "swap-0",
+        "kind": "swap",
+        "prompt": "swap 10 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {
+        "quote_id": "q-stub",
+        "from_asset": "USDT",
+        "to_asset": "BTC",
+        "amount": 10
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "recipe",
+      "repeat": 1,
+      "case": {
+        "id": "swap-0",
+        "kind": "swap",
+        "prompt": "swap 10 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {
+        "quote_id": "q-stub",
+        "from_asset": "USDT",
+        "to_asset": "BTC",
+        "amount": 10
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "recipe",
+      "repeat": 2,
+      "case": {
+        "id": "swap-0",
+        "kind": "swap",
+        "prompt": "swap 10 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {
+        "quote_id": "q-stub",
+        "from_asset": "USDT",
+        "to_asset": "BTC",
+        "amount": 10
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "recipe",
+      "repeat": 0,
+      "case": {
+        "id": "swap-1",
+        "kind": "swap",
+        "prompt": "swap 25 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {
+        "quote_id": "q-stub",
+        "from_asset": "USDT",
+        "to_asset": "BTC",
+        "amount": 25
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "recipe",
+      "repeat": 1,
+      "case": {
+        "id": "swap-1",
+        "kind": "swap",
+        "prompt": "swap 25 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {
+        "quote_id": "q-stub",
+        "from_asset": "USDT",
+        "to_asset": "BTC",
+        "amount": 25
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "recipe",
+      "repeat": 2,
+      "case": {
+        "id": "swap-1",
+        "kind": "swap",
+        "prompt": "swap 25 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {
+        "quote_id": "q-stub",
+        "from_asset": "USDT",
+        "to_asset": "BTC",
+        "amount": 25
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "recipe",
+      "repeat": 0,
+      "case": {
+        "id": "swap-2",
+        "kind": "swap",
+        "prompt": "swap 0.005 btc for usdt",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "BTC",
+        "expectTo": "USDT"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {
+        "quote_id": "q-stub",
+        "from_asset": "BTC",
+        "to_asset": "USDT",
+        "amount": 0.005
+      },
+      "inferences": 0,
+      "latencyMs": 1,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "recipe",
+      "repeat": 1,
+      "case": {
+        "id": "swap-2",
+        "kind": "swap",
+        "prompt": "swap 0.005 btc for usdt",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "BTC",
+        "expectTo": "USDT"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {
+        "quote_id": "q-stub",
+        "from_asset": "BTC",
+        "to_asset": "USDT",
+        "amount": 0.005
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "recipe",
+      "repeat": 2,
+      "case": {
+        "id": "swap-2",
+        "kind": "swap",
+        "prompt": "swap 0.005 btc for usdt",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "BTC",
+        "expectTo": "USDT"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {
+        "quote_id": "q-stub",
+        "from_asset": "BTC",
+        "to_asset": "USDT",
+        "amount": 0.005
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "free",
+      "repeat": 0,
+      "case": {
+        "id": "fiat-0",
+        "kind": "pay",
+        "prompt": "pay bob 3 eur",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [],
+      "finalArgs": null,
+      "inferences": 1,
+      "latencyMs": 13517,
+      "inference": [
+        {
+          "requestId": "ea6ca0ac-9ebf-4042-a87a-3d97210157f7",
+          "durationMs": 13517,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 454,
+          "ttftMs": 716,
+          "tokensPerSecond": 40.14175999821871
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "free",
+      "repeat": 1,
+      "case": {
+        "id": "fiat-0",
+        "kind": "pay",
+        "prompt": "pay bob 3 eur",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [],
+      "finalArgs": null,
+      "inferences": 1,
+      "latencyMs": 13999,
+      "inference": [
+        {
+          "requestId": "dea64a77-a6f5-4fea-8f7f-369d5a4044a9",
+          "durationMs": 13999,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 454,
+          "ttftMs": 1428,
+          "tokensPerSecond": 41.014266796684026
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "free",
+      "repeat": 2,
+      "case": {
+        "id": "fiat-0",
+        "kind": "pay",
+        "prompt": "pay bob 3 eur",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [],
+      "finalArgs": null,
+      "inferences": 1,
+      "latencyMs": 14561,
+      "inference": [
+        {
+          "requestId": "e8593102-3e26-4833-9a29-b4566358e290",
+          "durationMs": 14561,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 454,
+          "ttftMs": 1735,
+          "tokensPerSecond": 40.3841893059354
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "free",
+      "repeat": 0,
+      "case": {
+        "id": "fiat-1",
+        "kind": "pay",
+        "prompt": "pay alice 10 usd",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 16667
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "undefined@kaleidoswap.com",
+        "amount_sats": 16667
+      },
+      "inferences": 4,
+      "latencyMs": 32998,
+      "inference": [
+        {
+          "requestId": "b11b6acb-6243-493a-bae4-cf3549696f22",
+          "durationMs": 7989,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 455,
+          "ttftMs": 1529,
+          "tokensPerSecond": 39.31523553443086
+        },
+        {
+          "requestId": "8d8a645b-8564-465c-8597-b3f936f40d84",
+          "durationMs": 8127,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 730,
+          "ttftMs": 2042,
+          "tokensPerSecond": 38.68568712950534
+        },
+        {
+          "requestId": "73afc590-e1e0-45da-83a1-531e1b4ae0df",
+          "durationMs": 8037,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 985,
+          "ttftMs": 2859,
+          "tokensPerSecond": 36.23281774873296
+        },
+        {
+          "requestId": "0153526a-3028-4fd7-b268-18e75d8c4123",
+          "durationMs": 8845,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 1195,
+          "ttftMs": 4075,
+          "tokensPerSecond": 36.62482544989258
+        }
+      ],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "free",
+      "repeat": 1,
+      "case": {
+        "id": "fiat-1",
+        "kind": "pay",
+        "prompt": "pay alice 10 usd",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 16667
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "undefined@kaleidoswap.com",
+        "amount_sats": 16667
+      },
+      "inferences": 4,
+      "latencyMs": 32930,
+      "inference": [
+        {
+          "requestId": "fdaf382e-9294-4c71-ae61-0a30f16aec34",
+          "durationMs": 8228,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 455,
+          "ttftMs": 1631,
+          "tokensPerSecond": 38.590376887513216
+        },
+        {
+          "requestId": "44a724a6-01a2-45a4-a1aa-21419c34338e",
+          "durationMs": 8348,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 730,
+          "ttftMs": 2550,
+          "tokensPerSecond": 40.562553664520756
+        },
+        {
+          "requestId": "3182792b-14ec-452b-bfd3-a1ea8c0d2cf1",
+          "durationMs": 8027,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 985,
+          "ttftMs": 3155,
+          "tokensPerSecond": 38.67273518399949
+        },
+        {
+          "requestId": "11ebfd51-593b-4a5f-9111-da319092d0b2",
+          "durationMs": 8324,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 1195,
+          "ttftMs": 3466,
+          "tokensPerSecond": 36.16585115808073
+        }
+      ],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "free",
+      "repeat": 2,
+      "case": {
+        "id": "fiat-1",
+        "kind": "pay",
+        "prompt": "pay alice 10 usd",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 16667
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "undefined@kaleidoswap.com",
+        "amount_sats": 16667
+      },
+      "inferences": 4,
+      "latencyMs": 31392,
+      "inference": [
+        {
+          "requestId": "02bbbbf3-81b6-477a-bbeb-98deada2b11d",
+          "durationMs": 7415,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 455,
+          "ttftMs": 1630,
+          "tokensPerSecond": 42.7568377590081
+        },
+        {
+          "requestId": "7b5ae412-bf3e-458b-bcd6-2b89ac9e3ba1",
+          "durationMs": 8318,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 730,
+          "ttftMs": 2440,
+          "tokensPerSecond": 39.3870559194331
+        },
+        {
+          "requestId": "e0378e3f-d512-441c-8ad6-bed47c27ad35",
+          "durationMs": 7828,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 985,
+          "ttftMs": 2755,
+          "tokensPerSecond": 36.85141509433962
+        },
+        {
+          "requestId": "46859c34-67e3-446b-8b91-64df439eb6ab",
+          "durationMs": 7831,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 1195,
+          "ttftMs": 3264,
+          "tokensPerSecond": 38.145662187748535
+        }
+      ],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "free",
+      "repeat": 0,
+      "case": {
+        "id": "fiat-2",
+        "kind": "pay",
+        "prompt": "pay carol 25 eur",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 41667
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "<resolved-contact-address>",
+        "amount_sats": "2500000"
+      },
+      "inferences": 2,
+      "latencyMs": 17452,
+      "inference": [
+        {
+          "requestId": "1566dcfc-5bb0-4c65-934f-a4ba7174a995",
+          "durationMs": 8829,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 456,
+          "ttftMs": 1428,
+          "tokensPerSecond": 42.647612691223266
+        },
+        {
+          "requestId": "a3a7b245-2bfe-4698-94b0-ea420302878c",
+          "durationMs": 8622,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 818,
+          "ttftMs": 2538,
+          "tokensPerSecond": 41.05525242358426
+        }
+      ],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "free",
+      "repeat": 1,
+      "case": {
+        "id": "fiat-2",
+        "kind": "pay",
+        "prompt": "pay carol 25 eur",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 41667
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "<resolved-contact-address>",
+        "amount_sats": "2500000"
+      },
+      "inferences": 2,
+      "latencyMs": 18496,
+      "inference": [
+        {
+          "requestId": "07320995-6e15-44f9-b8f0-03967375457d",
+          "durationMs": 9458,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 456,
+          "ttftMs": 1631,
+          "tokensPerSecond": 40.44237258141088
+        },
+        {
+          "requestId": "7f89c9c0-f3c6-47f2-a664-40e798bc94a9",
+          "durationMs": 9037,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 818,
+          "ttftMs": 2644,
+          "tokensPerSecond": 39.13196466131127
+        }
+      ],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "free",
+      "repeat": 2,
+      "case": {
+        "id": "fiat-2",
+        "kind": "pay",
+        "prompt": "pay carol 25 eur",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 41667
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "<resolved-contact-address>",
+        "amount_sats": "2500000"
+      },
+      "inferences": 2,
+      "latencyMs": 17677,
+      "inference": [
+        {
+          "requestId": "0f37a0b0-59be-478b-9234-f2393ec0c7a5",
+          "durationMs": 9140,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 456,
+          "ttftMs": 1634,
+          "tokensPerSecond": 42.23446692973987
+        },
+        {
+          "requestId": "c3a94484-fa6e-408f-9331-a29a780e2731",
+          "durationMs": 8537,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 818,
+          "ttftMs": 2548,
+          "tokensPerSecond": 41.132039984986804
+        }
+      ],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "free",
+      "repeat": 0,
+      "case": {
+        "id": "sats-0",
+        "kind": "pay",
+        "prompt": "send 5000 sats to alice",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "alice@kaleidoswap.com",
+        "amount_sats": 5000
+      },
+      "inferences": 3,
+      "latencyMs": 25135,
+      "inference": [
+        {
+          "requestId": "93dee9e8-0abd-4073-aaa7-39193f13ee35",
+          "durationMs": 9663,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 458,
+          "ttftMs": 1529,
+          "tokensPerSecond": 40.45721116281471
+        },
+        {
+          "requestId": "340e659d-f343-4e84-997e-f03d7b267e77",
+          "durationMs": 8133,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 813,
+          "ttftMs": 2345,
+          "tokensPerSecond": 36.19400471422582
+        },
+        {
+          "requestId": "c3bb8f7c-5c61-4e6f-b665-80c0c15ebc4a",
+          "durationMs": 7338,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 1045,
+          "ttftMs": 2852,
+          "tokensPerSecond": 37.86155247239318
+        }
+      ],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "free",
+      "repeat": 1,
+      "case": {
+        "id": "sats-0",
+        "kind": "pay",
+        "prompt": "send 5000 sats to alice",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "alice@kaleidoswap.com",
+        "amount_sats": 5000
+      },
+      "inferences": 3,
+      "latencyMs": 25196,
+      "inference": [
+        {
+          "requestId": "bd531485-0010-48c9-9f7e-96c5cc907551",
+          "durationMs": 10065,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 458,
+          "ttftMs": 1530,
+          "tokensPerSecond": 38.500097608376294
+        },
+        {
+          "requestId": "ffb3906e-d501-4df3-961c-7dfce44fba9b",
+          "durationMs": 7917,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 813,
+          "ttftMs": 2742,
+          "tokensPerSecond": 40.23493350936598
+        },
+        {
+          "requestId": "49beb1f0-3b85-4bc7-9ee2-6ee220aa90e8",
+          "durationMs": 7213,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 1045,
+          "ttftMs": 2953,
+          "tokensPerSecond": 40.25576789674395
+        }
+      ],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "free",
+      "repeat": 2,
+      "case": {
+        "id": "sats-0",
+        "kind": "pay",
+        "prompt": "send 5000 sats to alice",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "alice@kaleidoswap.com",
+        "amount_sats": 5000
+      },
+      "inferences": 3,
+      "latencyMs": 26243,
+      "inference": [
+        {
+          "requestId": "2b4b868a-abac-49a7-801b-dca6be77e521",
+          "durationMs": 10165,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 458,
+          "ttftMs": 2135,
+          "tokensPerSecond": 41.20613127009431
+        },
+        {
+          "requestId": "7f4b2683-50ac-4c85-b8c4-16bbea1e2b35",
+          "durationMs": 8045,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 813,
+          "ttftMs": 2647,
+          "tokensPerSecond": 38.94186929170888
+        },
+        {
+          "requestId": "00e05513-4c56-42f9-b72c-165038cb761f",
+          "durationMs": 8033,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 1045,
+          "ttftMs": 3161,
+          "tokensPerSecond": 34.38177978510978
+        }
+      ],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "free",
+      "repeat": 0,
+      "case": {
+        "id": "sats-1",
+        "kind": "pay",
+        "prompt": "send 21000 sats to carol",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 21000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "undefined@kaleidoswap.com",
+        "amount_sats": 21000
+      },
+      "inferences": 3,
+      "latencyMs": 21939,
+      "inference": [
+        {
+          "requestId": "3adaf96f-d36f-440c-b75c-437a802b165f",
+          "durationMs": 6909,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 460,
+          "ttftMs": 1733,
+          "tokensPerSecond": 42.0175750179061
+        },
+        {
+          "requestId": "9c0c7671-cdb9-4719-9713-1cc924114fae",
+          "durationMs": 7209,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 701,
+          "ttftMs": 2339,
+          "tokensPerSecond": 39.3430852273682
+        },
+        {
+          "requestId": "ff88eb86-9380-4d57-95c5-187212ed57bf",
+          "durationMs": 7820,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 916,
+          "ttftMs": 2753,
+          "tokensPerSecond": 36.35352526029615
+        }
+      ],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "free",
+      "repeat": 1,
+      "case": {
+        "id": "sats-1",
+        "kind": "pay",
+        "prompt": "send 21000 sats to carol",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 21000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "undefined@kaleidoswap.com",
+        "amount_sats": 21000
+      },
+      "inferences": 3,
+      "latencyMs": 21282,
+      "inference": [
+        {
+          "requestId": "2a8b6111-c5d1-49a7-a24c-9ec4010eca39",
+          "durationMs": 6794,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 460,
+          "ttftMs": 1622,
+          "tokensPerSecond": 42.205742442973886
+        },
+        {
+          "requestId": "46f1db2b-00c9-4aa6-8f47-596208e880af",
+          "durationMs": 7175,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 701,
+          "ttftMs": 2139,
+          "tokensPerSecond": 38.316347749593085
+        },
+        {
+          "requestId": "bf412904-2e5f-4aeb-a451-553582bde0d2",
+          "durationMs": 7313,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 916,
+          "ttftMs": 2649,
+          "tokensPerSecond": 40.165839322747495
+        }
+      ],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "free",
+      "repeat": 2,
+      "case": {
+        "id": "sats-1",
+        "kind": "pay",
+        "prompt": "send 21000 sats to carol",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 21000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "undefined@kaleidoswap.com",
+        "amount_sats": 21000
+      },
+      "inferences": 3,
+      "latencyMs": 21151,
+      "inference": [
+        {
+          "requestId": "c9b38dad-a4ef-4eb2-9d0b-99772fd22d82",
+          "durationMs": 7114,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 460,
+          "ttftMs": 1936,
+          "tokensPerSecond": 41.79519657093632
+        },
+        {
+          "requestId": "3a7cd1ac-b56a-4cb2-9499-7134df0848a2",
+          "durationMs": 7016,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 701,
+          "ttftMs": 2042,
+          "tokensPerSecond": 38.5906920456745
+        },
+        {
+          "requestId": "625b56a1-deb7-496b-9ed6-e582bed1e8f1",
+          "durationMs": 7019,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 916,
+          "ttftMs": 2650,
+          "tokensPerSecond": 42.7433761629664
+        }
+      ],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "free",
+      "repeat": 0,
+      "case": {
+        "id": "sats-2",
+        "kind": "pay",
+        "prompt": "send 100000 sats to bob",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 100000
+      },
+      "calls": [],
+      "finalArgs": null,
+      "inferences": 1,
+      "latencyMs": 14926,
+      "inference": [
+        {
+          "requestId": "0c005110-a41a-4fa1-af7e-d8e57e262993",
+          "durationMs": 14926,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 460,
+          "ttftMs": 1735,
+          "tokensPerSecond": 39.18358550623662
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "free",
+      "repeat": 1,
+      "case": {
+        "id": "sats-2",
+        "kind": "pay",
+        "prompt": "send 100000 sats to bob",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 100000
+      },
+      "calls": [],
+      "finalArgs": null,
+      "inferences": 1,
+      "latencyMs": 14230,
+      "inference": [
+        {
+          "requestId": "6c01c8ab-aeac-45f0-b5c0-e6fbcce822b6",
+          "durationMs": 14230,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 460,
+          "ttftMs": 1831,
+          "tokensPerSecond": 41.55269770745164
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "free",
+      "repeat": 2,
+      "case": {
+        "id": "sats-2",
+        "kind": "pay",
+        "prompt": "send 100000 sats to bob",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 100000
+      },
+      "calls": [],
+      "finalArgs": null,
+      "inferences": 1,
+      "latencyMs": 13996,
+      "inference": [
+        {
+          "requestId": "b41ad21e-44e4-4efb-a21e-0b8a9d1d1d8e",
+          "durationMs": 13996,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 460,
+          "ttftMs": 1634,
+          "tokensPerSecond": 41.59672607767815
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "free",
+      "repeat": 0,
+      "case": {
+        "id": "swap-0",
+        "kind": "swap",
+        "prompt": "swap 10 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [],
+      "finalArgs": null,
+      "inferences": 1,
+      "latencyMs": 14297,
+      "inference": [
+        {
+          "requestId": "7093066d-dace-4b7d-bcb3-0b013fa0bcad",
+          "durationMs": 14297,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 456,
+          "ttftMs": 1627,
+          "tokensPerSecond": 40.833673680408396
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "free",
+      "repeat": 1,
+      "case": {
+        "id": "swap-0",
+        "kind": "swap",
+        "prompt": "swap 10 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [],
+      "finalArgs": null,
+      "inferences": 1,
+      "latencyMs": 14327,
+      "inference": [
+        {
+          "requestId": "c7db8a76-de47-4305-ae7f-8abe5ee80f42",
+          "durationMs": 14327,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 456,
+          "ttftMs": 1633,
+          "tokensPerSecond": 40.873087466810574
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "free",
+      "repeat": 2,
+      "case": {
+        "id": "swap-0",
+        "kind": "swap",
+        "prompt": "swap 10 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [],
+      "finalArgs": null,
+      "inferences": 1,
+      "latencyMs": 14701,
+      "inference": [
+        {
+          "requestId": "88666f11-558f-4483-a098-594188c2ef92",
+          "durationMs": 14701,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 456,
+          "ttftMs": 1528,
+          "tokensPerSecond": 39.09493992359993
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "free",
+      "repeat": 0,
+      "case": {
+        "id": "swap-1",
+        "kind": "swap",
+        "prompt": "swap 25 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [],
+      "finalArgs": null,
+      "inferences": 1,
+      "latencyMs": 14782,
+      "inference": [
+        {
+          "requestId": "69ce18e9-3eea-4829-b386-2b86ebdd9fa3",
+          "durationMs": 14782,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 456,
+          "ttftMs": 1631,
+          "tokensPerSecond": 39.44998096846621
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "free",
+      "repeat": 1,
+      "case": {
+        "id": "swap-1",
+        "kind": "swap",
+        "prompt": "swap 25 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [],
+      "finalArgs": null,
+      "inferences": 1,
+      "latencyMs": 14633,
+      "inference": [
+        {
+          "requestId": "9bc58e15-2617-419d-b9b9-c517c25a542b",
+          "durationMs": 14631,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 456,
+          "ttftMs": 1530,
+          "tokensPerSecond": 39.567000997521184
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "free",
+      "repeat": 2,
+      "case": {
+        "id": "swap-1",
+        "kind": "swap",
+        "prompt": "swap 25 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [],
+      "finalArgs": null,
+      "inferences": 1,
+      "latencyMs": 14941,
+      "inference": [
+        {
+          "requestId": "422b0baa-0b8b-477b-b360-bdda8fc85d27",
+          "durationMs": 14941,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 456,
+          "ttftMs": 1737,
+          "tokensPerSecond": 39.25438443490055
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "free",
+      "repeat": 0,
+      "case": {
+        "id": "swap-2",
+        "kind": "swap",
+        "prompt": "swap 0.005 btc for usdt",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "BTC",
+        "expectTo": "USDT"
+      },
+      "calls": [
+        "get_swap_quote"
+      ],
+      "finalArgs": null,
+      "inferences": 2,
+      "latencyMs": 18404,
+      "inference": [
+        {
+          "requestId": "0f6dc900-548b-4e83-81f7-b0b7b36e9e0f",
+          "durationMs": 9939,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 459,
+          "ttftMs": 1630,
+          "tokensPerSecond": 41.02189445945596
+        },
+        {
+          "requestId": "fcf5f544-1ac2-4c9b-bf34-18a474412f59",
+          "durationMs": 8464,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 825,
+          "ttftMs": 2545,
+          "tokensPerSecond": 35.79476889424306
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "free",
+      "repeat": 1,
+      "case": {
+        "id": "swap-2",
+        "kind": "swap",
+        "prompt": "swap 0.005 btc for usdt",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "BTC",
+        "expectTo": "USDT"
+      },
+      "calls": [
+        "get_swap_quote"
+      ],
+      "finalArgs": null,
+      "inferences": 2,
+      "latencyMs": 17978,
+      "inference": [
+        {
+          "requestId": "0353546a-bfa3-4aad-a108-6ad8a14c1ba1",
+          "durationMs": 10054,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 459,
+          "ttftMs": 1428,
+          "tokensPerSecond": 39.28421816163188
+        },
+        {
+          "requestId": "2bba957a-64ab-4c34-8ecf-eae5997731de",
+          "durationMs": 7924,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 825,
+          "ttftMs": 2348,
+          "tokensPerSecond": 37.5059376924086
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-1.7b",
+      "mode": "free",
+      "repeat": 2,
+      "case": {
+        "id": "swap-2",
+        "kind": "swap",
+        "prompt": "swap 0.005 btc for usdt",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "BTC",
+        "expectTo": "USDT"
+      },
+      "calls": [
+        "get_swap_quote"
+      ],
+      "finalArgs": null,
+      "inferences": 2,
+      "latencyMs": 17470,
+      "inference": [
+        {
+          "requestId": "f60e03fd-d7b8-40b5-89e1-74d054cbca1d",
+          "durationMs": 9951,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 459,
+          "ttftMs": 1532,
+          "tokensPerSecond": 40.10404612824677
+        },
+        {
+          "requestId": "34d53a15-7ccd-41f6-b8d7-29547df16cf7",
+          "durationMs": 7518,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 825,
+          "ttftMs": 2443,
+          "tokensPerSecond": 41.131603221332696
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "recipe",
+      "repeat": 0,
+      "case": {
+        "id": "fiat-0",
+        "kind": "pay",
+        "prompt": "pay bob 3 eur",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "bob@kaleidoswap.com",
+        "amount_sats": 5000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "recipe",
+      "repeat": 1,
+      "case": {
+        "id": "fiat-0",
+        "kind": "pay",
+        "prompt": "pay bob 3 eur",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "bob@kaleidoswap.com",
+        "amount_sats": 5000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "recipe",
+      "repeat": 2,
+      "case": {
+        "id": "fiat-0",
+        "kind": "pay",
+        "prompt": "pay bob 3 eur",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "bob@kaleidoswap.com",
+        "amount_sats": 5000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "recipe",
+      "repeat": 0,
+      "case": {
+        "id": "fiat-1",
+        "kind": "pay",
+        "prompt": "pay alice 10 usd",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 16667
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "alice@kaleidoswap.com",
+        "amount_sats": 16667
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "recipe",
+      "repeat": 1,
+      "case": {
+        "id": "fiat-1",
+        "kind": "pay",
+        "prompt": "pay alice 10 usd",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 16667
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "alice@kaleidoswap.com",
+        "amount_sats": 16667
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "recipe",
+      "repeat": 2,
+      "case": {
+        "id": "fiat-1",
+        "kind": "pay",
+        "prompt": "pay alice 10 usd",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 16667
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "alice@kaleidoswap.com",
+        "amount_sats": 16667
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "recipe",
+      "repeat": 0,
+      "case": {
+        "id": "fiat-2",
+        "kind": "pay",
+        "prompt": "pay carol 25 eur",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 41667
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "carol@kaleidoswap.com",
+        "amount_sats": 41667
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "recipe",
+      "repeat": 1,
+      "case": {
+        "id": "fiat-2",
+        "kind": "pay",
+        "prompt": "pay carol 25 eur",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 41667
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "carol@kaleidoswap.com",
+        "amount_sats": 41667
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "recipe",
+      "repeat": 2,
+      "case": {
+        "id": "fiat-2",
+        "kind": "pay",
+        "prompt": "pay carol 25 eur",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 41667
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "carol@kaleidoswap.com",
+        "amount_sats": 41667
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "recipe",
+      "repeat": 0,
+      "case": {
+        "id": "sats-0",
+        "kind": "pay",
+        "prompt": "send 5000 sats to alice",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "alice@kaleidoswap.com",
+        "amount_sats": 5000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "recipe",
+      "repeat": 1,
+      "case": {
+        "id": "sats-0",
+        "kind": "pay",
+        "prompt": "send 5000 sats to alice",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "alice@kaleidoswap.com",
+        "amount_sats": 5000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "recipe",
+      "repeat": 2,
+      "case": {
+        "id": "sats-0",
+        "kind": "pay",
+        "prompt": "send 5000 sats to alice",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "alice@kaleidoswap.com",
+        "amount_sats": 5000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "recipe",
+      "repeat": 0,
+      "case": {
+        "id": "sats-1",
+        "kind": "pay",
+        "prompt": "send 21000 sats to carol",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 21000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "carol@kaleidoswap.com",
+        "amount_sats": 21000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "recipe",
+      "repeat": 1,
+      "case": {
+        "id": "sats-1",
+        "kind": "pay",
+        "prompt": "send 21000 sats to carol",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 21000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "carol@kaleidoswap.com",
+        "amount_sats": 21000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "recipe",
+      "repeat": 2,
+      "case": {
+        "id": "sats-1",
+        "kind": "pay",
+        "prompt": "send 21000 sats to carol",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 21000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "carol@kaleidoswap.com",
+        "amount_sats": 21000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "recipe",
+      "repeat": 0,
+      "case": {
+        "id": "sats-2",
+        "kind": "pay",
+        "prompt": "send 100000 sats to bob",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 100000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "bob@kaleidoswap.com",
+        "amount_sats": 100000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "recipe",
+      "repeat": 1,
+      "case": {
+        "id": "sats-2",
+        "kind": "pay",
+        "prompt": "send 100000 sats to bob",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 100000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "bob@kaleidoswap.com",
+        "amount_sats": 100000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "recipe",
+      "repeat": 2,
+      "case": {
+        "id": "sats-2",
+        "kind": "pay",
+        "prompt": "send 100000 sats to bob",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 100000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "bob@kaleidoswap.com",
+        "amount_sats": 100000
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "recipe",
+      "repeat": 0,
+      "case": {
+        "id": "swap-0",
+        "kind": "swap",
+        "prompt": "swap 10 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {
+        "quote_id": "q-stub",
+        "from_asset": "USDT",
+        "to_asset": "BTC",
+        "amount": 10
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "recipe",
+      "repeat": 1,
+      "case": {
+        "id": "swap-0",
+        "kind": "swap",
+        "prompt": "swap 10 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {
+        "quote_id": "q-stub",
+        "from_asset": "USDT",
+        "to_asset": "BTC",
+        "amount": 10
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "recipe",
+      "repeat": 2,
+      "case": {
+        "id": "swap-0",
+        "kind": "swap",
+        "prompt": "swap 10 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {
+        "quote_id": "q-stub",
+        "from_asset": "USDT",
+        "to_asset": "BTC",
+        "amount": 10
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "recipe",
+      "repeat": 0,
+      "case": {
+        "id": "swap-1",
+        "kind": "swap",
+        "prompt": "swap 25 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {
+        "quote_id": "q-stub",
+        "from_asset": "USDT",
+        "to_asset": "BTC",
+        "amount": 25
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "recipe",
+      "repeat": 1,
+      "case": {
+        "id": "swap-1",
+        "kind": "swap",
+        "prompt": "swap 25 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {
+        "quote_id": "q-stub",
+        "from_asset": "USDT",
+        "to_asset": "BTC",
+        "amount": 25
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "recipe",
+      "repeat": 2,
+      "case": {
+        "id": "swap-1",
+        "kind": "swap",
+        "prompt": "swap 25 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {
+        "quote_id": "q-stub",
+        "from_asset": "USDT",
+        "to_asset": "BTC",
+        "amount": 25
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "recipe",
+      "repeat": 0,
+      "case": {
+        "id": "swap-2",
+        "kind": "swap",
+        "prompt": "swap 0.005 btc for usdt",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "BTC",
+        "expectTo": "USDT"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {
+        "quote_id": "q-stub",
+        "from_asset": "BTC",
+        "to_asset": "USDT",
+        "amount": 0.005
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "recipe",
+      "repeat": 1,
+      "case": {
+        "id": "swap-2",
+        "kind": "swap",
+        "prompt": "swap 0.005 btc for usdt",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "BTC",
+        "expectTo": "USDT"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {
+        "quote_id": "q-stub",
+        "from_asset": "BTC",
+        "to_asset": "USDT",
+        "amount": 0.005
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "recipe",
+      "repeat": 2,
+      "case": {
+        "id": "swap-2",
+        "kind": "swap",
+        "prompt": "swap 0.005 btc for usdt",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "BTC",
+        "expectTo": "USDT"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {
+        "quote_id": "q-stub",
+        "from_asset": "BTC",
+        "to_asset": "USDT",
+        "amount": 0.005
+      },
+      "inferences": 0,
+      "latencyMs": 0,
+      "inference": [],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": true,
+      "pass": true
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "free",
+      "repeat": 0,
+      "case": {
+        "id": "fiat-0",
+        "kind": "pay",
+        "prompt": "pay bob 3 eur",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [],
+      "finalArgs": null,
+      "inferences": 1,
+      "latencyMs": 32597,
+      "inference": [
+        {
+          "requestId": "a1b39f25-ae33-4d88-b5cd-b846b6442f16",
+          "durationMs": 32597,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 454,
+          "ttftMs": 2555,
+          "tokensPerSecond": 17.151642765584477
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "free",
+      "repeat": 1,
+      "case": {
+        "id": "fiat-0",
+        "kind": "pay",
+        "prompt": "pay bob 3 eur",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [],
+      "finalArgs": null,
+      "inferences": 1,
+      "latencyMs": 34359,
+      "inference": [
+        {
+          "requestId": "05dfba81-e053-47c2-8615-fe7d22dc8fbc",
+          "durationMs": 34359,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 454,
+          "ttftMs": 3467,
+          "tokensPerSecond": 16.662982585360684
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "free",
+      "repeat": 2,
+      "case": {
+        "id": "fiat-0",
+        "kind": "pay",
+        "prompt": "pay bob 3 eur",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [],
+      "finalArgs": null,
+      "inferences": 1,
+      "latencyMs": 36589,
+      "inference": [
+        {
+          "requestId": "7e74be4f-f919-47b3-8347-8c8fdb1cd86a",
+          "durationMs": 36589,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 454,
+          "ttftMs": 3977,
+          "tokensPerSecond": 15.778579198112881
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "free",
+      "repeat": 0,
+      "case": {
+        "id": "fiat-1",
+        "kind": "pay",
+        "prompt": "pay alice 10 usd",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 16667
+      },
+      "calls": [],
+      "finalArgs": null,
+      "inferences": 1,
+      "latencyMs": 36486,
+      "inference": [
+        {
+          "requestId": "89824ffe-7da9-4037-a2f6-6941215c2dd6",
+          "durationMs": 36484,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 455,
+          "ttftMs": 3364,
+          "tokensPerSecond": 15.528409482944909
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "free",
+      "repeat": 1,
+      "case": {
+        "id": "fiat-1",
+        "kind": "pay",
+        "prompt": "pay alice 10 usd",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 16667
+      },
+      "calls": [],
+      "finalArgs": null,
+      "inferences": 1,
+      "latencyMs": 35547,
+      "inference": [
+        {
+          "requestId": "44777f55-b111-4993-9155-105bc83b6202",
+          "durationMs": 35546,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 455,
+          "ttftMs": 3978,
+          "tokensPerSecond": 16.272005901653138
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "free",
+      "repeat": 2,
+      "case": {
+        "id": "fiat-1",
+        "kind": "pay",
+        "prompt": "pay alice 10 usd",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 16667
+      },
+      "calls": [],
+      "finalArgs": null,
+      "inferences": 1,
+      "latencyMs": 35128,
+      "inference": [
+        {
+          "requestId": "1ba1c006-0858-4e95-a1e8-29af67774d5c",
+          "durationMs": 35126,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 455,
+          "ttftMs": 3378,
+          "tokensPerSecond": 16.205566086535885
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "free",
+      "repeat": 0,
+      "case": {
+        "id": "fiat-2",
+        "kind": "pay",
+        "prompt": "pay carol 25 eur",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 41667
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "carol_lightning_address",
+        "amount_sats": 25000
+      },
+      "inferences": 2,
+      "latencyMs": 65310,
+      "inference": [
+        {
+          "requestId": "4eec07af-1754-403b-b144-474895e39854",
+          "durationMs": 21101,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 456,
+          "ttftMs": 3060,
+          "tokensPerSecond": 17.773930709219826
+        },
+        {
+          "requestId": "c114b819-ee19-4764-842d-e08f5ef9e433",
+          "durationMs": 44209,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 825,
+          "ttftMs": 6112,
+          "tokensPerSecond": 13.453839796825996
+        }
+      ],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "free",
+      "repeat": 1,
+      "case": {
+        "id": "fiat-2",
+        "kind": "pay",
+        "prompt": "pay carol 25 eur",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 41667
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "carol_lightning_address",
+        "amount_sats": 25000
+      },
+      "inferences": 2,
+      "latencyMs": 71912,
+      "inference": [
+        {
+          "requestId": "cfc14299-0e2d-4573-abb0-6d951bed227d",
+          "durationMs": 27168,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 456,
+          "ttftMs": 4084,
+          "tokensPerSecond": 13.981493221728394
+        },
+        {
+          "requestId": "94fc24ea-f068-4565-8a9a-43371e29d6f4",
+          "durationMs": 44742,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 825,
+          "ttftMs": 6927,
+          "tokensPerSecond": 13.625810286619185
+        }
+      ],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "free",
+      "repeat": 2,
+      "case": {
+        "id": "fiat-2",
+        "kind": "pay",
+        "prompt": "pay carol 25 eur",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "fiat_to_sats",
+          "send_payment"
+        ],
+        "expectSats": 41667
+      },
+      "calls": [
+        "resolve_contact",
+        "fiat_to_sats",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "carol_lightning_address",
+        "amount_sats": 25000
+      },
+      "inferences": 2,
+      "latencyMs": 59336,
+      "inference": [
+        {
+          "requestId": "c47ce124-de13-4443-98e6-88453d27d324",
+          "durationMs": 22759,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 456,
+          "ttftMs": 3477,
+          "tokensPerSecond": 16.665144236302577
+        },
+        {
+          "requestId": "723809f4-7cc9-4c57-8e8c-d7e26734b735",
+          "durationMs": 36573,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 825,
+          "ttftMs": 5599,
+          "tokensPerSecond": 16.588386975705724
+        }
+      ],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "free",
+      "repeat": 0,
+      "case": {
+        "id": "sats-0",
+        "kind": "pay",
+        "prompt": "send 5000 sats to alice",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "undefined@kaleidoswap.com",
+        "amount_sats": 5000
+      },
+      "inferences": 3,
+      "latencyMs": 51654,
+      "inference": [
+        {
+          "requestId": "da37b796-fc6e-484f-83cd-bf054fdfc133",
+          "durationMs": 16257,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 458,
+          "ttftMs": 3164,
+          "tokensPerSecond": 16.712167715342414
+        },
+        {
+          "requestId": "dd1adf57-5e5d-4652-a907-2f5c9c04c6d8",
+          "durationMs": 17485,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 704,
+          "ttftMs": 5296,
+          "tokensPerSecond": 17.447821205414034
+        },
+        {
+          "requestId": "3e88a1a2-9388-49bf-b315-d03ad0ee10ba",
+          "durationMs": 17910,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 936,
+          "ttftMs": 7238,
+          "tokensPerSecond": 15.475923332275814
+        }
+      ],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "free",
+      "repeat": 1,
+      "case": {
+        "id": "sats-0",
+        "kind": "pay",
+        "prompt": "send 5000 sats to alice",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "undefined@kaleidoswap.com",
+        "amount_sats": 5000
+      },
+      "inferences": 3,
+      "latencyMs": 50813,
+      "inference": [
+        {
+          "requestId": "9c7fbf59-1e53-47b4-b162-33c56ca2719b",
+          "durationMs": 15753,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 458,
+          "ttftMs": 3058,
+          "tokensPerSecond": 17.297249261296376
+        },
+        {
+          "requestId": "9e620092-d8f6-45dd-86d4-0543bc144767",
+          "durationMs": 18888,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 704,
+          "ttftMs": 4777,
+          "tokensPerSecond": 15.03496636807511
+        },
+        {
+          "requestId": "1be7ccf3-8d31-45dd-95af-c133df1607ad",
+          "durationMs": 16169,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 936,
+          "ttftMs": 5910,
+          "tokensPerSecond": 15.974626059816597
+        }
+      ],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "free",
+      "repeat": 2,
+      "case": {
+        "id": "sats-0",
+        "kind": "pay",
+        "prompt": "send 5000 sats to alice",
+        "recipient": "alice",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 5000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "undefined@kaleidoswap.com",
+        "amount_sats": 5000
+      },
+      "inferences": 3,
+      "latencyMs": 47903,
+      "inference": [
+        {
+          "requestId": "953f2a25-4076-4a21-98e3-7cb19d587838",
+          "durationMs": 15564,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 458,
+          "ttftMs": 3162,
+          "tokensPerSecond": 17.547045399518858
+        },
+        {
+          "requestId": "5a7e6192-5a9f-48d7-8c8f-ae469a6b7f90",
+          "durationMs": 16062,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 704,
+          "ttftMs": 4485,
+          "tokensPerSecond": 18.280780898980577
+        },
+        {
+          "requestId": "1bece0c3-cea1-4cc3-a129-6a1f73755be7",
+          "durationMs": 16276,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 936,
+          "ttftMs": 5906,
+          "tokensPerSecond": 15.814755977350956
+        }
+      ],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "free",
+      "repeat": 0,
+      "case": {
+        "id": "sats-1",
+        "kind": "pay",
+        "prompt": "send 21000 sats to carol",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 21000
+      },
+      "calls": [],
+      "finalArgs": null,
+      "inferences": 1,
+      "latencyMs": 32741,
+      "inference": [
+        {
+          "requestId": "ee933632-24d9-46de-bf1f-ca9d7611aa54",
+          "durationMs": 32741,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 460,
+          "ttftMs": 3565,
+          "tokensPerSecond": 17.635937687134263
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "free",
+      "repeat": 1,
+      "case": {
+        "id": "sats-1",
+        "kind": "pay",
+        "prompt": "send 21000 sats to carol",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 21000
+      },
+      "calls": [],
+      "finalArgs": null,
+      "inferences": 1,
+      "latencyMs": 35076,
+      "inference": [
+        {
+          "requestId": "4a19a227-1a29-4c9f-9dd7-4496c012be82",
+          "durationMs": 35076,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 460,
+          "ttftMs": 3669,
+          "tokensPerSecond": 16.36177207450716
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "free",
+      "repeat": 2,
+      "case": {
+        "id": "sats-1",
+        "kind": "pay",
+        "prompt": "send 21000 sats to carol",
+        "recipient": "carol",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 21000
+      },
+      "calls": [],
+      "finalArgs": null,
+      "inferences": 1,
+      "latencyMs": 36149,
+      "inference": [
+        {
+          "requestId": "6bae35b4-a4a1-46a8-8392-aaaab57d2c49",
+          "durationMs": 36148,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 460,
+          "ttftMs": 4078,
+          "tokensPerSecond": 16.035568896258013
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "free",
+      "repeat": 0,
+      "case": {
+        "id": "sats-2",
+        "kind": "pay",
+        "prompt": "send 100000 sats to bob",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 100000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "undefined@kaleidoswap.com",
+        "amount_sats": 100000
+      },
+      "inferences": 3,
+      "latencyMs": 62604,
+      "inference": [
+        {
+          "requestId": "ca486dfe-13db-4440-bffa-ddd85514a71a",
+          "durationMs": 26183,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 460,
+          "ttftMs": 3164,
+          "tokensPerSecond": 15.193689281566185
+        },
+        {
+          "requestId": "9a0eb291-2023-4d79-b10a-f21b0ded0fd1",
+          "durationMs": 21152,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 834,
+          "ttftMs": 5608,
+          "tokensPerSecond": 16.819845406931996
+        },
+        {
+          "requestId": "1de7bd35-dd6a-4272-adca-1e63daad8389",
+          "durationMs": 15268,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 1118,
+          "ttftMs": 6421,
+          "tokensPerSecond": 17.956326149221812
+        }
+      ],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "free",
+      "repeat": 1,
+      "case": {
+        "id": "sats-2",
+        "kind": "pay",
+        "prompt": "send 100000 sats to bob",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 100000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "undefined@kaleidoswap.com",
+        "amount_sats": 100000
+      },
+      "inferences": 3,
+      "latencyMs": 60879,
+      "inference": [
+        {
+          "requestId": "7c7482fa-715c-4e8f-8e51-8ec2d58a80db",
+          "durationMs": 25092,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 460,
+          "ttftMs": 3967,
+          "tokensPerSecond": 16.578541505423722
+        },
+        {
+          "requestId": "141fe09b-af99-4b56-8495-b3dc471439f3",
+          "durationMs": 19106,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 834,
+          "ttftMs": 4995,
+          "tokensPerSecond": 18.522132529051717
+        },
+        {
+          "requestId": "d8d57159-3ac3-4f85-88c5-9417bfe4d12d",
+          "durationMs": 16681,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 1118,
+          "ttftMs": 6833,
+          "tokensPerSecond": 16.214278109745575
+        }
+      ],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "free",
+      "repeat": 2,
+      "case": {
+        "id": "sats-2",
+        "kind": "pay",
+        "prompt": "send 100000 sats to bob",
+        "recipient": "bob",
+        "expectTools": [
+          "resolve_contact",
+          "send_payment"
+        ],
+        "expectSats": 100000
+      },
+      "calls": [
+        "resolve_contact",
+        "send_payment"
+      ],
+      "finalArgs": {
+        "to": "undefined@kaleidoswap.com",
+        "amount_sats": 100000
+      },
+      "inferences": 3,
+      "latencyMs": 64555,
+      "inference": [
+        {
+          "requestId": "73da27dc-3d27-4d62-9b17-b50acd3a22be",
+          "durationMs": 25300,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 460,
+          "ttftMs": 3561,
+          "tokensPerSecond": 16.073084730762936
+        },
+        {
+          "requestId": "cc54cd6b-d664-4ded-b190-9cd62baa4f49",
+          "durationMs": 22060,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 834,
+          "ttftMs": 6010,
+          "tokensPerSecond": 16.319934750274673
+        },
+        {
+          "requestId": "0ebe2e3c-aaea-4f79-b52c-da6dfed923ad",
+          "durationMs": 17194,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 1118,
+          "ttftMs": 7336,
+          "tokensPerSecond": 16.178197040671986
+        }
+      ],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "free",
+      "repeat": 0,
+      "case": {
+        "id": "swap-0",
+        "kind": "swap",
+        "prompt": "swap 10 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {},
+      "inferences": 3,
+      "latencyMs": 71369,
+      "inference": [
+        {
+          "requestId": "c394037c-6dd9-4d6e-b17a-8a2469e085c2",
+          "durationMs": 35486,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 456,
+          "ttftMs": 3571,
+          "tokensPerSecond": 16.133688787067385
+        },
+        {
+          "requestId": "ae9b6af3-18f4-48c5-8c0e-156d733838af",
+          "durationMs": 17800,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 997,
+          "ttftMs": 5808,
+          "tokensPerSecond": 16.89495910458055
+        },
+        {
+          "requestId": "a024316e-4a55-493e-96cd-deb430bada78",
+          "durationMs": 18081,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 1222,
+          "ttftMs": 7942,
+          "tokensPerSecond": 16.427574534923984
+        }
+      ],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "free",
+      "repeat": 1,
+      "case": {
+        "id": "swap-0",
+        "kind": "swap",
+        "prompt": "swap 10 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {},
+      "inferences": 3,
+      "latencyMs": 70151,
+      "inference": [
+        {
+          "requestId": "8ee3bb78-2007-4b96-9277-b25b98874369",
+          "durationMs": 33121,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 456,
+          "ttftMs": 3262,
+          "tokensPerSecond": 17.254070022812442
+        },
+        {
+          "requestId": "99a5213b-966a-42fa-ad3d-ff4419293a4b",
+          "durationMs": 19325,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 997,
+          "ttftMs": 6311,
+          "tokensPerSecond": 15.628870950246183
+        },
+        {
+          "requestId": "26c107df-2dfa-4b48-a0c5-a349f3a73552",
+          "durationMs": 17705,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 1222,
+          "ttftMs": 7338,
+          "tokensPerSecond": 16.105782781307628
+        }
+      ],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "free",
+      "repeat": 2,
+      "case": {
+        "id": "swap-0",
+        "kind": "swap",
+        "prompt": "swap 10 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {},
+      "inferences": 3,
+      "latencyMs": 74731,
+      "inference": [
+        {
+          "requestId": "c25ec6e0-11a4-47cb-9dc2-0ac2bac3bd4b",
+          "durationMs": 36177,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 456,
+          "ttftMs": 4381,
+          "tokensPerSecond": 16.176107768768478
+        },
+        {
+          "requestId": "a82d7948-6573-48b3-8fd1-67e1413463a4",
+          "durationMs": 20752,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 997,
+          "ttftMs": 6829,
+          "tokensPerSecond": 14.554862934622076
+        },
+        {
+          "requestId": "e2469fa3-752a-4506-b6dc-3452830ccc1e",
+          "durationMs": 17800,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 1222,
+          "ttftMs": 7853,
+          "tokensPerSecond": 16.789835959256934
+        }
+      ],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "free",
+      "repeat": 0,
+      "case": {
+        "id": "swap-1",
+        "kind": "swap",
+        "prompt": "swap 25 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {},
+      "inferences": 2,
+      "latencyMs": 34458,
+      "inference": [
+        {
+          "requestId": "78c8c470-915f-465e-b7ca-738b7cfe28d4",
+          "durationMs": 17495,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 456,
+          "ttftMs": 3674,
+          "tokensPerSecond": 17.48245407228741
+        },
+        {
+          "requestId": "28687215-0df8-464e-b8bb-14ad4a6193c2",
+          "durationMs": 16961,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 741,
+          "ttftMs": 4476,
+          "tokensPerSecond": 17.01578185541859
+        }
+      ],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "free",
+      "repeat": 1,
+      "case": {
+        "id": "swap-1",
+        "kind": "swap",
+        "prompt": "swap 25 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {},
+      "inferences": 2,
+      "latencyMs": 33539,
+      "inference": [
+        {
+          "requestId": "b85e4730-f33f-4618-af7e-4f0e55b2f488",
+          "durationMs": 17276,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 456,
+          "ttftMs": 3060,
+          "tokensPerSecond": 16.96186529280719
+        },
+        {
+          "requestId": "45d89efc-316b-4764-9f93-ac77f5ec9883",
+          "durationMs": 16262,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 741,
+          "ttftMs": 4692,
+          "tokensPerSecond": 18.316838774056585
+        }
+      ],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "free",
+      "repeat": 2,
+      "case": {
+        "id": "swap-1",
+        "kind": "swap",
+        "prompt": "swap 25 usdt for btc",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "USDT",
+        "expectTo": "BTC"
+      },
+      "calls": [
+        "get_swap_quote",
+        "execute_swap"
+      ],
+      "finalArgs": {},
+      "inferences": 2,
+      "latencyMs": 34552,
+      "inference": [
+        {
+          "requestId": "f08f6cdc-1f70-4fae-b864-6bc176e2053e",
+          "durationMs": 17470,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 456,
+          "ttftMs": 2957,
+          "tokensPerSecond": 16.66233399890485
+        },
+        {
+          "requestId": "90a1d2ec-69d8-405f-b733-a90c5937609c",
+          "durationMs": 17081,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 741,
+          "ttftMs": 4485,
+          "tokensPerSecond": 16.88666685607478
+        }
+      ],
+      "gateFired": true,
+      "coverage": true,
+      "order": true,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "free",
+      "repeat": 0,
+      "case": {
+        "id": "swap-2",
+        "kind": "swap",
+        "prompt": "swap 0.005 btc for usdt",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "BTC",
+        "expectTo": "USDT"
+      },
+      "calls": [
+        "get_swap_quote"
+      ],
+      "finalArgs": null,
+      "inferences": 2,
+      "latencyMs": 58551,
+      "inference": [
+        {
+          "requestId": "93c7f1df-bf27-4d2f-b2a1-ee5ff9cd9172",
+          "durationMs": 20728,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 459,
+          "ttftMs": 3667,
+          "tokensPerSecond": 16.05759955416547
+        },
+        {
+          "requestId": "158783b5-6d64-4442-98e1-9b9db6509e8b",
+          "durationMs": 37822,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 761,
+          "ttftMs": 4786,
+          "tokensPerSecond": 15.52402325923169
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "free",
+      "repeat": 1,
+      "case": {
+        "id": "swap-2",
+        "kind": "swap",
+        "prompt": "swap 0.005 btc for usdt",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "BTC",
+        "expectTo": "USDT"
+      },
+      "calls": [
+        "get_swap_quote"
+      ],
+      "finalArgs": null,
+      "inferences": 2,
+      "latencyMs": 56257,
+      "inference": [
+        {
+          "requestId": "b39776fe-fda1-4667-a60a-8170f2634411",
+          "durationMs": 20001,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 459,
+          "ttftMs": 3771,
+          "tokensPerSecond": 16.86945153195707
+        },
+        {
+          "requestId": "0bd8eb44-e92a-4804-a4fa-e1e1859e4662",
+          "durationMs": 36254,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 761,
+          "ttftMs": 5293,
+          "tokensPerSecond": 16.586063365888883
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    },
+    {
+      "model": "qwen3-4b",
+      "mode": "free",
+      "repeat": 2,
+      "case": {
+        "id": "swap-2",
+        "kind": "swap",
+        "prompt": "swap 0.005 btc for usdt",
+        "expectTools": [
+          "get_swap_quote",
+          "execute_swap"
+        ],
+        "expectFrom": "BTC",
+        "expectTo": "USDT"
+      },
+      "calls": [
+        "get_swap_quote"
+      ],
+      "finalArgs": null,
+      "inferences": 2,
+      "latencyMs": 56057,
+      "inference": [
+        {
+          "requestId": "61ee0dc4-7f2b-4361-b8b9-cc0506829b0d",
+          "durationMs": 19671,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 459,
+          "ttftMs": 4078,
+          "tokensPerSecond": 17.564264058304573
+        },
+        {
+          "requestId": "37fc82e6-452e-4103-9dc4-a01963ae1343",
+          "durationMs": 36385,
+          "status": "completed",
+          "backendDevice": "gpu",
+          "promptTokens": 761,
+          "ttftMs": 4887,
+          "tokensPerSecond": 16.279400294873355
+        }
+      ],
+      "gateFired": false,
+      "coverage": false,
+      "order": false,
+      "finalOk": false,
+      "pass": false
+    }
+  ],
+  "cases": 9,
+  "repeats": 3
+}

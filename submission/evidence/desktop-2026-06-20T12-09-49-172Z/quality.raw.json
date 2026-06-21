@@ -1,0 +1,3783 @@
+{
+  "schema": "kaleidomind.eval.quality.v1",
+  "cells": [
+    {
+      "model": "qwen3-0.6b",
+      "trials": 30,
+      "pass": 18,
+      "passPct": 60,
+      "coveragePct": 62,
+      "hallucPct": 0,
+      "avgWords": 32,
+      "avgLatency": 2482
+    },
+    {
+      "model": "qwen3-1.7b",
+      "trials": 30,
+      "pass": 24,
+      "passPct": 80,
+      "coveragePct": 80,
+      "hallucPct": 0,
+      "avgWords": 34,
+      "avgLatency": 5686
+    },
+    {
+      "model": "qwen3-4b",
+      "trials": 30,
+      "pass": 27,
+      "passPct": 90,
+      "coveragePct": 87,
+      "hallucPct": 0,
+      "avgWords": 33,
+      "avgLatency": 20768
+    }
+  ],
+  "results": [
+    {
+      "model": "qwen3-0.6b",
+      "repeat": 0,
+      "case": {
+        "id": "sat",
+        "category": "knowledge",
+        "prompt": "What is a satoshi?",
+        "facts": [
+          [
+            "smallest",
+            "sub-unit",
+            "subunit"
+          ],
+          [
+            "100 million",
+            "0.00000001",
+            "1e-8",
+            "hundred million",
+            "100,000,000"
+          ]
+        ],
+        "maxWords": 60
+      },
+      "response": "A satoshi is a unit of currency in the Bitcoin system, equal to 1/1,000,000 of a Bitcoin.",
+      "latencyMs": 1022,
+      "inference": {
+        "requestId": "41b95046-fc01-4556-96c8-0e7f66911cb3",
+        "durationMs": 1021,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 53,
+        "ttftMs": 109,
+        "tokensPerSecond": 165.8140249403801
+      },
+      "coverage": 0,
+      "hallucinated": false,
+      "concise": true,
+      "pass": false,
+      "words": 17
+    },
+    {
+      "model": "qwen3-0.6b",
+      "repeat": 1,
+      "case": {
+        "id": "sat",
+        "category": "knowledge",
+        "prompt": "What is a satoshi?",
+        "facts": [
+          [
+            "smallest",
+            "sub-unit",
+            "subunit"
+          ],
+          [
+            "100 million",
+            "0.00000001",
+            "1e-8",
+            "hundred million",
+            "100,000,000"
+          ]
+        ],
+        "maxWords": 60
+      },
+      "response": "A satoshi is a unit of currency in the Bitcoin system, equal to 1/1,000,000 of a Bitcoin.",
+      "latencyMs": 1416,
+      "inference": {
+        "requestId": "2d59de92-28bb-4eff-b5d6-8c7dd0ce3a6f",
+        "durationMs": 1416,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 53,
+        "ttftMs": 102,
+        "tokensPerSecond": 107.01187438379651
+      },
+      "coverage": 0,
+      "hallucinated": false,
+      "concise": true,
+      "pass": false,
+      "words": 17
+    },
+    {
+      "model": "qwen3-0.6b",
+      "repeat": 2,
+      "case": {
+        "id": "sat",
+        "category": "knowledge",
+        "prompt": "What is a satoshi?",
+        "facts": [
+          [
+            "smallest",
+            "sub-unit",
+            "subunit"
+          ],
+          [
+            "100 million",
+            "0.00000001",
+            "1e-8",
+            "hundred million",
+            "100,000,000"
+          ]
+        ],
+        "maxWords": 60
+      },
+      "response": "A satoshi is a unit of currency in the Bitcoin system, equal to 1/1,000,000 of a Bitcoin.",
+      "latencyMs": 2066,
+      "inference": {
+        "requestId": "03c5846a-fc1a-4c58-8b40-8452c505261c",
+        "durationMs": 2066,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 53,
+        "ttftMs": 205,
+        "tokensPerSecond": 72.6653323316916
+      },
+      "coverage": 0,
+      "hallucinated": false,
+      "concise": true,
+      "pass": false,
+      "words": 17
+    },
+    {
+      "model": "qwen3-0.6b",
+      "repeat": 0,
+      "case": {
+        "id": "channel",
+        "category": "knowledge",
+        "prompt": "How does a Lightning channel work?",
+        "facts": [
+          [
+            "off-chain",
+            "offchain",
+            "off chain"
+          ],
+          [
+            "two",
+            "both",
+            "counterpart",
+            "peer"
+          ],
+          [
+            "on-chain",
+            "onchain",
+            "open",
+            "close",
+            "settle"
+          ]
+        ],
+        "maxWords": 90
+      },
+      "response": "A Lightning channel is a virtual wallet that allows users to send and receive payments without a physical wallet. When you join a channel, you can send and receive funds using the channel's unique address. The channel operates as a peer-to-peer system, enabling fast and secure transactions.",
+      "latencyMs": 3675,
+      "inference": {
+        "requestId": "fc069f56-c897-49cd-8346-a3d9597de259",
+        "durationMs": 3674,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 54,
+        "ttftMs": 103,
+        "tokensPerSecond": 91.39178224575679
+      },
+      "coverage": 0.3333333333333333,
+      "hallucinated": false,
+      "concise": true,
+      "pass": false,
+      "words": 47
+    },
+    {
+      "model": "qwen3-0.6b",
+      "repeat": 1,
+      "case": {
+        "id": "channel",
+        "category": "knowledge",
+        "prompt": "How does a Lightning channel work?",
+        "facts": [
+          [
+            "off-chain",
+            "offchain",
+            "off chain"
+          ],
+          [
+            "two",
+            "both",
+            "counterpart",
+            "peer"
+          ],
+          [
+            "on-chain",
+            "onchain",
+            "open",
+            "close",
+            "settle"
+          ]
+        ],
+        "maxWords": 90
+      },
+      "response": "A Lightning channel is a virtual wallet that allows users to send and receive payments without a physical wallet. When you join a channel, you can send and receive funds using the channel's unique address. The channel operates as a peer-to-peer system, enabling fast and secure transactions.",
+      "latencyMs": 3859,
+      "inference": {
+        "requestId": "e83e70cc-de18-4791-9a7b-11071fe946ac",
+        "durationMs": 3858,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 54,
+        "ttftMs": 105,
+        "tokensPerSecond": 87.6022254809884
+      },
+      "coverage": 0.3333333333333333,
+      "hallucinated": false,
+      "concise": true,
+      "pass": false,
+      "words": 47
+    },
+    {
+      "model": "qwen3-0.6b",
+      "repeat": 2,
+      "case": {
+        "id": "channel",
+        "category": "knowledge",
+        "prompt": "How does a Lightning channel work?",
+        "facts": [
+          [
+            "off-chain",
+            "offchain",
+            "off chain"
+          ],
+          [
+            "two",
+            "both",
+            "counterpart",
+            "peer"
+          ],
+          [
+            "on-chain",
+            "onchain",
+            "open",
+            "close",
+            "settle"
+          ]
+        ],
+        "maxWords": 90
+      },
+      "response": "A Lightning channel is a virtual wallet that allows users to send and receive payments without a physical wallet. When you join a channel, you can send and receive funds using the channel's unique address. The channel operates as a peer-to-peer system, enabling fast and secure transactions.",
+      "latencyMs": 3809,
+      "inference": {
+        "requestId": "527a37e4-ed62-457f-a9c4-5844b8fc8311",
+        "durationMs": 3809,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 54,
+        "ttftMs": 104,
+        "tokensPerSecond": 89.27027288719091
+      },
+      "coverage": 0.3333333333333333,
+      "hallucinated": false,
+      "concise": true,
+      "pass": false,
+      "words": 47
+    },
+    {
+      "model": "qwen3-0.6b",
+      "repeat": 0,
+      "case": {
+        "id": "rgb",
+        "category": "knowledge",
+        "prompt": "What is RGB on Bitcoin?",
+        "facts": [
+          [
+            "bitcoin"
+          ],
+          [
+            "asset",
+            "token",
+            "stablecoin"
+          ],
+          [
+            "client-side",
+            "off-chain",
+            "smart contract",
+            "lightning"
+          ]
+        ],
+        "maxWords": 90
+      },
+      "response": "RGB stands for Red, Green, and Blue, which are color components used in digital displays and media. It is not related to Bitcoin's blockchain or cryptocurrency.",
+      "latencyMs": 1624,
+      "inference": {
+        "requestId": "61b30889-2f07-46b5-8c68-4a7b38d7b37b",
+        "durationMs": 1624,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 53,
+        "ttftMs": 104,
+        "tokensPerSecond": 102.70440673227385
+      },
+      "coverage": 0.3333333333333333,
+      "hallucinated": false,
+      "concise": true,
+      "pass": false,
+      "words": 26
+    },
+    {
+      "model": "qwen3-0.6b",
+      "repeat": 1,
+      "case": {
+        "id": "rgb",
+        "category": "knowledge",
+        "prompt": "What is RGB on Bitcoin?",
+        "facts": [
+          [
+            "bitcoin"
+          ],
+          [
+            "asset",
+            "token",
+            "stablecoin"
+          ],
+          [
+            "client-side",
+            "off-chain",
+            "smart contract",
+            "lightning"
+          ]
+        ],
+        "maxWords": 90
+      },
+      "response": "RGB stands for Red, Green, and Blue, which are color components used in digital displays and media. It is not related to Bitcoin's blockchain or cryptocurrency.",
+      "latencyMs": 1624,
+      "inference": {
+        "requestId": "3e51afc0-bbb5-4d6a-a64b-3ef8e7ff130f",
+        "durationMs": 1624,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 53,
+        "ttftMs": 108,
+        "tokensPerSecond": 102.24317260564595
+      },
+      "coverage": 0.3333333333333333,
+      "hallucinated": false,
+      "concise": true,
+      "pass": false,
+      "words": 26
+    },
+    {
+      "model": "qwen3-0.6b",
+      "repeat": 2,
+      "case": {
+        "id": "rgb",
+        "category": "knowledge",
+        "prompt": "What is RGB on Bitcoin?",
+        "facts": [
+          [
+            "bitcoin"
+          ],
+          [
+            "asset",
+            "token",
+            "stablecoin"
+          ],
+          [
+            "client-side",
+            "off-chain",
+            "smart contract",
+            "lightning"
+          ]
+        ],
+        "maxWords": 90
+      },
+      "response": "RGB stands for Red, Green, and Blue, which are color components used in digital displays and media. It is not related to Bitcoin's blockchain or cryptocurrency.",
+      "latencyMs": 1950,
+      "inference": {
+        "requestId": "d6f7fb8e-1e78-4170-8fca-108b55cf0a77",
+        "durationMs": 1950,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 53,
+        "ttftMs": 105,
+        "tokensPerSecond": 82.98238698836172
+      },
+      "coverage": 0.3333333333333333,
+      "hallucinated": false,
+      "concise": true,
+      "pass": false,
+      "words": 26
+    },
+    {
+      "model": "qwen3-0.6b",
+      "repeat": 0,
+      "case": {
+        "id": "btc",
+        "category": "knowledge",
+        "prompt": "What is Bitcoin in one sentence?",
+        "facts": [
+          [
+            "decentralized",
+            "peer-to-peer",
+            "p2p",
+            "no central"
+          ],
+          [
+            "digital",
+            "currency",
+            "money",
+            "cash"
+          ]
+        ],
+        "maxWords": 60
+      },
+      "response": "Bitcoin is a decentralized digital currency that enables peer-to-peer transactions without intermediaries.",
+      "latencyMs": 1325,
+      "inference": {
+        "requestId": "7edeeb43-1e7f-469a-b52a-80dedc7d0c80",
+        "durationMs": 1325,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 54,
+        "ttftMs": 106,
+        "tokensPerSecond": 94.90739128314793
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 12
+    },
+    {
+      "model": "qwen3-0.6b",
+      "repeat": 1,
+      "case": {
+        "id": "btc",
+        "category": "knowledge",
+        "prompt": "What is Bitcoin in one sentence?",
+        "facts": [
+          [
+            "decentralized",
+            "peer-to-peer",
+            "p2p",
+            "no central"
+          ],
+          [
+            "digital",
+            "currency",
+            "money",
+            "cash"
+          ]
+        ],
+        "maxWords": 60
+      },
+      "response": "Bitcoin is a decentralized digital currency that enables peer-to-peer transactions without intermediaries.",
+      "latencyMs": 1217,
+      "inference": {
+        "requestId": "53bc8134-e52a-4af2-baab-9b348e2d5cd9",
+        "durationMs": 1217,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 54,
+        "ttftMs": 103,
+        "tokensPerSecond": 107.47238748429818
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 12
+    },
+    {
+      "model": "qwen3-0.6b",
+      "repeat": 2,
+      "case": {
+        "id": "btc",
+        "category": "knowledge",
+        "prompt": "What is Bitcoin in one sentence?",
+        "facts": [
+          [
+            "decentralized",
+            "peer-to-peer",
+            "p2p",
+            "no central"
+          ],
+          [
+            "digital",
+            "currency",
+            "money",
+            "cash"
+          ]
+        ],
+        "maxWords": 60
+      },
+      "response": "Bitcoin is a decentralized digital currency that enables peer-to-peer transactions without intermediaries.",
+      "latencyMs": 1419,
+      "inference": {
+        "requestId": "e29aac6d-1ce3-4022-b2a6-58ad0cba0634",
+        "durationMs": 1419,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 54,
+        "ttftMs": 102,
+        "tokensPerSecond": 90.78476348486892
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 12
+    },
+    {
+      "model": "qwen3-0.6b",
+      "repeat": 0,
+      "case": {
+        "id": "onchain-ln",
+        "category": "reasoning",
+        "prompt": "What is the difference between an on-chain payment and a Lightning payment?",
+        "facts": [
+          [
+            "lightning"
+          ],
+          [
+            "fast",
+            "instant",
+            "cheap",
+            "low fee",
+            "off-chain"
+          ],
+          [
+            "on-chain",
+            "base layer",
+            "slower",
+            "block",
+            "fee"
+          ]
+        ],
+        "maxWords": 90
+      },
+      "response": "On-chain payments are processed directly on the Bitcoin blockchain, while Lightning payments use the Lightning Network for decentralized, fast transactions. The key difference is that on-chain payments are all on Bitcoin, whereas Lightning payments are designed to avoid the blockchain and operate independently.",
+      "latencyMs": 3273,
+      "inference": {
+        "requestId": "965aadb7-b2b5-4d09-8902-f152535dc58c",
+        "durationMs": 3273,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 61,
+        "ttftMs": 239,
+        "tokensPerSecond": 88.64735180253518
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 43
+    },
+    {
+      "model": "qwen3-0.6b",
+      "repeat": 1,
+      "case": {
+        "id": "onchain-ln",
+        "category": "reasoning",
+        "prompt": "What is the difference between an on-chain payment and a Lightning payment?",
+        "facts": [
+          [
+            "lightning"
+          ],
+          [
+            "fast",
+            "instant",
+            "cheap",
+            "low fee",
+            "off-chain"
+          ],
+          [
+            "on-chain",
+            "base layer",
+            "slower",
+            "block",
+            "fee"
+          ]
+        ],
+        "maxWords": 90
+      },
+      "response": "On-chain payments are processed directly on the Bitcoin blockchain, while Lightning payments use the Lightning Network for decentralized, fast transactions. The key difference is that on-chain payments are all on Bitcoin, whereas Lightning payments are designed to avoid the blockchain and operate independently.",
+      "latencyMs": 2847,
+      "inference": {
+        "requestId": "8ba83d3f-3251-45f5-9ac5-329e2c55c79f",
+        "durationMs": 2847,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 61,
+        "ttftMs": 102,
+        "tokensPerSecond": 99.76110039881851
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 43
+    },
+    {
+      "model": "qwen3-0.6b",
+      "repeat": 2,
+      "case": {
+        "id": "onchain-ln",
+        "category": "reasoning",
+        "prompt": "What is the difference between an on-chain payment and a Lightning payment?",
+        "facts": [
+          [
+            "lightning"
+          ],
+          [
+            "fast",
+            "instant",
+            "cheap",
+            "low fee",
+            "off-chain"
+          ],
+          [
+            "on-chain",
+            "base layer",
+            "slower",
+            "block",
+            "fee"
+          ]
+        ],
+        "maxWords": 90
+      },
+      "response": "On-chain payments are processed directly on the Bitcoin blockchain, while Lightning payments use the Lightning Network for decentralized, fast transactions. The key difference is that on-chain payments are all on Bitcoin, whereas Lightning payments are designed to avoid the blockchain and operate independently.",
+      "latencyMs": 3048,
+      "inference": {
+        "requestId": "7dd46ca6-0605-4980-91f3-436efcb7e5b8",
+        "durationMs": 3048,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 61,
+        "ttftMs": 103,
+        "tokensPerSecond": 94.50066738867554
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 43
+    },
+    {
+      "model": "qwen3-0.6b",
+      "repeat": 0,
+      "case": {
+        "id": "seed",
+        "category": "knowledge",
+        "prompt": "What is a seed phrase?",
+        "facts": [
+          [
+            "recover",
+            "backup",
+            "restore",
+            "recovery"
+          ],
+          [
+            "word",
+            "mnemonic",
+            "12",
+            "24"
+          ]
+        ],
+        "traps": [
+          "share it publicly",
+          "give it to support"
+        ],
+        "maxWords": 70
+      },
+      "response": "A seed phrase is a sequence of random numbers used to generate a Bitcoin wallet address. It serves as a key for the wallet and is crucial for creating a wallet.",
+      "latencyMs": 1313,
+      "inference": {
+        "requestId": "1244bfcf-9733-43ba-a265-831abab9940c",
+        "durationMs": 1313,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 53,
+        "ttftMs": 103,
+        "tokensPerSecond": 110.0147472149243
+      },
+      "coverage": 0,
+      "hallucinated": false,
+      "concise": true,
+      "pass": false,
+      "words": 31
+    },
+    {
+      "model": "qwen3-0.6b",
+      "repeat": 1,
+      "case": {
+        "id": "seed",
+        "category": "knowledge",
+        "prompt": "What is a seed phrase?",
+        "facts": [
+          [
+            "recover",
+            "backup",
+            "restore",
+            "recovery"
+          ],
+          [
+            "word",
+            "mnemonic",
+            "12",
+            "24"
+          ]
+        ],
+        "traps": [
+          "share it publicly",
+          "give it to support"
+        ],
+        "maxWords": 70
+      },
+      "response": "A seed phrase is a sequence of random numbers used to generate a Bitcoin wallet address. It serves as a key for the wallet and is crucial for creating a wallet.",
+      "latencyMs": 1530,
+      "inference": {
+        "requestId": "34c5b022-b582-4ed2-a13e-5c9266bfc68d",
+        "durationMs": 1530,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 53,
+        "ttftMs": 105,
+        "tokensPerSecond": 91.06368893222043
+      },
+      "coverage": 0,
+      "hallucinated": false,
+      "concise": true,
+      "pass": false,
+      "words": 31
+    },
+    {
+      "model": "qwen3-0.6b",
+      "repeat": 2,
+      "case": {
+        "id": "seed",
+        "category": "knowledge",
+        "prompt": "What is a seed phrase?",
+        "facts": [
+          [
+            "recover",
+            "backup",
+            "restore",
+            "recovery"
+          ],
+          [
+            "word",
+            "mnemonic",
+            "12",
+            "24"
+          ]
+        ],
+        "traps": [
+          "share it publicly",
+          "give it to support"
+        ],
+        "maxWords": 70
+      },
+      "response": "A seed phrase is a sequence of random numbers used to generate a Bitcoin wallet address. It serves as a key for the wallet and is crucial for creating a wallet.",
+      "latencyMs": 1418,
+      "inference": {
+        "requestId": "5b6a2618-ce4a-4b88-8f96-4fe95f093774",
+        "durationMs": 1418,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 53,
+        "ttftMs": 102,
+        "tokensPerSecond": 98.07439487709176
+      },
+      "coverage": 0,
+      "hallucinated": false,
+      "concise": true,
+      "pass": false,
+      "words": 31
+    },
+    {
+      "model": "qwen3-0.6b",
+      "repeat": 0,
+      "case": {
+        "id": "small-pay",
+        "category": "reasoning",
+        "prompt": "I want to send a very small amount of bitcoin cheaply and instantly. What should I use?",
+        "facts": [
+          [
+            "lightning"
+          ],
+          [
+            "fee",
+            "cheap",
+            "low",
+            "instant",
+            "fast"
+          ]
+        ],
+        "maxWords": 60
+      },
+      "response": "Use the Lightning Network for fast, low-cost transactions. It operates on a peer-to-peer network, making it ideal for small amounts.",
+      "latencyMs": 1736,
+      "inference": {
+        "requestId": "b4064399-2808-4344-a824-a1b918e536df",
+        "durationMs": 1736,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 67,
+        "ttftMs": 102,
+        "tokensPerSecond": 97.08160798842947
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 20
+    },
+    {
+      "model": "qwen3-0.6b",
+      "repeat": 1,
+      "case": {
+        "id": "small-pay",
+        "category": "reasoning",
+        "prompt": "I want to send a very small amount of bitcoin cheaply and instantly. What should I use?",
+        "facts": [
+          [
+            "lightning"
+          ],
+          [
+            "fee",
+            "cheap",
+            "low",
+            "instant",
+            "fast"
+          ]
+        ],
+        "maxWords": 60
+      },
+      "response": "Use the Lightning Network for fast, low-cost transactions. It operates on a peer-to-peer network, making it ideal for small amounts.",
+      "latencyMs": 1415,
+      "inference": {
+        "requestId": "b33dd2c6-9970-432d-86d2-fa00845e4a26",
+        "durationMs": 1415,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 67,
+        "ttftMs": 103,
+        "tokensPerSecond": 116.326642045513
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 20
+    },
+    {
+      "model": "qwen3-0.6b",
+      "repeat": 2,
+      "case": {
+        "id": "small-pay",
+        "category": "reasoning",
+        "prompt": "I want to send a very small amount of bitcoin cheaply and instantly. What should I use?",
+        "facts": [
+          [
+            "lightning"
+          ],
+          [
+            "fee",
+            "cheap",
+            "low",
+            "instant",
+            "fast"
+          ]
+        ],
+        "maxWords": 60
+      },
+      "response": "Use the Lightning Network for fast, low-cost transactions. It operates on a peer-to-peer network, making it ideal for small amounts.",
+      "latencyMs": 1826,
+      "inference": {
+        "requestId": "a0e96377-3d13-4fe8-bb4f-64d7d04e2134",
+        "durationMs": 1825,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 67,
+        "ttftMs": 102,
+        "tokensPerSecond": 92.28833638659145
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 20
+    },
+    {
+      "model": "qwen3-0.6b",
+      "repeat": 0,
+      "case": {
+        "id": "confirm",
+        "category": "knowledge",
+        "prompt": "What does it mean when a Bitcoin transaction has confirmations?",
+        "facts": [
+          [
+            "block"
+          ],
+          [
+            "included",
+            "mined",
+            "confirmed",
+            "irreversible",
+            "deeper",
+            "secure"
+          ]
+        ],
+        "maxWords": 70
+      },
+      "response": "When a Bitcoin transaction has confirmations, it means the transaction has been verified by the blockchain network multiple times, making it more secure and less likely to be reversed. Each confirmation step adds a layer of validation, ensuring the transaction is final and immutable.",
+      "latencyMs": 2576,
+      "inference": {
+        "requestId": "ebdb8d27-92b7-40d3-82f7-a9692d1c2002",
+        "durationMs": 2576,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 59,
+        "ttftMs": 103,
+        "tokensPerSecond": 91.94116772839824
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 44
+    },
+    {
+      "model": "qwen3-0.6b",
+      "repeat": 1,
+      "case": {
+        "id": "confirm",
+        "category": "knowledge",
+        "prompt": "What does it mean when a Bitcoin transaction has confirmations?",
+        "facts": [
+          [
+            "block"
+          ],
+          [
+            "included",
+            "mined",
+            "confirmed",
+            "irreversible",
+            "deeper",
+            "secure"
+          ]
+        ],
+        "maxWords": 70
+      },
+      "response": "When a Bitcoin transaction has confirmations, it means the transaction has been verified by the blockchain network multiple times, making it more secure and less likely to be reversed. Each confirmation step adds a layer of validation, ensuring the transaction is final and immutable.",
+      "latencyMs": 2765,
+      "inference": {
+        "requestId": "f9a5509d-f556-4d70-a9e6-991b257b819d",
+        "durationMs": 2765,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 59,
+        "ttftMs": 103,
+        "tokensPerSecond": 86.62227703465446
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 44
+    },
+    {
+      "model": "qwen3-0.6b",
+      "repeat": 2,
+      "case": {
+        "id": "confirm",
+        "category": "knowledge",
+        "prompt": "What does it mean when a Bitcoin transaction has confirmations?",
+        "facts": [
+          [
+            "block"
+          ],
+          [
+            "included",
+            "mined",
+            "confirmed",
+            "irreversible",
+            "deeper",
+            "secure"
+          ]
+        ],
+        "maxWords": 70
+      },
+      "response": "When a Bitcoin transaction has confirmations, it means the transaction has been verified by the blockchain network multiple times, making it more secure and less likely to be reversed. Each confirmation step adds a layer of validation, ensuring the transaction is final and immutable.",
+      "latencyMs": 2500,
+      "inference": {
+        "requestId": "153e8b3e-f4e9-4b7f-9221-180802aa1807",
+        "durationMs": 2500,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 59,
+        "ttftMs": 106,
+        "tokensPerSecond": 96.20732282696652
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 44
+    },
+    {
+      "model": "qwen3-0.6b",
+      "repeat": 0,
+      "case": {
+        "id": "privkey",
+        "category": "knowledge",
+        "prompt": "What is a private key used for in a Bitcoin wallet?",
+        "facts": [
+          [
+            "sign",
+            "spend",
+            "control",
+            "access",
+            "authorize"
+          ],
+          [
+            "secret",
+            "private",
+            "never share",
+            "keep"
+          ]
+        ],
+        "traps": [
+          "share with anyone"
+        ],
+        "maxWords": 60
+      },
+      "response": "A private key is used to sign transactions and access the Bitcoin wallet, ensuring that the transaction can be verified and executed. It is stored in the wallet and must be kept secure to prevent unauthorized access.",
+      "latencyMs": 2667,
+      "inference": {
+        "requestId": "f9fbb85e-da6a-4622-9e91-db53fdac4546",
+        "durationMs": 2667,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 59,
+        "ttftMs": 104,
+        "tokensPerSecond": 83.55827165449475
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 37
+    },
+    {
+      "model": "qwen3-0.6b",
+      "repeat": 1,
+      "case": {
+        "id": "privkey",
+        "category": "knowledge",
+        "prompt": "What is a private key used for in a Bitcoin wallet?",
+        "facts": [
+          [
+            "sign",
+            "spend",
+            "control",
+            "access",
+            "authorize"
+          ],
+          [
+            "secret",
+            "private",
+            "never share",
+            "keep"
+          ]
+        ],
+        "traps": [
+          "share with anyone"
+        ],
+        "maxWords": 60
+      },
+      "response": "A private key is used to sign transactions and access the Bitcoin wallet, ensuring that the transaction can be verified and executed. It is stored in the wallet and must be kept secure to prevent unauthorized access.",
+      "latencyMs": 2393,
+      "inference": {
+        "requestId": "92d6b9b2-8bab-4dd2-a8aa-96fe87f0a514",
+        "durationMs": 2393,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 59,
+        "ttftMs": 102,
+        "tokensPerSecond": 90.87738102079355
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 37
+    },
+    {
+      "model": "qwen3-0.6b",
+      "repeat": 2,
+      "case": {
+        "id": "privkey",
+        "category": "knowledge",
+        "prompt": "What is a private key used for in a Bitcoin wallet?",
+        "facts": [
+          [
+            "sign",
+            "spend",
+            "control",
+            "access",
+            "authorize"
+          ],
+          [
+            "secret",
+            "private",
+            "never share",
+            "keep"
+          ]
+        ],
+        "traps": [
+          "share with anyone"
+        ],
+        "maxWords": 60
+      },
+      "response": "A private key is used to sign transactions and access the Bitcoin wallet, ensuring that the transaction can be verified and executed. It is stored in the wallet and must be kept secure to prevent unauthorized access.",
+      "latencyMs": 2404,
+      "inference": {
+        "requestId": "d11b445b-e8dd-4383-b417-44e4db79a75e",
+        "durationMs": 2404,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 59,
+        "ttftMs": 203,
+        "tokensPerSecond": 90.54786786402906
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 37
+    },
+    {
+      "model": "qwen3-0.6b",
+      "repeat": 0,
+      "case": {
+        "id": "usdt-ln",
+        "category": "reasoning",
+        "prompt": "Can I hold USDT on the Lightning Network, and how?",
+        "facts": [
+          [
+            "rgb",
+            "asset",
+            "taproot"
+          ],
+          [
+            "lightning",
+            "channel",
+            "off-chain"
+          ]
+        ],
+        "maxWords": 80
+      },
+      "response": "Yes, you can hold USDT on the Lightning Network. It works similarly to traditional banking systems, allowing you to send and receive funds without traditional banking infrastructure. USDT is a stablecoin, so it's safe and reliable for such transactions.",
+      "latencyMs": 5913,
+      "inference": {
+        "requestId": "18e74e0d-400b-4826-ad64-00764a3de8ce",
+        "durationMs": 5912,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 60,
+        "ttftMs": 102,
+        "tokensPerSecond": 71.12533223600484
+      },
+      "coverage": 0.5,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 39
+    },
+    {
+      "model": "qwen3-0.6b",
+      "repeat": 1,
+      "case": {
+        "id": "usdt-ln",
+        "category": "reasoning",
+        "prompt": "Can I hold USDT on the Lightning Network, and how?",
+        "facts": [
+          [
+            "rgb",
+            "asset",
+            "taproot"
+          ],
+          [
+            "lightning",
+            "channel",
+            "off-chain"
+          ]
+        ],
+        "maxWords": 80
+      },
+      "response": "Yes, you can hold USDT on the Lightning Network. It works similarly to traditional banking systems, allowing you to send and receive funds without traditional banking infrastructure. USDT is a stablecoin, so it's safe and reliable for such transactions.",
+      "latencyMs": 4945,
+      "inference": {
+        "requestId": "557b8a9e-d482-4d32-b371-2663eb373096",
+        "durationMs": 4944,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 60,
+        "ttftMs": 102,
+        "tokensPerSecond": 84.7011012199282
+      },
+      "coverage": 0.5,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 39
+    },
+    {
+      "model": "qwen3-0.6b",
+      "repeat": 2,
+      "case": {
+        "id": "usdt-ln",
+        "category": "reasoning",
+        "prompt": "Can I hold USDT on the Lightning Network, and how?",
+        "facts": [
+          [
+            "rgb",
+            "asset",
+            "taproot"
+          ],
+          [
+            "lightning",
+            "channel",
+            "off-chain"
+          ]
+        ],
+        "maxWords": 80
+      },
+      "response": "Yes, you can hold USDT on the Lightning Network. It works similarly to traditional banking systems, allowing you to send and receive funds without traditional banking infrastructure. USDT is a stablecoin, so it's safe and reliable for such transactions.",
+      "latencyMs": 4892,
+      "inference": {
+        "requestId": "af4ace3a-d064-452b-b79c-ffa5f27333e0",
+        "durationMs": 4892,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 60,
+        "ttftMs": 107,
+        "tokensPerSecond": 86.05859366952127
+      },
+      "coverage": 0.5,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 39
+    },
+    {
+      "model": "qwen3-1.7b",
+      "repeat": 0,
+      "case": {
+        "id": "sat",
+        "category": "knowledge",
+        "prompt": "What is a satoshi?",
+        "facts": [
+          [
+            "smallest",
+            "sub-unit",
+            "subunit"
+          ],
+          [
+            "100 million",
+            "0.00000001",
+            "1e-8",
+            "hundred million",
+            "100,000,000"
+          ]
+        ],
+        "maxWords": 60
+      },
+      "response": "A satoshi is the smallest unit of Bitcoin, named in honor of Satoshi Nakamoto, the pseudonymous creator of Bitcoin. It equals 0.00000001 Bitcoin.",
+      "latencyMs": 717,
+      "inference": {
+        "requestId": "723a5b4b-7230-44dd-8260-1b1d52d4a0aa",
+        "durationMs": 717,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 53,
+        "ttftMs": 208,
+        "tokensPerSecond": 76.41608558601585
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 23
+    },
+    {
+      "model": "qwen3-1.7b",
+      "repeat": 1,
+      "case": {
+        "id": "sat",
+        "category": "knowledge",
+        "prompt": "What is a satoshi?",
+        "facts": [
+          [
+            "smallest",
+            "sub-unit",
+            "subunit"
+          ],
+          [
+            "100 million",
+            "0.00000001",
+            "1e-8",
+            "hundred million",
+            "100,000,000"
+          ]
+        ],
+        "maxWords": 60
+      },
+      "response": "A satoshi is the smallest unit of Bitcoin, named in honor of Satoshi Nakamoto, the pseudonymous creator of Bitcoin. It equals 0.00000001 Bitcoin.",
+      "latencyMs": 917,
+      "inference": {
+        "requestId": "13e03147-cac1-43c3-a19f-01903aa2cef7",
+        "durationMs": 917,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 53,
+        "ttftMs": 203,
+        "tokensPerSecond": 58.81220727560469
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 23
+    },
+    {
+      "model": "qwen3-1.7b",
+      "repeat": 2,
+      "case": {
+        "id": "sat",
+        "category": "knowledge",
+        "prompt": "What is a satoshi?",
+        "facts": [
+          [
+            "smallest",
+            "sub-unit",
+            "subunit"
+          ],
+          [
+            "100 million",
+            "0.00000001",
+            "1e-8",
+            "hundred million",
+            "100,000,000"
+          ]
+        ],
+        "maxWords": 60
+      },
+      "response": "A satoshi is the smallest unit of Bitcoin, named in honor of Satoshi Nakamoto, the pseudonymous creator of Bitcoin. It equals 0.00000001 Bitcoin.",
+      "latencyMs": 1835,
+      "inference": {
+        "requestId": "18398070-78c8-4108-88cc-0d2376740076",
+        "durationMs": 1835,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 53,
+        "ttftMs": 307,
+        "tokensPerSecond": 28.465275275385366
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 23
+    },
+    {
+      "model": "qwen3-1.7b",
+      "repeat": 0,
+      "case": {
+        "id": "channel",
+        "category": "knowledge",
+        "prompt": "How does a Lightning channel work?",
+        "facts": [
+          [
+            "off-chain",
+            "offchain",
+            "off chain"
+          ],
+          [
+            "two",
+            "both",
+            "counterpart",
+            "peer"
+          ],
+          [
+            "on-chain",
+            "onchain",
+            "open",
+            "close",
+            "settle"
+          ]
+        ],
+        "maxWords": 90
+      },
+      "response": "A Lightning channel enables fast, low-cost transactions by creating a temporary, encrypted connection between two parties. When a payment is initiated, funds are locked in the channel until the transaction is completed. If the recipient doesn't confirm the payment, the channel is closed, and the funds are released. The channel has a timeout, after which the funds are returned to the sender.",
+      "latencyMs": 5608,
+      "inference": {
+        "requestId": "0b910b23-38ba-4014-8669-a89eeb50481c",
+        "durationMs": 5608,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 54,
+        "ttftMs": 306,
+        "tokensPerSecond": 42.1784000101978
+      },
+      "coverage": 0.6666666666666666,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 62
+    },
+    {
+      "model": "qwen3-1.7b",
+      "repeat": 1,
+      "case": {
+        "id": "channel",
+        "category": "knowledge",
+        "prompt": "How does a Lightning channel work?",
+        "facts": [
+          [
+            "off-chain",
+            "offchain",
+            "off chain"
+          ],
+          [
+            "two",
+            "both",
+            "counterpart",
+            "peer"
+          ],
+          [
+            "on-chain",
+            "onchain",
+            "open",
+            "close",
+            "settle"
+          ]
+        ],
+        "maxWords": 90
+      },
+      "response": "A Lightning channel enables fast, low-cost transactions by creating a temporary, encrypted connection between two parties. When a payment is initiated, funds are locked in the channel until the transaction is completed. If the recipient doesn't confirm the payment, the channel is closed, and the funds are released. The channel has a timeout, after which the funds are returned to the sender.",
+      "latencyMs": 5473,
+      "inference": {
+        "requestId": "4e988e21-f246-4e8f-a259-344cdd865865",
+        "durationMs": 5473,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 54,
+        "ttftMs": 204,
+        "tokensPerSecond": 43.87957883405133
+      },
+      "coverage": 0.6666666666666666,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 62
+    },
+    {
+      "model": "qwen3-1.7b",
+      "repeat": 2,
+      "case": {
+        "id": "channel",
+        "category": "knowledge",
+        "prompt": "How does a Lightning channel work?",
+        "facts": [
+          [
+            "off-chain",
+            "offchain",
+            "off chain"
+          ],
+          [
+            "two",
+            "both",
+            "counterpart",
+            "peer"
+          ],
+          [
+            "on-chain",
+            "onchain",
+            "open",
+            "close",
+            "settle"
+          ]
+        ],
+        "maxWords": 90
+      },
+      "response": "A Lightning channel enables fast, low-cost transactions by creating a temporary, encrypted connection between two parties. When a payment is initiated, funds are locked in the channel until the transaction is completed. If the recipient doesn't confirm the payment, the channel is closed, and the funds are released. The channel has a timeout, after which the funds are returned to the sender.",
+      "latencyMs": 5472,
+      "inference": {
+        "requestId": "0e250b50-77a1-4301-9c3b-51b3c5371c81",
+        "durationMs": 5471,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 54,
+        "ttftMs": 205,
+        "tokensPerSecond": 43.30547411987879
+      },
+      "coverage": 0.6666666666666666,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 62
+    },
+    {
+      "model": "qwen3-1.7b",
+      "repeat": 0,
+      "case": {
+        "id": "rgb",
+        "category": "knowledge",
+        "prompt": "What is RGB on Bitcoin?",
+        "facts": [
+          [
+            "bitcoin"
+          ],
+          [
+            "asset",
+            "token",
+            "stablecoin"
+          ],
+          [
+            "client-side",
+            "off-chain",
+            "smart contract",
+            "lightning"
+          ]
+        ],
+        "maxWords": 90
+      },
+      "response": "RGB (Red, Green, Blue) is not a standard term related to Bitcoin. Bitcoin uses hexadecimal color codes (e.g., #FF0000 for red) for blockchain visualization, but these are not part of the blockchain's technical protocol. The term \"RGB\" is unrelated to Bitcoin's cryptographic or transactional mechanisms.",
+      "latencyMs": 4555,
+      "inference": {
+        "requestId": "e26d9d09-8c0f-47e6-9c2f-9056ffe0bef3",
+        "durationMs": 4555,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 53,
+        "ttftMs": 205,
+        "tokensPerSecond": 44.07577301676512
+      },
+      "coverage": 0.3333333333333333,
+      "hallucinated": false,
+      "concise": true,
+      "pass": false,
+      "words": 45
+    },
+    {
+      "model": "qwen3-1.7b",
+      "repeat": 1,
+      "case": {
+        "id": "rgb",
+        "category": "knowledge",
+        "prompt": "What is RGB on Bitcoin?",
+        "facts": [
+          [
+            "bitcoin"
+          ],
+          [
+            "asset",
+            "token",
+            "stablecoin"
+          ],
+          [
+            "client-side",
+            "off-chain",
+            "smart contract",
+            "lightning"
+          ]
+        ],
+        "maxWords": 90
+      },
+      "response": "RGB (Red, Green, Blue) is not a standard term related to Bitcoin. Bitcoin uses hexadecimal color codes (e.g., #FF0000 for red) for blockchain visualization, but these are not part of the blockchain's technical protocol. The term \"RGB\" is unrelated to Bitcoin's cryptographic or transactional mechanisms.",
+      "latencyMs": 4576,
+      "inference": {
+        "requestId": "9a51c3f5-dba6-452d-a3fa-3c27713c33e7",
+        "durationMs": 4576,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 53,
+        "ttftMs": 305,
+        "tokensPerSecond": 43.877804261811654
+      },
+      "coverage": 0.3333333333333333,
+      "hallucinated": false,
+      "concise": true,
+      "pass": false,
+      "words": 45
+    },
+    {
+      "model": "qwen3-1.7b",
+      "repeat": 2,
+      "case": {
+        "id": "rgb",
+        "category": "knowledge",
+        "prompt": "What is RGB on Bitcoin?",
+        "facts": [
+          [
+            "bitcoin"
+          ],
+          [
+            "asset",
+            "token",
+            "stablecoin"
+          ],
+          [
+            "client-side",
+            "off-chain",
+            "smart contract",
+            "lightning"
+          ]
+        ],
+        "maxWords": 90
+      },
+      "response": "RGB (Red, Green, Blue) is not a standard term related to Bitcoin. Bitcoin uses hexadecimal color codes (e.g., #FF0000 for red) for blockchain visualization, but these are not part of the blockchain's technical protocol. The term \"RGB\" is unrelated to Bitcoin's cryptographic or transactional mechanisms.",
+      "latencyMs": 4565,
+      "inference": {
+        "requestId": "862ec2d7-bbaf-4bb1-97ff-3104a64d9557",
+        "durationMs": 4565,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 53,
+        "ttftMs": 204,
+        "tokensPerSecond": 44.5692908624936
+      },
+      "coverage": 0.3333333333333333,
+      "hallucinated": false,
+      "concise": true,
+      "pass": false,
+      "words": 45
+    },
+    {
+      "model": "qwen3-1.7b",
+      "repeat": 0,
+      "case": {
+        "id": "btc",
+        "category": "knowledge",
+        "prompt": "What is Bitcoin in one sentence?",
+        "facts": [
+          [
+            "decentralized",
+            "peer-to-peer",
+            "p2p",
+            "no central"
+          ],
+          [
+            "digital",
+            "currency",
+            "money",
+            "cash"
+          ]
+        ],
+        "maxWords": 60
+      },
+      "response": "Bitcoin is a decentralized digital currency that operates on a peer-to-peer network without central authority.",
+      "latencyMs": 810,
+      "inference": {
+        "requestId": "9a63ab41-0c4f-4bd5-a691-6fcd83a9db93",
+        "durationMs": 810,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 54,
+        "ttftMs": 303,
+        "tokensPerSecond": 45.252126335709065
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 15
+    },
+    {
+      "model": "qwen3-1.7b",
+      "repeat": 1,
+      "case": {
+        "id": "btc",
+        "category": "knowledge",
+        "prompt": "What is Bitcoin in one sentence?",
+        "facts": [
+          [
+            "decentralized",
+            "peer-to-peer",
+            "p2p",
+            "no central"
+          ],
+          [
+            "digital",
+            "currency",
+            "money",
+            "cash"
+          ]
+        ],
+        "maxWords": 60
+      },
+      "response": "Bitcoin is a decentralized digital currency that operates on a peer-to-peer network without central authority.",
+      "latencyMs": 711,
+      "inference": {
+        "requestId": "13d5c42b-1d12-4ef6-a6c4-f81dbf40d60e",
+        "durationMs": 711,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 54,
+        "ttftMs": 205,
+        "tokensPerSecond": 45.250730182237035
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 15
+    },
+    {
+      "model": "qwen3-1.7b",
+      "repeat": 2,
+      "case": {
+        "id": "btc",
+        "category": "knowledge",
+        "prompt": "What is Bitcoin in one sentence?",
+        "facts": [
+          [
+            "decentralized",
+            "peer-to-peer",
+            "p2p",
+            "no central"
+          ],
+          [
+            "digital",
+            "currency",
+            "money",
+            "cash"
+          ]
+        ],
+        "maxWords": 60
+      },
+      "response": "Bitcoin is a decentralized digital currency that operates on a peer-to-peer network without central authority.",
+      "latencyMs": 816,
+      "inference": {
+        "requestId": "5e2ffc17-b4ff-4ed6-aa08-02592cc27d9d",
+        "durationMs": 816,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 54,
+        "ttftMs": 306,
+        "tokensPerSecond": 37.04608027212029
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 15
+    },
+    {
+      "model": "qwen3-1.7b",
+      "repeat": 0,
+      "case": {
+        "id": "onchain-ln",
+        "category": "reasoning",
+        "prompt": "What is the difference between an on-chain payment and a Lightning payment?",
+        "facts": [
+          [
+            "lightning"
+          ],
+          [
+            "fast",
+            "instant",
+            "cheap",
+            "low fee",
+            "off-chain"
+          ],
+          [
+            "on-chain",
+            "base layer",
+            "slower",
+            "block",
+            "fee"
+          ]
+        ],
+        "maxWords": 90
+      },
+      "response": "On-chain payments occur directly on the blockchain, involving transaction validation and recording on the main network, while Lightning payments use a separate, off-chain network for faster, cheaper transactions. On-chain transactions are transparent and secure but slower and more expensive, whereas Lightning payments are private and efficient but require a separate protocol.",
+      "latencyMs": 7435,
+      "inference": {
+        "requestId": "3f4fef15-6f85-4233-9156-614a4d91dd4a",
+        "durationMs": 7435,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 61,
+        "ttftMs": 307,
+        "tokensPerSecond": 42.14583988031713
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 51
+    },
+    {
+      "model": "qwen3-1.7b",
+      "repeat": 1,
+      "case": {
+        "id": "onchain-ln",
+        "category": "reasoning",
+        "prompt": "What is the difference between an on-chain payment and a Lightning payment?",
+        "facts": [
+          [
+            "lightning"
+          ],
+          [
+            "fast",
+            "instant",
+            "cheap",
+            "low fee",
+            "off-chain"
+          ],
+          [
+            "on-chain",
+            "base layer",
+            "slower",
+            "block",
+            "fee"
+          ]
+        ],
+        "maxWords": 90
+      },
+      "response": "On-chain payments occur directly on the blockchain, involving transaction validation and recording on the main network, while Lightning payments use a separate, off-chain network for faster, cheaper transactions. On-chain transactions are transparent and secure but slower and more expensive, whereas Lightning payments are private and efficient but require a separate protocol.",
+      "latencyMs": 7577,
+      "inference": {
+        "requestId": "d592491e-c298-46d7-ba0a-50011a68a86c",
+        "durationMs": 7577,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 61,
+        "ttftMs": 306,
+        "tokensPerSecond": 41.2349907401155
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 51
+    },
+    {
+      "model": "qwen3-1.7b",
+      "repeat": 2,
+      "case": {
+        "id": "onchain-ln",
+        "category": "reasoning",
+        "prompt": "What is the difference between an on-chain payment and a Lightning payment?",
+        "facts": [
+          [
+            "lightning"
+          ],
+          [
+            "fast",
+            "instant",
+            "cheap",
+            "low fee",
+            "off-chain"
+          ],
+          [
+            "on-chain",
+            "base layer",
+            "slower",
+            "block",
+            "fee"
+          ]
+        ],
+        "maxWords": 90
+      },
+      "response": "On-chain payments occur directly on the blockchain, involving transaction validation and recording on the main network, while Lightning payments use a separate, off-chain network for faster, cheaper transactions. On-chain transactions are transparent and secure but slower and more expensive, whereas Lightning payments are private and efficient but require a separate protocol.",
+      "latencyMs": 7194,
+      "inference": {
+        "requestId": "e70024b7-7b4c-4b73-b493-bda184528cf1",
+        "durationMs": 7194,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 61,
+        "ttftMs": 306,
+        "tokensPerSecond": 43.19162326005154
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 51
+    },
+    {
+      "model": "qwen3-1.7b",
+      "repeat": 0,
+      "case": {
+        "id": "seed",
+        "category": "knowledge",
+        "prompt": "What is a seed phrase?",
+        "facts": [
+          [
+            "recover",
+            "backup",
+            "restore",
+            "recovery"
+          ],
+          [
+            "word",
+            "mnemonic",
+            "12",
+            "24"
+          ]
+        ],
+        "traps": [
+          "share it publicly",
+          "give it to support"
+        ],
+        "maxWords": 70
+      },
+      "response": "A seed phrase is a sequence of words used to recover a cryptocurrency wallet. It's a cryptographic key that must be remembered and protected to access funds. The phrase is typically 12 or 24 words long and is generated during wallet setup.",
+      "latencyMs": 5273,
+      "inference": {
+        "requestId": "527bd379-6e5d-41e1-be0b-e8850148129a",
+        "durationMs": 5273,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 53,
+        "ttftMs": 306,
+        "tokensPerSecond": 43.36539167642218
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 42
+    },
+    {
+      "model": "qwen3-1.7b",
+      "repeat": 1,
+      "case": {
+        "id": "seed",
+        "category": "knowledge",
+        "prompt": "What is a seed phrase?",
+        "facts": [
+          [
+            "recover",
+            "backup",
+            "restore",
+            "recovery"
+          ],
+          [
+            "word",
+            "mnemonic",
+            "12",
+            "24"
+          ]
+        ],
+        "traps": [
+          "share it publicly",
+          "give it to support"
+        ],
+        "maxWords": 70
+      },
+      "response": "A seed phrase is a sequence of words used to recover a cryptocurrency wallet. It's a cryptographic key that must be remembered and protected to access funds. The phrase is typically 12 or 24 words long and is generated during wallet setup.",
+      "latencyMs": 5066,
+      "inference": {
+        "requestId": "446b5e50-270f-40f8-b0fd-071351e3a79d",
+        "durationMs": 5066,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 53,
+        "ttftMs": 302,
+        "tokensPerSecond": 44.323136572755274
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 42
+    },
+    {
+      "model": "qwen3-1.7b",
+      "repeat": 2,
+      "case": {
+        "id": "seed",
+        "category": "knowledge",
+        "prompt": "What is a seed phrase?",
+        "facts": [
+          [
+            "recover",
+            "backup",
+            "restore",
+            "recovery"
+          ],
+          [
+            "word",
+            "mnemonic",
+            "12",
+            "24"
+          ]
+        ],
+        "traps": [
+          "share it publicly",
+          "give it to support"
+        ],
+        "maxWords": 70
+      },
+      "response": "A seed phrase is a sequence of words used to recover a cryptocurrency wallet. It's a cryptographic key that must be remembered and protected to access funds. The phrase is typically 12 or 24 words long and is generated during wallet setup.",
+      "latencyMs": 5168,
+      "inference": {
+        "requestId": "001ac753-2f54-4bc9-ae85-8f940df8bc65",
+        "durationMs": 5168,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 53,
+        "ttftMs": 307,
+        "tokensPerSecond": 43.95790325777826
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 42
+    },
+    {
+      "model": "qwen3-1.7b",
+      "repeat": 0,
+      "case": {
+        "id": "small-pay",
+        "category": "reasoning",
+        "prompt": "I want to send a very small amount of bitcoin cheaply and instantly. What should I use?",
+        "facts": [
+          [
+            "lightning"
+          ],
+          [
+            "fee",
+            "cheap",
+            "low",
+            "instant",
+            "fast"
+          ]
+        ],
+        "maxWords": 60
+      },
+      "response": "Use the Lightning Network for fast, low-cost transactions. Ensure you have a Lightning node or use a service like Lightning Labs to facilitate the payment. Bitcoin transactions for small amounts can be expensive, so Lightning is more efficient.",
+      "latencyMs": 5883,
+      "inference": {
+        "requestId": "2c0133e6-880d-4ef0-9c70-46151f16da9a",
+        "durationMs": 5883,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 67,
+        "ttftMs": 307,
+        "tokensPerSecond": 40.973441957674794
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 38
+    },
+    {
+      "model": "qwen3-1.7b",
+      "repeat": 1,
+      "case": {
+        "id": "small-pay",
+        "category": "reasoning",
+        "prompt": "I want to send a very small amount of bitcoin cheaply and instantly. What should I use?",
+        "facts": [
+          [
+            "lightning"
+          ],
+          [
+            "fee",
+            "cheap",
+            "low",
+            "instant",
+            "fast"
+          ]
+        ],
+        "maxWords": 60
+      },
+      "response": "Use the Lightning Network for fast, low-cost transactions. Ensure you have a Lightning node or use a service like Lightning Labs to facilitate the payment. Bitcoin transactions for small amounts can be expensive, so Lightning is more efficient.",
+      "latencyMs": 5793,
+      "inference": {
+        "requestId": "a210a4be-3153-4835-80d9-cfb83393eae0",
+        "durationMs": 5793,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 67,
+        "ttftMs": 409,
+        "tokensPerSecond": 42.06410420581482
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 38
+    },
+    {
+      "model": "qwen3-1.7b",
+      "repeat": 2,
+      "case": {
+        "id": "small-pay",
+        "category": "reasoning",
+        "prompt": "I want to send a very small amount of bitcoin cheaply and instantly. What should I use?",
+        "facts": [
+          [
+            "lightning"
+          ],
+          [
+            "fee",
+            "cheap",
+            "low",
+            "instant",
+            "fast"
+          ]
+        ],
+        "maxWords": 60
+      },
+      "response": "Use the Lightning Network for fast, low-cost transactions. Ensure you have a Lightning node or use a service like Lightning Labs to facilitate the payment. Bitcoin transactions for small amounts can be expensive, so Lightning is more efficient.",
+      "latencyMs": 6189,
+      "inference": {
+        "requestId": "a83fb8e0-d340-404b-b5dc-afb651cb527b",
+        "durationMs": 6189,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 67,
+        "ttftMs": 308,
+        "tokensPerSecond": 39.18506168352896
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 38
+    },
+    {
+      "model": "qwen3-1.7b",
+      "repeat": 0,
+      "case": {
+        "id": "confirm",
+        "category": "knowledge",
+        "prompt": "What does it mean when a Bitcoin transaction has confirmations?",
+        "facts": [
+          [
+            "block"
+          ],
+          [
+            "included",
+            "mined",
+            "confirmed",
+            "irreversible",
+            "deeper",
+            "secure"
+          ]
+        ],
+        "maxWords": 70
+      },
+      "response": "A Bitcoin transaction with confirmations means it has been added to the blockchain multiple times, increasing its security and reducing the risk of fraud. Each confirmation represents a block being mined, ensuring the transaction is permanently recorded on the network.",
+      "latencyMs": 4252,
+      "inference": {
+        "requestId": "bb9801f8-c181-40ee-bba4-60d581c44cb7",
+        "durationMs": 4251,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 59,
+        "ttftMs": 205,
+        "tokensPerSecond": 44.00090850430738
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 40
+    },
+    {
+      "model": "qwen3-1.7b",
+      "repeat": 1,
+      "case": {
+        "id": "confirm",
+        "category": "knowledge",
+        "prompt": "What does it mean when a Bitcoin transaction has confirmations?",
+        "facts": [
+          [
+            "block"
+          ],
+          [
+            "included",
+            "mined",
+            "confirmed",
+            "irreversible",
+            "deeper",
+            "secure"
+          ]
+        ],
+        "maxWords": 70
+      },
+      "response": "A Bitcoin transaction with confirmations means it has been added to the blockchain multiple times, increasing its security and reducing the risk of fraud. Each confirmation represents a block being mined, ensuring the transaction is permanently recorded on the network.",
+      "latencyMs": 4361,
+      "inference": {
+        "requestId": "e5158014-c8d4-49b7-a3cb-15493048c5d2",
+        "durationMs": 4361,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 59,
+        "ttftMs": 203,
+        "tokensPerSecond": 42.937767290703825
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 40
+    },
+    {
+      "model": "qwen3-1.7b",
+      "repeat": 2,
+      "case": {
+        "id": "confirm",
+        "category": "knowledge",
+        "prompt": "What does it mean when a Bitcoin transaction has confirmations?",
+        "facts": [
+          [
+            "block"
+          ],
+          [
+            "included",
+            "mined",
+            "confirmed",
+            "irreversible",
+            "deeper",
+            "secure"
+          ]
+        ],
+        "maxWords": 70
+      },
+      "response": "A Bitcoin transaction with confirmations means it has been added to the blockchain multiple times, increasing its security and reducing the risk of fraud. Each confirmation represents a block being mined, ensuring the transaction is permanently recorded on the network.",
+      "latencyMs": 4357,
+      "inference": {
+        "requestId": "98fa9ef3-38b8-445d-a3e6-b9ee9056a3aa",
+        "durationMs": 4357,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 59,
+        "ttftMs": 306,
+        "tokensPerSecond": 42.41504915364815
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 40
+    },
+    {
+      "model": "qwen3-1.7b",
+      "repeat": 0,
+      "case": {
+        "id": "privkey",
+        "category": "knowledge",
+        "prompt": "What is a private key used for in a Bitcoin wallet?",
+        "facts": [
+          [
+            "sign",
+            "spend",
+            "control",
+            "access",
+            "authorize"
+          ],
+          [
+            "secret",
+            "private",
+            "never share",
+            "keep"
+          ]
+        ],
+        "traps": [
+          "share with anyone"
+        ],
+        "maxWords": 60
+      },
+      "response": "A private key is used to sign transactions and prove ownership of a Bitcoin wallet. It is essential for authorizing transactions and accessing the wallet's funds.",
+      "latencyMs": 8724,
+      "inference": {
+        "requestId": "17044a96-12cd-4d59-8e66-8ccd3d70626b",
+        "durationMs": 8724,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 59,
+        "ttftMs": 306,
+        "tokensPerSecond": 41.61068753769474
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 26
+    },
+    {
+      "model": "qwen3-1.7b",
+      "repeat": 1,
+      "case": {
+        "id": "privkey",
+        "category": "knowledge",
+        "prompt": "What is a private key used for in a Bitcoin wallet?",
+        "facts": [
+          [
+            "sign",
+            "spend",
+            "control",
+            "access",
+            "authorize"
+          ],
+          [
+            "secret",
+            "private",
+            "never share",
+            "keep"
+          ]
+        ],
+        "traps": [
+          "share with anyone"
+        ],
+        "maxWords": 60
+      },
+      "response": "A private key is used to sign transactions and prove ownership of a Bitcoin wallet. It is essential for authorizing transactions and accessing the wallet's funds.",
+      "latencyMs": 9141,
+      "inference": {
+        "requestId": "427c7d62-14f3-412d-a897-cab6c3563d9d",
+        "durationMs": 9141,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 59,
+        "ttftMs": 305,
+        "tokensPerSecond": 39.92212890488324
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 26
+    },
+    {
+      "model": "qwen3-1.7b",
+      "repeat": 2,
+      "case": {
+        "id": "privkey",
+        "category": "knowledge",
+        "prompt": "What is a private key used for in a Bitcoin wallet?",
+        "facts": [
+          [
+            "sign",
+            "spend",
+            "control",
+            "access",
+            "authorize"
+          ],
+          [
+            "secret",
+            "private",
+            "never share",
+            "keep"
+          ]
+        ],
+        "traps": [
+          "share with anyone"
+        ],
+        "maxWords": 60
+      },
+      "response": "A private key is used to sign transactions and prove ownership of a Bitcoin wallet. It is essential for authorizing transactions and accessing the wallet's funds.",
+      "latencyMs": 8887,
+      "inference": {
+        "requestId": "0026c1fb-6ca7-4256-b2bd-836684704ac8",
+        "durationMs": 8887,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 59,
+        "ttftMs": 206,
+        "tokensPerSecond": 40.550153723535345
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 26
+    },
+    {
+      "model": "qwen3-1.7b",
+      "repeat": 0,
+      "case": {
+        "id": "usdt-ln",
+        "category": "reasoning",
+        "prompt": "Can I hold USDT on the Lightning Network, and how?",
+        "facts": [
+          [
+            "rgb",
+            "asset",
+            "taproot"
+          ],
+          [
+            "lightning",
+            "channel",
+            "off-chain"
+          ]
+        ],
+        "maxWords": 80
+      },
+      "response": "",
+      "latencyMs": 12787,
+      "inference": {
+        "requestId": "bb08bc4b-5939-4bde-a07b-9fe63ad310f7",
+        "durationMs": 12787,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 60,
+        "ttftMs": 306,
+        "tokensPerSecond": 41.63070394511902
+      },
+      "coverage": 0,
+      "hallucinated": false,
+      "concise": true,
+      "pass": false,
+      "words": 0
+    },
+    {
+      "model": "qwen3-1.7b",
+      "repeat": 1,
+      "case": {
+        "id": "usdt-ln",
+        "category": "reasoning",
+        "prompt": "Can I hold USDT on the Lightning Network, and how?",
+        "facts": [
+          [
+            "rgb",
+            "asset",
+            "taproot"
+          ],
+          [
+            "lightning",
+            "channel",
+            "off-chain"
+          ]
+        ],
+        "maxWords": 80
+      },
+      "response": "",
+      "latencyMs": 12795,
+      "inference": {
+        "requestId": "9f2a5dec-3a3f-4626-a4d4-4300f9cbfc68",
+        "durationMs": 12795,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 60,
+        "ttftMs": 306,
+        "tokensPerSecond": 41.39936985631023
+      },
+      "coverage": 0,
+      "hallucinated": false,
+      "concise": true,
+      "pass": false,
+      "words": 0
+    },
+    {
+      "model": "qwen3-1.7b",
+      "repeat": 2,
+      "case": {
+        "id": "usdt-ln",
+        "category": "reasoning",
+        "prompt": "Can I hold USDT on the Lightning Network, and how?",
+        "facts": [
+          [
+            "rgb",
+            "asset",
+            "taproot"
+          ],
+          [
+            "lightning",
+            "channel",
+            "off-chain"
+          ]
+        ],
+        "maxWords": 80
+      },
+      "response": "",
+      "latencyMs": 13643,
+      "inference": {
+        "requestId": "58c6b63b-2284-40b6-8991-2ea214c635c0",
+        "durationMs": 13643,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 60,
+        "ttftMs": 307,
+        "tokensPerSecond": 38.76961301338407
+      },
+      "coverage": 0,
+      "hallucinated": false,
+      "concise": true,
+      "pass": false,
+      "words": 0
+    },
+    {
+      "model": "qwen3-4b",
+      "repeat": 0,
+      "case": {
+        "id": "sat",
+        "category": "knowledge",
+        "prompt": "What is a satoshi?",
+        "facts": [
+          [
+            "smallest",
+            "sub-unit",
+            "subunit"
+          ],
+          [
+            "100 million",
+            "0.00000001",
+            "1e-8",
+            "hundred million",
+            "100,000,000"
+          ]
+        ],
+        "maxWords": 60
+      },
+      "response": "A satoshi is the smallest unit of Bitcoin, equal to 0.00000001 BTC, named after Bitcoin's creator, Satoshi Nakamoto. It represents one hundred millionth of a Bitcoin.",
+      "latencyMs": 13758,
+      "inference": {
+        "requestId": "46bdfa09-59fb-4124-8c7d-66f9b2c7fccc",
+        "durationMs": 13757,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 53,
+        "ttftMs": 310,
+        "tokensPerSecond": 16.013794012771672
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 26
+    },
+    {
+      "model": "qwen3-4b",
+      "repeat": 1,
+      "case": {
+        "id": "sat",
+        "category": "knowledge",
+        "prompt": "What is a satoshi?",
+        "facts": [
+          [
+            "smallest",
+            "sub-unit",
+            "subunit"
+          ],
+          [
+            "100 million",
+            "0.00000001",
+            "1e-8",
+            "hundred million",
+            "100,000,000"
+          ]
+        ],
+        "maxWords": 60
+      },
+      "response": "A satoshi is the smallest unit of Bitcoin, equal to 0.00000001 BTC, named after Bitcoin's creator, Satoshi Nakamoto. It represents one hundred millionth of a Bitcoin.",
+      "latencyMs": 12792,
+      "inference": {
+        "requestId": "7dd1a783-7419-4602-8740-6ff3c561699b",
+        "durationMs": 12792,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 53,
+        "ttftMs": 714,
+        "tokensPerSecond": 17.741588621639398
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 26
+    },
+    {
+      "model": "qwen3-4b",
+      "repeat": 2,
+      "case": {
+        "id": "sat",
+        "category": "knowledge",
+        "prompt": "What is a satoshi?",
+        "facts": [
+          [
+            "smallest",
+            "sub-unit",
+            "subunit"
+          ],
+          [
+            "100 million",
+            "0.00000001",
+            "1e-8",
+            "hundred million",
+            "100,000,000"
+          ]
+        ],
+        "maxWords": 60
+      },
+      "response": "A satoshi is the smallest unit of Bitcoin, equal to 0.00000001 BTC, named after Bitcoin's creator, Satoshi Nakamoto. It represents one hundred millionth of a Bitcoin.",
+      "latencyMs": 12581,
+      "inference": {
+        "requestId": "0b67e76d-1a0b-4fd7-897e-77d8c23e747e",
+        "durationMs": 12581,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 53,
+        "ttftMs": 511,
+        "tokensPerSecond": 17.745165002255874
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 26
+    },
+    {
+      "model": "qwen3-4b",
+      "repeat": 0,
+      "case": {
+        "id": "channel",
+        "category": "knowledge",
+        "prompt": "How does a Lightning channel work?",
+        "facts": [
+          [
+            "off-chain",
+            "offchain",
+            "off chain"
+          ],
+          [
+            "two",
+            "both",
+            "counterpart",
+            "peer"
+          ],
+          [
+            "on-chain",
+            "onchain",
+            "open",
+            "close",
+            "settle"
+          ]
+        ],
+        "maxWords": 90
+      },
+      "response": "A Lightning channel allows two parties to conduct off-chain transactions using a multisig address funded with Bitcoin. Payments are settled via hash-time-locked contracts (HTLCs), enabling near-instant, low-cost transfers. When the channel is closed, the final balance is recorded on the blockchain.",
+      "latencyMs": 25714,
+      "inference": {
+        "requestId": "f35965fa-d33a-481f-971a-0460f0f8feef",
+        "durationMs": 25714,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 54,
+        "ttftMs": 713,
+        "tokensPerSecond": 15.572419939246746
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 41
+    },
+    {
+      "model": "qwen3-4b",
+      "repeat": 1,
+      "case": {
+        "id": "channel",
+        "category": "knowledge",
+        "prompt": "How does a Lightning channel work?",
+        "facts": [
+          [
+            "off-chain",
+            "offchain",
+            "off chain"
+          ],
+          [
+            "two",
+            "both",
+            "counterpart",
+            "peer"
+          ],
+          [
+            "on-chain",
+            "onchain",
+            "open",
+            "close",
+            "settle"
+          ]
+        ],
+        "maxWords": 90
+      },
+      "response": "A Lightning channel allows two parties to conduct off-chain transactions using a multisig address funded with Bitcoin. Payments are settled via hash-time-locked contracts (HTLCs), enabling near-instant, low-cost transfers. When the channel is closed, the final balance is recorded on the blockchain.",
+      "latencyMs": 21941,
+      "inference": {
+        "requestId": "5b470b69-b203-4123-9009-32e298503ed2",
+        "durationMs": 21941,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 54,
+        "ttftMs": 510,
+        "tokensPerSecond": 18.27846465595724
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 41
+    },
+    {
+      "model": "qwen3-4b",
+      "repeat": 2,
+      "case": {
+        "id": "channel",
+        "category": "knowledge",
+        "prompt": "How does a Lightning channel work?",
+        "facts": [
+          [
+            "off-chain",
+            "offchain",
+            "off chain"
+          ],
+          [
+            "two",
+            "both",
+            "counterpart",
+            "peer"
+          ],
+          [
+            "on-chain",
+            "onchain",
+            "open",
+            "close",
+            "settle"
+          ]
+        ],
+        "maxWords": 90
+      },
+      "response": "A Lightning channel allows two parties to conduct off-chain transactions using a multisig address funded with Bitcoin. Payments are settled via hash-time-locked contracts (HTLCs), enabling near-instant, low-cost transfers. When the channel is closed, the final balance is recorded on the blockchain.",
+      "latencyMs": 24067,
+      "inference": {
+        "requestId": "c151e309-f6f2-4647-891c-d9ca26174bbf",
+        "durationMs": 24067,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 54,
+        "ttftMs": 615,
+        "tokensPerSecond": 16.605835521120145
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 41
+    },
+    {
+      "model": "qwen3-4b",
+      "repeat": 0,
+      "case": {
+        "id": "rgb",
+        "category": "knowledge",
+        "prompt": "What is RGB on Bitcoin?",
+        "facts": [
+          [
+            "bitcoin"
+          ],
+          [
+            "asset",
+            "token",
+            "stablecoin"
+          ],
+          [
+            "client-side",
+            "off-chain",
+            "smart contract",
+            "lightning"
+          ]
+        ],
+        "maxWords": 90
+      },
+      "response": "RGB is a protocol for creating and managing digital assets on Bitcoin, developed by the Bitcoin Foundation, enabling fungible and non-fungible tokens through cryptographic hashing and scripting. It allows for unique, verifiable digital assets on the Bitcoin blockchain.",
+      "latencyMs": 28641,
+      "inference": {
+        "requestId": "a7414b53-7e3e-4b85-a8ff-752fa915d435",
+        "durationMs": 28639,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 53,
+        "ttftMs": 815,
+        "tokensPerSecond": 16.139453544099432
+      },
+      "coverage": 0.6666666666666666,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 38
+    },
+    {
+      "model": "qwen3-4b",
+      "repeat": 1,
+      "case": {
+        "id": "rgb",
+        "category": "knowledge",
+        "prompt": "What is RGB on Bitcoin?",
+        "facts": [
+          [
+            "bitcoin"
+          ],
+          [
+            "asset",
+            "token",
+            "stablecoin"
+          ],
+          [
+            "client-side",
+            "off-chain",
+            "smart contract",
+            "lightning"
+          ]
+        ],
+        "maxWords": 90
+      },
+      "response": "RGB is a protocol for creating and managing digital assets on Bitcoin, developed by the Bitcoin Foundation, enabling fungible and non-fungible tokens through cryptographic hashing and scripting. It allows for unique, verifiable digital assets on the Bitcoin blockchain.",
+      "latencyMs": 27499,
+      "inference": {
+        "requestId": "c162804d-3c7f-42c6-b027-66387ca680e7",
+        "durationMs": 27499,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 53,
+        "ttftMs": 711,
+        "tokensPerSecond": 16.701956243714346
+      },
+      "coverage": 0.6666666666666666,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 38
+    },
+    {
+      "model": "qwen3-4b",
+      "repeat": 2,
+      "case": {
+        "id": "rgb",
+        "category": "knowledge",
+        "prompt": "What is RGB on Bitcoin?",
+        "facts": [
+          [
+            "bitcoin"
+          ],
+          [
+            "asset",
+            "token",
+            "stablecoin"
+          ],
+          [
+            "client-side",
+            "off-chain",
+            "smart contract",
+            "lightning"
+          ]
+        ],
+        "maxWords": 90
+      },
+      "response": "RGB is a protocol for creating and managing digital assets on Bitcoin, developed by the Bitcoin Foundation, enabling fungible and non-fungible tokens through cryptographic hashing and scripting. It allows for unique, verifiable digital assets on the Bitcoin blockchain.",
+      "latencyMs": 29609,
+      "inference": {
+        "requestId": "1009c79e-d493-443a-88bd-9a2644ac483b",
+        "durationMs": 29609,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 53,
+        "ttftMs": 512,
+        "tokensPerSecond": 15.461129216543076
+      },
+      "coverage": 0.6666666666666666,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 38
+    },
+    {
+      "model": "qwen3-4b",
+      "repeat": 0,
+      "case": {
+        "id": "btc",
+        "category": "knowledge",
+        "prompt": "What is Bitcoin in one sentence?",
+        "facts": [
+          [
+            "decentralized",
+            "peer-to-peer",
+            "p2p",
+            "no central"
+          ],
+          [
+            "digital",
+            "currency",
+            "money",
+            "cash"
+          ]
+        ],
+        "maxWords": 60
+      },
+      "response": "Bitcoin is a decentralized digital currency that enables peer-to-peer transactions without a central authority, using blockchain technology to secure and verify transactions.",
+      "latencyMs": 13704,
+      "inference": {
+        "requestId": "f6918f26-c523-4c1e-a689-8cbf3cd742f9",
+        "durationMs": 13704,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 54,
+        "ttftMs": 614,
+        "tokensPerSecond": 17.22908922669645
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 22
+    },
+    {
+      "model": "qwen3-4b",
+      "repeat": 1,
+      "case": {
+        "id": "btc",
+        "category": "knowledge",
+        "prompt": "What is Bitcoin in one sentence?",
+        "facts": [
+          [
+            "decentralized",
+            "peer-to-peer",
+            "p2p",
+            "no central"
+          ],
+          [
+            "digital",
+            "currency",
+            "money",
+            "cash"
+          ]
+        ],
+        "maxWords": 60
+      },
+      "response": "Bitcoin is a decentralized digital currency that enables peer-to-peer transactions without a central authority, using blockchain technology to secure and verify transactions.",
+      "latencyMs": 14111,
+      "inference": {
+        "requestId": "21af7542-9720-4666-aa75-a3d5090472d9",
+        "durationMs": 14111,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 54,
+        "ttftMs": 816,
+        "tokensPerSecond": 16.95167837437473
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 22
+    },
+    {
+      "model": "qwen3-4b",
+      "repeat": 2,
+      "case": {
+        "id": "btc",
+        "category": "knowledge",
+        "prompt": "What is Bitcoin in one sentence?",
+        "facts": [
+          [
+            "decentralized",
+            "peer-to-peer",
+            "p2p",
+            "no central"
+          ],
+          [
+            "digital",
+            "currency",
+            "money",
+            "cash"
+          ]
+        ],
+        "maxWords": 60
+      },
+      "response": "Bitcoin is a decentralized digital currency that enables peer-to-peer transactions without a central authority, using blockchain technology to secure and verify transactions.",
+      "latencyMs": 14131,
+      "inference": {
+        "requestId": "10acced1-8592-4a38-83dc-c4d24e59fb31",
+        "durationMs": 14131,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 54,
+        "ttftMs": 713,
+        "tokensPerSecond": 16.73367574152495
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 22
+    },
+    {
+      "model": "qwen3-4b",
+      "repeat": 0,
+      "case": {
+        "id": "onchain-ln",
+        "category": "reasoning",
+        "prompt": "What is the difference between an on-chain payment and a Lightning payment?",
+        "facts": [
+          [
+            "lightning"
+          ],
+          [
+            "fast",
+            "instant",
+            "cheap",
+            "low fee",
+            "off-chain"
+          ],
+          [
+            "on-chain",
+            "base layer",
+            "slower",
+            "block",
+            "fee"
+          ]
+        ],
+        "maxWords": 90
+      },
+      "response": "On-chain payments are direct Bitcoin transactions recorded on the blockchain, requiring confirmation time and fees. Lightning payments use a second-layer network for instant, low-cost transactions via payment channels, bypassing the blockchain for speed and scalability.",
+      "latencyMs": 16783,
+      "inference": {
+        "requestId": "26fc9efe-9143-41ee-b9ac-9c39d01f43f8",
+        "durationMs": 16783,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 61,
+        "ttftMs": 511,
+        "tokensPerSecond": 16.82057284687082
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 35
+    },
+    {
+      "model": "qwen3-4b",
+      "repeat": 1,
+      "case": {
+        "id": "onchain-ln",
+        "category": "reasoning",
+        "prompt": "What is the difference between an on-chain payment and a Lightning payment?",
+        "facts": [
+          [
+            "lightning"
+          ],
+          [
+            "fast",
+            "instant",
+            "cheap",
+            "low fee",
+            "off-chain"
+          ],
+          [
+            "on-chain",
+            "base layer",
+            "slower",
+            "block",
+            "fee"
+          ]
+        ],
+        "maxWords": 90
+      },
+      "response": "On-chain payments are direct Bitcoin transactions recorded on the blockchain, requiring confirmation time and fees. Lightning payments use a second-layer network for instant, low-cost transactions via payment channels, bypassing the blockchain for speed and scalability.",
+      "latencyMs": 15646,
+      "inference": {
+        "requestId": "c5168fb1-39e1-4fdd-8df0-c2345bf24e5a",
+        "durationMs": 15646,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 61,
+        "ttftMs": 509,
+        "tokensPerSecond": 18.106504322328796
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 35
+    },
+    {
+      "model": "qwen3-4b",
+      "repeat": 2,
+      "case": {
+        "id": "onchain-ln",
+        "category": "reasoning",
+        "prompt": "What is the difference between an on-chain payment and a Lightning payment?",
+        "facts": [
+          [
+            "lightning"
+          ],
+          [
+            "fast",
+            "instant",
+            "cheap",
+            "low fee",
+            "off-chain"
+          ],
+          [
+            "on-chain",
+            "base layer",
+            "slower",
+            "block",
+            "fee"
+          ]
+        ],
+        "maxWords": 90
+      },
+      "response": "On-chain payments are direct Bitcoin transactions recorded on the blockchain, requiring confirmation time and fees. Lightning payments use a second-layer network for instant, low-cost transactions via payment channels, bypassing the blockchain for speed and scalability.",
+      "latencyMs": 17067,
+      "inference": {
+        "requestId": "59996e29-1c83-4dfe-a8ca-9782d2017ab3",
+        "durationMs": 17067,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 61,
+        "ttftMs": 512,
+        "tokensPerSecond": 16.473539649478205
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 35
+    },
+    {
+      "model": "qwen3-4b",
+      "repeat": 0,
+      "case": {
+        "id": "seed",
+        "category": "knowledge",
+        "prompt": "What is a seed phrase?",
+        "facts": [
+          [
+            "recover",
+            "backup",
+            "restore",
+            "recovery"
+          ],
+          [
+            "word",
+            "mnemonic",
+            "12",
+            "24"
+          ]
+        ],
+        "traps": [
+          "share it publicly",
+          "give it to support"
+        ],
+        "maxWords": 70
+      },
+      "response": "A seed phrase is a sequence of words used to derive cryptocurrency wallet keys, enabling recovery or creation of a wallet. It is critical for accessing funds and is typically 12 or 24 words, generated using algorithms like BIP39.",
+      "latencyMs": 23147,
+      "inference": {
+        "requestId": "d1993dfc-f724-4dc5-94bf-6ee74460ba98",
+        "durationMs": 23147,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 53,
+        "ttftMs": 612,
+        "tokensPerSecond": 16.25115934609978
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 39
+    },
+    {
+      "model": "qwen3-4b",
+      "repeat": 1,
+      "case": {
+        "id": "seed",
+        "category": "knowledge",
+        "prompt": "What is a seed phrase?",
+        "facts": [
+          [
+            "recover",
+            "backup",
+            "restore",
+            "recovery"
+          ],
+          [
+            "word",
+            "mnemonic",
+            "12",
+            "24"
+          ]
+        ],
+        "traps": [
+          "share it publicly",
+          "give it to support"
+        ],
+        "maxWords": 70
+      },
+      "response": "A seed phrase is a sequence of words used to derive cryptocurrency wallet keys, enabling recovery or creation of a wallet. It is critical for accessing funds and is typically 12 or 24 words, generated using algorithms like BIP39.",
+      "latencyMs": 22174,
+      "inference": {
+        "requestId": "2296533d-9108-4812-a8b0-a3560fb98ffc",
+        "durationMs": 22174,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 53,
+        "ttftMs": 511,
+        "tokensPerSecond": 16.86601852657999
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 39
+    },
+    {
+      "model": "qwen3-4b",
+      "repeat": 2,
+      "case": {
+        "id": "seed",
+        "category": "knowledge",
+        "prompt": "What is a seed phrase?",
+        "facts": [
+          [
+            "recover",
+            "backup",
+            "restore",
+            "recovery"
+          ],
+          [
+            "word",
+            "mnemonic",
+            "12",
+            "24"
+          ]
+        ],
+        "traps": [
+          "share it publicly",
+          "give it to support"
+        ],
+        "maxWords": 70
+      },
+      "response": "A seed phrase is a sequence of words used to derive cryptocurrency wallet keys, enabling recovery or creation of a wallet. It is critical for accessing funds and is typically 12 or 24 words, generated using algorithms like BIP39.",
+      "latencyMs": 23166,
+      "inference": {
+        "requestId": "39a16507-dc13-4061-8502-11f8dcd2e17f",
+        "durationMs": 23166,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 53,
+        "ttftMs": 614,
+        "tokensPerSecond": 16.16408069499863
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 39
+    },
+    {
+      "model": "qwen3-4b",
+      "repeat": 0,
+      "case": {
+        "id": "small-pay",
+        "category": "reasoning",
+        "prompt": "I want to send a very small amount of bitcoin cheaply and instantly. What should I use?",
+        "facts": [
+          [
+            "lightning"
+          ],
+          [
+            "fee",
+            "cheap",
+            "low",
+            "instant",
+            "fast"
+          ]
+        ],
+        "maxWords": 60
+      },
+      "response": "To send a very small amount of Bitcoin cheaply and instantly, use the **Lightning Network** via a Lightning node or a service that supports it. This allows near-instant, low-cost transactions between nodes. If you don’t have a node, consider using a third-party Lightning wallet or service that routes payments through the network.",
+      "latencyMs": 30253,
+      "inference": {
+        "requestId": "c2b68ef1-f735-4154-946f-ad845b0fc2ab",
+        "durationMs": 30253,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 67,
+        "ttftMs": 917,
+        "tokensPerSecond": 16.07433978582413
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 52
+    },
+    {
+      "model": "qwen3-4b",
+      "repeat": 1,
+      "case": {
+        "id": "small-pay",
+        "category": "reasoning",
+        "prompt": "I want to send a very small amount of bitcoin cheaply and instantly. What should I use?",
+        "facts": [
+          [
+            "lightning"
+          ],
+          [
+            "fee",
+            "cheap",
+            "low",
+            "instant",
+            "fast"
+          ]
+        ],
+        "maxWords": 60
+      },
+      "response": "To send a very small amount of Bitcoin cheaply and instantly, use the **Lightning Network** via a Lightning node or a service that supports it. This allows near-instant, low-cost transactions between nodes. If you don’t have a node, consider using a third-party Lightning wallet or service that routes payments through the network.",
+      "latencyMs": 29785,
+      "inference": {
+        "requestId": "317c0223-0dda-4c71-96dc-89a5dbfb09a2",
+        "durationMs": 29784,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 67,
+        "ttftMs": 918,
+        "tokensPerSecond": 16.302230308128454
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 52
+    },
+    {
+      "model": "qwen3-4b",
+      "repeat": 2,
+      "case": {
+        "id": "small-pay",
+        "category": "reasoning",
+        "prompt": "I want to send a very small amount of bitcoin cheaply and instantly. What should I use?",
+        "facts": [
+          [
+            "lightning"
+          ],
+          [
+            "fee",
+            "cheap",
+            "low",
+            "instant",
+            "fast"
+          ]
+        ],
+        "maxWords": 60
+      },
+      "response": "To send a very small amount of Bitcoin cheaply and instantly, use the **Lightning Network** via a Lightning node or a service that supports it. This allows near-instant, low-cost transactions between nodes. If you don’t have a node, consider using a third-party Lightning wallet or service that routes payments through the network.",
+      "latencyMs": 28328,
+      "inference": {
+        "requestId": "870e927d-96db-4b85-ba95-9d2305930ca1",
+        "durationMs": 28328,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 67,
+        "ttftMs": 816,
+        "tokensPerSecond": 17.16307576778563
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 52
+    },
+    {
+      "model": "qwen3-4b",
+      "repeat": 0,
+      "case": {
+        "id": "confirm",
+        "category": "knowledge",
+        "prompt": "What does it mean when a Bitcoin transaction has confirmations?",
+        "facts": [
+          [
+            "block"
+          ],
+          [
+            "included",
+            "mined",
+            "confirmed",
+            "irreversible",
+            "deeper",
+            "secure"
+          ]
+        ],
+        "maxWords": 70
+      },
+      "response": "A Bitcoin transaction's confirmations refer to the number of blocks added to the blockchain after it was included in a block, with each confirmation increasing the transaction's security. More confirmations mean the transaction is more likely to be permanent.",
+      "latencyMs": 14630,
+      "inference": {
+        "requestId": "d82e378a-90d5-4f05-bd4a-bbf93d38545e",
+        "durationMs": 14630,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 59,
+        "ttftMs": 613,
+        "tokensPerSecond": 17.838752720141134
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 39
+    },
+    {
+      "model": "qwen3-4b",
+      "repeat": 1,
+      "case": {
+        "id": "confirm",
+        "category": "knowledge",
+        "prompt": "What does it mean when a Bitcoin transaction has confirmations?",
+        "facts": [
+          [
+            "block"
+          ],
+          [
+            "included",
+            "mined",
+            "confirmed",
+            "irreversible",
+            "deeper",
+            "secure"
+          ]
+        ],
+        "maxWords": 70
+      },
+      "response": "A Bitcoin transaction's confirmations refer to the number of blocks added to the blockchain after it was included in a block, with each confirmation increasing the transaction's security. More confirmations mean the transaction is more likely to be permanent.",
+      "latencyMs": 15037,
+      "inference": {
+        "requestId": "e7f3597f-7698-497e-a44f-9c7d95243ee2",
+        "durationMs": 15037,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 59,
+        "ttftMs": 714,
+        "tokensPerSecond": 17.428341170487393
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 39
+    },
+    {
+      "model": "qwen3-4b",
+      "repeat": 2,
+      "case": {
+        "id": "confirm",
+        "category": "knowledge",
+        "prompt": "What does it mean when a Bitcoin transaction has confirmations?",
+        "facts": [
+          [
+            "block"
+          ],
+          [
+            "included",
+            "mined",
+            "confirmed",
+            "irreversible",
+            "deeper",
+            "secure"
+          ]
+        ],
+        "maxWords": 70
+      },
+      "response": "A Bitcoin transaction's confirmations refer to the number of blocks added to the blockchain after it was included in a block, with each confirmation increasing the transaction's security. More confirmations mean the transaction is more likely to be permanent.",
+      "latencyMs": 15335,
+      "inference": {
+        "requestId": "9955ac51-11f7-4785-981d-cee4f9bb3b25",
+        "durationMs": 15335,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 59,
+        "ttftMs": 610,
+        "tokensPerSecond": 17.00323628263913
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 39
+    },
+    {
+      "model": "qwen3-4b",
+      "repeat": 0,
+      "case": {
+        "id": "privkey",
+        "category": "knowledge",
+        "prompt": "What is a private key used for in a Bitcoin wallet?",
+        "facts": [
+          [
+            "sign",
+            "spend",
+            "control",
+            "access",
+            "authorize"
+          ],
+          [
+            "secret",
+            "private",
+            "never share",
+            "keep"
+          ]
+        ],
+        "traps": [
+          "share with anyone"
+        ],
+        "maxWords": 60
+      },
+      "response": "A private key in a Bitcoin wallet is used to sign transactions, proving ownership of the associated Bitcoin address and enabling secure transfers of funds. It is essential for authorizing transactions and maintaining control over the funds.",
+      "latencyMs": 12796,
+      "inference": {
+        "requestId": "595b9043-8bb8-4597-8817-559b0922deb0",
+        "durationMs": 12796,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 59,
+        "ttftMs": 609,
+        "tokensPerSecond": 16.448236823029635
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 37
+    },
+    {
+      "model": "qwen3-4b",
+      "repeat": 1,
+      "case": {
+        "id": "privkey",
+        "category": "knowledge",
+        "prompt": "What is a private key used for in a Bitcoin wallet?",
+        "facts": [
+          [
+            "sign",
+            "spend",
+            "control",
+            "access",
+            "authorize"
+          ],
+          [
+            "secret",
+            "private",
+            "never share",
+            "keep"
+          ]
+        ],
+        "traps": [
+          "share with anyone"
+        ],
+        "maxWords": 60
+      },
+      "response": "A private key in a Bitcoin wallet is used to sign transactions, proving ownership of the associated Bitcoin address and enabling secure transfers of funds. It is essential for authorizing transactions and maintaining control over the funds.",
+      "latencyMs": 11976,
+      "inference": {
+        "requestId": "598d245e-d89d-4489-b4cf-13c93a36d5b3",
+        "durationMs": 11976,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 59,
+        "ttftMs": 718,
+        "tokensPerSecond": 17.75502766899124
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 37
+    },
+    {
+      "model": "qwen3-4b",
+      "repeat": 2,
+      "case": {
+        "id": "privkey",
+        "category": "knowledge",
+        "prompt": "What is a private key used for in a Bitcoin wallet?",
+        "facts": [
+          [
+            "sign",
+            "spend",
+            "control",
+            "access",
+            "authorize"
+          ],
+          [
+            "secret",
+            "private",
+            "never share",
+            "keep"
+          ]
+        ],
+        "traps": [
+          "share with anyone"
+        ],
+        "maxWords": 60
+      },
+      "response": "A private key in a Bitcoin wallet is used to sign transactions, proving ownership of the associated Bitcoin address and enabling secure transfers of funds. It is essential for authorizing transactions and maintaining control over the funds.",
+      "latencyMs": 12377,
+      "inference": {
+        "requestId": "45efb7a1-88cd-4191-9657-7a893f18cd21",
+        "durationMs": 12376,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 59,
+        "ttftMs": 611,
+        "tokensPerSecond": 17.126842077499642
+      },
+      "coverage": 1,
+      "hallucinated": false,
+      "concise": true,
+      "pass": true,
+      "words": 37
+    },
+    {
+      "model": "qwen3-4b",
+      "repeat": 0,
+      "case": {
+        "id": "usdt-ln",
+        "category": "reasoning",
+        "prompt": "Can I hold USDT on the Lightning Network, and how?",
+        "facts": [
+          [
+            "rgb",
+            "asset",
+            "taproot"
+          ],
+          [
+            "lightning",
+            "channel",
+            "off-chain"
+          ]
+        ],
+        "maxWords": 80
+      },
+      "response": "",
+      "latencyMs": 33698,
+      "inference": {
+        "requestId": "fd0bc0d4-e6a6-41b3-ad65-c028cf259c54",
+        "durationMs": 33697,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 60,
+        "ttftMs": 509,
+        "tokensPerSecond": 15.497275173431763
+      },
+      "coverage": 0,
+      "hallucinated": false,
+      "concise": true,
+      "pass": false,
+      "words": 0
+    },
+    {
+      "model": "qwen3-4b",
+      "repeat": 1,
+      "case": {
+        "id": "usdt-ln",
+        "category": "reasoning",
+        "prompt": "Can I hold USDT on the Lightning Network, and how?",
+        "facts": [
+          [
+            "rgb",
+            "asset",
+            "taproot"
+          ],
+          [
+            "lightning",
+            "channel",
+            "off-chain"
+          ]
+        ],
+        "maxWords": 80
+      },
+      "response": "",
+      "latencyMs": 31604,
+      "inference": {
+        "requestId": "f5ed53b7-f700-4922-bc43-a9016e72ccc9",
+        "durationMs": 31603,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 60,
+        "ttftMs": 509,
+        "tokensPerSecond": 16.56117060823066
+      },
+      "coverage": 0,
+      "hallucinated": false,
+      "concise": true,
+      "pass": false,
+      "words": 0
+    },
+    {
+      "model": "qwen3-4b",
+      "repeat": 2,
+      "case": {
+        "id": "usdt-ln",
+        "category": "reasoning",
+        "prompt": "Can I hold USDT on the Lightning Network, and how?",
+        "facts": [
+          [
+            "rgb",
+            "asset",
+            "taproot"
+          ],
+          [
+            "lightning",
+            "channel",
+            "off-chain"
+          ]
+        ],
+        "maxWords": 80
+      },
+      "response": "",
+      "latencyMs": 30683,
+      "inference": {
+        "requestId": "0fc37ca4-168f-4c9d-8dc4-488b130a90a7",
+        "durationMs": 30683,
+        "status": "completed",
+        "backendDevice": "gpu",
+        "promptTokens": 60,
+        "ttftMs": 725,
+        "tokensPerSecond": 17.158992915916475
+      },
+      "coverage": 0,
+      "hallucinated": false,
+      "concise": true,
+      "pass": false,
+      "words": 0
+    }
+  ],
+  "cases": 10,
+  "repeats": 3
+}

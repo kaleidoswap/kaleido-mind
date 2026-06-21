@@ -1,0 +1,10 @@
+model,mechanism,applicable,pass,pct,selection,args,overTrigger,avgLatencyMs,avgTtftMs,avgTokensPerSecond,avgPromptTokens,avgCompletionTokens
+Qwen 3 · 0.6B,fc,72,45,63,48,72,0,2664,790,90,761,0
+Qwen 3 · 0.6B,mcp,72,42,58,48,69,0,5711,3517,80.7,2691,0
+Qwen 3 · 0.6B,skill,72,30,42,33,72,0,4031,1849,87.3,1483,0
+Qwen 3 · 1.7B,fc,72,45,63,54,63,0,6840,2457,46.4,761,0
+Qwen 3 · 1.7B,mcp,72,42,58,54,63,0,13412,7799,36.9,2691,0
+Qwen 3 · 1.7B,skill,72,21,29,24,72,0,11669,5149,34.9,1483,0
+Qwen 3 · 4B,fc,72,51,71,57,69,0,28759,6829,11.1,761,0
+Qwen 3 · 4B,mcp,72,48,67,54,69,0,53101,27514,11.1,2691,0
+Qwen 3 · 4B,skill,72,30,42,33,72,0,44710,14453,10.4,1483,0

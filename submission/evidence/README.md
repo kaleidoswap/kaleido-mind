@@ -2,6 +2,12 @@
 
 Evidence is generated, not hand-edited.
 
+> **Committed reference run:** [`desktop-2026-06-20T12-09-49-172Z/`](./desktop-2026-06-20T12-09-49-172Z/)
+> — a real QVAC run (`mode: qvac`, mind 0.6.1) across qwen3-0.6b / 1.7b / 4b on
+> the reference Apple M4, all tracks exit 0. Model SHA-256s, hardware and the
+> exact commit are in its `manifest.json`. New runs are gitignored by default;
+> this one is force-committed as the canonical artifact.
+
 ```bash
 # Fast structural smoke test; no model is loaded.
 pnpm submission:evidence:mock

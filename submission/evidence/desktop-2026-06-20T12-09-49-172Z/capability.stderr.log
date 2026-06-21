@@ -1,0 +1,205 @@
+[2m
+eval · QVAC — loads each model + runs the matrix (stubbed execution)…[0m
+[2m  Qwen 3 · 0.6B: loading model…[0m
+[2m  0% · 0/648 · Qwen 3 · 0.6B [0m
+parse: load the model metadata from disk file.
+initFromConfig: load the model from disk file and apply lora adapter, if any.
+common_init_result: fitting params to device memory, for bugs during this step try to reproduce them with -fit off, or provide --verbose logs if the bug only occurs with -fit on
+common_init_result: added </s> logit bias = -inf
+common_init_result: added <|endoftext|> logit bias = -inf
+common_init_result: added <|im_end|> logit bias = -inf
+common_init_result: added <|fim_pad|> logit bias = -inf
+common_init_result: added <|repo_name|> logit bias = -inf
+common_init_result: added <|file_sep|> logit bias = -inf
+[2m  Qwen 3 · 0.6B: loaded in 1.6s[0m
+[2m  0% · 0/648 · Qwen 3 · 0.6B [0m
+[2m  0% · 1/648 · Qwen 3 · 0.6B fc[0m
+[2m  1% · 5/648 · Qwen 3 · 0.6B fc[0m
+[2m  2% · 10/648 · Qwen 3 · 0.6B fc[0m
+[2m  2% · 15/648 · Qwen 3 · 0.6B fc[0m
+[2m  3% · 20/648 · Qwen 3 · 0.6B fc[0m
+[2m  4% · 25/648 · Qwen 3 · 0.6B fc[0m
+[2m  5% · 30/648 · Qwen 3 · 0.6B fc[0m
+[2m  5% · 35/648 · Qwen 3 · 0.6B fc[0m
+[2m  6% · 40/648 · Qwen 3 · 0.6B fc[0m
+[2m  7% · 45/648 · Qwen 3 · 0.6B fc[0m
+[2m  8% · 50/648 · Qwen 3 · 0.6B fc[0m
+[2m  8% · 55/648 · Qwen 3 · 0.6B fc[0m
+[2m  9% · 60/648 · Qwen 3 · 0.6B fc[0m
+[2m  10% · 65/648 · Qwen 3 · 0.6B fc[0m
+[2m  11% · 70/648 · Qwen 3 · 0.6B fc[0m
+[2m  11% · 73/648 · Qwen 3 · 0.6B mcp[0m
+[2m  12% · 75/648 · Qwen 3 · 0.6B mcp[0m
+[2m  12% · 80/648 · Qwen 3 · 0.6B mcp[0m
+[2m  13% · 85/648 · Qwen 3 · 0.6B mcp[0m
+[2m  14% · 90/648 · Qwen 3 · 0.6B mcp[0m
+[2m  15% · 95/648 · Qwen 3 · 0.6B mcp[0m
+[2m  15% · 100/648 · Qwen 3 · 0.6B mcp[0m
+[2m  16% · 105/648 · Qwen 3 · 0.6B mcp[0m
+[2m  17% · 110/648 · Qwen 3 · 0.6B mcp[0m
+[2m  18% · 115/648 · Qwen 3 · 0.6B mcp[0m
+[2m  19% · 120/648 · Qwen 3 · 0.6B mcp[0m
+[2m  19% · 125/648 · Qwen 3 · 0.6B mcp[0m
+[2m  20% · 130/648 · Qwen 3 · 0.6B mcp[0m
+[2m  21% · 135/648 · Qwen 3 · 0.6B mcp[0m
+[2m  22% · 140/648 · Qwen 3 · 0.6B mcp[0m
+[2m  22% · 145/648 · Qwen 3 · 0.6B skill[0m
+[2m  23% · 150/648 · Qwen 3 · 0.6B skill[0m
+[2m  24% · 155/648 · Qwen 3 · 0.6B skill[0m
+[2m  25% · 160/648 · Qwen 3 · 0.6B skill[0m
+[2m  25% · 165/648 · Qwen 3 · 0.6B skill[0m
+[2m  26% · 170/648 · Qwen 3 · 0.6B skill[0m
+[2m  27% · 175/648 · Qwen 3 · 0.6B skill[0m
+[2m  28% · 180/648 · Qwen 3 · 0.6B skill[0m
+[2m  29% · 185/648 · Qwen 3 · 0.6B skill[0m
+[2m  29% · 190/648 · Qwen 3 · 0.6B skill[0m
+[2m  30% · 195/648 · Qwen 3 · 0.6B skill[0m
+[2m  31% · 200/648 · Qwen 3 · 0.6B skill[0m
+[2m  32% · 205/648 · Qwen 3 · 0.6B skill[0m
+[2m  32% · 210/648 · Qwen 3 · 0.6B skill[0m
+[2m  33% · 215/648 · Qwen 3 · 0.6B skill[0m
+[2m  Qwen 3 · 1.7B: loading model…[0m
+[2m  33% · 216/648 · Qwen 3 · 1.7B skill[0m
+parse: load the model metadata from disk file.
+initFromConfig: load the model from disk file and apply lora adapter, if any.
+common_init_result: fitting params to device memory, for bugs during this step try to reproduce them with -fit off, or provide --verbose logs if the bug only occurs with -fit on
+common_init_result: added </s> logit bias = -inf
+common_init_result: added <|endoftext|> logit bias = -inf
+common_init_result: added <|im_end|> logit bias = -inf
+common_init_result: added <|fim_pad|> logit bias = -inf
+common_init_result: added <|repo_name|> logit bias = -inf
+common_init_result: added <|file_sep|> logit bias = -inf
+[2m  Qwen 3 · 1.7B: loaded in 2.1s[0m
+[2m  33% · 217/648 · Qwen 3 · 1.7B fc[0m
+[2m  34% · 220/648 · Qwen 3 · 1.7B fc[0m
+[2m  35% · 225/648 · Qwen 3 · 1.7B fc[0m
+[2m  35% · 230/648 · Qwen 3 · 1.7B fc[0m
+[2m  36% · 235/648 · Qwen 3 · 1.7B fc[0m
+[2m  37% · 240/648 · Qwen 3 · 1.7B fc[0m
+[2m  38% · 245/648 · Qwen 3 · 1.7B fc[0m
+[2m  39% · 250/648 · Qwen 3 · 1.7B fc[0m
+[2m  39% · 255/648 · Qwen 3 · 1.7B fc[0m
+[2m  40% · 260/648 · Qwen 3 · 1.7B fc[0m
+[2m  41% · 265/648 · Qwen 3 · 1.7B fc[0m
+[2m  42% · 270/648 · Qwen 3 · 1.7B fc[0m
+[2m  42% · 275/648 · Qwen 3 · 1.7B fc[0m
+[2m  43% · 280/648 · Qwen 3 · 1.7B fc[0m
+[2m  44% · 285/648 · Qwen 3 · 1.7B fc[0m
+[2m  45% · 289/648 · Qwen 3 · 1.7B mcp[0m
+[2m  45% · 290/648 · Qwen 3 · 1.7B mcp[0m
+[2m  46% · 295/648 · Qwen 3 · 1.7B mcp[0m
+[2m  46% · 300/648 · Qwen 3 · 1.7B mcp[0m
+[2m  47% · 305/648 · Qwen 3 · 1.7B mcp[0m
+[2m  48% · 310/648 · Qwen 3 · 1.7B mcp[0m
+[2m  49% · 315/648 · Qwen 3 · 1.7B mcp[0m
+[2m  49% · 320/648 · Qwen 3 · 1.7B mcp[0m
+[2m  50% · 325/648 · Qwen 3 · 1.7B mcp[0m
+[2m  51% · 330/648 · Qwen 3 · 1.7B mcp[0m
+[2m  52% · 335/648 · Qwen 3 · 1.7B mcp[0m
+[2m  52% · 340/648 · Qwen 3 · 1.7B mcp[0m
+[2m  53% · 345/648 · Qwen 3 · 1.7B mcp[0m
+[2m  54% · 350/648 · Qwen 3 · 1.7B mcp[0m
+[2m  55% · 355/648 · Qwen 3 · 1.7B mcp[0m
+[2m  56% · 360/648 · Qwen 3 · 1.7B mcp[0m
+[2m  56% · 361/648 · Qwen 3 · 1.7B skill[0m
+[2m  56% · 365/648 · Qwen 3 · 1.7B skill[0m
+[2m  57% · 370/648 · Qwen 3 · 1.7B skill[0m
+[2m  58% · 375/648 · Qwen 3 · 1.7B skill[0m
+[2m  59% · 380/648 · Qwen 3 · 1.7B skill[0m
+[2m  59% · 385/648 · Qwen 3 · 1.7B skill[0m
+[2m  60% · 390/648 · Qwen 3 · 1.7B skill[0m
+[2m  61% · 395/648 · Qwen 3 · 1.7B skill[0m
+[2m  62% · 400/648 · Qwen 3 · 1.7B skill[0m
+[2m  63% · 405/648 · Qwen 3 · 1.7B skill[0m
+[2m  63% · 410/648 · Qwen 3 · 1.7B skill[0m
+[2m  64% · 415/648 · Qwen 3 · 1.7B skill[0m
+[2m  65% · 420/648 · Qwen 3 · 1.7B skill[0m
+[2m  66% · 425/648 · Qwen 3 · 1.7B skill[0m
+[2m  66% · 430/648 · Qwen 3 · 1.7B skill[0m
+[2m  Qwen 3 · 4B: loading model…[0m
+[2m  67% · 432/648 · Qwen 3 · 4B skill[0m
+parse: load the model metadata from disk file.
+initFromConfig: load the model from disk file and apply lora adapter, if any.
+common_init_result: fitting params to device memory, for bugs during this step try to reproduce them with -fit off, or provide --verbose logs if the bug only occurs with -fit on
+common_init_result: added </s> logit bias = -inf
+common_init_result: added <|endoftext|> logit bias = -inf
+common_init_result: added <|im_end|> logit bias = -inf
+common_init_result: added <|fim_pad|> logit bias = -inf
+common_init_result: added <|repo_name|> logit bias = -inf
+common_init_result: added <|file_sep|> logit bias = -inf
+[2m  Qwen 3 · 4B: loaded in 13.2s[0m
+[2m  67% · 433/648 · Qwen 3 · 4B fc[0m
+[2m  67% · 435/648 · Qwen 3 · 4B fc[0m
+[2m  68% · 440/648 · Qwen 3 · 4B fc[0m
+[2m  69% · 445/648 · Qwen 3 · 4B fc[0m
+[2m  69% · 450/648 · Qwen 3 · 4B fc[0m
+[2m  70% · 455/648 · Qwen 3 · 4B fc[0m
+[2m  71% · 460/648 · Qwen 3 · 4B fc[0m
+[2m  72% · 465/648 · Qwen 3 · 4B fc[0m
+[2m  73% · 470/648 · Qwen 3 · 4B fc[0m
+[2m  73% · 475/648 · Qwen 3 · 4B fc[0m
+[2m  74% · 480/648 · Qwen 3 · 4B fc[0m
+[2m  75% · 485/648 · Qwen 3 · 4B fc[0m
+[2m  76% · 490/648 · Qwen 3 · 4B fc[0m
+[2m  76% · 495/648 · Qwen 3 · 4B fc[0m
+[2m  77% · 500/648 · Qwen 3 · 4B fc[0m
+[2m  78% · 505/648 · Qwen 3 · 4B mcp[0m
+[2m  79% · 510/648 · Qwen 3 · 4B mcp[0m
+[2m  79% · 515/648 · Qwen 3 · 4B mcp[0m
+[2m  80% · 520/648 · Qwen 3 · 4B mcp[0m
+[2m  81% · 525/648 · Qwen 3 · 4B mcp[0m
+[2m  82% · 530/648 · Qwen 3 · 4B mcp[0m
+[2m  83% · 535/648 · Qwen 3 · 4B mcp[0m
+[2m  83% · 540/648 · Qwen 3 · 4B mcp[0m
+[2m  84% · 545/648 · Qwen 3 · 4B mcp[0m
+[2m  85% · 550/648 · Qwen 3 · 4B mcp[0m
+[2m  86% · 555/648 · Qwen 3 · 4B mcp[0m
+[2m  86% · 560/648 · Qwen 3 · 4B mcp[0m
+[2m  87% · 565/648 · Qwen 3 · 4B mcp[0m
+[2m  88% · 570/648 · Qwen 3 · 4B mcp[0m
+[2m  89% · 575/648 · Qwen 3 · 4B mcp[0m
+[2m  89% · 577/648 · Qwen 3 · 4B skill[0m
+[2m  90% · 580/648 · Qwen 3 · 4B skill[0m
+[2m  90% · 585/648 · Qwen 3 · 4B skill[0m
+[2m  91% · 590/648 · Qwen 3 · 4B skill[0m
+[2m  92% · 595/648 · Qwen 3 · 4B skill[0m
+[2m  93% · 600/648 · Qwen 3 · 4B skill[0m
+[2m  93% · 605/648 · Qwen 3 · 4B skill[0m
+[2m  94% · 610/648 · Qwen 3 · 4B skill[0m
+[2m  95% · 615/648 · Qwen 3 · 4B skill[0m
+[2m  96% · 620/648 · Qwen 3 · 4B skill[0m
+[2m  96% · 625/648 · Qwen 3 · 4B skill[0m
+[2m  97% · 630/648 · Qwen 3 · 4B skill[0m
+[2m  98% · 635/648 · Qwen 3 · 4B skill[0m
+[2m  99% · 640/648 · Qwen 3 · 4B skill[0m
+[2m  100% · 645/648 · Qwen 3 · 4B skill[0m
+[2m  done in 12322.1s[0m
+
+[1mQwen 3 · 0.6B[0m
+  [2mfc    [0m [38;5;141m█████████████[0m[90m░░░░░░░[0m  63%  [2m63% (51–73) · 63% reliable · 2664ms[0m
+  [2mmcp   [0m [38;5;141m████████████[0m[90m░░░░░░░░[0m  58%  [2m58% (47–69) · 58% reliable · 5711ms[0m
+  [2mskill [0m [38;5;141m████████[0m[90m░░░░░░░░░░░░[0m  42%  [2m42% (31–53) · 42% reliable · 4031ms[0m
+  [32m★ best:[0m [1mfc[0m (63%)
+
+[1mQwen 3 · 1.7B[0m
+  [2mfc    [0m [38;5;141m█████████████[0m[90m░░░░░░░[0m  63%  [2m63% (51–73) · 63% reliable · 6840ms[0m
+  [2mmcp   [0m [38;5;141m████████████[0m[90m░░░░░░░░[0m  58%  [2m58% (47–69) · 58% reliable · 13412ms[0m
+  [2mskill [0m [38;5;141m██████[0m[90m░░░░░░░░░░░░░░[0m  29%  [2m29% (20–41) · 29% reliable · 11669ms[0m
+  [32m★ best:[0m [1mfc[0m (63%)
+
+[1mQwen 3 · 4B[0m
+  [2mfc    [0m [38;5;141m██████████████[0m[90m░░░░░░[0m  71%  [2m71% (60–80) · 71% reliable · 28759ms[0m
+  [2mmcp   [0m [38;5;141m█████████████[0m[90m░░░░░░░[0m  67%  [2m67% (55–77) · 67% reliable · 53101ms[0m
+  [2mskill [0m [38;5;141m████████[0m[90m░░░░░░░░░░░░[0m  42%  [2m42% (31–53) · 42% reliable · 44710ms[0m
+  [32m★ best:[0m [1mfc[0m (71%)
+
+[1mMatrix (task success):[0m
+[2mmodel[0m          [2mfc[0m   [2mmcp[0m  [2mskill[0m  [2mbest[0m
+Qwen 3 · 0.6B  63%  58%  42%    [32mfc 63%[0m
+Qwen 3 · 1.7B  63%  58%  29%    [32mfc 63%[0m
+Qwen 3 · 4B    71%  67%  42%    [32mfc 71%[0m
+[2m
+legend: % reliable = cases passing ALL repeats · bars = trial pass-rate · decision-only (graded the 1st tool call)[0m
+[2mtiming: total 12322.1s · load Qwen 3 · 0.6B 1.6s · Qwen 3 · 1.7B 2.1s · Qwen 3 · 4B 13.2s[0m
+
+[32m✓[0m report → [1m/Users/walter/Lavoro/Kaleidoswap/kaleido-mind/submission/evidence/desktop-2026-06-20T12-09-49-172Z.partial/reports/eval-1781974829679/report.html[0m  [2m· or: kaleido-mind serve[0m
