@@ -46,25 +46,30 @@ filename and SHA-256:
 shasum -a 256 ~/.kaleido/models/*.gguf
 ```
 
-## Real QVAC benchmark
+## Real QVAC product benchmark
 
-The QVAC worker holds a single model lock, so tracks and models are deliberately
-run sequentially:
+The QVAC worker holds a single model lock, so models are deliberately run
+sequentially:
 
 ```bash
 # Short rehearsal.
 pnpm submission:evidence -- --quick
 
 # Standard submission sweep.
-MODELS=qwen3-0.6b,qwen3-1.7b,qwen3-4b REPEATS=3 PER=2 \
-  pnpm submission:evidence
+pnpm submission:evidence -- --models qwen3-0.6b,qwen3-1.7b,qwen3-4b
 ```
 
 The command creates `submission/evidence/desktop-<timestamp>/` containing an
-environment manifest plus unedited stdout/stderr for safety, multistep, quality
-and capability. The CLI's HTML/CSV/raw reports are written under
-`~/.kaleido/mind/logs/`; review for personal data before copying the selected
-run into the repository.
+environment manifest, unedited stdout/stderr and `product.raw.json`. The raw
+file contains every scenario, selected tier/route, executed tools, typed
+arguments, confirmation decisions, successful side effects, response, grading
+dimensions and local-inference receipts.
+
+The older research diagnostics can be run separately:
+
+```bash
+pnpm submission:evidence -- --tracks safety,multistep,quality,capability
+```
 
 Before the recorded run:
 

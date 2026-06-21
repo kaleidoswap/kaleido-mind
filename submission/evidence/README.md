@@ -6,9 +6,8 @@ Evidence is generated, not hand-edited.
 # Fast structural smoke test; no model is loaded.
 pnpm submission:evidence:mock
 
-# Real QVAC sweep, sequential because the QVAC worker holds one model lock.
-MODELS=qwen3-0.6b,qwen3-1.7b,qwen3-4b REPEATS=3 PER=2 \
-  pnpm submission:evidence
+# Real QVAC product sweep, sequential because the worker holds one model lock.
+pnpm submission:evidence -- --models qwen3-0.6b,qwen3-1.7b,qwen3-4b
 
 # One-model rehearsal before the long sweep.
 pnpm submission:evidence -- --quick
@@ -19,6 +18,7 @@ Each run creates an immutable timestamped directory with:
 - `manifest.json`: mode, exact parameters, hardware and per-track exit status.
 - model filenames and SHA-256 hashes.
 - `*.stdout.log` / `*.stderr.log`: unedited track output.
+- `product.raw.json`: per-scenario outcome, safety and inference evidence.
 - `reports/`: any new QVAC raw/matrix/HTML reports produced during the run.
 
 The runner writes to a `.partial` directory while active. It renames the
@@ -29,8 +29,16 @@ Options:
 
 ```bash
 pnpm submission:evidence -- --help
-pnpm submission:evidence -- --models qwen3-0.6b,qwen3-4b --repeats 5 --per 3
+pnpm submission:evidence -- --models qwen3-0.6b,qwen3-4b
+
+# Legacy research tracks remain available explicitly, but are not the default.
+pnpm submission:evidence -- --tracks safety,multistep,quality,capability
 ```
+
+The default submission run is the product evaluation v3: twelve realistic
+scenarios executed through the production Funnel with canonical tool contracts,
+stateful simulators, confirmation decisions and observable side-effect grading.
+It does not repeat identical temperature-zero prompts.
 
 Real evidence runs refuse uncommitted changes to the CLI, core, runner or
 package manifests so benchmark behavior maps to one exact commit. Unrelated

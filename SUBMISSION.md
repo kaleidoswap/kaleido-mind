@@ -58,12 +58,16 @@ timestamped manifests and unedited output:
 
 ```bash
 pnpm submission:evidence:mock
-MODELS=qwen3-0.6b,qwen3-1.7b,qwen3-4b REPEATS=3 PER=2 \
-  pnpm submission:evidence
+pnpm submission:evidence -- --models qwen3-0.6b,qwen3-1.7b,qwen3-4b
 ```
 
 No score is claimed unless its raw run, exact commit and hardware metadata are
 included in the submission evidence.
+
+The default evidence run is Product Evaluation v3: realistic scenarios through
+the production Funnel and canonical contracts, graded on complete outcome,
+confirmation correctness and successful side effects. Legacy mechanism and
+raw-knowledge tracks are retained only as optional diagnostics.
 
 ## Standard hardware
 

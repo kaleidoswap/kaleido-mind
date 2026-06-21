@@ -106,6 +106,20 @@ export function extractPriceQuery(text: string): Record<string, unknown> | null 
   // Reject swap intent — those go to the atomic recipe, not the price recipe.
   if (/\b(swap|exchange|convert|trade|buy|sell|get|purchase|acquire)\b/i.test(t)) return null;
 
+  // Natural quantity quote: "how many sats is 10 USDT worth?" The amount is
+  // on the priced asset (TO leg); the requested denomination is the FROM leg.
+  const quantityWorth = t.match(
+    /\bhow\s+(?:many|much)\s+([a-z]+)\s+(?:is|are)\s+(\d[\d.,]*)\s+([a-z]+)\s+worth\b/i,
+  );
+  if (quantityWorth) {
+    const denom = knownAsset(quantityWorth[1]);
+    const amount = parseAmount(quantityWorth[2]);
+    const asset = knownAsset(quantityWorth[3]);
+    if (denom && asset && amount != null) {
+      return { amount, from_asset: denom, to_asset: asset, amount_side: 'to' };
+    }
+  }
+
   // ORDER MATTERS: "how much B for A" (first) must be checked BEFORE
   // "how much X (in Y)?" — otherwise the latter would gobble the first asset
   // and miss the "for/per" tail. Optional "the" article is tolerated

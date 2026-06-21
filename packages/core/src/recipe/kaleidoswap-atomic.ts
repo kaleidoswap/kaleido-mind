@@ -43,6 +43,11 @@ const SWAP_INTENT = (t: string) => {
   // Explanatory / educational questions → route to RAG-backed agentic answer,
   // not the deterministic spend chain.
   if (/\b(why|how|what|when|explain|tell\s+me|do\s+I\s+need|should\s+I|can\s+I)\b/i.test(t)) return false;
+  // Portfolio analysis belongs to the portfolio skill, which reads balances
+  // and targets before suggesting any action. A mention of "trade" in a review
+  // request—especially "do not trade"—must never become an immediate swap.
+  if (/\b(portfolio|allocation|holdings|rebalance|rebalancing)\b/i.test(t)) return false;
+  if (/\b(?:do\s+not|don't|without|no)\s+(?:place\s+(?:a\s+)?)?(?:trade|swap|buy|sell|trading)\b/i.test(t)) return false;
   if (/\b(swap|exchange|convert|trade)\b/i.test(t)) return true;
   if (
     /\b(buy|sell|get|purchase|acquire)\b/i.test(t) &&

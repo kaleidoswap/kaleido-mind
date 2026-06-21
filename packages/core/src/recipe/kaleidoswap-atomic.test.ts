@@ -66,6 +66,10 @@ describe('kaleidoswapAtomicRecipe — selection', () => {
   it('does not trigger on a balance question', () => {
     expect(kaleidoswapAtomicRecipe.match!('what is my balance')).toBe(false);
   });
+  it('does not turn portfolio review or explicit no-trade language into a swap', () => {
+    expect(kaleidoswapAtomicRecipe.match!('review my portfolio allocation but do not trade')).toBe(false);
+    expect(kaleidoswapAtomicRecipe.match!('analyze my holdings without trading')).toBe(false);
+  });
 });
 
 describe('kaleidoswapAtomicRecipe — forceModelExtract (less deterministic slot parsing)', () => {

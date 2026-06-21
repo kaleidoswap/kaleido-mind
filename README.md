@@ -12,7 +12,7 @@ Built for the [QVAC Hackathon](https://dorahacks.io/hackathon/qvac-unleach-edge-
 
 Three ideas make that work:
 
-1. **One tool contract, many transports.** The model sees identical tool names + schemas everywhere; only execution differs (mobile = in-process WDK adapters, desktop = a namespaced MCP + CLI, eval = stubs). So skills are portable and benchmarks are honest.
+1. **One tool contract, many transports.** The model sees identical tool names + schemas everywhere; only execution differs (mobile = in-process WDK adapters, desktop = a namespaced MCP + CLI, eval = contract-faithful stateful simulators). So skills are portable and benchmarks are honest.
 2. **Recipes, not planning (with hybrid model use).** A small model can't reliably plan *"pay bob 3 EUR"* (resolve → price → convert → confirm → send). So a **skill carries the plan**; the model only fills the slots (~1 inference instead of 5, reliable on a 0.6B). For complex recipes (e.g. atomic swaps) slot extraction can be forced through the model for better natural-language understanding, with deterministic fallbacks to protect precision and reliability. Discovery skills (e.g. merchant-finder) are intentionally more model-leveraging.
 3. **A tiered funnel.** Most requests never reach the model at all.
 
@@ -36,18 +36,26 @@ user request
 - **Tool sources** — in-process, MCP, CLI, and L402 (pay-per-call HTTP) — all behind one `ToolRegistry`.
 - **Memory + RAG** — long-term recall and injected-embedding retrieval (Bitcoin copilot, wallet history, BTC-map discovery), all through QVAC. Memory **consolidates** near-duplicates (cheap on-device dedup, optional LLM merge on capable/delegated devices) so it doesn't bloat.
 - **Hardware-aware** — picks the model + context budget for the device; P2P delegation for heavy work.
-- **A reproducible eval** — four benchmark tracks with raw logs, seeded datasets and confidence intervals.
+- **A product-level eval** — realistic scenarios run through the production
+  Funnel with canonical contracts, confirmation decisions, observable side
+  effects and raw local-inference receipts.
 
 ## The eval (what makes the claims defensible)
 
-Four tracks via the `kaleido-mind` CLI, each with repeated runs and raw evidence. See [docs/BENCHMARK.md](./docs/BENCHMARK.md).
+The headline benchmark is [Product Evaluation v3](./docs/EVALUATION_V3.md).
+Twelve realistic wallet, trading, node, discovery and safety scenarios run
+through the same production Funnel used by hosts. The harness binds canonical
+tool contracts to deterministic stateful services and grades the complete
+outcome: route, typed arguments, confirmation behavior, side effects and final
+response.
 
-| Track | Question | Command |
-|---|---|---|
-| **A — capability** | One request → right tool + args? (fc / mcp / skill) | `kaleido-mind eval` |
-| **B — planning** | A chain → right final action? **recipe vs free-agentic** | `kaleido-mind multistep` |
-| **C — safety** | Right amounts, injection resistance, refusal? | `kaleido-mind safety` |
-| **D — quality** | Correct, grounded and concise explanations? | `kaleido-mind quality` |
+```bash
+kaleido-mind product-eval --models qwen3-0.6b
+```
+
+The older capability, planning, adversarial and raw-knowledge tracks remain
+available as explicit engineering diagnostics. They are not combined into the
+headline product-reliability score. See [docs/BENCHMARK.md](./docs/BENCHMARK.md).
 
 The repository does not treat remembered or manually transcribed scores as evidence. Run `pnpm submission:evidence` to produce timestamped, unedited artifacts for the exact commit and hardware being submitted.
 
@@ -59,7 +67,7 @@ kaleido-mind/
 │   └── core/            @kaleidorg/mind — the engine
 │       └── src/{wallet,recipe,fastpath,skills,tools,memory,rag,context,knowledge,providers}
 ├── apps/
-│   ├── cli/             @kaleidorg/mind-cli (`kaleido-mind`) — model mgmt + the 3 eval tracks
+│   ├── cli/             @kaleidorg/mind-cli (`kaleido-mind`) — model mgmt + product/diagnostic evals
 │   ├── provider/        desktop sidecar (Tauri) — namespaced MCP + CLI host
 │   └── playground/      exercise the engine against a real local model, no phone needed
 └── docs/                ARCHITECTURE · ROADMAP · BENCHMARK · MEMORY_RAG · INTEGRATION · …
@@ -78,10 +86,12 @@ npx tsx src/index.ts setup            # guided first-run: pick + pull a model
 npx tsx src/index.ts run "what's my balance?"
 npx tsx src/index.ts skills           # list installed skills
 
-# Benchmarks (all tracks; --mock validates the harness without a model)
+# Product benchmark (--mock validates orchestration and grading without QVAC)
 pnpm submission:evidence:mock
-pnpm submission:evidence             # C → B → D → A, sequential
-npx tsx src/index.ts multistep --mock # quick offline sanity check
+pnpm submission:evidence
+
+# Optional legacy research diagnostics
+pnpm submission:evidence -- --tracks safety,multistep,quality,capability
 
 # Or exercise the engine directly against a model
 pnpm play "pay bob 3 eur"
@@ -92,6 +102,7 @@ pnpm play "pay bob 3 eur"
 - [ARCHITECTURE.md](./docs/ARCHITECTURE.md) — cross-surface design + the tool contract
 - [ROADMAP.md](./docs/ROADMAP.md) — the master plan + phase status
 - [BENCHMARK.md](./docs/BENCHMARK.md) — eval methodology, results, limitations
+- [EVALUATION_V3.md](./docs/EVALUATION_V3.md) — product scenario schema and grading
 - [MEMORY_RAG.md](./docs/MEMORY_RAG.md) — memory + retrieval
 - [INTEGRATION.md](./docs/INTEGRATION.md) — embedding the engine in a host
 

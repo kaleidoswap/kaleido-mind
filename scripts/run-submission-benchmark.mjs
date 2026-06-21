@@ -34,6 +34,7 @@ Options:
   --models <ids>      Comma-separated catalog ids
   --repeats <n>       Repeats per case (default: 3)
   --per <n>           Track A paraphrases per intent (default: 2)
+  --tracks <names>    Comma-separated: product,safety,multistep,quality,capability
   --output <dir>      Parent evidence directory
   --allow-dirty       Permit a real rehearsal from an uncommitted worktree
 
@@ -48,6 +49,10 @@ const allowDirty = flag('--allow-dirty');
 const models = value('--models') ?? process.env.MODELS ?? (quick ? 'qwen3-0.6b' : 'qwen3-0.6b,qwen3-1.7b,qwen3-4b');
 const repeats = value('--repeats') ?? process.env.REPEATS ?? (quick ? '1' : '3');
 const per = value('--per') ?? process.env.PER ?? (quick ? '1' : '2');
+const requestedTrackNames = (value('--tracks') ?? 'product')
+  .split(',')
+  .map((name) => name.trim())
+  .filter(Boolean);
 const evidenceRoot = resolve(value('--output') ?? process.env.EVIDENCE_DIR ?? 'submission/evidence');
 const stamp = new Date().toISOString().replace(/[:.]/g, '-');
 const outputDir = join(evidenceRoot, mock ? `mock-${stamp}` : `desktop-${stamp}`);
@@ -154,12 +159,21 @@ if (!mock) {
   }
 }
 
-const tracks = [
+const allTracks = [
+  ['product', ['product-eval', ...(mock ? ['--mock'] : ['--models', models])]],
   ['safety', ['safety', ...(mock ? ['--mock'] : ['--models', models]), '--repeats', repeats]],
   ['multistep', ['multistep', ...(mock ? ['--mock'] : ['--models', models]), '--repeats', repeats]],
   ['quality', ['quality', ...(mock ? ['--mock'] : ['--models', models]), '--repeats', repeats]],
   ['capability', ['eval', ...(mock ? ['--mock'] : ['--models', models]), '--per', per, '--repeats', repeats]],
 ];
+const unknownTracks = requestedTrackNames.filter(
+  (name) => !allTracks.some(([trackName]) => trackName === name),
+);
+if (unknownTracks.length) {
+  console.error(`Unknown tracks: ${unknownTracks.join(', ')}`);
+  process.exit(2);
+}
+const tracks = allTracks.filter(([name]) => requestedTrackNames.includes(name));
 
 const manifest = {
   schema: 'kaleidomind.benchmark.v1',
@@ -228,6 +242,7 @@ function runTrack(name, args) {
         ...process.env,
         KALEIDO_EVAL_JSON: join(partialDir, `${name}.raw.json`),
         KALEIDO_EVAL_REPORT_DIR: join(partialDir, 'reports'),
+        KALEIDO_EVAL_FINAL_REPORT_DIR: join(outputDir, 'reports'),
       },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
@@ -282,6 +297,10 @@ if (success) {
   rmSync(join(partialDir, 'INCOMPLETE'), { force: true });
   renameSync(partialDir, outputDir);
   console.log(`\n✓ Complete evidence written to ${outputDir}`);
+  for (const report of manifest.reports ?? []) {
+    const reportPath = join(outputDir, report, 'report.html');
+    if (existsSync(reportPath)) console.log(`  report: ${reportPath}`);
+  }
 } else {
   writeFileSync(join(partialDir, 'INCOMPLETE'), 'This run is not submission evidence.\n');
   console.error(`\n✗ Incomplete run kept at ${partialDir}`);

@@ -210,6 +210,35 @@ async function main(): Promise<void> {
       if (agent.sdk?.close) await agent.sdk.close();
       return;
     }
+    case 'product-eval': case 'eval-v3': {
+      const valOf = (n: string) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : undefined; };
+      const mock = args.includes('--mock');
+      const { runProductSuite } = await import('./eval/product.js');
+      const ui = (s = '') => process.stderr.write(s + '\n');
+      ui('\n' + c.violet('Product evaluation v3') + c.dim('  (production Funnel · contract-faithful simulators · outcome + safety grading)'));
+      const result = await runProductSuite({
+        mock,
+        models: valOf('--models')?.split(','),
+        scenarioIds: valOf('--scenarios')?.split(','),
+        onProgress: (p) => {
+          const line = `${Math.round((p.done / p.total) * 100)}% · ${p.done}/${p.total} · ${p.model} · ${p.scenario}`;
+          if (process.stderr.isTTY) process.stderr.write('\r' + line.padEnd(90));
+          else ui(line);
+        },
+      });
+      if (process.stderr.isTTY) process.stderr.write('\r' + ' '.repeat(92) + '\r');
+      for (const summary of result.summaries) {
+        ui(`\n${c.bold(summary.model)}`);
+        ui(`  ${bar(summary.passPct, 18)}  ${c.dim(`${summary.passed}/${summary.scenarios} passed · task ${summary.taskCompletePct}% · safe ${summary.safePct}% · ${summary.avgInferences} inference/scenario · ${summary.avgLatencyMs}ms`)}`);
+        for (const row of result.results.filter((candidate) => candidate.model === summary.model)) {
+          const mark = row.grade.pass ? c.green('✓') : c.red('✗');
+          ui(`  ${mark} ${row.scenario.id}${row.grade.failures.length ? c.dim(` — ${row.grade.failures.join('; ')}`) : ''}`);
+        }
+      }
+      writeRawEvalEvidence(result);
+      if (mock && result.results.some((row) => !row.grade.pass)) process.exitCode = 1;
+      return;
+    }
     case 'eval': {
       const valOf = (n: string) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : undefined; };
       const numOf = (n: string) => { const v = valOf(n); return v ? Number(v) : undefined; };
@@ -263,7 +292,14 @@ async function main(): Promise<void> {
       ui(summaryTable(run.agg));
       ui(c.dim(`\nlegend: % reliable = cases passing ALL repeats · bars = trial pass-rate · decision-only (graded the 1st tool call)`));
       ui(c.dim(`timing: total ${(run.timing.totalMs / 1000).toFixed(1)}s · load ${Object.entries(run.timing.perModelLoadMs).map(([m, ms]) => `${m} ${(ms / 1000).toFixed(1)}s`).join(' · ')}`));
-      ui(`\n${c.green('✓')} report → ${c.bold(join(run.dir, 'report.html'))}  ${c.dim('· or: kaleido-mind serve')}`);
+      const reportPath = join(run.dir, 'report.html');
+      const reportRoot = process.env.KALEIDO_EVAL_REPORT_DIR;
+      const finalReportRoot = process.env.KALEIDO_EVAL_FINAL_REPORT_DIR;
+      const displayPath =
+        reportRoot && finalReportRoot && reportPath.startsWith(reportRoot)
+          ? reportPath.replace(reportRoot, finalReportRoot)
+          : reportPath;
+      ui(`\n${c.green('✓')} report → ${c.bold(displayPath)}`);
       writeRawEvalEvidence({ schema: 'kaleidomind.eval.capability.v1', ...run });
       return;
     }
@@ -380,6 +416,7 @@ async function main(): Promise<void> {
         [c.violet('rm <id>'), c.dim('remove a model')],
         [c.violet('run [--rag]'), c.dim('chat with the brain (--mock to skip QVAC)')],
         [c.violet('bench [--model id]'), c.dim('quick classic-requests smoke benchmark → JSONL')],
+        [c.violet('product-eval [--models a,b]'), c.dim('v3 production-Funnel scenarios with outcome + safety grading')],
         [c.violet('eval [--models a,b]'), c.dim('tool-use matrix (fc/mcp/skill/cli) → graphical HTML report')],
         [c.violet('serve [--port]'), c.dim('web dashboard to browse + trigger eval runs')],
         [c.violet('status'), c.dim('hardware + what is installed/selected')],
