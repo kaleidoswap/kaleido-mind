@@ -75,7 +75,23 @@ kaleido-mind/
 └── docs/                ARCHITECTURE · ROADMAP · BENCHMARK · MEMORY_RAG · INTEGRATION · …
 ```
 
-Consumers live in sibling repos: **`rate`** (React Native wallet, Mobile track) and the **desktop app** (General Purpose track), both binding the same contract.
+## Powers these apps
+
+KaleidoMind is the brain; the wallets are sibling repos that bind the same tool
+contract. Both pre-existed as wallets — KaleidoMind is what makes them agentic.
+
+- **[Rate](https://github.com/kaleidoswap/Rate)** — React Native mobile wallet
+  (Mobile track). KaleidoMind gives it the **on-device agent**: local QVAC LLM,
+  Whisper STT and neural TTS, the **hands-free voice loop**, recipes and the
+  confirm-before-spend gate. Wallet actions run through **in-process WDK
+  adapters** (`spark_*`, `rln_*`, `arkade_*`); heavy reasoning can P2P-delegate
+  to a paired desktop.
+- **[desktop-app](https://github.com/kaleidoswap/desktop-app)** — Tauri RGB/
+  Lightning trading wallet over a local **RGB Lightning Node** (General Purpose
+  track). KaleidoMind runs as the in-app chat/agent, hosts the engine as a
+  **namespaced MCP + CLI**, drives the node via `rln_*` tools, manages the QVAC
+  model lifecycle, and can act as the **paired inference peer** a phone
+  delegates to.
 
 ## Quickstart
 
@@ -110,8 +126,8 @@ pnpm play "pay bob 3 eur"
 
 ## Hackathon tracks
 
-- 📱 **Mobile** — the public `Rate` wallet runs the funnel, recipes, voice and confirmation gate on a physical iPhone through QVAC.
-- 🖥️ **General Purpose** — the desktop sidecar runs the same engine and can serve as a paired, user-controlled QVAC inference peer.
+- 📱 **Mobile** — the public [Rate](https://github.com/kaleidoswap/Rate) wallet runs the funnel, recipes, voice and confirmation gate on a physical iPhone through QVAC.
+- 🖥️ **General Purpose** — the [desktop app](https://github.com/kaleidoswap/desktop-app) runs the same engine over a local RGB Lightning Node and can serve as a paired, user-controlled QVAC inference peer.
 
 The eval harness can test other QVAC-compatible GGUF models, but the submission
 does not claim the Psy or Tinkerer tracks.
