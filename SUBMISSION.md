@@ -101,6 +101,36 @@ regresses). Follow-ups: cross-turn KV/prompt-cache reuse, retrieval-gated tool
 exposure (inject only relevant tool schemas), dynamic context sizing, and
 fine-tuned small models that need fewer tokens per call.
 
+## How the agent calls tools — function calling, skills, transports
+
+Three pieces turn a request into a wallet action, and they behave identically on
+mobile and desktop:
+
+- **Function calling.** QVAC emits *native, structured* tool calls — not parsed
+  text. The engine validates arguments against the canonical contract schema,
+  executes the tool, feeds the result back, and loops until the model answers.
+  Spend tools pause for host confirmation mid-loop.
+- **Skills.** An `Agent-Skills`-spec `SKILL.md` is a playbook that allowlists the
+  tools a job needs and carries its recipe. Entering a skill narrows the toolset
+  the model sees — fewer schemas in a small window, fewer ways to go wrong.
+- **One contract, many transports.** Tool names and schemas are defined once in
+  core; the host binds them to a transport — only `bindXxxTools(handlers)`
+  differs:
+
+| | Mobile (Rate) | Desktop app | Eval |
+|---|---|---|---|
+| Tool transport | in-process WDK adapters | namespaced MCP (`kaleido-mcp`) + CLI | stateful simulators |
+| Inference | on-device QVAC, or delegate | on-device QVAC | n/a |
+| Handler runs on | the phone — always | the desktop, on its RLN node | in-process |
+
+Function calling and skills are identical across surfaces, so skills are
+portable and the benchmark exercises the exact tools the apps run.
+
+**Delegation cannot drain the wallet.** When a phone delegates inference, only
+the prompt and tool *schemas* go to the paired desktop — it decides *which* tool
+and *what* arguments. The handler runs back on the phone, which validates,
+confirms, signs and broadcasts. Compromising the desktop never exposes a key.
+
 ## Auditable evidence
 
 `kaleidomind.evidence.v1` JSONL records:

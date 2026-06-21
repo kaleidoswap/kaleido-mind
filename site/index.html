@@ -169,6 +169,18 @@
   .bench-note { color: var(--muted); font-size: 0.82rem; margin-top: 14px; }
   .bench-note a { color: var(--primary); }
 
+  .cmp-wrap { margin-top: 24px; border: 1px solid var(--border-subtle); border-radius: var(--radius); overflow: hidden; }
+  table.cmp { width: 100%; border-collapse: collapse; font-size: 0.94rem; }
+  table.cmp th, table.cmp td { text-align: left; padding: 14px 18px; border-bottom: 1px solid var(--border-subtle); vertical-align: top; }
+  table.cmp thead th { color: var(--muted); font-weight: 500; font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase; background: var(--card); }
+  table.cmp tbody tr:last-child td { border-bottom: none; }
+  table.cmp td:first-child, table.cmp th:first-child { color: var(--muted); font-weight: 500; width: 26%; }
+  table.cmp td code { font-size: 0.86rem; }
+  .secnote { display:flex; gap:12px; align-items:flex-start; margin-top:24px; background: rgba(21,233,154,0.06); border:1px solid rgba(21,233,154,0.22); border-radius: var(--radius); padding:18px 20px; }
+  .secnote svg { width:22px; height:22px; flex:0 0 auto; margin-top:1px; }
+  .secnote p { color: var(--text); font-size:0.96rem; }
+  .secnote strong { color: var(--primary); }
+
   /* ---------- roadmap ---------- */
   .road { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
   @media (max-width: 760px) { .road { grid-template-columns: 1fr; } }
@@ -220,6 +232,7 @@
     <nav class="nav-links">
       <a href="#architecture">Architecture</a>
       <a href="#inside">Inside</a>
+      <a href="#tools">Tools</a>
       <a href="#mobile">Mobile</a>
       <a href="#evidence">Evidence</a>
       <a href="#roadmap">Roadmap</a>
@@ -364,6 +377,52 @@
 <span class="g">kaleido-mind</span> <span class="w">run --rag</span>       <span class="c"># chat with the full local agent</span>
 <span class="g">kaleido-mind</span> <span class="w">product-eval</span>    <span class="c"># production-funnel scenarios, outcome-graded</span>
 <span class="g">kaleido-mind</span> <span class="w">serve</span>           <span class="c"># browse + trigger eval runs in a dashboard</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW TOOLS WORK -->
+  <section class="block" id="tools">
+    <div class="wrap">
+      <div class="kicker">How the agent calls tools</div>
+      <h2>Function calling, skills, and one contract</h2>
+      <p class="section-lede">Three pieces decide how a request becomes a wallet action. They work the same way on mobile and desktop — only the transport underneath changes.</p>
+      <div class="grid grid-3">
+        <div class="card">
+          <span class="pill">Function calling</span>
+          <h3>Native, structured, looped</h3>
+          <p>QVAC emits real structured tool calls — not parsed text. The engine validates the arguments against the contract schema, runs the tool, feeds the result back, and loops until the model has an answer. Spend tools pause for confirmation mid-loop.</p>
+        </div>
+        <div class="card violet">
+          <span class="pill">Skills</span>
+          <h3>Scope tools, carry recipes</h3>
+          <p>A skill (an <code>Agent-Skills</code>-spec <code>SKILL.md</code>) is a playbook: it allowlists just the tools a job needs and carries the recipe. Entering a skill narrows what the model sees — fewer schemas in a small window, fewer ways to go wrong.</p>
+        </div>
+        <div class="card">
+          <span class="pill">One contract</span>
+          <h3>Many transports</h3>
+          <p>Tool names and schemas are defined once in core. The host binds them to a transport — only <code>bindXxxTools(handlers)</code> differs. The model sees identical tools everywhere, so skills are portable and the eval is honest.</p>
+        </div>
+      </div>
+
+      <div class="cmp-wrap">
+        <table class="cmp">
+          <thead>
+            <tr><th></th><th>Mobile — Rate</th><th>Desktop app</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Tool transport</td><td>in-process <strong>WDK adapters</strong></td><td>namespaced <strong>MCP</strong> (<code>kaleido-mcp</code>) + CLI</td></tr>
+            <tr><td>Inference</td><td>on-device QVAC, or delegate to a paired desktop</td><td>on-device QVAC</td></tr>
+            <tr><td>Where the tool handler runs</td><td>on the phone — always</td><td>on the desktop, against its local RLN node</td></tr>
+            <tr><td>Function calling + skills</td><td colspan="2" style="text-align:center;color:var(--primary)">identical — same names, schemas and loop</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="bench-note">The evaluation binds the same contract to deterministic stateful simulators — so a benchmark exercises the exact tools the apps run.</p>
+
+      <div class="secnote">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#15E99A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <p><strong>Delegation can't drain your wallet.</strong> When a phone delegates inference, only the prompt and tool <em>schemas</em> go to the desktop — it decides <em>which</em> tool and <em>what</em> arguments. The tool handler runs back on the phone, which validates, confirms, signs and broadcasts. Compromising the desktop never exposes a key.</p>
       </div>
     </div>
   </section>
