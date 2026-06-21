@@ -7,6 +7,8 @@ an autonomous wallet agent.
 
 **Tracks:** General Purpose and Mobile.
 
+**Project site:** <https://kaleidoswap.github.io/kaleido-mind/>
+
 ## Why it exists
 
 Wallet requests are multi-step, money is unforgiving, and mobile-sized models

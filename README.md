@@ -2,6 +2,8 @@
 
 > Sovereign AI for sovereign money. A local-first agent for Bitcoin, Lightning and RGB — voice-first, multi-L2 and designed for user-controlled hardware.
 
+**🌐 Project site: [kaleidoswap.github.io/kaleido-mind](https://kaleidoswap.github.io/kaleido-mind/)**
+
 Built for the [QVAC Hackathon](https://dorahacks.io/hackathon/qvac-unleach-edge-ai-i/) by the [KaleidoSwap](https://kaleidoswap.com) team. LLM, embedding, STT and TTS inference runs through the [QVAC SDK](https://www.npmjs.com/package/@qvac/sdk), locally or on an explicitly paired user-controlled desktop. Optional wallet, trading, commerce and merchant-discovery tools may use the network and are [fully disclosed](./submission/remote-apis.yaml).
 
 ---
