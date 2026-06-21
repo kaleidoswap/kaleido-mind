@@ -129,6 +129,33 @@ const res = await engine.runAgentic([{ role:'user', content: userText }], { allo
 Budget math (`contextBudgetTokens(ctxSize)`) reserves room for the reply, tool
 schemas, and the conversation, leaving the rest for injected context.
 
+### Tool-output compression — fit more into the window
+
+`ContextBuilder` budgets the *system* side; the other side that bloats a small
+window is **tool results fed back into history**. A merchant search returns 40
+near-identical rows, a tx history returns hundreds, a quote nests config the
+model never reads — and every agentic round pushes the raw `JSON.stringify` back
+in. `compressToolResult` is a structural crusher (the idea behind Headroom's
+SmartCrusher, reimplemented natively — **no dependency, no network, no proxy**,
+so it stays on-device and private). It dedupes identical array items, keeps the
+first/last few and elides the middle with an honest `{ "__elided__": N }`
+marker, caps nesting depth, and truncates long prose — and never regresses (if
+crushing wouldn't save tokens, the original is returned verbatim).
+
+```ts
+const engine = new Engine({ provider, tools, compressToolOutput: true })   // safe defaults
+const funnel = new Funnel({ provider, tools, compressToolOutput: true })    // or via the funnel
+// tune: { compressToolOutput: { maxArrayItems: 6, maxStringLength: 400 } }
+```
+
+**Safety:** it never touches numbers, never elides whole objects, never
+truncates whitespace-free strings (addresses, BOLT11 invoices, txids, pubkeys),
+and never touches a value under a money/identity key (`DEFAULT_PRESERVE_KEYS`).
+Small results (< `minTokens`, default 200) pass through untouched, and the
+`onToolResult` callback + returned `toolCalls` always carry the **raw** result —
+only the model-facing history copy is compressed. Off by default; opt in per
+host.
+
 ## Capability profiling — what to turn on
 
 One call decides features from device RAM + the model's context window:

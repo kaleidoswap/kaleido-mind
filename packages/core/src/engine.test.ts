@@ -150,6 +150,40 @@ describe('Engine agentic loop', () => {
     expect(balanceTool.handler).toHaveBeenCalledTimes(3);
   });
 
+  it('crushes verbose tool output in history but keeps the raw result for callbacks', async () => {
+    const bulky = {
+      name: 'list_merchants',
+      description: 'returns many rows',
+      parameters: {},
+      handler: vi.fn(async () => ({
+        results: Array.from({ length: 50 }, (_, i) => ({
+          name: `Shop ${i}`,
+          blurb: 'Accepts Bitcoin and Lightning, open daily, friendly staff and good wifi.',
+          amount_sats: 1000 + i,
+        })),
+      })),
+    };
+    const onToolResult = vi.fn();
+    const engine = new Engine({
+      provider: scriptedProvider([
+        { text: '', toolCalls: [{ name: 'list_merchants', arguments: {} }] },
+        { text: 'Found some merchants.' },
+      ]),
+      tools: new ToolRegistry([new InProcessToolSource('m', [bulky])]),
+      compressToolOutput: { maxArrayItems: 6 },
+    });
+
+    const res = await engine.runAgentic([{ role: 'user', content: 'find cafes' }], { onToolResult });
+
+    // The history frame the model sees is crushed (elision marker present)...
+    const toolFrame = res.messages.find((m) => m.role === 'tool');
+    expect(toolFrame?.content).toContain('__elided__');
+    // ...but amounts survive and the callback/result still carry the full data.
+    expect(toolFrame?.content).toContain('amount_sats');
+    expect(onToolResult.mock.calls[0][0].result).toEqual(await bulky.handler.mock.results[0].value);
+    expect((res.toolCalls[0].result as { results: unknown[] }).results).toHaveLength(50);
+  });
+
   it('surfaces a tool error as a result instead of throwing', async () => {
     const boom = {
       name: 'boom',

@@ -176,6 +176,8 @@ export {
   contextBudgetTokens,
 } from './context/budget.js';
 export type { BudgetReserves } from './context/budget.js';
+export { compressToolResult, DEFAULT_PRESERVE_KEYS } from './context/compress.js';
+export type { ToolCrushOptions, CrushResult } from './context/compress.js';
 export { capabilityProfile } from './capabilities.js';
 export type { CapabilityInput, MindCapabilities } from './capabilities.js';
 

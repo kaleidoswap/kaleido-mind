@@ -17,6 +17,7 @@
 import type { ConfirmDecision, Message, ToolResult } from './types.js';
 import type { LLMProvider } from './providers/types.js';
 import type { ToolRegistry } from './tools/registry.js';
+import { compressToolResult, type ToolCrushOptions } from './context/compress.js';
 
 export interface EngineOptions {
   provider: LLMProvider;
@@ -25,6 +26,15 @@ export interface EngineOptions {
   defaultSystem?: string;
   /** Max reasoning↔tool rounds before forcing a stop. Default 5. */
   defaultMaxTurns?: number;
+  /**
+   * Crush verbose tool results before they're fed back into history, so a
+   * tiny on-device model's context window isn't drowned in repetitive JSON
+   * (merchant lists, tx history, nested quotes). `true` uses safe defaults;
+   * pass options to tune. Off by default — small results are never touched and
+   * amounts/addresses/invoices are always preserved (see compressToolResult).
+   * The `onToolResult` callback and `toolCalls` still carry the raw result.
+   */
+  compressToolOutput?: boolean | ToolCrushOptions;
 }
 
 export interface AgenticOptions {
@@ -66,12 +76,18 @@ export class Engine {
   private readonly registry: ToolRegistry;
   private readonly defaultSystem?: string;
   private readonly defaultMaxTurns: number;
+  private readonly compressOpts?: ToolCrushOptions;
 
   constructor(opts: EngineOptions) {
     this.provider = opts.provider;
     this.registry = opts.tools;
     this.defaultSystem = opts.defaultSystem;
     this.defaultMaxTurns = opts.defaultMaxTurns ?? 5;
+    this.compressOpts = opts.compressToolOutput
+      ? opts.compressToolOutput === true
+        ? {}
+        : opts.compressToolOutput
+      : undefined;
   }
 
   async runAgentic(messages: Message[], opts: AgenticOptions = {}): Promise<AgenticResult> {
@@ -133,10 +149,7 @@ export class Engine {
 
         executed.push({ name: call.name, arguments: call.arguments, result });
         opts.onToolResult?.({ name: call.name, arguments: call.arguments, result }, turn);
-        history.push({
-          role: 'tool',
-          content: typeof result === 'string' ? result : JSON.stringify(result),
-        });
+        history.push({ role: 'tool', content: this.toHistoryContent(result) });
       }
 
       if (turn === maxTurns && !finalText) {
@@ -160,6 +173,18 @@ export class Engine {
 
   async cancel(requestId: string): Promise<void> {
     await this.provider.cancel?.(requestId);
+  }
+
+  /**
+   * Serialize a tool result for history, optionally crushing verbose JSON so
+   * it doesn't swamp a small context window. The raw result is unchanged for
+   * callbacks/logs — only the model-facing history copy is compressed.
+   */
+  private toHistoryContent(result: unknown): string {
+    if (!this.compressOpts) {
+      return typeof result === 'string' ? result : JSON.stringify(result);
+    }
+    return compressToolResult(result, this.compressOpts).content;
   }
 
   private async safeExecute(name: string, args: Record<string, unknown>): Promise<unknown> {
