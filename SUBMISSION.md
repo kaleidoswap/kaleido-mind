@@ -85,11 +85,11 @@ desktop is reachable and the work is heavy), **Always local** (privacy-max,
 never delegates), **Always desktop** (delegate when reachable, fall back to
 local). A separate **thinking-mode** control trades latency for reasoning depth.
 
-**Models.** A curated on-device catalog tiered **Mobile** / **Mobile-XL**: Qwen3
-1.7B (older phones), Qwen3 4B (default on iPhone 15+/Pixel 8+), Qwen3 8B
-(flagships with ≥8 GB RAM), plus function-call-tuned options (xLAM-2-3B,
-Hermes-3-Llama-3.2-3B). One local model is loaded at a time (RAM); heavier
-models run on a paired desktop via delegation. Whisper handles STT.
+**Models.** On a phone the realistic on-device model today is **Qwen3 1.7B** —
+it runs comfortably on an iPhone 17, with smaller models for older hardware.
+Bigger models — Qwen3 4B/8B and function-call-tuned options (xLAM-2-3B,
+Hermes-3-Llama-3.2-3B) — run on a paired desktop and reach the phone through
+delegation. One local model is loaded at a time (RAM). Whisper handles STT.
 
 **Optimizations for a small window.** Three layers keep tiny models viable:
 the **funnel** (most requests cost 0–1 inferences), a **hardware-aware context
