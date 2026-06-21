@@ -1254,6 +1254,9 @@ async function handleSetActiveModel(modelId: string): Promise<void> {
 /** In-flight downloads — for guard + cancel. */
 const downloadAborts = new Map<string, AbortController>();
 
+/** In-flight chat turns keyed by chatId — for the stop button (cancel_chat). */
+const chatAborts = new Map<string, AbortController>();
+
 async function handleDownload(modelId: string): Promise<void> {
   // Single-download policy: at most one model is downloaded at a time, across
   // the whole sidecar. A request that arrives while another is in flight is
@@ -1391,6 +1394,19 @@ function handleCancelDownload(modelId: string): void {
   if (abort) {
     abort.abort();
     downloadAborts.delete(modelId);
+  }
+}
+
+/** Stop button: abort the in-flight chat turn for this chatId. Aborting the
+ *  signal cancels the running model inference (via the qvac provider) and stops
+ *  the agentic loop / recipe chain; handleChat then resolves normally with
+ *  whatever was produced so far. No-op if the turn already finished. */
+function handleCancelChat(chatId: string): void {
+  const abort = chatAborts.get(chatId);
+  if (abort) {
+    abort.abort();
+    chatAborts.delete(chatId);
+    diag(`chat cancelled: ${chatId}`);
   }
 }
 
@@ -1869,6 +1885,11 @@ async function handleChat(
   state.chatThinking = '';
   resetTurnStats();
   state.activeChatId = chatId ?? null;
+  // Register an AbortController so a `cancel_chat` for this chatId can stop the
+  // in-flight inference (cancels the running model run + halts the agentic loop
+  // / recipe chain at its next checkpoint). Keyed by chatId; no-op if absent.
+  const abort = new AbortController();
+  if (chatId) chatAborts.set(chatId, abort);
   // Per-turn id source for tool events. The UI correlates a result back to its
   // running pill by tool NAME (onToolCall is fired fire-and-forget after an async
   // getDef, so a fast result can race ahead of its call) — the id is just a key.
@@ -1879,6 +1900,7 @@ async function handleChat(
     res = await funnel.runTurn(prompt, {
       history: state.chatHistory,
       onConfirm: requestToolConfirmation,
+      signal: abort.signal,
       onToken: (token) => {
         if (state.activeChatId) {
           emit({ type: 'chat_content_delta', chatId: state.activeChatId, delta: token });
@@ -1918,6 +1940,7 @@ async function handleChat(
     });
   } finally {
     state.activeChatId = null;
+    if (chatId) chatAborts.delete(chatId);
   }
   diag(`tier=${res.tier}`);
   if (res.tier === 'agentic') emit({ type: 'log', level: 'info', message: `agentic (${res.turns} turns)` });
@@ -2042,6 +2065,10 @@ async function dispatch(cmd: Command): Promise<void> {
         break;
       case 'chat':
         respondOk(cmd.id, await handleChat(cmd.prompt, cmd.chatId));
+        break;
+      case 'cancel_chat':
+        handleCancelChat(cmd.chatId);
+        respondOk(cmd.id);
         break;
       case 'add_skill':
         await addSkill(cmd.name, cmd.description, cmd.instructions, cmd.tools);

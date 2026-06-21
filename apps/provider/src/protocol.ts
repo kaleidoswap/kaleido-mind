@@ -140,6 +140,7 @@ export type Command =
   | { id: string; cmd: 'delete_model'; modelId: string }
   | { id: string; cmd: 'set_active_model'; modelId: string }
   | { id: string; cmd: 'chat'; prompt: string; chatId?: string }
+  | { id: string; cmd: 'cancel_chat'; chatId: string }
   | { id: string; cmd: 'add_skill'; name: string; description: string; instructions: string; tools?: string[] }
   | { id: string; cmd: 'delete_skill'; name: string }
   | { id: string; cmd: 'list_capabilities' }

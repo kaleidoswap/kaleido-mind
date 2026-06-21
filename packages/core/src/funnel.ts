@@ -112,6 +112,9 @@ export interface FunnelCallbacks {
     result: unknown;
   }) => void;
   onConfirm?: (call: { name: string; arguments: Record<string, unknown>; summary?: string }) => Promise<ConfirmDecision>;
+  /** Abort the in-flight turn (stop button). Cancels the running inference and
+   *  stops the agentic loop / recipe chain at the next checkpoint. */
+  signal?: AbortSignal;
 }
 
 export interface FunnelResult {
@@ -286,6 +289,7 @@ export class Funnel {
         provider: this.provider,
         tools: this.registry,
         onConfirm: cbs.onConfirm,
+        signal: cbs.signal,
         onStep: (name) => {
           this.log(`step ${name}`);
           cbs.onStep?.(name);
@@ -392,6 +396,7 @@ export class Funnel {
       },
       onToolResult: cbs.onToolResult,
       onConfirm: cbs.onConfirm,
+      signal: cbs.signal,
     });
     return {
       text: res.text ?? '',

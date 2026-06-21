@@ -5,6 +5,21 @@ apps) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.4] — 2026-06-21
+
+### Added
+
+- **Stop / cancel an in-flight chat turn.** A new `signal?: AbortSignal` on
+  `FunnelCallbacks` is threaded into both the agentic loop and the recipe chain
+  (slot extraction + every step). The QVAC provider's `runTurn` now honors the
+  signal — when it aborts, the running model inference is cancelled via the
+  SDK's `cancel({ requestId })`, so a single abort stops the inference *and*
+  halts the loop/chain at its next checkpoint. A recipe cancelled this way
+  reports `status:'cancelled'` ("Stopped.") and runs no further steps — an
+  explicit stop never silently falls back to deterministic slots. The
+  `@kaleidorg/mind-provider` sidecar exposes this as a `cancel_chat` command
+  (see provider 0.6.3).
+
 ## [0.6.3] — 2026-06-21
 
 ### Fixed

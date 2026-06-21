@@ -119,6 +119,23 @@ export function createQvacProvider(options: QvacProviderOptions): LLMProvider {
         ...(tools ? { tools } : {}),
       } as unknown as Parameters<CompletionFn>[0]);
 
+      // Honor an external AbortSignal (e.g. the desktop "stop" button): cancel
+      // the in-flight run the moment it fires. The SDK keeps generating
+      // otherwise; `final` then resolves with stopReason 'cancelled'. This is
+      // the single place that makes signal-based cancellation work for EVERY
+      // caller (agentic loop + recipe slot extraction).
+      if (input.signal) {
+        if (input.signal.aborted) {
+          void options.cancel({ requestId: run.requestId }).catch(() => {});
+        } else {
+          input.signal.addEventListener(
+            'abort',
+            () => void options.cancel({ requestId: run.requestId }).catch(() => {}),
+            { once: true },
+          );
+        }
+      }
+
       const maxThinkingTokens = input.maxThinkingTokens ?? options.maxThinkingTokens;
       const result = await consumeRun(run, {
         onToken: input.onToken,

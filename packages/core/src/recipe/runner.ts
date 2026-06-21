@@ -71,6 +71,7 @@ export async function extractSlots(
   provider: LLMProvider,
   recipe: Recipe,
   text: string,
+  signal?: AbortSignal,
 ): Promise<{ slots: Record<string, unknown>; inferences: number }> {
   const det = recipe.extract?.(text);
   const detValid = det && Object.values(det).some((v) => v !== undefined && v !== null && v !== '');
@@ -110,12 +111,17 @@ export async function extractSlots(
       system,
       messages: [{ role: 'user', content: text }],
       tools: [extractTool],
+      signal,
     });
   } catch (err) {
-    // The forced extraction inference failed — on small on-device models this
-    // happens when the model rambles and the request is cancelled/times out.
-    // Don't fail a request the deterministic regex already understood: if det
-    // produced valid slots, degrade gracefully to them rather than erroring.
+    // An explicit user cancel (the stop button aborts the signal) must NOT be
+    // papered over with deterministic slots — that would run the action the
+    // user just tried to stop. Re-throw so runRecipe reports it as cancelled.
+    if (signal?.aborted) throw err;
+    // Otherwise the forced extraction inference simply failed — on small
+    // on-device models this happens when the model rambles and the request is
+    // cancelled/times out. Don't fail a request the deterministic regex already
+    // understood: if det produced valid slots, degrade gracefully to them.
     if (detValid) return { slots: det, inferences: 0 };
     throw err;
   }
@@ -172,12 +178,21 @@ export async function extractSlots(
 export async function runRecipe(recipe: Recipe, text: string, opts: RunRecipeOptions): Promise<RecipeResult> {
   const ctx: RecipeContext = { text, slots: opts.slots ?? {}, results: {} };
   let inferences = 0;
+  // The user pressed stop (opts.signal aborted) — nothing has been sent yet.
+  const stopped = (): RecipeResult => ({
+    recipe: recipe.name, slots: ctx.slots, results: ctx.results,
+    text: 'Stopped.', status: 'cancelled', inferences,
+  });
   try {
+    if (opts.signal?.aborted) return stopped();
     if (!opts.slots) {
-      const ex = await extractSlots(opts.provider, recipe, text);
+      const ex = await extractSlots(opts.provider, recipe, text, opts.signal);
       ctx.slots = ex.slots;
       inferences = ex.inferences;
     }
+    // Extraction can be cancelled either by throwing (caught below) or by
+    // returning empty when the run was aborted mid-flight — catch the latter.
+    if (opts.signal?.aborted) return stopped();
 
     // Confidence re-check AFTER extraction (whether deterministic, LLM, or
     // pre-supplied). When the recipe defines `confident()` and the extracted
@@ -230,6 +245,7 @@ export async function runRecipe(recipe: Recipe, text: string, opts: RunRecipeOpt
     };
 
     for (const step of recipe.steps) {
+      if (opts.signal?.aborted) return stopped();
       if (step.skipIf?.(ctx)) continue;
       const args = step.args(ctx);
       if (!(await passesGate(step.tool, args))) return cancelled();
@@ -252,6 +268,9 @@ export async function runRecipe(recipe: Recipe, text: string, opts: RunRecipeOpt
     const out = recipe.summary?.(ctx, finalResult) ?? 'Done.';
     return { recipe: recipe.name, slots: ctx.slots, results: ctx.results, final: finalResult, text: out, status: 'done', inferences };
   } catch (e) {
+    // A stop pressed mid-inference surfaces as a thrown cancel — report it as
+    // cancelled ("Stopped."), not as an error.
+    if (opts.signal?.aborted) return stopped();
     const msg = (e as Error)?.message ?? String(e);
     return { recipe: recipe.name, slots: ctx.slots, results: ctx.results, text: `Couldn't complete that: ${msg}`, status: 'error', error: msg, inferences };
   }

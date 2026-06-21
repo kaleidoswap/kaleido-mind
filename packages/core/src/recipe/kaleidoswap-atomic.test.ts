@@ -156,6 +156,33 @@ describe('kaleidoswapAtomicRecipe — forceModelExtract (less deterministic slot
       from_layer: 'BTC_LN', to_layer: 'RGB_LN', to_amount: 1,
     });
   });
+
+  it('stops the chain (status cancelled) when the abort signal fires during extraction', async () => {
+    // The stop button aborts the signal mid-inference. extractSlots must NOT
+    // paper over an explicit cancel with deterministic slots — the recipe must
+    // report cancelled and run NO steps (nothing sent).
+    const captured: { name: string; args: any }[] = [];
+    const tools = buildStubs(captured);
+    const ctrl = new AbortController();
+    const abortingProvider: LLMProvider = {
+      name: 'aborting',
+      runTurn: async () => {
+        ctrl.abort(); // simulate the user pressing stop while the model runs
+        throw new Error('Inference request "x" was cancelled before it could complete');
+      },
+    };
+
+    const res = await runRecipe(kaleidoswapAtomicRecipe, 'buy 1 usdt', {
+      provider: abortingProvider,
+      tools,
+      onConfirm: async () => ({ approved: true }),
+      signal: ctrl.signal,
+    });
+
+    expect(res.status).toBe('cancelled');
+    expect(res.text).toBe('Stopped.');
+    expect(captured).toHaveLength(0); // nothing ran — not even the read-only quote
+  });
 });
 
 describe('kaleidoswapAtomicRecipe — full chain', () => {
