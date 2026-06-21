@@ -2,7 +2,7 @@
 name: merchant-finder
 description: "Find Bitcoin-accepting merchants near the user using live BTC Map data and the device's real location. Triggers when the user asks where to spend Bitcoin, buy pizza/food with sats or bitcoin, eat at restaurants/cafes paying with sats, for a shop, store, restaurant, cafe, bar, or ATM that accepts Bitcoin, or for merchants nearby or in a city like turin."
 tools: find_merchant_locations, search_knowledge
-triggers: merchant, merchants, shop, shops, store, stores, restaurant, restaurants, cafe, cafes, bar, bars, atm, atms, accept, accepts, accepting, nearby, near me, around, place, places, spend, find, pizza, pizz, food, coffee, eat, dinner, lunch, buy, bitcoin map, btcmap
+triggers: merchant, merchants, shop, shops, store, stores, restaurant, restaurants, cafe, cafes, bar, bars, atm, atms, accept, accepts, accepting, nearby, near me, around me, where can i spend, pizza, pizz, food, coffee, eat, dinner, lunch, bitcoin map, btcmap
 metadata:
   author: kaleidoswap
   version: "0.3.0"

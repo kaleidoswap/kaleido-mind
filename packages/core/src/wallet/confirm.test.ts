@@ -40,6 +40,14 @@ describe('confirmReadback', () => {
     expect(line).toBe('Pay Lightning invoice lnbc1p…abcd over RLN. Confirm?');
   });
 
+  it('spark_pay_invoice: same readback shape, over Spark', () => {
+    const line = confirmReadback({
+      name: 'spark_pay_invoice',
+      arguments: { invoice: 'lnbc1ptestinvoice0123456789abcd' },
+    });
+    expect(line).toBe('Pay Lightning invoice lnbc1p…abcd over Spark. Confirm?');
+  });
+
   it('execute_swap: from → to with amount', () => {
     expect(confirmReadback({ name: 'execute_swap', arguments: { from_asset: 'BTC', to_asset: 'USDT', amount: 0.01 } }))
       .toBe('Swap 0.01 BTC for USDT. Confirm?');

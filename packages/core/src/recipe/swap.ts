@@ -12,7 +12,7 @@
 
 import type { Recipe } from './types.js';
 
-const ASSET = /\b(btc|bitcoin|sats?|usdt|tether|xaut|gold)\b/i;
+const ASSET = /\b(btc|bitcoin|sats?|usdt|tether|xaut|gold|usdb)\b/i;
 
 /** Strict: returns a canonical code only for a KNOWN crypto asset, else undefined
  *  (so "kaleido", "the", etc. are not mistaken for an asset). */
@@ -22,6 +22,7 @@ function knownAsset(a?: string): string | undefined {
   if (/^(btc|bitcoin|sat|sats|satoshi|satoshis)$/.test(x)) return 'BTC';
   if (/^(usdt|tether)$/.test(x)) return 'USDT';
   if (/^(xaut|gold)$/.test(x)) return 'XAUT';
+  if (/^usdb$/.test(x)) return 'USDB';
   return undefined;
 }
 

@@ -17,7 +17,10 @@
     "serve": "tsx src/index.ts serve"
   },
   "dependencies": {
-    "@kaleidorg/mind": "workspace:*"
+    "@buildonspark/spark-sdk": "^0.7.17",
+    "@flashnet/sdk": "^0.5.8",
+    "@kaleidorg/mind": "workspace:*",
+    "@scure/bip39": "^1.6.0"
   },
   "peerDependencies": {
     "@qvac/sdk": "*"

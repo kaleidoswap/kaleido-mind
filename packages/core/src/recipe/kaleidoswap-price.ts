@@ -21,8 +21,14 @@ import type { Recipe, RecipeContext } from './types.js';
 import { extractPriceQuery } from './swap.js';
 
 const ASSET = /\b(btc|bitcoin|sats?|usdt|tether|xaut|gold)\b/i;
+// Flashnet (Spark AMM) cues — a price/rate question aimed at a Flashnet asset
+// or venue should NOT be quoted via the KaleidoSwap maker. Defer to the
+// agentic tier (flashnet-swaps simulate_swap is the read-only quote there).
+const FLASHNET_CUE = /\b(flashnet|usdb|spark)\b/i;
 const PRICE_INTENT = (t: string) =>
-  /\b(price|rate|cost|worth|how\s+(?:much|many))\b/i.test(t) && ASSET.test(t);
+  /\b(price|rate|cost|worth|how\s+(?:much|many))\b/i.test(t) &&
+  ASSET.test(t) &&
+  !FLASHNET_CUE.test(t);
 
 interface QuoteResult {
   rfq_id?: string;

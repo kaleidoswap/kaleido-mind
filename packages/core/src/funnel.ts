@@ -226,6 +226,8 @@ export class Funnel {
 
   async runTurn(text: string, cbs: FunnelCallbacks = {}): Promise<FunnelResult> {
     const settings = this.getSettings();
+    const memoryOn = settings.memoryEnabled !== false;
+    const ragOn = settings.ragEnabled !== false;
 
     // ── T0: deterministic fast-path (no LLM) ──
     // Only fires when the host's registry actually implements the intent's
@@ -247,15 +249,27 @@ export class Funnel {
     //       running steps with bad data.
     // Either way the registry must implement the recipe's final action.
     const recipe = this.recipes.select(text);
-    const slots = recipe?.extract?.(text) ?? null;
-    const deterministicallyConfident =
-      !!slots && (recipe?.confident ? recipe.confident(slots) : Object.keys(slots).length > 0);
+    // For forceModelExtract recipes (channel-order, atomic) the det extractor is
+    // de-emphasized: only used inside runRecipe as a backfill safety net; firing
+    // decision + log do not depend on brittle regex for varied NL.
+    let slotsForLog: any = null;
+    let detConfident = false;
+    if (recipe) {
+      if (recipe.forceModelExtract === true) {
+        slotsForLog = { forceModelExtract: true };
+        detConfident = true; // force path handles via LLM inside; prefilter only needs tool presence
+      } else {
+        const d = recipe.extract?.(text) ?? null;
+        slotsForLog = d;
+        detConfident = !!d && (recipe.confident ? recipe.confident(d) : Object.keys(d).length > 0);
+      }
+    }
     const fires =
       !!recipe &&
-      (recipe.forceModelExtract === true || deterministicallyConfident) &&
+      (recipe.forceModelExtract === true || detConfident) &&
       !!(await this.registry.getDef(recipe.final.tool));
     if (recipe && fires) {
-      this.log(`tier=recipe:${recipe.name} slots=${JSON.stringify(slots)}`);
+      this.log(`tier=recipe:${recipe.name} slots=${JSON.stringify(slotsForLog)}`);
       const res = await runRecipe(recipe, text, {
         provider: this.provider,
         tools: this.registry,
@@ -265,6 +279,26 @@ export class Funnel {
           cbs.onStep?.(name);
         },
       });
+      // Auto-remember ids/tokens from recipe summaries (the "remember: ..." lines)
+      // via the tool so status follow-ups can reliably recall even cross-session.
+      if (res.status === 'done' && memoryOn) {
+        try {
+          const hasRemember = await this.registry.getDef('remember');
+          if (hasRemember) {
+            const text = res.text || '';
+            const lines = text.split(/\n+/).filter((l) => /^\s*remember:/i.test(l));
+            for (const line of lines) {
+              const clean = line.trim();
+              if (clean.length > 8) {
+                void this.registry
+                  .execute('remember', { text: clean, kind: 'event', tags: ['recipe', 'order', 'status'] })
+                  .catch(() => {});
+                this.log(`auto-remembered: ${clean.slice(0, 80)}`);
+              }
+            }
+          }
+        } catch {}
+      }
       return { text: res.text, tier: 'recipe', route: recipe.name };
     }
 
@@ -278,7 +312,6 @@ export class Funnel {
     // RAG block sits above history so the model treats it as authoritative).
     // Only fires for agentic turns and only when the host opts in via
     // `retriever` AND the user hasn't disabled RAG in settings.
-    const ragOn = settings.ragEnabled !== false;
     if (this.retriever && ragOn && this.topKRag > 0) {
       try {
         const hits = await this.retriever.search(text, this.topKRag);
@@ -296,7 +329,6 @@ export class Funnel {
 
     // Ambient tools stay available even when a skill narrows the set — gated
     // by the user's memory/knowledge toggles (default on).
-    const memoryOn = settings.memoryEnabled !== false;
     const ambient = [...(memoryOn ? AMBIENT_MEMORY : []), ...(ragOn ? AMBIENT_RAG : [])];
     const disabledAmbient = [...(memoryOn ? [] : AMBIENT_MEMORY), ...(ragOn ? [] : AMBIENT_RAG)];
     let scoped: string[] | undefined;

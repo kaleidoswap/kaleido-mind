@@ -285,4 +285,98 @@ export const BITCOIN_COPILOT_DOCS: RagDocument[] = [
       "(not just inbound capacity).",
     metadata: { topic: 'rgb-channels' },
   },
+
+  // ── Layer / protocol taxonomy ─────────────────────────────────────────
+  // The single biggest source of model confusion is mixing up which assets
+  // live on which layer. Small models pattern-match on "USDT" or "Bitcoin"
+  // and assume every L2 supports every asset — they don't. Each L2 has its
+  // OWN asset family, and assets do not move between them without an
+  // explicit cross-layer swap or bridge.
+
+  {
+    id: 'kaleidomind-layers-overview',
+    text:
+      'This wallet supports THREE distinct Bitcoin L2s, each with its own ' +
+      'asset family. They are NOT interchangeable: a balance on one layer ' +
+      'cannot be spent on another without an explicit swap. ' +
+      '(1) SPARK — an off-chain BTC scaling layer (Lightspark / buildonspark, ' +
+      'Statechains-based). Assets: BTC (sats) + Spark-native tokens like ' +
+      'USDB. Tools: spark_* (balance/address/invoice/pay). Swap venue: ' +
+      'Flashnet AMM (BTC ⇄ Spark tokens). ' +
+      '(2) RLN / RGB — a Lightning node that carries RGB assets over ' +
+      'BOLT11 channels (colored channels). Assets: BTC + RGB assets like ' +
+      'USDT, XAUT. Tools: rln_* (nodeinfo/invoice/pay/whitelist). Swap ' +
+      'venue: KaleidoSwap maker (BTC ⇄ RGB assets via atomic HTLC swap). ' +
+      '(3) ARKADE — an Ark-based off-chain BTC layer. Assets: BTC. Tools: ' +
+      'arkade_* (balance/address/send). No native non-BTC assets today.',
+    metadata: { topic: 'layers' },
+  },
+
+  {
+    id: 'spark-layer-assets',
+    text:
+      'Spark is an off-chain BTC scaling layer (Lightspark / buildonspark). ' +
+      "It holds BTC (sats) and Spark-native tokens. USDB is a Spark token. " +
+      'Spark addresses look like spark1… (or sparkrt1… on regtest). ' +
+      'CRITICAL: Spark does NOT carry RGB assets. USDT and XAUT are RGB ' +
+      'assets that live on the RLN (RGB Lightning Node) layer — not on ' +
+      "Spark. A user's USDT balance, if they have one, is on RLN, NOT " +
+      'Spark. Conversely, USDB lives only on Spark (and trades on ' +
+      'Flashnet); it has no presence on RLN/RGB. When asked "what assets ' +
+      'are on Spark / what can I trade on Spark", answer with Spark-native ' +
+      'tokens (BTC + USDB and any other Spark tokens the AMM lists via ' +
+      'flashnet_list_pools), NOT USDT/XAUT/RGB.',
+    metadata: { topic: 'layers' },
+  },
+
+  {
+    id: 'rln-layer-assets',
+    text:
+      'RLN (RGB Lightning Node) is a Lightning node that carries RGB ' +
+      'assets over BOLT11 channels (a.k.a. colored channels). It holds ' +
+      'BTC on standard Lightning channels and RGB assets — USDT, XAUT, ' +
+      'and any other client-side-validated asset issued via RGB — on ' +
+      'asset channels. Each asset needs its own channel. RGB assets do ' +
+      'NOT live on Spark or Arkade; they are RLN-only. Swap venue for ' +
+      'BTC ⇄ RGB asset is the KaleidoSwap maker (atomic HTLC: quote → ' +
+      'init → whitelist → execute). To receive an RGB asset over ' +
+      'Lightning, you first need an LSPS1-opened asset channel.',
+    metadata: { topic: 'layers' },
+  },
+
+  {
+    id: 'swap-venue-split',
+    text:
+      "Two swap venues, two asset families — DO NOT confuse them. " +
+      "FLASHNET is a Spark-native AMM. It trades between BTC and " +
+      "Spark-native tokens (e.g. USDB). It uses the same Spark wallet " +
+      "as the user's balance. Tools: flashnet_list_pools, " +
+      "flashnet_simulate_swap, flashnet_execute_swap. Skill: " +
+      "flashnet-swaps. ASSETS: BTC, USDB, and anything else " +
+      "flashnet_list_pools returns. NEVER offer USDT/XAUT on Flashnet. " +
+      "KALEIDOSWAP is an atomic HTLC maker. It trades between BTC and " +
+      "RGB assets (USDT, XAUT). It uses the RLN node. Tools: " +
+      "kaleidoswap_get_quote, kaleidoswap_atomic_init, " +
+      "kaleidoswap_atomic_execute. Skill: kaleido-trading. ASSETS: BTC, " +
+      "USDT, XAUT, and other RGB assets the maker prices. NEVER offer " +
+      "USDB on KaleidoSwap.",
+    metadata: { topic: 'venues' },
+  },
+
+  {
+    id: 'asset-to-layer-routing',
+    text:
+      "How to route by asset name. The asset names tell you which layer " +
+      "to use — don't guess: " +
+      "BTC / sats → all layers (Spark / RLN / Arkade / on-chain) carry " +
+      "BTC; pick by user context. " +
+      "USDB → Spark only, via Flashnet (flashnet-swaps). " +
+      "USDT → RLN/RGB only, via KaleidoSwap (kaleido-trading). " +
+      "XAUT (tether-gold) → RLN/RGB only, via KaleidoSwap. " +
+      "If a user names an asset you don't recognise, do NOT assume a " +
+      "layer — ask, or list pools/assets via the right tool first " +
+      "(flashnet_list_pools for Spark-side, kaleidoswap_get_pairs / " +
+      "kaleidoswap_get_assets for RGB-side).",
+    metadata: { topic: 'venues' },
+  },
 ];

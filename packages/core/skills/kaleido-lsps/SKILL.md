@@ -1,8 +1,8 @@
 ---
 name: kaleido-lsps
 description: "Buy inbound Lightning channel capacity from a Lightning Service Provider (LSPS1). Quote a channel, estimate fees, place a channel order, and check order status. Triggers when the user wants inbound liquidity, says they can't receive a payment, needs a channel, asks about LSP fees, or wants to check the status of a channel order / LSP order."
-tools: kaleidoswap_lsp_get_info, kaleidoswap_lsp_estimate_fees, kaleidoswap_lsp_create_order, kaleidoswap_lsp_get_order, kaleidoswap_lsp_quote_asset_channel, kaleidoswap_lsp_create_asset_channel, lsp_get_info, lsp_estimate_fees, lsp_create_order, lsp_get_order, rln_get_node_info, rln_pay_invoice
-triggers: inbound, liquidity, channel order, lsp, lsps1, receive limit, can't receive, open channel, channel from, check status, order status, check the order, channel status, lsp status, check my channel
+tools: lsp_get_info, lsp_get_network_info, lsp_estimate_fees, lsp_create_order, lsp_get_order, kaleidoswap_lsp_get_info, kaleidoswap_lsp_estimate_fees, kaleidoswap_lsp_create_order, kaleidoswap_lsp_get_order, kaleidoswap_lsp_quote_asset_channel, kaleidoswap_lsp_create_asset_channel, rln_get_node_info, rln_list_channels, rln_pay_invoice
+triggers: inbound, liquidity, channel order, lsp, lsps1, receive limit, can't receive, open channel, channel from, check status, order status, check the order, channel status, lsp status, check my channel, check lsp order, did the channel open, lsp order status, list my channels, my channels, channel capacity
 metadata:
   author: kaleidoswap
   version: "0.2.0"
@@ -82,11 +82,26 @@ Returns:
 Hand the `payment.bolt11.invoice` to `rln_pay_invoice`. This is a separate
 spend gate at the wallet contract; the user confirms paying the LSP.
 
-### Step 6 — `kaleidoswap_lsp_get_order` (poll)
-**Args: `order_id`, `access_token` (BOTH required — never omit either).**
-`order_state` progresses `CREATED → CHANNEL_OPENING → COMPLETED` (or `FAILED`).
-Poll until terminal. Always pass the exact order_id and access_token from the
-previous `kaleidoswap_lsp_create_order` result (or from the summary that listed them).
+### Verify the opened channel — `rln_list_channels`
+After an order completes (or when the user asks "do I have a channel with X
+inbound?", "list my channels", "did my channel open?"), call
+`rln_list_channels`. It returns each channel's `capacity_sat`, `inbound_sat`,
+`outbound_sat`, `ready`/`status`, and RGB `asset_*` amounts. Match the
+requested capacity against an actual channel to confirm it opened correctly.
+A freshly-bought channel opens ASYNCHRONOUSLY — if it isn't listed yet, say
+it's still opening, don't claim failure. Do NOT use `rln_get_node_info` for
+this (it only has counts + aggregate balance, not per-channel capacity).
+
+### Step 6 — poll the order (`lsp_get_order` / `kaleidoswap_lsp_get_order`)
+Use `lsp_get_order` on CLI hosts, `kaleidoswap_lsp_get_order` on desktop —
+whichever your host exposes. **Args: `order_id`, `access_token` (BOTH
+required — never omit either).** `order_state` progresses
+`CREATED → CHANNEL_OPENING → COMPLETED` (or `FAILED`). Poll until terminal.
+Always pass the exact order_id and access_token from the previous
+create-order result **or from the most recent assistant message/summary**
+(the one that said something like "order_id=xxx access_token=yyy" or "To
+check status use: lsp_get_order(order_id=..., access_token=...)"). If
+memory/remember is available, first recall the last LSPS1 order details.
 Report the outcome plainly with the new channel id from `channel.channel_id` if present.
 
 ## Don'ts
@@ -101,7 +116,9 @@ Report the outcome plainly with the new channel id from `channel.channel_id` if 
   `order_id` and `access_token` and seeing `order_state: COMPLETED`.
 - Never call `kaleidoswap_lsp_get_order` with only the access_token or only the order_id.
   Always extract the exact values from the previous turn's summary (the one that
-  said "order_id=... access_token=...") and pass them as separate arguments.
+  said "order_id=... access_token=..." or the explicit "To check status use..." line)
+  and pass them as separate arguments. If using the `remember` tool, first recall
+  the last channel/LSPS1 order details.
 - Don't ask the user for their node pubkey — fetch it from `rln_get_node_info`.
 
 ## When the deterministic recipe handles it

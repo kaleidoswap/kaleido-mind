@@ -1,8 +1,8 @@
 ---
 name: kaleido-trading
-description: "Trade on KaleidoSwap — quote and execute swaps between BTC and RGB assets (USDT, XAUT). Get assets and pairs, pull an executable quote, place a market order, or track an atomic swap end-to-end. Triggers when the user wants a quote, to swap or trade assets, or to rebalance between BTC and stablecoins."
+description: "Trade on KaleidoSwap — quote and execute swaps between BTC and RGB assets (USDT, XAUT). Get assets and pairs, pull an executable quote, place a market order, track orders, or run/poll an atomic swap end-to-end. Triggers when the user wants a quote, to swap or trade assets, to rebalance between BTC and stablecoins, or to check the status of an order / swap / atomic swap."
 tools: kaleidoswap_get_assets, kaleidoswap_get_pairs, kaleidoswap_get_quote, kaleidoswap_place_order, kaleidoswap_get_order_status, kaleidoswap_atomic_init, kaleidoswap_atomic_execute, kaleidoswap_atomic_status, rln_get_node_info, rln_atomic_taker
-triggers: quote, swap, trade, rebalance, slippage, pair, pairs, usdt, xaut, kaleidoswap, rfq
+triggers: quote, swap, trade, rebalance, slippage, pair, pairs, usdt, xaut, kaleidoswap, rfq, check status, order status, check the order, swap status, check my swap, atomic status
 metadata:
   author: kaleidoswap
   version: "0.4.0"
@@ -40,14 +40,27 @@ which pair + amount.
 
 ## Asset codes (canonical)
 
+KaleidoSwap is the maker for **BTC ↔ RGB asset** atomic swaps. The asset
+family is **RGB**: USDT, XAUT, and any other RGB asset the maker prices.
+The RGB assets live on the user's **RLN** (RGB Lightning Node) — NOT on
+Spark, Arkade, or any other chain.
+
 Only these codes are accepted:
 
 - `BTC` (Bitcoin, amounts always in satoshis)
-- `USDT` (Tether) — **not** `USD`, **not** `tether`
-- `XAUT` (Tether Gold) — **not** `XAU`, **not** `gold`
+- `USDT` (Tether, the RGB asset) — **not** `USD`, **not** `tether`
+- `XAUT` (Tether Gold, the RGB asset) — **not** `XAU`, **not** `gold`
 
 When the user types `USD` they almost always mean `USDT` — confirm before
 quoting. Same for `gold` → `XAUT`. Don't silently substitute.
+
+**Do NOT trade here:**
+
+- `USDB` and any other **Spark-native token** — those are on the Spark
+  layer and trade on **Flashnet** (skill: `flashnet-swaps`), not on
+  KaleidoSwap. Route the user there instead of inventing a maker pair.
+- Tokens from external chains (Ethereum USDT, Solana, etc.). They are
+  not in the maker's catalog and the wallet does not custody them.
 
 ## Tools
 
@@ -113,13 +126,16 @@ Only after `kaleidoswap_get_quote` returned an `rfq_id` THIS turn, and only when
 the user has explicitly approved the amount + direction. Pass the `rfq_id` as
 `quote_id`.
 
-**Save the `order_id` AND `access_token` from the result** — you will need both
-for polling status later.
+**Save the `order_id` AND `access_token` from the result** (BOTH required — never omit either). Extract them verbatim from the tool result (or the most recent assistant summary that listed "order_id=... access_token=..."). If memory/remember is available, first recall the last order details before polling status. You will need both for `kaleidoswap_get_order_status` later.
 
 ### `kaleidoswap_get_order_status(order_id, access_token)`
-Poll after placing an order. **Pass both the order_id and the access_token**
-(saved from place_order). Report status plainly — pending, settling,
-completed, failed.
+**Args: `order_id`, `access_token` (BOTH required — never omit either).**
+Poll after placing an order (or atomic). `order_state` (or equivalent) progresses
+to terminal states. Always pass the exact values from the previous
+`kaleidoswap_place_order` result **or from the most recent assistant message/summary**
+(the one that said something like "order_id=xxx access_token=yyy" or "To check status use: kaleidoswap_get_order_status(order_id=..., access_token=...)").
+If memory/remember is available, first recall the last order/swap details.
+Report the outcome plainly.
 
 ## Flow
 
@@ -128,11 +144,11 @@ completed, failed.
 3. **Read + present** — compute the receive amount + fee from the response (see
    "Reading the quote response"). **Never hide cost.**
 4. **Place** — spend-gated by the engine. The host pauses for the user.
-5. **Track** — poll `kaleidoswap_get_order_status(order_id, access_token)` (use both values saved from place_order) until it terminates.
+5. **Track** — poll `kaleidoswap_get_order_status(order_id, access_token)` (use both values saved from place_order or the explicit "To check status..." template) until it terminates. For atomic swaps the status tool is `kaleidoswap_atomic_status(atomic_id)`.
 
 ## Don'ts
 
-- Don't invent prices, quotes, rfq_ids, or order_ids.
+- Don't invent prices, quotes, rfq_ids, order_ids, or access_tokens.
 - Don't reuse a number from a previous turn.
 - Don't describe how a tool works — call it.
 - Don't call `kaleidoswap_get_quote` with from/to only — ask for the amount.
@@ -142,7 +158,15 @@ completed, failed.
 - Don't accept `XAU` as `XAUT` or `USD` as `USDT` silently — confirm.
 - Don't retry the same failing tool call in a loop. If a call fails, read the
   error and either ask the user, fix the args, or stop.
+- Don't claim an order completed without polling the status tool with BOTH
+  required ids/tokens and seeing a terminal state.
+- Never call `kaleidoswap_get_order_status` with only the access_token or only
+  the order_id. Always extract the exact values from the previous turn's summary
+  (the one that said "order_id=... access_token=..." or the explicit "To check
+  status use..." line) and pass them as separate arguments. If using the
+  `remember` tool, first recall the last order details.
 
 For the full atomic-swap flow (init → whitelist on the RGB node → execute), a
 deterministic recipe drives the chain — the agentic loop is not safe to plan a
-multi-step, two-service swap on a small model.
+multi-step, two-service swap on a small model. Status for atomics uses the
+`atomic_id` (or payment_hash) surfaced in the recipe summary.

@@ -95,10 +95,12 @@ export async function extractSlots(
   const system = [
     `Call ${EXTRACT_TOOL} with the fields from the user's message.`,
     recipe.description ? `This extraction is for: ${recipe.description}.` : '',
-    'Only emit values that match the field descriptions.',
+    'Only emit values that match the field descriptions. Use the examples and phrasings listed in each field\'s description (including context like "on the other" when "my side" appears).',
     'Canonical assets: BTC, USDT, XAUT (pass as strings like "BTC" or "USDT").',
     'amount_side: "to" when the named amount is what you receive/buy (e.g. "buy 1 USDT" → to_asset=USDT, amount=1, from_asset=BTC); "from" for sell/swap (amount on from_asset).',
     'The host binding handles per-asset precision scaling (BTC in sats → maker units; USDT/XAUT whole units). Pass the user\'s number as-is for the correct side.',
+    'If a value is ambiguous from the message, prefer the mapping from the field descriptions rather than guessing.',
+    'For status-related follow-ups the history (or recall result) will contain explicit "order_id=... access_token=..." or "atomic_id=..." strings from prior summaries — when relevant extract them exactly.',
     'Do not call any other tool and do not add commentary.',
   ].filter(Boolean).join(' ');
 
@@ -175,10 +177,10 @@ export async function runRecipe(recipe: Recipe, text: string, opts: RunRecipeOpt
     if (recipe.confident && !recipe.confident(ctx.slots)) {
       const missing = recipe.slots
         .filter((s) => s.required && (ctx.slots[s.name] == null || ctx.slots[s.name] === ''))
-        .map((s) => `${s.name} (${s.description})`);
+        .map((s) => s.name);
       const ask =
         missing.length > 0
-          ? `I need a bit more info — please specify: ${missing.join('; ')}.`
+          ? `I need a bit more info — please specify the ${missing.join(' and ')} (rephrase with the numbers, or use recall if this is a follow-up status check).`
           : "I don't have enough info to do that — could you rephrase with the specifics?";
       return { recipe: recipe.name, slots: ctx.slots, results: ctx.results, text: ask, status: 'needs-info', inferences };
     }

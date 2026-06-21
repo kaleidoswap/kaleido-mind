@@ -56,10 +56,32 @@ const asset = { type: 'string', description: "Asset ticker, e.g. 'USDT', 'XAUT',
 /** The full contract. Keep descriptions terse — small models read every word. */
 export const WALLET_TOOLS: WalletToolDef[] = [
   // ── Spark ──────────────────────────────────────────────────────────────
-  t('spark', 'spark_get_balance', 'Get the Spark wallet BTC balance.'),
-  t('spark', 'spark_get_address', 'Get a Spark deposit address to receive BTC.'),
-  t('spark', 'spark_create_invoice', 'Create a Spark Lightning invoice to receive BTC.', { amount_sats: sats }),
-  t('spark', 'spark_send', 'Send BTC from Spark to an address or invoice.', { amount_sats: sats, to: { type: 'string', description: 'Address or invoice' } }, ['amount_sats', 'to'], true),
+  t('spark', 'spark_get_balance', 'Get the Spark wallet balances — BTC sats AND every Spark-native token (e.g. USDB). Returns `{ total: <sats>, tokens: [{ address, balance, symbol?, decimals?, available_to_send? }], connected, layer, network }`. Use for ANY "balance / how much / what do I have on Spark" question — call it fresh every time, balances change. The `tokens` array surfaces ALL Spark-native tokens the wallet holds, so you do NOT need to call flashnet_get_balance separately for that (flashnet_get_balance is the AMM-client view of the same wallet and returns the same numbers). For RGB asset balances (USDT, XAUT) use the RLN tools — RGB assets are NOT on Spark.'),
+  // The user-facing "Spark address" — an off-chain Spark identity (sparkrt1…/
+  // spark1…). For OFF-CHAIN peer transfers WITHIN Spark. NOT a Bitcoin
+  // on-chain address. Use spark_get_onchain_address for the on-chain deposit
+  // path; use spark_create_invoice for a Lightning invoice.
+  t('spark', 'spark_get_address', 'Get the user\'s Spark address (sparkrt1…/spark1…) — an OFF-CHAIN Spark identity for receiving Spark-to-Spark transfers. NOT a Bitcoin on-chain address (does not start with bc1/tb1/bcrt1) and NOT a Lightning invoice. For "an on-chain address to deposit BTC into Spark" use spark_get_onchain_address. For a Lightning invoice use spark_create_invoice.'),
+  // Real on-chain Bitcoin address used to deposit BTC FROM mainnet INTO the
+  // Spark wallet. The SDK calls this a "static deposit address" — bc1…/tb1…/
+  // bcrt1…. The opposite of spark_get_address.
+  t('spark', 'spark_get_onchain_address', 'Get a real Bitcoin ON-CHAIN address (bc1…/tb1…/bcrt1…) for depositing BTC from the Bitcoin L1 into the Spark wallet. Use ANY time the user asks for "an on-chain address", "deposit address", "Bitcoin address to fund Spark", "where do I send my on-chain BTC". This is NOT the Spark identity (spark_get_address) and NOT a Lightning invoice (spark_create_invoice).'),
+  t('spark', 'spark_create_invoice', 'Create a Spark Lightning invoice (BOLT11) to receive BTC over Lightning. Returns an invoice string the user can share. Use when the user asks for "an invoice", "a lightning invoice", "pay me", or names an amount they want received. NOT an address.', { amount_sats: sats }),
+  // Explicit Lightning-invoice payer. BOLT11 invoices encode the amount, so
+  // `amount_sats` is optional and only used for amount-less ("any-amount")
+  // invoices. Prefer this over `spark_send` when the destination is a BOLT11
+  // invoice — it removes ambiguity for small models and gives the cross-skill
+  // bitrefill flow a single, unambiguous target.
+  t('spark', 'spark_pay_invoice',
+    'Pay a Lightning (BOLT11) invoice from the Spark wallet. The invoice already encodes the amount; pass amount_sats ONLY for amount-less invoices. Use this for any BOLT11 destination (Bitrefill, contact, raw invoice).',
+    { invoice: { type: 'string', description: 'BOLT11 Lightning invoice (lnbc…/lntb…/lnbcrt…).' }, amount_sats: { type: 'number', description: 'Required ONLY when the invoice has no amount; omit otherwise.' } },
+    ['invoice'],
+    /* spend */ true),
+  t('spark', 'spark_send',
+    'Send BTC from Spark to an on-chain address (bc1…/tb1…). For BOLT11 invoices, prefer spark_pay_invoice.',
+    { amount_sats: sats, to: { type: 'string', description: 'On-chain Bitcoin address.' } },
+    ['amount_sats', 'to'],
+    /* spend */ true),
 
   // ── RLN / RGB ──────────────────────────────────────────────────────────
   t('rln', 'rln_get_balances', 'Get RLN node balances (BTC + RGB assets).'),

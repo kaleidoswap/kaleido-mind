@@ -66,6 +66,23 @@ describe('kaleidoswapAtomicRecipe — selection', () => {
   it('does not trigger on a balance question', () => {
     expect(kaleidoswapAtomicRecipe.match!('what is my balance')).toBe(false);
   });
+  it('DEFERS to Flashnet when a Flashnet/Spark cue is present (venue split)', () => {
+    // These belong to the agentic flashnet-swaps skill, not the KaleidoSwap
+    // maker recipe — so the recipe must NOT claim them.
+    expect(kaleidoswapAtomicRecipe.match!('swap 10000 sats with asset of your choice in flashnet')).toBe(false);
+    expect(kaleidoswapAtomicRecipe.match!('swap 5000 sats to usdb')).toBe(false);
+    expect(kaleidoswapAtomicRecipe.match!('swap btc to usdb on spark')).toBe(false);
+  });
+  it('does NOT claim a bare swap with no venue/asset cue (falls to agentic)', () => {
+    // Ambiguous — a swap always needs a target asset; let the skill tier ask
+    // or pick the connected venue rather than grabbing it for the maker.
+    expect(kaleidoswapAtomicRecipe.match!('swap 100000 sats')).toBe(false);
+    expect(kaleidoswapAtomicRecipe.match!('exchange some bitcoin')).toBe(false);
+  });
+  it('still claims swaps that name an RGB/maker asset', () => {
+    expect(kaleidoswapAtomicRecipe.match!('swap 100000 sats to usdt')).toBe(true);
+    expect(kaleidoswapAtomicRecipe.match!('convert btc to xaut')).toBe(true);
+  });
 });
 
 describe('kaleidoswapAtomicRecipe — forceModelExtract (less deterministic slot parsing)', () => {

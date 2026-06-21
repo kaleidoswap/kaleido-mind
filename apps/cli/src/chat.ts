@@ -18,10 +18,12 @@ import {
   kaleidoswapPriceRecipe,
   kaleidoswapAtomicRecipe,
   kaleidoswapChannelOrderRecipe,
+  flashnetSwapRecipe,
   paymentsRecipe,
   receiveRecipe,
   assetSendRecipe,
   type AgentProfile,
+  type FastIntent,
   type InProcessTool,
   type LLMProvider,
   type EmbeddingProvider,
@@ -39,6 +41,9 @@ import { modelPath, isInstalled } from './models.js';
 import { buildKaleidoswapToolSource } from './kaleidoswapTools.js';
 import { buildLsps1ToolSource } from './lsps1Tools.js';
 import { buildRlnToolSource } from './rlnTools.js';
+import { buildBitrefillToolSource } from './bitrefillTools.js';
+import { buildSparkWalletToolSource, SPARK_MNEMONIC_PATH } from './sparkWallet.js';
+import { buildFlashnetToolSource } from './flashnetTools.js';
 import { btcMapLiveFetch, btcMapLiveLocation, defaultLocationFromEnv } from './btcmapLive.js';
 
 const KALEIDOSWAP_BASE_URL = process.env.KALEIDOSWAP_BASE_URL ?? 'http://localhost:8000';
@@ -49,10 +54,124 @@ const KALEIDOSWAP_API_KEY = process.env.KALEIDOSWAP_API_KEY;
 const RLN_BASE_URL = process.env.KALEIDO_RLN_URL ?? 'http://localhost:3001';
 const RLN_API_KEY = process.env.KALEIDO_RLN_API_KEY;
 
+// Bitrefill REST API — Personal Bearer token (or Business id/secret). Wired
+// only when a key is present, since every endpoint needs auth. Without it the
+// bitrefill skill simply tells the user to set the env var.
+const BITREFILL_BASE_URL = process.env.BITREFILL_BASE_URL;
+const BITREFILL_API_KEY = process.env.BITREFILL_API_KEY;
+const BITREFILL_API_ID = process.env.BITREFILL_API_ID;
+const BITREFILL_API_SECRET = process.env.BITREFILL_API_SECRET;
+
+// Spark BTC wallet — on-device, regtest by default. Set KALEIDO_SPARK=0 to
+// opt out (the CLI then runs against the mock spark in MOCK_TOOLS). Network
+// can be overridden via KALEIDO_SPARK_NETWORK=MAINNET|TESTNET|REGTEST|SIGNET.
+const SPARK_ENABLED = process.env.KALEIDO_SPARK !== '0';
+// Flashnet AMM rides on the Spark wallet — wired automatically when Spark is
+// up. Set KALEIDO_FLASHNET=0 to disable.
+const FLASHNET_ENABLED = SPARK_ENABLED && process.env.KALEIDO_FLASHNET !== '0';
+
+// ── Tier-0 fast-path intents (NO LLM) ──────────────────────────────────────
+// Balance + address are the most-asked, most-volatile reads. Small models
+// (0.6–1.7B) tend to re-emit a stale balance from chat history instead of
+// re-calling the tool. The fix is structural, not promptual: route these to
+// the deterministic fast-path so the model is NEVER in the loop — there is no
+// history to hallucinate from. The default WALLET_FAST_INTENTS point `balance`
+// at `get_balances` (the cross-layer aggregator), which this CLI never binds —
+// so balance fell through to the agentic tier and got parroted. Here we point
+// it at `spark_get_balance`, which IS bound, when Spark is on.
+const SPARK_ACTIONY = /\b(send|pay|transfer|swap|buy|sell|then|after that)\b/i;
+const SPARK_FAST_INTENTS: FastIntent[] = [
+  {
+    name: 'balance',
+    tool: 'spark_get_balance',
+    // Plain BTC-balance question. Defer token/Flashnet balances (those carry
+    // an asset and belong in the agentic tier with flashnet_get_balance).
+    match: (t) =>
+      !SPARK_ACTIONY.test(t) &&
+      !/\b(flashnet|token|usdb|usdt|xaut|rgb)\b/i.test(t) &&
+      /\b(balance|funds|how much (do i|have i|i have)|how much.*(do i have|in my wallet))\b/i.test(t),
+  },
+  {
+    // ON-CHAIN deposit address (bc1…/tb1…/bcrt1…). Matched FIRST because it's
+    // strictly more specific — phrases like "on-chain address", "deposit
+    // address", "bitcoin address" / "btc address", "fund spark", "deposit
+    // BTC" all want spark_get_onchain_address, NOT the Spark identity.
+    // Without this entry the model often answers the off-chain identity
+    // (sparkrt1…) and calls it "on-chain" — which is wrong.
+    name: 'onchain_address',
+    tool: 'spark_get_onchain_address',
+    match: (t) =>
+      !SPARK_ACTIONY.test(t) &&
+      /\b(on.?chain|onchain|on-chain|bitcoin address|btc address|deposit (?:address|btc|bitcoin|sats)|fund (?:spark|my wallet)|where (?:do|to|can) .*deposit)\b/i.test(t),
+  },
+  {
+    // Spark IDENTITY (sparkrt1…/spark1…). Off-chain Spark-to-Spark receive
+    // target. Only matches when on-chain phrasings are NOT present (the
+    // on-chain entry above wins by being listed first).
+    name: 'address',
+    tool: 'spark_get_address',
+    match: (t) =>
+      !SPARK_ACTIONY.test(t) &&
+      !/\b(on.?chain|onchain|on-chain|bitcoin address|btc address|deposit)\b/i.test(t) &&
+      /\b(receive address|my address|an address|get .*address|where.* receive|spark address|create .*address|generate .*address|new address)\b/i.test(t),
+  },
+];
+
+/** Render a fast-path result as a one-line answer (no model involved). */
+function renderSparkFast(intent: string, r: any): string {
+  if (intent === 'balance') {
+    const sats = Number(r?.total ?? r?.total_sats ?? 0);
+    const tokens: Array<{ symbol?: string; balance?: string; decimals?: number; address?: string }> =
+      Array.isArray(r?.tokens) ? r.tokens : [];
+    // Filter to tokens with a non-zero balance (the SDK can list tokens the
+    // user has ever interacted with, including drained ones). Display:
+    //   "N TICKER" when the symbol is known + decimals fit a clean div,
+    //   "N units of <short-addr>" when the symbol is null on this network.
+    const lines: string[] = [];
+    for (const t of tokens) {
+      const raw = String(t?.balance ?? '0');
+      if (raw === '0' || raw === '') continue;
+      let display = raw;
+      const dec = Number(t?.decimals ?? NaN);
+      if (Number.isFinite(dec) && dec > 0) {
+        // Tokens use base units; render with up to `decimals` precision.
+        try {
+          const n = Number(BigInt(raw)) / Math.pow(10, dec);
+          display = n.toLocaleString('en-US', { maximumFractionDigits: dec });
+        } catch { /* keep raw */ }
+      } else {
+        try { display = Number(BigInt(raw)).toLocaleString('en-US'); } catch { /* keep raw */ }
+      }
+      const label = t.symbol || (t.address ? `${t.address.slice(0, 8)}…` : 'token');
+      lines.push(`• ${display} ${label}`);
+    }
+    const head = `Your Spark wallet holds ${sats.toLocaleString()} sats.`;
+    return lines.length ? `${head}\n${lines.join('\n')}` : head;
+  }
+  if (intent === 'address') {
+    return r?.address
+      ? `Here's your Spark address (off-chain Spark identity — for Spark-to-Spark transfers, not an on-chain BTC address):\n\n\`${r.address}\``
+      : 'No Spark address available right now.';
+  }
+  if (intent === 'onchain_address') {
+    return r?.address
+      ? `Here's your Spark on-chain deposit address (send Bitcoin L1 BTC here to fund Spark):\n\n\`${r.address}\``
+      : 'No Spark on-chain deposit address available right now.';
+  }
+  return typeof r === 'string' ? r : JSON.stringify(r);
+}
+
 const PROFILE: AgentProfile = {
   name: 'KaleidoMind',
   soul: 'A sovereign, local-first AI for Bitcoin, Lightning and RGB. Private, precise, concise. Use a tool to get real data — never invent balances, prices or addresses.',
-  instructions: 'Confirm before spending. Keep replies short.',
+  instructions: [
+    'Confirm before spending. Keep replies short.',
+    'For volatile facts (balance, address, invoice/swap/order status, price, quote)',
+    'ALWAYS call the relevant tool again — even if the same question was asked earlier',
+    'in this session and you "already know" the answer. Conversation history is NOT',
+    'authoritative for anything that can change between turns. Each fresh question',
+    'gets a fresh tool call.',
+  ].join(' '),
 };
 
 // Tool scoping (which tools each skill exposes, what stays ambient) is now
@@ -229,6 +348,51 @@ export async function buildAgent(cfg: CliConfig, opts: BuildOpts = {}): Promise<
     // invoices. Atomic init/execute are MAKER endpoints, not here.
     buildRlnToolSource({ baseUrl: RLN_BASE_URL, apiKey: RLN_API_KEY }),
   ];
+  // Bitrefill REST — gift cards / top-ups / eSIMs. Wired ONLY when an API key
+  // (or Business id+secret) is present, because every endpoint needs auth.
+  // Without it, the bitrefill skill is still loaded but its tools aren't on
+  // the registry, so the model is told (by SKILL.md) to ask the user to set
+  // BITREFILL_API_KEY instead of inventing a purchase.
+  if (BITREFILL_API_KEY || (BITREFILL_API_ID && BITREFILL_API_SECRET)) {
+    sources.push(
+      buildBitrefillToolSource({
+        apiKey: BITREFILL_API_KEY ?? '',
+        apiId: BITREFILL_API_ID,
+        apiSecret: BITREFILL_API_SECRET,
+        ...(BITREFILL_BASE_URL ? { baseUrl: BITREFILL_BASE_URL } : {}),
+      }),
+    );
+  }
+
+  // Spark BTC wallet (regtest by default) + Flashnet AMM. Real on-device
+  // wallet — initializes from ~/.kaleido/spark.mnemonic (generates one on
+  // first run). When Spark boots successfully, its spark_* tools take
+  // precedence over the mock wdk_* tools below for "balance", "address",
+  // "invoice", "pay invoice" intents. If the SDK fails to load (peer dep
+  // mismatch, no network for SSP/regtest server, etc.), we log a warning
+  // and leave the mocks in place so the CLI still runs.
+  if (SPARK_ENABLED) {
+    try {
+      const sparkSource = await buildSparkWalletToolSource({
+        log: (m) => process.env.KALEIDO_VERBOSE === '1' && console.error(c.dim(`[spark] ${m}`)),
+      });
+      sources.push(sparkSource);
+      if (FLASHNET_ENABLED) {
+        try {
+          const flashnetSource = await buildFlashnetToolSource({
+            log: (m) => process.env.KALEIDO_VERBOSE === '1' && console.error(c.dim(`[flashnet] ${m}`)),
+          });
+          sources.push(flashnetSource);
+        } catch (e) {
+          console.error(c.yellow(`  (flashnet disabled: ${(e as Error)?.message ?? e})`));
+        }
+      }
+    } catch (e) {
+      console.error(c.yellow(`  (spark wallet disabled: ${(e as Error)?.message ?? e})`));
+      console.error(c.dim(`  mnemonic path: ${SPARK_MNEMONIC_PATH}`));
+    }
+  }
+
   if (retriever) sources.push(createRagToolSource(retriever));
 
   const registry = new ToolRegistry(sources);
@@ -246,7 +410,25 @@ export async function buildAgent(cfg: CliConfig, opts: BuildOpts = {}): Promise<
     // Order matters when two recipes' match() both fire — first wins.
     // Channel-order must come BEFORE the atomic swap recipe so "buy a USDT
     // channel" doesn't get misrouted as "buy USDT" (a swap).
-    recipes: [kaleidoswapPriceRecipe, kaleidoswapChannelOrderRecipe, kaleidoswapAtomicRecipe, paymentsRecipe, receiveRecipe, assetSendRecipe],
+    // Order matters when two recipes' match() both fire — first wins.
+    // flashnet-swap goes BEFORE kaleidoswap-atomic because the atomic recipe
+    // explicitly defers on Flashnet cues; this ordering is documentation,
+    // not a tiebreaker. Channel-order before atomic so "buy a USDT channel"
+    // isn't mistaken for a swap.
+    recipes: [
+      kaleidoswapPriceRecipe,
+      kaleidoswapChannelOrderRecipe,
+      flashnetSwapRecipe,
+      kaleidoswapAtomicRecipe,
+      paymentsRecipe,
+      receiveRecipe,
+      assetSendRecipe,
+    ],
+    // T0 fast-path: when the Spark wallet is live, answer balance/address
+    // deterministically (no LLM → no history hallucination). Falls back to the
+    // built-in WALLET_FAST_INTENTS otherwise. A fast intent whose tool isn't
+    // bound is skipped by the Funnel, so this is safe to pass unconditionally.
+    ...(SPARK_ENABLED ? { fastIntents: SPARK_FAST_INTENTS, renderFast: renderSparkFast } : {}),
     system:
       `${PROFILE.soul}\n${PROFILE.instructions ?? ''}`.trim(),
     getSettings: () => ({ ragEnabled: !!retriever }),
@@ -380,4 +562,23 @@ export async function runChat(agent: Agent): Promise<void> {
   prompt();
   for await (const line of rl) { await handle(line); prompt(); }
   if (agent.sdk?.close) await agent.sdk.close();
+  // Best-effort teardown of the Spark wallet's background streams (periodic
+  // token sync, gRPC connection pool). cleanupConnections() doesn't always
+  // close every timer the SDK has open, so we still force-exit below.
+  if (SPARK_ENABLED) {
+    try {
+      const { getSparkWallet } = await import('./sparkWallet.js');
+      const { wallet } = await getSparkWallet();
+      await wallet?.cleanupConnections?.();
+    } catch { /* ignore — best-effort shutdown */ }
+    // Hard exit — the Spark SDK keeps a long-poll stream and a periodic
+    // token-output optimizer alive even after cleanupConnections returns.
+    // For a CLI that's done with the user, killing the loop is the right
+    // call (no in-flight writes to lose). Skip with KALEIDO_HARD_EXIT=0.
+    if (process.env.KALEIDO_HARD_EXIT !== '0') {
+      // Flush any pending stdout (a trailing readline echo) before exiting.
+      await new Promise<void>((r) => setImmediate(r));
+      process.exit(0);
+    }
+  }
 }

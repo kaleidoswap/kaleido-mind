@@ -64,6 +64,7 @@ export function confirmReadback(call: { name: string; arguments: Record<string, 
     case 'liquid_send':
       return ask(`Send ${asset(a.amount, a.asset)} to ${to()}${over(name, a)}`);
     case 'rln_pay_invoice':
+    case 'spark_pay_invoice':
       return ask(`Pay Lightning invoice ${shortRef(String(a.invoice ?? ''))}${over(name, a)}`);
     case 'execute_swap':
       return ask(`Swap ${fmtNum(Number(a.amount))} ${String(a.from_asset)} for ${String(a.to_asset)}`);
