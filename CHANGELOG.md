@@ -5,6 +5,21 @@ apps) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.2] — 2026-06-21
+
+### Fixed
+
+- **`kaleidoswap-atomic` recipe was calling the maker tools with the wrong
+  argument names**, so every chat swap ("buy 1 USDT") failed at the first step
+  with an MCP input-validation error (`from_asset_id`/`to_asset_id`/`from_layer`/
+  `to_layer`/`from_amount` all undefined). The recipe now emits the
+  `kaleido-mcp ≥0.2.1` `kaleidoswap_get_quote` schema: resolves the settlement
+  layer per asset (BTC→`BTC_LN`, RGB→`RGB_LN`) and puts the amount on the
+  correct leg — `to_amount` for a buy ("buy 1 USDT"), `from_amount` for a
+  sell/swap. `kaleidoswap_atomic_init` now reads the quote echo's `asset_id`
+  and `amount_raw` (was reading the non-existent `amount`), and the confirm /
+  summary render each leg from its `amount_display`. Requires `kaleido-mcp ≥0.2.1`.
+
 ## [0.5.0] — 2026-06-16
 
 KaleidoSwap trading and LSP onboarding land in the agent: the model can now

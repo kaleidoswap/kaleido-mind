@@ -31,12 +31,12 @@ function buildStubs(captured: { name: string; args: any }[]) {
   });
   return new ToolRegistry([
     new InProcessToolSource('kaleidoswap', [
+      // Mirror the REAL kaleido-mcp `kaleidoswap_get_quote` response: each leg
+      // echoes asset_id + ticker + layer + amount_raw (integer) + amount_display.
       tool('kaleidoswap_get_quote', {
         rfq_id: 'rfq-1',
-        from_asset: { asset_id: 'USDT', ticker: 'USDT', amount: 10_000_000 },
-        to_asset: { asset_id: 'BTC', ticker: 'BTC', amount: 15_250_000 },
-        from_amount_display: '10 USDT',
-        to_amount_display: '15,250 sats',
+        from_asset: { asset_id: 'USDT', ticker: 'USDT', layer: 'RGB_LN', amount_raw: 10_000_000, amount_display: '10' },
+        to_asset: { asset_id: 'BTC', ticker: 'BTC', layer: 'BTC_LN', amount_raw: 15_250_000, amount_display: '15,250 sats' },
         fee_display: '154 sats',
       }),
       tool('kaleidoswap_atomic_init', { swapstring: 'SWAP/abc/def', payment_hash: 'ph-1' }, /* spend */ true),
@@ -166,8 +166,33 @@ describe('kaleidoswapAtomicRecipe — full chain', () => {
     const init = captured.find((c) => c.name === 'kaleidoswap_atomic_init')!;
     expect(init.args).toEqual({
       rfq_id: 'rfq-1',
-      from_asset: 'USDT', from_amount: 10_000_000,
-      to_asset: 'BTC', to_amount: 15_250_000,
+      from_asset_id: 'USDT', from_amount_raw: 10_000_000,
+      to_asset_id: 'BTC', to_amount_raw: 15_250_000,
+    });
+  });
+
+  it('builds get_quote args matching the kaleido-mcp schema (sell vs buy leg)', async () => {
+    // The reported bug: the recipe must emit the MCP tool's field names
+    // (from_asset_id/to_asset_id/from_layer/to_layer) and put the amount on the
+    // correct leg — to_amount for "buy 1 usdt", from_amount for a sell/swap.
+    const sell: { name: string; args: any }[] = [];
+    await runRecipe(kaleidoswapAtomicRecipe, 'swap 10 usdt to btc', {
+      provider: refusingProvider, tools: buildStubs(sell), onConfirm: async () => ({ approved: true }),
+      slots: { from_asset: 'USDT', to_asset: 'BTC', amount: 10, amount_side: 'from' },
+    });
+    expect(sell.find((c) => c.name === 'kaleidoswap_get_quote')!.args).toEqual({
+      from_asset_id: 'USDT', to_asset_id: 'BTC',
+      from_layer: 'RGB_LN', to_layer: 'BTC_LN', from_amount: 10,
+    });
+
+    const buy: { name: string; args: any }[] = [];
+    await runRecipe(kaleidoswapAtomicRecipe, 'buy 1 usdt', {
+      provider: refusingProvider, tools: buildStubs(buy), onConfirm: async () => ({ approved: true }),
+      slots: { from_asset: 'BTC', to_asset: 'USDT', amount: 1, amount_side: 'to' },
+    });
+    expect(buy.find((c) => c.name === 'kaleidoswap_get_quote')!.args).toEqual({
+      from_asset_id: 'BTC', to_asset_id: 'USDT',
+      from_layer: 'BTC_LN', to_layer: 'RGB_LN', to_amount: 1,
     });
   });
 
