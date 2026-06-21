@@ -2,6 +2,7 @@ schema: kaleidomind.remote-apis.v1
 policy:
   ai_inference: "All LLM, embedding, STT and TTS inference uses @qvac/sdk."
   network_tools: "Ordinary network-backed wallet and discovery tools are optional and explicitly disclosed below."
+  wallet_execution: "Wallet tools execute on-device via in-process WDK adapters (spark_*, rln_*, arkade_*). The WDK libraries are local client code, not remote APIs; the network backends those adapters reach are listed below."
 services:
   - name: Hugging Face Hub
     category: model-download
@@ -40,6 +41,36 @@ services:
     purpose: Read balances/channels, create invoices and execute explicitly confirmed payments or RGB operations.
     data_sent: Wallet RPC requests and transaction/protocol data; prompts are not sent.
     authentication: User-configured node credentials.
+    optional: true
+    used_for_ai_inference: false
+
+  - name: Spark network
+    category: wallet-node
+    endpoints:
+      - "Spark operators / SSP reached by the on-device Spark WDK adapter (@buildonspark/spark-sdk)"
+    purpose: Read Spark balances/addresses, create invoices and execute explicitly confirmed Spark BTC/token transfers.
+    data_sent: Spark protocol requests and signed transfers; never seed phrases or prompts.
+    authentication: On-device Spark wallet keys.
+    optional: true
+    used_for_ai_inference: false
+
+  - name: Arkade (Ark server)
+    category: wallet-node
+    endpoints:
+      - "User-configured Ark server URL reached by the on-device Arkade WDK adapter"
+    purpose: Read Arkade balances/addresses and execute explicitly confirmed Ark transactions.
+    data_sent: Ark protocol requests and signed transactions; never seed phrases or prompts.
+    authentication: On-device Arkade wallet keys.
+    optional: true
+    used_for_ai_inference: false
+
+  - name: Esplora chain indexer
+    category: chain-backend
+    endpoints:
+      - "User-configured Esplora endpoint used by the Spark and Arkade WDK adapters"
+    purpose: Fetch UTXOs, fee estimates and broadcast transactions for on-chain wallet operations.
+    data_sent: Addresses, transaction queries and signed transactions for broadcast; no prompts or keys.
+    authentication: None for public indexers.
     optional: true
     used_for_ai_inference: false
 
