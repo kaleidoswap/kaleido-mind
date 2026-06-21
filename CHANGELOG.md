@@ -5,6 +5,19 @@ apps) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.3] — 2026-06-21
+
+### Fixed
+
+- **Forced slot-extraction inference failures no longer kill a recipe the regex
+  already understood.** Recipes with `forceModelExtract` (e.g. `kaleidoswap-atomic`)
+  always ask the model to parse intent. On small on-device models the model can
+  ramble and the inference is cancelled/times out — which surfaced as
+  *"Couldn't complete that: Inference request … was cancelled"* for a plain
+  "buy 1 usdt". `extractSlots` now catches an inference error and, when the
+  deterministic extractor already produced valid slots, degrades gracefully to
+  those instead of failing the whole request.
+
 ## [0.6.2] — 2026-06-21
 
 ### Fixed
