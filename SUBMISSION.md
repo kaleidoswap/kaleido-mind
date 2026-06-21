@@ -12,6 +12,8 @@ React Native wallet and an autonomous agent.
 
 **Project site:** <https://kaleidoswap.github.io/kaleido-mind/>
 
+**Demo video:** <https://youtu.be/pXhuw_DDHZA>
+
 ## What it is
 
 A wallet you can talk to. Ask it to *"buy 100 USDT,"* *"swap 0.001 BTC,"*
