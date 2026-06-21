@@ -20,6 +20,7 @@
  */
 
 import { Engine } from './engine.js';
+import type { ToolCrushOptions } from './context/compress.js';
 import type { ToolRegistry } from './tools/registry.js';
 import { FastPath, WALLET_FAST_INTENTS } from './fastpath/fastpath.js';
 import type { FastIntent } from './fastpath/fastpath.js';
@@ -139,6 +140,13 @@ export interface FunnelOptions {
   system?: string;
   /** Max reasoning↔tool rounds in the agentic tier. Default 5. */
   maxTurns?: number;
+  /**
+   * Crush verbose tool results before they re-enter the agentic loop's history,
+   * so a tiny on-device model's window isn't drowned in repetitive JSON. `true`
+   * uses safe defaults (amounts/addresses/invoices preserved); pass options to
+   * tune. Off by default. See compressToolResult.
+   */
+  compressToolOutput?: boolean | ToolCrushOptions;
   /** User settings, read fresh each turn. */
   getSettings?: () => FunnelSettings;
   /** Render a fast-path tool result as user-facing text. Default: built-in. */
@@ -196,6 +204,7 @@ export class Funnel {
       provider: opts.provider,
       tools: opts.tools,
       defaultMaxTurns: opts.maxTurns ?? 5,
+      compressToolOutput: opts.compressToolOutput,
     });
     this.fastPath = new FastPath(opts.fastIntents ?? WALLET_FAST_INTENTS);
     this.recipes = new RecipeRegistry(opts.recipes ?? [assetSendRecipe, paymentsRecipe, receiveRecipe]);
