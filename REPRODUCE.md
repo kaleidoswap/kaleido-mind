@@ -24,7 +24,6 @@ pnpm install --frozen-lockfile
 pnpm build
 pnpm typecheck
 pnpm test
-pnpm submission:check
 pnpm submission:evidence:mock
 ```
 

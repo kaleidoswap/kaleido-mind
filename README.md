@@ -2,7 +2,7 @@
 
 > Sovereign AI for sovereign money. A local-first, agentic financial assistant for multi-layer Bitcoin wallets — trade, pay, onboard and discover merchants across Spark, RGB/Lightning and Arkade, by chat or voice, fully on-device.
 
-**🌐 Project site: [kaleidoswap.github.io/kaleido-mind](https://kaleidoswap.github.io/kaleido-mind/)** · **🎥 [Demo video](https://youtu.be/pXhuw_DDHZA)**
+**🎥 [Demo video](https://youtu.be/pXhuw_DDHZA)**
 
 Built for the [QVAC Hackathon](https://dorahacks.io/hackathon/qvac-unleach-edge-ai-i/) by the [KaleidoSwap](https://kaleidoswap.com) team. LLM, embedding, STT and TTS inference runs through the [QVAC SDK](https://www.npmjs.com/package/@qvac/sdk), locally or on an explicitly paired user-controlled desktop. Optional wallet, trading, commerce and merchant-discovery tools may use the network and are [fully disclosed](./submission/remote-apis.yaml).
 
@@ -10,7 +10,7 @@ Built for the [QVAC Hackathon](https://dorahacks.io/hackathon/qvac-unleach-edge-
 
 ## What this is
 
-`@kaleidorg/mind` is the reasoning + tool-calling engine that drives a **multi-L2 Bitcoin wallet** (Spark · RLN/RGB · Arkade · Liquid) with an on-device LLM. It runs the *same* agent on a phone and a laptop, and it's designed around one hard constraint: **tiny on-device models are slow and weak at arguments** — so we don't ask them to do the slow/weak parts.
+`@kaleidorg/mind` is the reasoning + tool-calling engine that drives a **multi-L2 Bitcoin wallet** (Spark · RLN/RGB · Arkade, with Liquid planned) with an on-device LLM. It runs the *same* agent on a phone and a laptop, and it's designed around one hard constraint: **tiny on-device models are slow and weak at arguments** — so we don't ask them to do the slow/weak parts.
 
 Three ideas make that work:
 

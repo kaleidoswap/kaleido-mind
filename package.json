@@ -14,7 +14,6 @@
     "test": "pnpm -r run test",
     "lint": "pnpm -r run lint",
     "play": "pnpm --filter @kaleidorg/mind-playground run start",
-    "submission:check": "node scripts/check-submission.mjs",
     "submission:evidence": "node scripts/run-submission-benchmark.mjs",
     "submission:evidence:mock": "node scripts/run-submission-benchmark.mjs --mock"
   },
