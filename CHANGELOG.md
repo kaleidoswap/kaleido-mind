@@ -17,6 +17,26 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   The `rgb-lightning-node` skill documents the shared schemas and gains an
   "issue your own RGB asset" recipe.
 
+### Removed
+
+- **KaleidoSwap order flow.** The maker no longer offers order-based swaps
+  (kaleido-sdk 0.1.12 dropped them), so `kaleidoswap_place_order`,
+  `kaleidoswap_get_order_status` and `kaleidoswap_get_order_history` are gone
+  from the KaleidoSwap contract, together with its `orders` group, the CLI and
+  playground maker routes, the `kaleido-trading` skill, evals and docs. Swaps
+  run through the atomic flow (`kaleidoswap_get_quote` →
+  `kaleidoswap_atomic_init` → `rln_atomic_taker` →
+  `kaleidoswap_atomic_execute` → `kaleidoswap_atomic_status`). Hosts that bound
+  handlers for the order tools or passed `groups: ['orders']` must move to the
+  atomic tools.
+
+### Fixed
+
+- **CLI chat no longer throws at startup** binding the KaleidoSwap contract:
+  the CLI has no maker route for `kaleidoswap_lsp_quote_asset_channel` /
+  `kaleidoswap_lsp_create_asset_channel`, so it now binds with
+  `allowMissing: true` like its other tool sources.
+
 ## [0.7.0] — 2026-10-06
 
 Core `@kaleidorg/mind` 0.7.0 and `@kaleidorg/mind-provider` 0.7.0.

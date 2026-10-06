@@ -48,7 +48,6 @@ const TOOL_DESC: Record<string, string> = {
   get_price: 'Get the current BTC price',
   get_market_data: 'Get market data (price, 24h change)',
   kaleidoswap_get_quote: 'Quote a swap between BTC and an RGB asset',
-  kaleidoswap_place_order: 'Place a swap order',
   remember: 'Save a fact/preference to long-term memory',
   recall: 'Recall facts from long-term memory',
   search_knowledge: 'Search the Bitcoin/Lightning knowledge base',
@@ -74,8 +73,8 @@ const AMBIENT = ['remember', 'recall', 'search_knowledge'];
 const DECOYS = [
   'wdk_export_logs', 'wdk_backup_channels', 'wdk_close_channel', 'wdk_open_channel', 'wdk_sign_message',
   'wdk_decode_invoice', 'wdk_list_peers', 'wdk_connect_peer', 'wdk_disconnect_peer', 'wdk_estimate_fee',
-  'kaleidoswap_cancel_order', 'kaleidoswap_get_pairs', 'kaleidoswap_get_position', 'kaleidoswap_get_spreads',
-  'kaleidoswap_lsp_get_info', 'kaleidoswap_lsp_create_order', 'kaleidoswap_get_order_status', 'kaleidoswap_atomic_init',
+  'kaleidoswap_get_pairs', 'kaleidoswap_get_spreads',
+  'kaleidoswap_lsp_get_info', 'kaleidoswap_lsp_create_order', 'kaleidoswap_atomic_init',
   'rgb_list_assets', 'rgb_send_asset', 'rgb_get_asset_balance', 'rgb_create_invoice', 'rgb_refresh_transfers',
   'nostr_get_contacts', 'nostr_send_dm', 'nostr_publish_note', 'nostr_zap',
   'get_sentiment', 'get_ohlcv', 'get_fear_greed', 'convert_currency', 'get_network_stats',

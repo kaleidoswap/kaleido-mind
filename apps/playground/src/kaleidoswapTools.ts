@@ -71,19 +71,6 @@ const KALEIDOSWAP_ROUTES: Record<string, Route> = {
       : { from_asset: leg(a.from_asset, a.amount), to_asset: leg(a.to_asset) },
   },
   kaleidoswap_get_nodeinfo: { method: 'GET',  path: '/api/v1/swaps/nodeinfo' },
-  kaleidoswap_place_order: {
-    method: 'POST', path: '/api/v1/swaps/orders',
-    body: (a) => {
-      const rfq_id = a.quote_id ?? a.rfq_id;
-      if (a.from_asset != null && a.to_asset != null) return { rfq_id, from_asset: leg(a.from_asset, a.amount), to_asset: leg(a.to_asset) };
-      return { rfq_id };
-    },
-  },
-  kaleidoswap_get_order_status: {
-    method: 'POST', path: '/api/v1/swaps/orders/status',
-    body: (a) => ({ order_id: a.order_id, access_token: a.access_token ?? '' }),
-  },
-  kaleidoswap_get_order_history: { method: 'GET', path: '/api/v1/swaps/orders/history' },
   kaleidoswap_atomic_init: {
     method: 'POST', path: '/api/v1/swaps/init',
     body: (a) => ({ rfq_id: a.quote_id ?? a.rfq_id, ...a }),
