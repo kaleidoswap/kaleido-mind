@@ -7,6 +7,21 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **Submarine swaps on the KaleidoSwap /v2 maker** (kaleidoswap-maker-rs): pay a
+  Lightning invoice from Liquid funds.
+  - New contract `SUBMARINE_TOOLS` (`kaleidoswap_submarine_pairs`, `_create`,
+    `_fund`, `_status`, the same names kaleido-mcp implements) with
+    `bindSubmarineTools`. Only `_fund` is a spend, and it takes nothing but the
+    swap id.
+  - `submarinePayRecipe` (opt-in, register before `paymentsRecipe`): "pay <invoice>
+    with L-USDT" / "paga <invoice> con USDT su Liquid" → create → one
+    confirmation showing the maker's exact amount → fund. A bare "USDT" stays
+    RGB USDT and is not matched.
+  - `MockWallet` simulates the /v2 maker (Liquid balances, 0.5% fee, BOLT11
+    amount parsing), and a new `submarine-swaps` skill covers the flow.
+
 ### Changed
 
 - **RGB issuance tools aligned with kaleido-mcp**, which now ships them as
