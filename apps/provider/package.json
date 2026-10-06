@@ -1,7 +1,7 @@
 {
   "name": "@kaleidorg/mind-provider",
   "version": "0.6.3",
-  "description": "Node sidecar that runs @qvac/sdk startQVACProvider() and speaks JSON-RPC over stdio. Spawned by desktop-app/src-tauri/src/mind.rs.",
+  "description": "Node sidecar that runs a @kaleidorg/mind agent on @qvac/sdk and speaks JSON-RPC over stdio.",
   "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -31,7 +31,7 @@
     "@modelcontextprotocol/sdk": "^1.32.1"
   },
   "peerDependencies": {
-    "@qvac/sdk": ">=0.21.0"
+    "@qvac/sdk": ">=0.13.5"
   },
   "devDependencies": {
     "@qvac/sdk": "^0.21.0",
