@@ -5,7 +5,7 @@ tools: rln_get_node_info, rln_get_balances, rln_list_channels, rln_list_assets, 
 triggers: node, nodeinfo, pubkey, peer, channels, channel capacity, list channels, open channel, close channel, inbound, capacity, asset balance, whitelist, taker, swapstring, swaps, payments, invoice, receive, send asset, send rgb, on-chain address, deposit, rgb invoice, ln invoice, issue, mint, new token, nft, utxos, transfers
 metadata:
   author: kaleidoswap
-  version: "0.3.0"
+  version: "0.3.1"
 ---
 
 # RGB Lightning Node (taker-side)
@@ -78,6 +78,16 @@ hold / what's my USDT balance".
 ### `rln_get_asset_balance` — { asset_id }
 Balance for one RGB asset by id. Use after `rln_list_assets` gave you the id,
 or when the user names a specific asset.
+
+| Field | Meaning |
+|---|---|
+| `settled` / `spendable` | On-chain (RGB_L1), UTXO-bound |
+| `future` | Pending settlement |
+| `offchain_outbound` | In a Lightning channel: what you can **send** |
+| `offchain_inbound` | Channel receive capacity for this asset |
+
+For USDT/XAUT held in an RGB channel, report `offchain_outbound`; `spendable`
+is 0 and that is normal.
 
 ### `rln_refresh_transfers` — no args
 Syncs pending RGB transfers. Call it before re-reading a balance or transfer
@@ -194,6 +204,14 @@ A user-driven swap on KaleidoSwap is a two-service flow. Keep them straight:
 The node's two contributions to the swap are the **pubkey** and the
 **whitelist ack** — nothing more. Don't reach for `/makerinit` or
 `/makerexecute`; those are for nodes that act AS the maker, which is not us.
+
+## Safety
+
+- Show amount, recipient and asset before any send; the engine also asks for
+  confirmation on every 🔒 tool.
+- Flag a send above half of the available balance.
+- If the node is unreachable or the wallet is locked, use the `kaleido-node`
+  skill (start / unlock) before retrying.
 
 ## Reply style
 

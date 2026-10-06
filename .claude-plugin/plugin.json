@@ -1,0 +1,25 @@
+{
+  "name": "kaleido-mind",
+  "version": "0.7.0",
+  "description": "Bitcoin wallet agent skills: RGB Lightning Node operations, KaleidoSwap atomic swaps, LSPS1 channels, Spark, paid (L402/MPP) APIs and more, plus the kaleido-mcp server (defaults to signet).",
+  "author": {
+    "name": "KaleidoSwap",
+    "url": "https://github.com/kaleidoswap"
+  },
+  "homepage": "https://github.com/kaleidoswap/kaleido-mind",
+  "repository": "https://github.com/kaleidoswap/kaleido-mind",
+  "license": "Apache-2.0",
+  "keywords": ["bitcoin", "lightning", "rgb", "wallet", "atomic-swap", "kaleidoswap", "l402", "mpp", "spark"],
+  "skills": ["./packages/core/skills/"],
+  "mcpServers": {
+    "kaleido": {
+      "command": "npx",
+      "args": ["-y", "kaleido-mcp"],
+      "env": {
+        "KALEIDO_NETWORK": "${KALEIDO_NETWORK:-signet}",
+        "RLN_NODE_URL": "${RLN_NODE_URL:-http://localhost:3001}",
+        "WDK_SEED": "${WDK_SEED:-}"
+      }
+    }
+  }
+}

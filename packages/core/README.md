@@ -103,7 +103,7 @@ A runnable copy (with a `--mock` mode) is in
 | `@kaleidorg/mind` | `Engine`, `Funnel` (fast-path → recipe → agent), `ToolRegistry`, `InProcessToolSource`, `SkillRegistry`, wallet / KaleidoSwap / LSPS1 / Bitrefill / Flashnet contracts and binders, `confirmReadback`, recipes, memory, RAG, context budgeting, L402 and CLI tool sources | Any (RN-safe) |
 | `@kaleidorg/mind/qvac` | `createQvacProvider`, `toQvacTools`, `consumeRun`, voice (`createQvacVoice`, `runVoiceAssistant`), model configs, delegation helpers | Any; you inject the SDK functions |
 | `@kaleidorg/mind/mcp` | `McpToolSource`: tools from an MCP server over stdio or streamable HTTP | Node |
-| `@kaleidorg/mind/skills` | `loadSkillsDir`, `loadSkillFromDir`, `packagedSkillsDir()` (the 13 bundled skills) | Node (fs) |
+| `@kaleidorg/mind/skills` | `loadSkillsDir`, `loadSkillFromDir`, `packagedSkillsDir()` (the 14 bundled skills) | Node (fs) |
 | `@kaleidorg/mind/testing` | `MockWallet` (stateful fake wallet bound to the real contract), `scriptedProvider` | Any |
 | `@kaleidorg/mind/logger` | `TurnLogger` for JSONL turn logs with PII masking | Any |
 

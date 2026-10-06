@@ -24,6 +24,57 @@ The [package README](./packages/core/README.md) covers a five-minute QVAC
 quickstart, the subpath exports, the wallet tool contract, connecting MCP
 servers (such as `kaleido-mcp`) and writing your own tools and skills.
 
+## Use with Claude Code / Claude Desktop
+
+The skills in [`packages/core/skills`](./packages/core/skills) follow the Agent
+Skills format, so Claude can use them directly, together with the
+[kaleido-mcp](https://www.npmjs.com/package/kaleido-mcp) server.
+
+**Claude Code plugin.** This repository is also a plugin marketplace:
+
+```bash
+/plugin marketplace add kaleidoswap/kaleido-mind
+/plugin install kaleido-mind@kaleidoswap
+```
+
+The plugin installs the skills and starts `npx -y kaleido-mcp` over stdio. The
+server reads three variables from your environment:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `KALEIDO_NETWORK` | `signet` | KaleidoSwap network preset (kaleido-mcp 0.3.0+) |
+| `RLN_NODE_URL` | `http://localhost:3001` | your RGB Lightning Node API |
+| `WDK_SEED` | empty | seed for the Spark wallet tools; leave empty to skip them |
+
+**Plain MCP (Claude Desktop, other clients).** Add the server to
+`claude_desktop_config.json` (or a project `.mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "kaleido": {
+      "command": "npx",
+      "args": ["-y", "kaleido-mcp"],
+      "env": { "KALEIDO_NETWORK": "signet", "RLN_NODE_URL": "http://localhost:3001" }
+    }
+  }
+}
+```
+
+To use the skills without the plugin, copy the skill folders you want into
+`~/.claude/skills/`.
+
+**Which skills work with kaleido-mcp alone.** `rgb-lightning-node`,
+`kaleido-node`, `kaleido-trading` (atomic swaps), `kaleido-lsps`,
+`channel-manager`, `liquidity-optimizer`, `dca`, `portfolio-manager` and
+`paid-data` use tools that kaleido-mcp provides. The other skills call tools
+that come from the `@kaleidorg/mind` runtime or from other servers:
+`spark-wallet` and `wallet-assistant` use the in-app wallet contract,
+`bitrefill` needs the Bitrefill MCP, `flashnet-swaps` needs Flashnet tools, and
+`merchant-finder` needs a BTC Map tool. In Claude Code these skills
+won't work unless you connect those tools. The `tools:` and `triggers:`
+frontmatter lines are read by the mind runtime; Claude ignores them.
+
 ## Examples
 
 | Example | What it does | Run |
@@ -72,7 +123,7 @@ What else is in the box:
   `arkade_*`, `liquid_*` and router tools), KaleidoSwap trading (quotes, atomic
   swaps) and LSPS1 channel orders, plus recipes for payments, swaps, asset
   sends, channel onboarding and RGB issuance.
-- **Skills:** 13 bundled playbooks in the Agent Skills format (`SKILL.md` with
+- **Skills:** 14 bundled playbooks in the Agent Skills format (`SKILL.md` with
   progressive disclosure), loadable from disk or bundled for React Native.
 - **Memory and RAG:** long-term recall and retrieval with injected embeddings,
   through QVAC.
@@ -94,6 +145,7 @@ kaleido-mind/
 │   ├── cli/           kaleido-mind CLI — model management, chat, product and diagnostic evals
 │   └── playground/    exercise the engine against a real local model
 ├── examples/          node-minimal, rgb-agent
+├── .claude-plugin/    Claude Code plugin + marketplace manifests (skills + kaleido-mcp)
 ├── docs/              architecture, function calling, memory/RAG, integration, benchmark, publishing
 └── submission/        QVAC hackathon submission material and evidence
 ```

@@ -28,6 +28,16 @@ Core `@kaleidorg/mind` 0.7.0 and `@kaleidorg/mind-provider` 0.7.0.
   `rln_list_swaps`, `rln_get_swap`. `confirmReadback` speaks the new spend
   tools and kaleido-mcp's `asset_id` / `recipient_id` for `rln_send_asset`.
   Existing tool schemas are unchanged.
+- **Claude Code plugin + marketplace** (`.claude-plugin/`): installs the
+  bundled skills and starts kaleido-mcp on signet
+  (`/plugin marketplace add kaleidoswap/kaleido-mind`).
+- **`kaleido-node` skill**: node lifecycle (start/stop, init, unlock,
+  recovery) over kaleido-mcp's `kaleido_node_*` tools or the `kaleido` CLI,
+  with password and mnemonic safety rules.
+- `kaleido-trading` 0.5.0 gains `references/` (atomic flow over kaleido-mcp,
+  assets/units/precision, maker API) and the kaleido-mcp atomic-only path;
+  `paid-data` 0.2.0 covers the MPP three-step flow and paid-API discovery;
+  `rgb-lightning-node` 0.3.1 explains RGB balance fields.
 - **`toQvacTools`** (`@kaleidorg/mind/qvac`) — maps engine tools to the
   `completion({ tools })` shape.
 - **`@kaleidorg/mind/testing`** — a new subpath export so hosts can build and
