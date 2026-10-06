@@ -19,17 +19,17 @@
     "serve": "tsx src/index.ts serve"
   },
   "dependencies": {
-    "@buildonspark/spark-sdk": "^0.7.17",
-    "@flashnet/sdk": "^0.5.8",
+    "@buildonspark/spark-sdk": "^0.13.0",
+    "@flashnet/sdk": "^0.5.10",
     "@kaleidorg/mind": "workspace:*",
-    "@scure/bip39": "^1.6.0"
+    "@scure/bip39": "^2.4.0"
   },
   "peerDependencies": {
     "@qvac/sdk": "*"
   },
   "devDependencies": {
-    "@types/node": "^20.19.43",
-    "tsx": "^4.22.4",
-    "typescript": "^5.9.3"
+    "@types/node": "^26.6.4",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
   }
 }
