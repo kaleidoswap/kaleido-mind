@@ -66,6 +66,14 @@ export function confirmReadback(call: { name: string; arguments: Record<string, 
     case 'rln_pay_invoice':
     case 'spark_pay_invoice':
       return ask(`Pay Lightning invoice ${shortRef(String(a.invoice ?? ''))}${over(name, a)}`);
+    case 'rln_issue_asset': {
+      const label = a.name != null && a.ticker != null && String(a.name) !== String(a.ticker) ? ` (${String(a.name)})` : '';
+      return a.schema === 'UDA'
+        ? ask(`Issue unique asset ${String(a.ticker ?? a.name)}${label} on RGB`)
+        : ask(`Issue ${asset(a.amount, a.ticker ?? a.name)}${label}, a new RGB asset`);
+    }
+    case 'rln_create_utxos':
+      return ask(`Create ${fmtNum(Number(a.num ?? 5))} RGB UTXOs on-chain${over(name, a)}`);
     case 'execute_swap':
       return ask(`Swap ${fmtNum(Number(a.amount))} ${String(a.from_asset)} for ${String(a.to_asset)}`);
     default:

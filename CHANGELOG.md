@@ -5,6 +5,30 @@ apps) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **`@kaleidorg/mind/testing`** — a new subpath export so hosts can build and
+  demo an agent with no node, no funds and no model. `MockWallet` (moved from
+  the CLI eval, unchanged behaviour for the existing tools) binds the canonical
+  wallet contract to stateful fakes; `scriptedProvider` replays planned turns
+  in place of a QVAC model. The eval imports the same class, so the safety and
+  product benchmarks are unaffected.
+- **RGB issuance in the wallet contract.** New `rln_*` tools:
+  `rln_issue_asset` (NIA / CFA / UDA, 🔒), `rln_create_utxos` (🔒),
+  `rln_list_assets`, `rln_list_transfers`. `confirmReadback` speaks issuance
+  ("Issue 1,000 TICKET (Hackathon Ticket), a new RGB asset. Confirm?").
+  `MockWallet` models issuance, colored-UTXO exhaustion and per-asset transfers.
+- **`issueAssetRecipe`** (opt-in, register via `Funnel.recipes`): "issue 1000
+  TICKET tokens called Hackathon Ticket", "mint an NFT called Genesis Badge",
+  "crea 500 token CAFE chiamati Caffè Club" → one confirmation-gated
+  `rln_issue_asset` with zero inferences. Registered in the CLI chat, whose RLN
+  tool source now also routes `rln_issue_asset`, `rln_create_utxos` and
+  `rln_list_transfers` to a real node.
+- `rgb-lightning-node` skill 0.2.0 documents the issuance tools with few-shot
+  examples.
+
 ## [0.6.4] — 2026-06-21
 
 ### Added

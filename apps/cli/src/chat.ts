@@ -22,6 +22,7 @@ import {
   paymentsRecipe,
   receiveRecipe,
   assetSendRecipe,
+  issueAssetRecipe,
   type AgentProfile,
   type FastIntent,
   type InProcessTool,
@@ -423,6 +424,7 @@ export async function buildAgent(cfg: CliConfig, opts: BuildOpts = {}): Promise<
       paymentsRecipe,
       receiveRecipe,
       assetSendRecipe,
+      issueAssetRecipe,
     ],
     // T0 fast-path: when the Spark wallet is live, answer balance/address
     // deterministically (no LLM → no history hallucination). Falls back to the
