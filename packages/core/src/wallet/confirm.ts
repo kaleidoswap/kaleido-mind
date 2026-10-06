@@ -62,7 +62,8 @@ export function confirmReadback(call: { name: string; arguments: Record<string, 
       return ask(`Send ${sats(a.amount_sats)} to ${to()}${over(name, a)}`);
     case 'rln_send_asset':
     case 'liquid_send':
-      return ask(`Send ${asset(a.amount, a.asset)} to ${to()}${over(name, a)}`);
+      // kaleido-mcp names these asset_id / recipient_id.
+      return ask(`Send ${asset(a.amount, a.asset ?? shortRef(String(a.asset_id ?? '')))} to ${to(a.to != null ? 'to' : 'recipient_id')}${over(name, a)}`);
     case 'rln_pay_invoice':
     case 'spark_pay_invoice':
       return ask(`Pay Lightning invoice ${shortRef(String(a.invoice ?? ''))}${over(name, a)}`);
@@ -74,6 +75,17 @@ export function confirmReadback(call: { name: string; arguments: Record<string, 
     }
     case 'rln_create_utxos':
       return ask(`Create ${fmtNum(Number(a.num ?? 5))} RGB UTXOs on-chain${over(name, a)}`);
+    case 'rln_send_btc':
+      return ask(`Send ${sats(a.amount_sat)} on-chain to ${to('address')}${over(name, a)}`);
+    case 'rln_open_channel': {
+      const peer = shortRef(String(a.peer_pubkey_and_addr ?? '').split('@')[0] ?? '');
+      const withAsset = a.asset_id != null && a.asset_amount != null ? ` with ${fmtNum(Number(a.asset_amount))} of ${shortRef(String(a.asset_id))}` : '';
+      return ask(`Open a ${sats(a.capacity_sat)} channel to ${peer}${withAsset}`);
+    }
+    case 'rln_close_channel':
+      return ask(`${a.force ? 'Force-close' : 'Close'} channel ${shortRef(String(a.channel_id ?? ''))}`);
+    case 'rln_atomic_taker':
+      return ask(`Accept atomic swap ${shortRef(String(a.swapstring ?? ''))} on your node`);
     case 'execute_swap':
       return ask(`Swap ${fmtNum(Number(a.amount))} ${String(a.from_asset)} for ${String(a.to_asset)}`);
     default:

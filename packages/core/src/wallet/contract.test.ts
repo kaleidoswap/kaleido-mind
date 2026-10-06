@@ -1,6 +1,8 @@
 /** Wallet contract tests — integrity of the single source of truth. */
 
 import { describe, it, expect, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { parseSkill } from '../skills/registry.js';
 import {
   WALLET_TOOLS,
   SPEND_TOOLS,
@@ -99,5 +101,37 @@ describe('bindWalletTools', () => {
     expect(() => bindWalletTools({}, { layers: ['spark'], includeCore: false })).toThrow(/no handler/);
     const src = bindWalletTools({ spark_get_balance: async () => 1 }, { layers: ['spark'], includeCore: false, allowMissing: true });
     expect(src.listTools().map((t) => t.name)).toEqual(['spark_get_balance']);
+  });
+});
+
+describe('RLN tools vs kaleido-mcp and the rgb-lightning-node skill', () => {
+  // The rln_* tools kaleido-mcp registers (rln_mpp_pay belongs to paid-data).
+  const MCP_RLN = [
+    'rln_get_node_info', 'rln_get_balances', 'rln_get_asset_balance', 'rln_list_assets',
+    'rln_get_address', 'rln_create_rgb_invoice', 'rln_create_ln_invoice', 'rln_pay_invoice',
+    'rln_send_btc', 'rln_send_asset', 'rln_list_channels', 'rln_connect_peer', 'rln_open_channel',
+    'rln_close_channel', 'rln_get_channel_id', 'rln_list_payments', 'rln_refresh_transfers',
+    'rln_atomic_taker', 'rln_list_swaps', 'rln_get_swap',
+  ];
+
+  it('covers every rln_* tool kaleido-mcp exposes', () => {
+    const missing = MCP_RLN.filter((n) => !getWalletTool(n));
+    expect(missing).toEqual([]);
+  });
+
+  it('gates every fund-moving or committing RLN tool', () => {
+    for (const n of ['rln_send_btc', 'rln_open_channel', 'rln_close_channel', 'rln_atomic_taker']) {
+      expect(isSpendTool(n)).toBe(true);
+    }
+    for (const n of ['rln_get_asset_balance', 'rln_refresh_transfers', 'rln_list_swaps', 'rln_get_swap']) {
+      expect(isSpendTool(n)).toBe(false);
+    }
+  });
+
+  it('the skill only declares tools that exist in the contract', () => {
+    const md = readFileSync(new URL('../../skills/rgb-lightning-node/SKILL.md', import.meta.url), 'utf8');
+    const skill = parseSkill(md);
+    const unknown = (skill.tools ?? []).filter((n) => !getWalletTool(n));
+    expect(unknown).toEqual([]);
   });
 });

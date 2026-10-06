@@ -1,11 +1,11 @@
 ---
 name: rgb-lightning-node
 description: "Drive the user's local RGB Lightning Node (RLN) — read its pubkey/status, list channels and their capacities, check RGB asset balances, manage channels/peers, whitelist a swap, or create Lightning/RGB receive invoices. Triggers when the user asks about the node, their channels or capacities, needs an invoice, wants to issue/mint a new RGB token or NFT, or is mid-atomic-swap and the maker needs the node pubkey or a swapstring whitelisted."
-tools: rln_get_node_info, rln_get_balances, rln_list_channels, rln_list_assets, rln_get_asset_balance, rln_open_channel, rln_close_channel, rln_connect_peer, rln_get_channel_id, rln_whitelist_swap, rln_atomic_taker, rln_list_payments, rln_create_ln_invoice, rln_create_rgb_invoice, rln_list_transfers, rln_create_utxos, rln_issue_asset
-triggers: node, nodeinfo, pubkey, peer, channels, channel capacity, list channels, inbound, capacity, asset balance, whitelist, taker, swapstring, invoice, receive, rgb invoice, ln invoice, issue, mint, new token, nft, utxos, transfers
+tools: rln_get_node_info, rln_get_balances, rln_list_channels, rln_list_assets, rln_get_asset_balance, rln_refresh_transfers, rln_get_address, rln_send_btc, rln_send_asset, rln_pay_invoice, rln_open_channel, rln_close_channel, rln_connect_peer, rln_get_channel_id, rln_atomic_taker, rln_list_swaps, rln_get_swap, rln_list_payments, rln_create_ln_invoice, rln_create_rgb_invoice, rln_list_transfers, rln_create_utxos, rln_issue_asset
+triggers: node, nodeinfo, pubkey, peer, channels, channel capacity, list channels, open channel, close channel, inbound, capacity, asset balance, whitelist, taker, swapstring, swaps, payments, invoice, receive, send asset, send rgb, on-chain address, deposit, rgb invoice, ln invoice, issue, mint, new token, nft, utxos, transfers
 metadata:
   author: kaleidoswap
-  version: "0.2.0"
+  version: "0.3.0"
 ---
 
 # RGB Lightning Node (taker-side)
@@ -79,6 +79,48 @@ hold / what's my USDT balance".
 Balance for one RGB asset by id. Use after `rln_list_assets` gave you the id,
 or when the user names a specific asset.
 
+### `rln_refresh_transfers` — no args
+Syncs pending RGB transfers. Call it before re-reading a balance or transfer
+status that looks stale (e.g. right after an invoice was paid or a swap filled).
+
+### `rln_get_address` — no args
+An on-chain BTC address of the node, for funding it. Not an RGB invoice and not
+a Lightning invoice.
+
+### `rln_send_btc` — { address, amount_sat, fee_rate? } — 🔒 confirm-gated
+Sends on-chain BTC from the node. Only when the user gave both the address and
+the amount.
+
+### `rln_send_asset` — 🔒 confirm-gated
+Sends an RGB asset to the recipient encoded in an RGB invoice. Use the argument
+names of the schema you were given: in-app wallets take `{ asset, amount, to }`
+(ticker or asset_id, units, the invoice); kaleido-mcp takes
+`{ asset_id, amount, recipient_id }`. Never invent a recipient.
+
+### `rln_pay_invoice` — { invoice } — 🔒 confirm-gated
+Pays a BOLT11 Lightning invoice from the node. Pass the full invoice string.
+
+### Channels and peers
+- `rln_connect_peer { peer_pubkey_and_addr }` — `pubkey@host:port`. Needed
+  before opening a channel to a peer the node has never seen.
+- `rln_open_channel { peer_pubkey_and_addr, capacity_sat, asset_id?, asset_amount?, push_msat?, is_public? }`
+  — 🔒 confirm-gated. Locks on-chain BTC (and optionally an RGB asset) into a
+  channel. Opening is asynchronous: report the `temporary_channel_id` and
+  suggest checking `rln_list_channels`.
+- `rln_get_channel_id { temporary_channel_id }` — the final `channel_id` once
+  the channel is established.
+- `rln_close_channel { channel_id, peer_pubkey, force? }` — 🔒 confirm-gated.
+  Both values come from `rln_list_channels`. `force` only for an unresponsive
+  peer.
+
+### `rln_list_payments` — { limit? }
+Recent Lightning payments, sent and received. Use for "did I get paid" /
+"what did I pay" over Lightning.
+
+### `rln_list_swaps` / `rln_get_swap { payment_hash, taker? }`
+Atomic swaps as the node sees them (HTLC status). For the maker-side status use
+`kaleidoswap_atomic_status`.
+
 ### `rln_atomic_taker` — { swapstring } — 🔒 confirm-gated
 Tell the node "I accept this swap." Args: the `swapstring` returned by
 `kaleidoswap_atomic_init`. The node validates and stores it; **no funds move
@@ -92,23 +134,23 @@ Call this **after** `kaleidoswap_atomic_init` and **before**
 ### `rln_create_ln_invoice` — Lightning invoice for receiving sats
 Args:
 - `amount_sats` (optional) — omit for an amountless invoice.
-- `expiry_sec` (default 3600) — invoice TTL in seconds.
-- `asset_id` + `asset_amount` — optional, for RGB-over-Lightning.
+- `expiry_sec` (default 3600, kaleido-mcp only) — invoice TTL in seconds.
 
 Use when the user wants to **receive** a Lightning payment. Do NOT call inside
 an atomic swap flow unless the user explicitly asked to invoice someone.
 
 ### `rln_create_rgb_invoice` — on-chain RGB receive invoice
-Args:
-- `min_confirmations` (default 1).
-- `witness` (default false).
-- `asset_id` (optional — omit for an any-asset invoice).
-- `expiration_timestamp` (optional, Unix seconds).
+Args (use the names in your schema):
+- in-app wallets: `asset` (ticker or asset_id) + `amount`.
+- kaleido-mcp: `asset_id` (omit for an any-asset invoice), `amount` (display
+  units), `duration_seconds` (default 86400).
+
+Reply with the full `invoice` string; the payer needs all of it.
 
 Use when the user wants to **receive** an RGB asset directly (not over
 Lightning). Outside the atomic swap flow.
 
-### `rln_list_transfers` — { asset_id }
+### `rln_list_transfers` — { asset }
 Transfers for one asset (issuance, sends, receives) with `status`
 (`WaitingCounterparty`, `WaitingConfirmations`, `Settled`, `Failed`). Use it to
 answer "has my RGB invoice been paid?".
@@ -129,8 +171,12 @@ Examples:
   `rln_issue_asset { name: "Hackathon Ticket", ticker: "TICKET", amount: 1000 }`
 - "mint an NFT called Genesis Badge" →
   `rln_issue_asset { name: "Genesis Badge", ticker: "GENESISB", amount: 1, schema: "UDA" }`
-- "has anyone paid my TICKET invoice?" → `rln_list_assets` (find the asset_id) →
-  `rln_list_transfers { asset_id }`
+- "has anyone paid my TICKET invoice?" → `rln_refresh_transfers` →
+  `rln_list_transfers { asset: "TICKET" }`
+
+`rln_list_transfers`, `rln_create_utxos` and `rln_issue_asset` are provided by
+in-app wallets and the CLI; kaleido-mcp does not expose them yet. If a tool is
+not in your list, say so instead of guessing.
 
 ## The maker / node split
 

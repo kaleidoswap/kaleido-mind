@@ -48,6 +48,22 @@ describe('confirmReadback', () => {
     expect(line).toBe('Pay Lightning invoice lnbc1p…abcd over Spark. Confirm?');
   });
 
+  it('rln_send_asset: kaleido-mcp argument names', () => {
+    expect(confirmReadback({ name: 'rln_send_asset', arguments: { asset_id: 'rgb:abcdefgh-1234567890-xyz', amount: 5, recipient_id: 'utxob:ab12cd34ef56gh78ij90' } }))
+      .toBe('Send 5 rgb:ab…-xyz to utxob:…ij90 over RLN. Confirm?');
+  });
+
+  it('rln_send_btc / channel / atomic taker readbacks', () => {
+    expect(confirmReadback({ name: 'rln_send_btc', arguments: { address: 'tb1qexampleaddress0000000000xyz', amount_sat: 25000 } }))
+      .toBe('Send 25,000 sats on-chain to tb1qex…0xyz over RLN. Confirm?');
+    expect(confirmReadback({ name: 'rln_open_channel', arguments: { peer_pubkey_and_addr: '03abcdef0123456789abcdef0123456789@1.2.3.4:9735', capacity_sat: 100000 } }))
+      .toBe('Open a 100,000 sats channel to 03abcd…6789. Confirm?');
+    expect(confirmReadback({ name: 'rln_close_channel', arguments: { channel_id: 'chan0123456789abcdef0123', peer_pubkey: 'x', force: true } }))
+      .toBe('Force-close channel chan01…0123. Confirm?');
+    expect(confirmReadback({ name: 'rln_atomic_taker', arguments: { swapstring: '30/rgb:asset/10/btc/3600/abcdef0123456789' } }))
+      .toBe('Accept atomic swap 30/rgb…6789 on your node. Confirm?');
+  });
+
   it('execute_swap: from → to with amount', () => {
     expect(confirmReadback({ name: 'execute_swap', arguments: { from_asset: 'BTC', to_asset: 'USDT', amount: 0.01 } }))
       .toBe('Swap 0.01 BTC for USDT. Confirm?');
