@@ -55,6 +55,28 @@ export interface ConsumedTurn extends ParsedTurn {
   };
 }
 
+/**
+ * Since QVAC 0.11 a cancelled run ends `events` normally but REJECTS `final`
+ * with `InferenceCancelledError { requestId, partial }`. Fold that back into a
+ * `final` frame with stopReason 'cancelled' so a stop or a blown thinking budget
+ * is a result, not an exception. Matched structurally to stay SDK-free.
+ */
+function cancelledFinal(err: unknown): QvacFinalLike | null {
+  const e = err as {
+    requestId?: unknown;
+    partial?: { text?: string; toolCalls?: QvacFinalLike['toolCalls']; stats?: QvacFinalLike['stats'] };
+  } | null;
+  const named = (err as { constructor?: { name?: string } } | null)?.constructor?.name === 'InferenceCancelledError';
+  if (!e || !(named || (typeof e.requestId === 'string' && typeof e.partial === 'object'))) return null;
+  const partial = e.partial ?? {};
+  return {
+    contentText: partial.text ?? '',
+    toolCalls: partial.toolCalls ?? [],
+    ...(partial.stats ? { stats: partial.stats } : {}),
+    stopReason: 'cancelled',
+  };
+}
+
 /** Rough token estimate (~4 chars/token) — same heuristic the context budget uses. */
 function approxTokens(chars: number): number {
   return Math.ceil(chars / 4);
@@ -95,7 +117,14 @@ export async function consumeRun(
       }
     }
   }
-  const final = await run.final;
+  let final: QvacFinalLike;
+  try {
+    final = await run.final;
+  } catch (err) {
+    const recovered = cancelledFinal(err);
+    if (!recovered) throw err;
+    final = recovered;
+  }
   const finishedAt = now();
   return {
     ...finalToTurn(final, streamed),

@@ -94,7 +94,7 @@ export function createQvacProvider(options: QvacProviderOptions): LLMProvider {
           }))
         : undefined;
 
-      // QVAC 0.13 nests sampling under `generationParams`; top-level
+      // QVAC (0.13+) nests sampling under `generationParams`; top-level
       // `temperature`/`max_tokens` (as older rate code passed) are dropped by
       // validation, so the cap silently no-op'd. Build it here, and only send it
       // when a value is set so a host that passes neither keeps SDK defaults.
@@ -155,8 +155,11 @@ export function createQvacProvider(options: QvacProviderOptions): LLMProvider {
       // instead of an empty bubble so the agentic loop ends cleanly.
       const text =
         result.text || (result.thinkingBudgetExceeded ? THINKING_BUDGET_FALLBACK : result.text);
-      const totalTokens = result.stats?.totalTokens;
       const promptTokens = result.stats?.promptTokens;
+      const generated = result.stats?.generatedTokens;
+      const totalTokens =
+        result.stats?.totalTokens ??
+        (typeof generated === 'number' && typeof promptTokens === 'number' ? promptTokens + generated : undefined);
       const inference: InferenceMetrics = {
         requestId: result.requestId,
         durationMs: result.timing.durationMs,

@@ -101,6 +101,32 @@ describe('createQvacProvider.runTurn', () => {
     expect(out.text).toMatch(/thinking budget/i);
   });
 
+  it('returns a cancelled turn when the SDK rejects final on abort', async () => {
+    const cancel = vi.fn(async () => {});
+    const fn = () => ({
+      requestId: 'req-a',
+      events: (async function* () {})(),
+      final: Promise.reject(Object.assign(new Error('cancelled'), { requestId: 'req-a', partial: {} })),
+    });
+    const ac = new AbortController();
+    ac.abort();
+    const p = createQvacProvider({ completion: fn as any, cancel: cancel as any, getModelId: () => 'm1' });
+    const out = await p.runTurn({ messages: [{ role: 'user', content: 'x' }], tools: [], signal: ac.signal });
+    expect(cancel).toHaveBeenCalledWith({ requestId: 'req-a' });
+    expect(out.inference?.status).toBe('cancelled');
+    expect(out.toolCalls).toEqual([]);
+  });
+
+  it('derives token counts from the SDK generatedTokens stat', async () => {
+    const { fn } = fakeCompletion({
+      contentText: 'ok', toolCalls: [], raw: { fullText: 'ok' },
+      stats: { promptTokens: 100, generatedTokens: 20, tokensPerSecond: 12, backendDevice: 'gpu' },
+    });
+    const p = createQvacProvider({ completion: fn as any, cancel: noopCancel, getModelId: () => 'm1' });
+    const out = await p.runTurn({ messages: [{ role: 'user', content: 'x' }], tools: [] });
+    expect(out.inference).toMatchObject({ promptTokens: 100, totalTokens: 120, completionTokens: 20, backendDevice: 'gpu' });
+  });
+
   it('streams visible content tokens to onToken', async () => {
     const { fn } = fakeCompletion(
       { contentText: 'Hi there', toolCalls: [], raw: { fullText: 'Hi there' } },
