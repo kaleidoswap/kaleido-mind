@@ -173,7 +173,7 @@ export function buildKaleidoswapToolSource(opts: MakerHttpOptions): InProcessToo
   for (const [name, route] of Object.entries(KALEIDOSWAP_ROUTES)) {
     handlers[name] = httpHandler(opts, `kaleidoswap maker ${name}`, route);
   }
-  return bindKaleidoswapTools(handlers);
+  return bindKaleidoswapTools(handlers, { allowMissing: true });
 }
 
 export function buildLsps1ToolSource(opts: MakerHttpOptions): InProcessToolSource {
