@@ -77,6 +77,18 @@ describe('createQvacProvider.runTurn', () => {
     expect(params.generationParams).toEqual({ temp: 0.9, predict: 99 });
   });
 
+  it('sends JSON-Schema tools in the SDK Tool shape so arguments survive', async () => {
+    const { fn, calls } = fakeCompletion({ contentText: 'ok', toolCalls: [], raw: { fullText: 'ok' } });
+    const p = createQvacProvider({ completion: fn as any, cancel: noopCancel, getModelId: () => 'm1' });
+    await p.runTurn({
+      messages: [{ role: 'user', content: 'x' }],
+      tools: [{ name: 'echo', description: 'e', parameters: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'] } }],
+    });
+    expect(calls[0].tools).toEqual([
+      { type: 'function', name: 'echo', description: 'e', parameters: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'] } },
+    ]);
+  });
+
   it('omits generationParams when no temperature/maxTokens is set (keeps SDK defaults)', async () => {
     const { fn, calls } = fakeCompletion({ contentText: 'ok', toolCalls: [], raw: { fullText: 'ok' } });
     const p = createQvacProvider({ completion: fn as any, cancel: noopCancel, getModelId: () => 'm1' });

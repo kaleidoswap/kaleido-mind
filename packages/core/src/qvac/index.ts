@@ -38,6 +38,8 @@ export {
   type ConsumedTurn,
 } from './stream.js';
 
+export { toQvacTools, type QvacTool, type QvacToolProp } from './tools.js';
+
 export {
   createQvacProvider,
   type QvacProviderOptions,

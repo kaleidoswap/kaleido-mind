@@ -20,6 +20,7 @@ import type * as QvacSdk from '@qvac/sdk';
 import type { InferenceMetrics, LLMProvider, TurnInput, TurnOutput } from '../providers/types.js';
 import type { QvacTurnStats } from './parse.js';
 import { consumeRun } from './stream.js';
+import { toQvacTools } from './tools.js';
 
 type CompletionFn = typeof QvacSdk.completion;
 type CancelFn = typeof QvacSdk.cancel;
@@ -82,17 +83,9 @@ export function createQvacProvider(options: QvacProviderOptions): LLMProvider {
         ? [{ role: 'system', content: input.system }, ...input.messages]
         : input.messages;
 
-      // Tools are forwarded by schema only (name/description/parameters). We
-      // carry `parameters` through verbatim (Zod for in-process tools, JSON
-      // Schema for MCP) — the model only needs the shape to pick a call; the
-      // Engine validates + executes.
-      const tools = input.tools.length
-        ? input.tools.map((t) => ({
-            name: t.name,
-            description: t.description,
-            parameters: t.parameters,
-          }))
-        : undefined;
+      // Tools are forwarded by schema only — the Engine validates + executes.
+      // JSON-Schema tools are normalised to the SDK's Tool shape (see tools.ts).
+      const tools = toQvacTools(input.tools);
 
       // QVAC (0.13+) nests sampling under `generationParams`; top-level
       // `temperature`/`max_tokens` (as older rate code passed) are dropped by
