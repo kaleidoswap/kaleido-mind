@@ -99,8 +99,9 @@ interface QvacSDK {
   // without the whisper/tts plugins still type-check.
   transcribe?: (opts: any) => Promise<any> | any;
   textToSpeech?: (opts: any) => any;
-  startQVACProvider: (opts?: any) => Promise<any>;
-  stopQVACProvider: () => Promise<void>;
+  // P2P delegated inference — present in @qvac/sdk 0.13–0.18, removed in 0.19.
+  startQVACProvider?: (opts?: any) => Promise<any>;
+  stopQVACProvider?: () => Promise<void>;
   heartbeat?: (opts?: any) => Promise<unknown>;
   close: () => Promise<void>;
 }
@@ -1121,44 +1122,15 @@ async function handleStart(modelId: string): Promise<void> {
       emit({ type: 'log', level: 'warn', message: msg });
     }
 
-    // 60 s ceiling on the P2P bootstrap — DHT can take ~30s on first run.
-    let provider: any = null;
-    try {
-      provider = await withTimeout(sdk.startQVACProvider(firewall ? { firewall } : {}), 60_000);
-    } catch (e) {
-      diag(`startQVACProvider threw: ${(e as Error).message}`);
-    }
-
-    // Diagnostic: log the full response so we can see the real field names.
-    diag(`startQVACProvider returned: ${JSON.stringify(provider)}`);
-
-    if (!provider) {
-      const msg = 'P2P bootstrap timed out after 60s — desktop-only mode.';
-      diag(msg);
-      emit({ type: 'provider_loading', phase: 'p2p_failed', message: msg });
-      emit({ type: 'log', level: 'warn', message: msg });
-      state.publicKey = null;
-    } else if (provider.success === false) {
-      const msg = `startQVACProvider failed: ${provider.error ?? 'unknown'}`;
+    const startP2p = sdk.startQVACProvider;
+    if (typeof startP2p !== 'function') {
+      const msg = 'This @qvac/sdk has no P2P provider (startQVACProvider was removed in 0.19) — desktop-only mode.';
       diag(msg);
       emit({ type: 'provider_loading', phase: 'p2p_failed', message: msg });
       emit({ type: 'log', level: 'warn', message: msg });
       state.publicKey = null;
     } else {
-      // Try every plausible field name we've seen across SDK versions.
-      state.publicKey =
-        (provider?.publicKey as string) ??
-        (provider?.public_key as string) ??
-        (provider?.pubkey as string) ??
-        (provider?.keyPair?.publicKey as string) ??
-        (provider?.keyPair?.publicKey?.toString?.('hex') as string) ??
-        null;
-      if (!state.publicKey) {
-        const msg = `startQVACProvider returned success but no publicKey field. Keys: ${Object.keys(provider).join(', ')}`;
-        diag(msg);
-        emit({ type: 'provider_loading', phase: 'p2p_failed', message: msg });
-        emit({ type: 'log', level: 'warn', message: msg });
-      }
+      await startP2pProvider(startP2p, firewall);
     }
   }
 
@@ -1185,13 +1157,57 @@ async function handleStart(modelId: string): Promise<void> {
   startScheduler();
 }
 
+async function startP2pProvider(
+  startP2p: NonNullable<QvacSDK['startQVACProvider']>,
+  firewall: ReturnType<typeof firewallFromKeyList>,
+): Promise<void> {
+  // 60 s ceiling on the P2P bootstrap — DHT can take ~30s on first run.
+  let provider: any = null;
+  try {
+    provider = await withTimeout(startP2p(firewall ? { firewall } : {}), 60_000);
+  } catch (e) {
+    diag(`startQVACProvider threw: ${(e as Error).message}`);
+  }
+  // Diagnostic: log the full response so we can see the real field names.
+  diag(`startQVACProvider returned: ${JSON.stringify(provider)}`);
+
+  if (!provider) {
+    const msg = 'P2P bootstrap timed out after 60s — desktop-only mode.';
+    diag(msg);
+    emit({ type: 'provider_loading', phase: 'p2p_failed', message: msg });
+    emit({ type: 'log', level: 'warn', message: msg });
+    state.publicKey = null;
+  } else if (provider.success === false) {
+    const msg = `startQVACProvider failed: ${provider.error ?? 'unknown'}`;
+    diag(msg);
+    emit({ type: 'provider_loading', phase: 'p2p_failed', message: msg });
+    emit({ type: 'log', level: 'warn', message: msg });
+    state.publicKey = null;
+  } else {
+    // Try every plausible field name we've seen across SDK versions.
+    state.publicKey =
+      (provider?.publicKey as string) ??
+      (provider?.public_key as string) ??
+      (provider?.pubkey as string) ??
+      (provider?.keyPair?.publicKey as string) ??
+      (provider?.keyPair?.publicKey?.toString?.('hex') as string) ??
+      null;
+    if (!state.publicKey) {
+      const msg = `startQVACProvider returned success but no publicKey field. Keys: ${Object.keys(provider).join(', ')}`;
+      diag(msg);
+      emit({ type: 'provider_loading', phase: 'p2p_failed', message: msg });
+      emit({ type: 'log', level: 'warn', message: msg });
+    }
+  }
+}
+
 async function handleStop(): Promise<void> {
   if (!state.providerOn) return;
   // Tasks call the model; stop firing them when the model unloads.
   stopScheduler();
   if (sdk && !MOCK) {
     try {
-      await sdk.stopQVACProvider();
+      await sdk.stopQVACProvider?.();
     } catch (e) {
       diag(`stopQVACProvider error: ${(e as Error).message}`);
     }

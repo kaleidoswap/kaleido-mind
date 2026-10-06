@@ -25,11 +25,17 @@ jobs:
       - name: Build
         run: pnpm -r build
 
-      - name: Typecheck
+      - name: Typecheck (packages, apps, examples)
         run: pnpm -r typecheck
 
       - name: Test (core)
         run: pnpm --filter @kaleidorg/mind test
+
+      # The examples without a model or node: scripted provider + fake tools.
+      - name: Examples (offline)
+        run: |
+          pnpm --filter @kaleidorg/example-node-minimal run start:mock
+          pnpm --filter @kaleidorg/example-rgb-agent run start:offline
 
       # Offline eval gate — no model, no QVAC worker. Exercises the full
       # dataset -> run -> grade -> aggregate pipeline for Tracks B and C via the

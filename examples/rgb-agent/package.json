@@ -1,0 +1,24 @@
+{
+  "name": "@kaleidorg/example-rgb-agent",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Local QVAC agent that drives an RGB Lightning Node through kaleido-mcp: balances, RGB invoices, asset sends.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "start:mock": "tsx src/index.ts --mock",
+    "start:offline": "tsx src/index.ts --mock --scripted --yes",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@kaleidorg/mind": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "@qvac/sdk": "^0.21.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}

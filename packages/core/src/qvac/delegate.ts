@@ -4,6 +4,8 @@
  * they stay shared + testable; the host passes the result to
  * `startQVACProvider({ firewall })` / `loadModel({ delegate })`.
  *
+ * P2P delegation exists in @qvac/sdk 0.13–0.18 only; 0.19 removed both calls.
+ *
  * Security note: a QVAC provider is reachable by anyone who learns its
  * Hyperswarm public key. Advertising with no firewall means any such peer can
  * run inference on your machine. Use {@link allowListFirewall} so a desktop

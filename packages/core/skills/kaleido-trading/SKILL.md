@@ -1,11 +1,11 @@
 ---
 name: kaleido-trading
 description: "Trade on KaleidoSwap — quote and execute swaps between BTC and RGB assets (USDT, XAUT). Get assets and pairs, pull an executable quote, place a market order, track orders, or run/poll an atomic swap end-to-end. Triggers when the user wants a quote, to swap or trade assets, to rebalance between BTC and stablecoins, or to check the status of an order / swap / atomic swap."
-tools: kaleidoswap_get_assets, kaleidoswap_get_pairs, kaleidoswap_get_quote, kaleidoswap_place_order, kaleidoswap_get_order_status, kaleidoswap_atomic_init, kaleidoswap_atomic_execute, kaleidoswap_atomic_status, rln_get_node_info, rln_atomic_taker
+tools: kaleidoswap_get_assets, kaleidoswap_get_pairs, kaleidoswap_get_quote, kaleidoswap_place_order, kaleidoswap_get_order_status, kaleidoswap_atomic_init, kaleidoswap_atomic_execute, kaleidoswap_atomic_status, rln_get_node_info, rln_atomic_taker, rln_refresh_transfers, rln_get_asset_balance, rln_list_channels, rln_list_swaps, rln_get_swap
 triggers: quote, swap, trade, rebalance, slippage, pair, pairs, usdt, xaut, kaleidoswap, rfq, check status, order status, check the order, swap status, check my swap, atomic status
 metadata:
   author: kaleidoswap
-  version: "0.4.0"
+  version: "0.5.0"
 ---
 
 # KaleidoSwap trading
@@ -170,3 +170,16 @@ For the full atomic-swap flow (init → whitelist on the RGB node → execute), 
 deterministic recipe drives the chain — the agentic loop is not safe to plan a
 multi-step, two-service swap on a small model. Status for atomics uses the
 `atomic_id` (or payment_hash) surfaced in the recipe summary.
+
+## Over kaleido-mcp (desktop, Claude Code)
+
+kaleido-mcp 0.3.0+ is **atomic-only**: there is no `kaleidoswap_place_order`
+or order status. Its quote takes `from_asset_id` / `from_layer` /
+`from_amount` (display units) and returns `amount_raw` values that
+`kaleidoswap_atomic_init` takes unchanged. The full chain is quote →
+`kaleidoswap_atomic_init` → `rln_atomic_taker` + `rln_get_node_info` →
+`kaleidoswap_atomic_execute` → poll `kaleidoswap_atomic_status` →
+`rln_refresh_transfers`. Read `references/atomic.md` before the first swap,
+and `references/assets.md` for units and precision. Always follow the
+argument names in the tool schema you were given.
+

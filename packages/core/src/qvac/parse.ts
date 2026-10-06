@@ -17,6 +17,9 @@ export interface QvacTurnStats {
   tokensPerSecond?: number;
   totalTokens?: number;
   promptTokens?: number;
+  /** Tokens generated this turn (what the SDK reports; `totalTokens` is not emitted). */
+  generatedTokens?: number;
+  timeToFirstToken?: number;
   contextSize?: number;
   totalTime?: number;
 }
@@ -30,8 +33,8 @@ export interface QvacFinalLike {
   /** Tool calls the model requested this turn (empty ⇒ final answer). */
   toolCalls?: Array<{ id?: string; name: string; arguments?: Record<string, unknown> }>;
   /**
-   * Why generation stopped. QVAC 0.13 emits `"length"` when the token budget is
-   * exhausted, `"cancelled"` on abort, `undefined` on a natural stop. We surface
+   * Why generation stopped: `"length"` when the token budget is exhausted,
+   * `"cancelled"` on abort, `"eos"`/`"stopSequence"`/`undefined` on a natural stop. We surface
    * it so the funnel can tell a truncated tool-call from a complete one.
    */
   stopReason?: 'length' | 'cancelled' | string;

@@ -28,7 +28,7 @@ Markdown instructions injected into the system prompt when this skill is active.
 
 ## Loading (same skills, every surface)
 
-**Node** (desktop sidecar, kaleidoagent) — read folders from disk:
+**Node** (desktop sidecar, CLI, servers) — read folders from disk:
 
 ```ts
 import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';

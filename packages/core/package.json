@@ -1,6 +1,6 @@
 {
   "name": "@kaleidorg/mind",
-  "version": "0.6.4",
+  "version": "0.7.0",
   "description": "Local-first reasoning + function-calling engine for KaleidoSwap. QVAC-powered.",
   "license": "Apache-2.0",
   "type": "module",
@@ -63,7 +63,7 @@
     "bundle-skills": "node scripts/bundle-skills.mjs"
   },
   "peerDependencies": {
-    "@qvac/sdk": ">=0.21.0"
+    "@qvac/sdk": ">=0.13.1"
   },
   "peerDependenciesMeta": {
     "@qvac/sdk": {

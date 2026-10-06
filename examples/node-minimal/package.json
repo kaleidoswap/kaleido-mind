@@ -1,0 +1,22 @@
+{
+  "name": "@kaleidorg/example-node-minimal",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Smallest @kaleidorg/mind agent: a local QVAC model, one in-process tool, one skill.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "start:mock": "tsx src/index.ts --mock",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@kaleidorg/mind": "workspace:*",
+    "@qvac/sdk": "^0.21.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "kaleidoswap",
+  "owner": {
+    "name": "KaleidoSwap",
+    "url": "https://github.com/kaleidoswap"
+  },
+  "metadata": {
+    "description": "KaleidoSwap agent skills and MCP server for Bitcoin, Lightning and RGB."
+  },
+  "plugins": [
+    {
+      "name": "kaleido-mind",
+      "source": "./",
+      "description": "RGB Lightning Node, KaleidoSwap atomic swaps, LSPS1, Spark and paid-API skills plus the kaleido-mcp server."
+    }
+  ]
+}

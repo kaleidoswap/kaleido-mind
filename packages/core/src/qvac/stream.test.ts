@@ -112,4 +112,32 @@ describe('consumeRun', () => {
     );
     expect(out.timing).toEqual({ ttftMs: 45, durationMs: 90 });
   });
+
+  it('folds a rejected final (InferenceCancelledError) into a cancelled turn', async () => {
+    class InferenceCancelledError extends Error {
+      constructor(readonly requestId: string, readonly partial: { text?: string }) {
+        super('cancelled');
+      }
+    }
+    const run: CompletionRunLike = {
+      requestId: 'req-c',
+      events: (async function* () {
+        yield { type: 'contentDelta', text: 'Partial' };
+      })(),
+      final: Promise.reject(new InferenceCancelledError('req-c', { text: 'Partial' })),
+    };
+    const out = await consumeRun(run);
+    expect(out.stopReason).toBe('cancelled');
+    expect(out.text).toBe('Partial');
+    expect(out.toolCalls).toEqual([]);
+  });
+
+  it('re-throws a rejected final that is not a cancellation', async () => {
+    const run: CompletionRunLike = {
+      requestId: 'req-e',
+      events: (async function* () {})(),
+      final: Promise.reject(new Error('boom')),
+    };
+    await expect(consumeRun(run)).rejects.toThrow('boom');
+  });
 });

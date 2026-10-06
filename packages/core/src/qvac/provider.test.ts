@@ -77,6 +77,18 @@ describe('createQvacProvider.runTurn', () => {
     expect(params.generationParams).toEqual({ temp: 0.9, predict: 99 });
   });
 
+  it('sends JSON-Schema tools in the SDK Tool shape so arguments survive', async () => {
+    const { fn, calls } = fakeCompletion({ contentText: 'ok', toolCalls: [], raw: { fullText: 'ok' } });
+    const p = createQvacProvider({ completion: fn as any, cancel: noopCancel, getModelId: () => 'm1' });
+    await p.runTurn({
+      messages: [{ role: 'user', content: 'x' }],
+      tools: [{ name: 'echo', description: 'e', parameters: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'] } }],
+    });
+    expect(calls[0].tools).toEqual([
+      { type: 'function', name: 'echo', description: 'e', parameters: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'] } },
+    ]);
+  });
+
   it('omits generationParams when no temperature/maxTokens is set (keeps SDK defaults)', async () => {
     const { fn, calls } = fakeCompletion({ contentText: 'ok', toolCalls: [], raw: { fullText: 'ok' } });
     const p = createQvacProvider({ completion: fn as any, cancel: noopCancel, getModelId: () => 'm1' });
@@ -99,6 +111,32 @@ describe('createQvacProvider.runTurn', () => {
     const out = await p.runTurn({ messages: [{ role: 'user', content: 'think hard' }], tools: [] });
     expect(cancel).toHaveBeenCalledWith({ requestId: 'req-1' });
     expect(out.text).toMatch(/thinking budget/i);
+  });
+
+  it('returns a cancelled turn when the SDK rejects final on abort', async () => {
+    const cancel = vi.fn(async () => {});
+    const fn = () => ({
+      requestId: 'req-a',
+      events: (async function* () {})(),
+      final: Promise.reject(Object.assign(new Error('cancelled'), { requestId: 'req-a', partial: {} })),
+    });
+    const ac = new AbortController();
+    ac.abort();
+    const p = createQvacProvider({ completion: fn as any, cancel: cancel as any, getModelId: () => 'm1' });
+    const out = await p.runTurn({ messages: [{ role: 'user', content: 'x' }], tools: [], signal: ac.signal });
+    expect(cancel).toHaveBeenCalledWith({ requestId: 'req-a' });
+    expect(out.inference?.status).toBe('cancelled');
+    expect(out.toolCalls).toEqual([]);
+  });
+
+  it('derives token counts from the SDK generatedTokens stat', async () => {
+    const { fn } = fakeCompletion({
+      contentText: 'ok', toolCalls: [], raw: { fullText: 'ok' },
+      stats: { promptTokens: 100, generatedTokens: 20, tokensPerSecond: 12, backendDevice: 'gpu' },
+    });
+    const p = createQvacProvider({ completion: fn as any, cancel: noopCancel, getModelId: () => 'm1' });
+    const out = await p.runTurn({ messages: [{ role: 'user', content: 'x' }], tools: [] });
+    expect(out.inference).toMatchObject({ promptTokens: 100, totalTokens: 120, completionTokens: 20, backendDevice: 'gpu' });
   });
 
   it('streams visible content tokens to onToken', async () => {

@@ -165,9 +165,10 @@ export class MockWallet {
       rln_list_assets: async () => ({
         assets: this.rgbAssets.map((a) => ({ ...a, balance: { spendable: this.assets[a.ticker] ?? 0 } })),
       }),
-      rln_list_transfers: async ({ asset }) => {
-        const found = this.findAsset(asset);
-        if (!found) throw new Error(`Unknown asset "${String(asset)}".`);
+      rln_list_transfers: async ({ asset_id, asset }) => {
+        const ref = asset_id ?? asset;
+        const found = this.findAsset(ref);
+        if (!found) throw new Error(`Unknown asset "${String(ref)}".`);
         return { transfers: this.transfers.filter((x) => x.asset_id === found.asset_id) };
       },
       rln_create_utxos: async ({ num }) => {

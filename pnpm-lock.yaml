@@ -94,6 +94,47 @@ importers:
         specifier: ^7.0.2
         version: 7.0.2
 
+  examples/node-minimal:
+    dependencies:
+      '@kaleidorg/mind':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@qvac/sdk':
+        specifier: ^0.21.0
+        version: 0.21.0(bare-fetch@3.4.0(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-pipe@4.3.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)))(bare-pipe@4.3.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))(bare-tcp@2.6.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)(bare-pipe@4.3.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)))(bare-url@2.5.4)(tsx@4.23.15)
+    devDependencies:
+      '@types/node':
+        specifier: ^26.6.4
+        version: 26.6.4
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+
+  examples/rgb-agent:
+    dependencies:
+      '@kaleidorg/mind':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.32.1
+        version: 1.32.1(zod@4.6.5)
+      '@qvac/sdk':
+        specifier: ^0.21.0
+        version: 0.21.0(bare-fetch@3.4.0(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-pipe@4.3.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)))(bare-pipe@4.3.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))(bare-tcp@2.6.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)(bare-pipe@4.3.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)))(bare-url@2.5.4)(tsx@4.23.15)
+    devDependencies:
+      '@types/node':
+        specifier: ^26.6.4
+        version: 26.6.4
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+
   packages/core:
     devDependencies:
       '@qvac/sdk':
@@ -2934,8 +2975,8 @@ snapshots:
     transitivePeerDependencies:
       - bare-abort-controller
 
-  ? '@qvac/inference@0.21.0(@qvac/asr-ggml@0.7.0(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))(@qvac/audiogen-ggml@0.5.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))(@qvac/bci-whispercpp@0.10.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))(@qvac/classification-ggml@0.28.0(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-pipe@4.3.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))(bare-tcp@2.6.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)(bare-pipe@4.3.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))))(@qvac/decoder-audio@0.7.0(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))(@qvac/diffusion-cpp@0.26.0(bare-abort-controller@1.1.2))(@qvac/embed-llamacpp@0.43.0(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))(@qvac/ggml-rpc-server@0.1.0(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))(@qvac/langdetect-text@0.1.2)(@qvac/llm-llamacpp@0.55.0(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))(@qvac/ocr-ggml@0.26.0(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-pipe@4.3.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))(bare-tcp@2.6.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)(bare-pipe@4.3.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))))(@qvac/translation-nmtcpp@0.18.0(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)(bare-fetch@3.4.0(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-pipe@4.3.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))))(@qvac/tts-ggml@0.10.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-pipe@4.3.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))(bare-tcp@2.6.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)(bare-pipe@4.3.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))))(@qvac/vla-ggml@0.29.0(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-pipe@4.3.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))'
-  : dependencies:
+  '@qvac/inference@0.21.0(g7htqo2f3bb4iuss7q2in4soo4)':
+    dependencies:
       '@qvac/error': 0.1.1
       '@qvac/logging': 0.1.1
       '@qvac/rag': 0.8.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-pipe@4.3.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))(bare-url@2.5.4)
@@ -3101,7 +3142,7 @@ snapshots:
       '@qvac/embed-llamacpp': 0.43.0(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)
       '@qvac/error': 0.1.1
       '@qvac/ggml-rpc-server': 0.1.0(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)
-      '@qvac/inference': 0.21.0(@qvac/asr-ggml@0.7.0(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))(@qvac/audiogen-ggml@0.5.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))(@qvac/bci-whispercpp@0.10.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))(@qvac/classification-ggml@0.28.0(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-pipe@4.3.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))(bare-tcp@2.6.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)(bare-pipe@4.3.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))))(@qvac/decoder-audio@0.7.0(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))(@qvac/diffusion-cpp@0.26.0(bare-abort-controller@1.1.2))(@qvac/embed-llamacpp@0.43.0(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))(@qvac/ggml-rpc-server@0.1.0(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))(@qvac/langdetect-text@0.1.2)(@qvac/llm-llamacpp@0.55.0(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))(@qvac/ocr-ggml@0.26.0(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-pipe@4.3.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))(bare-tcp@2.6.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)(bare-pipe@4.3.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))))(@qvac/translation-nmtcpp@0.18.0(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)(bare-fetch@3.4.0(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-pipe@4.3.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))))(@qvac/tts-ggml@0.10.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-pipe@4.3.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))(bare-tcp@2.6.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)(bare-pipe@4.3.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))))(@qvac/vla-ggml@0.29.0(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-pipe@4.3.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))
+      '@qvac/inference': 0.21.0(g7htqo2f3bb4iuss7q2in4soo4)
       '@qvac/langdetect-text': 0.1.2
       '@qvac/llm-llamacpp': 0.55.0(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)
       '@qvac/logging': 0.1.1

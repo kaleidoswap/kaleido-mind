@@ -1,167 +1,222 @@
 # kaleido-mind
 
-> Sovereign AI for sovereign money. A local-first, agentic financial assistant for multi-layer Bitcoin wallets — trade, pay, onboard and discover merchants across Spark, RGB/Lightning and Arkade, by chat or voice, fully on-device.
+> Sovereign AI for sovereign money. A local-first, agentic financial assistant for multi-layer Bitcoin wallets. It trades, pays, onboards and finds merchants across Spark, RGB/Lightning and Arkade, by chat or voice, fully on-device.
 
-**🎥 [Demo video](https://youtu.be/pXhuw_DDHZA)**
+`@kaleidorg/mind` is the reasoning and tool-calling engine behind that
+assistant. It runs the same agent on a phone, a laptop or a server. Inference
+goes through the [QVAC SDK](https://www.npmjs.com/package/@qvac/sdk), locally
+or on a paired machine the user controls. The design starts from one
+constraint: **small on-device models are slow and weak at arguments**, so they
+are never asked to do the slow or weak parts.
 
-Built for the [QVAC Hackathon](https://dorahacks.io/hackathon/qvac-unleach-edge-ai-i/) by the [KaleidoSwap](https://kaleidoswap.com) team. LLM, embedding, STT and TTS inference runs through the [QVAC SDK](https://www.npmjs.com/package/@qvac/sdk), locally or on an explicitly paired user-controlled desktop. Optional wallet, trading, commerce and merchant-discovery tools may use the network and are [fully disclosed](./submission/remote-apis.yaml).
+**Start here:**
+[package docs and quickstart](./packages/core/README.md) ·
+[examples](./examples) ·
+[architecture](./docs/ARCHITECTURE.md)
 
----
+## Use it in your app
 
-## What this is
+```bash
+npm i @kaleidorg/mind @qvac/sdk
+```
 
-`@kaleidorg/mind` is the reasoning + tool-calling engine that drives a **multi-L2 Bitcoin wallet** (Spark · RLN/RGB · Arkade, with Liquid planned) with an on-device LLM. It runs the *same* agent on a phone and a laptop, and it's designed around one hard constraint: **tiny on-device models are slow and weak at arguments** — so we don't ask them to do the slow/weak parts.
+The [package README](./packages/core/README.md) covers a five-minute QVAC
+quickstart, the subpath exports, the wallet tool contract, connecting MCP
+servers (such as `kaleido-mcp`) and writing your own tools and skills.
 
-Three ideas make that work:
+## Use with Claude Code / Claude Desktop
 
-1. **One tool contract, many transports.** The model sees identical tool names + schemas everywhere; only execution differs (mobile = in-process WDK adapters, desktop = a namespaced MCP + CLI, eval = contract-faithful stateful simulators). So skills are portable and benchmarks are honest.
-2. **Recipes, not planning (with hybrid model use).** A small model can't reliably plan *"pay bob 3 EUR"* (resolve → price → convert → confirm → send). So a **skill carries the plan**; the model only fills the slots (~1 inference instead of 5, reliable on a 0.6B). For complex recipes (e.g. atomic swaps) slot extraction can be forced through the model for better natural-language understanding, with deterministic fallbacks to protect precision and reliability. Discovery skills (e.g. merchant-finder) are intentionally more model-leveraging.
-3. **A tiered funnel.** Most requests never reach the model at all.
+The skills in [`packages/core/skills`](./packages/core/skills) follow the Agent
+Skills format, so Claude can use them directly, together with the
+[kaleido-mcp](https://www.npmjs.com/package/kaleido-mcp) server.
+
+**Claude Code plugin.** This repository is also a plugin marketplace:
+
+```bash
+/plugin marketplace add kaleidoswap/kaleido-mind
+/plugin install kaleido-mind@kaleidoswap
+```
+
+The plugin installs the skills and starts `npx -y kaleido-mcp` over stdio. The
+server reads three variables from your environment:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `KALEIDO_NETWORK` | `signet` | KaleidoSwap network preset (kaleido-mcp 0.3.0+) |
+| `RLN_NODE_URL` | `http://localhost:3001` | your RGB Lightning Node API |
+| `WDK_SEED` | empty | seed for the Spark wallet tools; leave empty to skip them |
+
+**Plain MCP (Claude Desktop, other clients).** Add the server to
+`claude_desktop_config.json` (or a project `.mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "kaleido": {
+      "command": "npx",
+      "args": ["-y", "kaleido-mcp"],
+      "env": { "KALEIDO_NETWORK": "signet", "RLN_NODE_URL": "http://localhost:3001" }
+    }
+  }
+}
+```
+
+To use the skills without the plugin, copy the skill folders you want into
+`~/.claude/skills/`.
+
+**Which skills work with kaleido-mcp alone.** `rgb-lightning-node`,
+`kaleido-node`, `kaleido-trading` (atomic swaps), `kaleido-lsps`,
+`channel-manager`, `liquidity-optimizer`, `dca`, `portfolio-manager` and
+`paid-data` use tools that kaleido-mcp provides. The other skills call tools
+that come from the `@kaleidorg/mind` runtime or from other servers:
+`spark-wallet` and `wallet-assistant` use the in-app wallet contract,
+`bitrefill` needs the Bitrefill MCP, `flashnet-swaps` needs Flashnet tools, and
+`merchant-finder` needs a BTC Map tool. In Claude Code these skills
+won't work unless you connect those tools. The `tools:` and `triggers:`
+frontmatter lines are read by the mind runtime; Claude ignores them.
+
+## Examples
+
+| Example | What it does | Run |
+|---|---|---|
+| [`node-minimal`](./examples/node-minimal) | Engine + QVAC local model + one in-process tool, routed by one skill | `pnpm start` / `pnpm start:mock` |
+| [`rgb-agent`](./examples/rgb-agent) | A local model operates an RGB Lightning Node through kaleido-mcp on signet: RGB balances, RGB invoice, asset send behind a confirm gate | `pnpm start` / `pnpm start:mock` / `pnpm start:offline` |
+
+```bash
+corepack enable
+pnpm install && pnpm build
+cd examples/node-minimal && pnpm start      # downloads Qwen3 1.7B (~1 GB) on first run
+cd ../rgb-agent && pnpm start:mock          # fake RLN node, real local model
+```
+
+## How it works
+
+1. **One tool contract, many transports.** The model sees the same tool names
+   and schemas everywhere. Only execution changes: in-process wallet adapters
+   on mobile, an MCP server or CLI on desktop, stateful simulators in tests.
+   Skills are therefore portable and benchmarks are comparable.
+2. **Recipes, not planning.** A small model can't reliably plan *"pay bob 3
+   EUR"* (resolve → price → convert → confirm → send). A recipe carries the
+   plan and the model only fills the slots, which takes about one inference
+   instead of five. Complex recipes, such as atomic swaps, can force slot
+   extraction through the model, with deterministic fallbacks.
+3. **A tiered funnel.** Most requests never reach the model.
 
 ```
 user request
-  ├─ T0  fast-path     "balance" / "address" / "btc price"   → 0 inferences, instant
-  ├─ T2  recipe        "pay bob 3 EUR" / "buy 0.001 BTC"      → ~1 inference (model may assist slot extraction for complex recipes), deterministic chain, confirm-gated
-  └─ T1  agentic loop  everything else                        → skill-scoped LLM
-        ↘ hard / novel chains can P2P-delegate to a paired desktop's bigger model
-        (discovery flows like merchants intentionally use more model reasoning)
+  ├─ T0  fast-path     "balance" / "address" / "btc price"   → 0 inferences
+  ├─ T2  recipe        "pay bob 3 EUR" / "buy 0.001 BTC"      → ~1 inference, deterministic chain, confirm-gated
+  └─ T1  agentic loop  everything else                        → skill-scoped LLM with tools
 ```
 
-**Confirm-before-spend is structural:** every fund-moving tool is `requiresConfirmation` in the contract, so the engine pauses for the host's confirm sheet before any send — the model can't bypass it. The sheet gets a deterministic, voice-first **readback** (`confirmReadback` — *"Send 4,800 sats to bob over Spark. Confirm?"*) built from the resolved call, not the model, so unit/recipient mistakes surface where they're caught.
+**Confirm-before-spend is structural.** Every tool that moves funds is marked
+`requiresConfirmation` in the contract, so the engine pauses for the host's
+confirm sheet and the model can't bypass it. The sheet shows a deterministic
+readback built from the resolved call, not from the model (*"Send 4,800 sats to
+bob over Spark. Confirm?"*).
 
-## Features
+What else is in the box:
 
-- **Multi-L2 wallet tool contract** — per-layer namespaced tools (`spark_*`, `rln_*`, `arkade_*`) + a cross-cutting router (`resolve_contact`, `get_price`, `fiat_to_sats`, `send_payment`, `get_swap_quote`/`execute_swap`). One source of truth in core.
-- **Recipe engine** — deterministic multi-step (payments, swaps, atomic swaps, channel orders, asset-channel onboarding) that works on a 0.6B model; slot extraction can be model-assisted for complex cases with precision safeguards.
-- **KaleidoSwap trading & onboarding** — one quote tool (`kaleidoswap_get_quote`) against the live maker; **atomic swaps** (RGB ↔ BTC) and **LSPS1 channel orders** (buy inbound liquidity, or a new asset channel pre-loaded with USDT/XAUT) drive the RGB Lightning Node — each a single confirm-gated recipe. *"buy 100 USDT"* onboards a channel-less user end to end.
-- **Skills** — Agent-Skills-spec playbooks (`SKILL.md` + progressive disclosure) that scope tools and carry recipes; bundled for React Native. Some (e.g. merchant-finder for location/BTC Map) are intentionally more model-leveraging for natural language understanding, context, and result post-processing (via pluggable selectors including embeddings).
-- **Tool sources** — in-process, MCP, CLI, and L402 (pay-per-call HTTP) — all behind one `ToolRegistry`.
-- **Memory + RAG** — long-term recall and injected-embedding retrieval (Bitcoin copilot, wallet history, BTC-map discovery), all through QVAC. Memory **consolidates** near-duplicates (cheap on-device dedup, optional LLM merge on capable/delegated devices) so it doesn't bloat.
-- **Hardware-aware** — picks the model + context budget for the device; P2P delegation for heavy work.
-- **A product-level eval** — realistic scenarios run through the production
-  Funnel with canonical contracts, confirmation decisions, observable side
-  effects and raw local-inference receipts.
+- **Tool sources:** in-process, MCP, CLI and L402 (pay-per-call HTTP), all
+  behind one `ToolRegistry`.
+- **Contracts and recipes:** a multi-L2 wallet contract (`spark_*`, `rln_*`,
+  `arkade_*`, `liquid_*` and router tools), KaleidoSwap trading (quotes, atomic
+  swaps) and LSPS1 channel orders, plus recipes for payments, swaps, asset
+  sends, channel onboarding and RGB issuance.
+- **Skills:** 14 bundled playbooks in the Agent Skills format (`SKILL.md` with
+  progressive disclosure), loadable from disk or bundled for React Native.
+- **Memory and RAG:** long-term recall and retrieval with injected embeddings,
+  through QVAC.
+- **Voice:** a hands-free STT → agent → TTS loop on QVAC Whisper and
+  Supertonic.
+- **Testing:** `@kaleidorg/mind/testing` provides a stateful `MockWallet` and a
+  `scriptedProvider`, so the whole funnel runs in CI with no node, no funds and
+  no model.
 
-## The eval (what makes the claims defensible)
-
-The headline benchmark is [Product Evaluation v3](./docs/EVALUATION_V3.md).
-Twelve realistic wallet, trading, node, discovery and safety scenarios run
-through the same production Funnel used by hosts. The harness binds canonical
-tool contracts to deterministic stateful services and grades the complete
-outcome: route, typed arguments, confirmation behavior, side effects and final
-response.
-
-```bash
-kaleido-mind product-eval --models qwen3-0.6b
-```
-
-The older capability, planning, adversarial and raw-knowledge tracks remain
-available as explicit engineering diagnostics. They are not combined into the
-headline product-reliability score. See [docs/BENCHMARK.md](./docs/BENCHMARK.md).
-
-The repository does not treat remembered or manually transcribed scores as evidence. Run `pnpm submission:evidence` to produce timestamped, unedited artifacts for the exact commit and hardware being submitted.
-
-## Repo layout
+## Repository layout
 
 ```
 kaleido-mind/
-├── packages/
-│   └── core/            @kaleidorg/mind — the engine
-│       └── src/{wallet,recipe,fastpath,skills,tools,memory,rag,context,knowledge,providers}
+├── packages/core/     @kaleidorg/mind — the engine (published)
+│   ├── src/           engine, funnel, contracts, recipes, skills, tools, memory, rag, qvac
+│   └── skills/        bundled SKILL.md playbooks
 ├── apps/
-│   ├── cli/             @kaleidorg/mind-cli (`kaleido-mind`) — model mgmt + product/diagnostic evals
-│   ├── provider/        desktop sidecar (Tauri) — namespaced MCP + CLI host
-│   └── playground/      exercise the engine against a real local model, no phone needed
-└── docs/                ARCHITECTURE · ROADMAP · BENCHMARK · MEMORY_RAG · INTEGRATION · …
+│   ├── provider/      @kaleidorg/mind-provider — Node sidecar (JSON-RPC over stdio) for desktop hosts (published)
+│   ├── cli/           kaleido-mind CLI — model management, chat, product and diagnostic evals
+│   └── playground/    exercise the engine against a real local model
+├── examples/          node-minimal, rgb-agent
+├── .claude-plugin/    Claude Code plugin + marketplace manifests (skills + kaleido-mcp)
+├── docs/              architecture, function calling, memory/RAG, integration, benchmark, publishing
+└── submission/        QVAC hackathon submission material and evidence
 ```
 
-## Powers these apps
+## Apps built on it
 
-KaleidoMind is the brain; the wallets are sibling repos that bind the same tool
-contract. Both pre-existed as wallets — KaleidoMind is what makes them agentic.
+- **[Rate](https://github.com/kaleidoswap/Rate):** a React Native mobile
+  wallet. The engine runs on-device with a QVAC LLM, Whisper STT and neural
+  TTS, the voice loop, recipes and the confirm gate. Wallet tools are
+  in-process adapters.
+- **[desktop-app](https://github.com/kaleidoswap/desktop-app):** a Tauri
+  RGB/Lightning trading wallet. The provider sidecar runs the agent over a
+  local RGB Lightning Node through kaleido-mcp.
 
-- **[Rate](https://github.com/kaleidoswap/Rate)** — React Native mobile wallet
-  (Mobile track). KaleidoMind gives it the **on-device agent**: local QVAC LLM,
-  Whisper STT and neural TTS, the **hands-free voice loop**, recipes and the
-  confirm-before-spend gate. Wallet actions run through **in-process WDK
-  adapters** (`spark_*`, `rln_*`, `arkade_*`); heavy reasoning can P2P-delegate
-  to a paired desktop.
-- **[desktop-app](https://github.com/kaleidoswap/desktop-app)** — Tauri RGB/
-  Lightning trading wallet over a local **RGB Lightning Node** (General Purpose
-  track). KaleidoMind runs as the in-app chat/agent, hosts the engine as a
-  **namespaced MCP + CLI**, drives the node via `rln_*` tools, manages the QVAC
-  model lifecycle, and can act as the **paired inference peer** a phone
-  delegates to.
-
-## Quickstart
+## Development
 
 ```bash
-pnpm install && pnpm -r build
-
-# The CLI: manage on-device models + run the agent
-cd apps/cli
-npx tsx src/index.ts setup            # guided first-run: pick + pull a model
-npx tsx src/index.ts run "what's my balance?"
-npx tsx src/index.ts skills           # list installed skills
-
-# Product benchmark (--mock validates orchestration and grading without QVAC)
-pnpm submission:evidence:mock
-pnpm submission:evidence
-
-# Optional legacy research diagnostics
-pnpm submission:evidence -- --tracks safety,multistep,quality,capability
-
-# Or exercise the engine directly against a model
-pnpm play "pay bob 3 eur"
+corepack enable                 # uses the pinned pnpm from package.json
+pnpm install --frozen-lockfile
+pnpm build                      # all workspace packages
+pnpm typecheck                  # includes examples/
+pnpm test                       # core unit tests (no model, no network)
 ```
 
-## Build without a node, funds or a model
+Requirements: Node 20 or newer and pnpm 9.
 
-`@kaleidorg/mind/testing` gives you a stateful mock wallet bound to the real
-tool contract and a scripted provider, so the full Funnel (fast-path, recipes,
-confirm gate) runs anywhere — CI, a laptop, a hackathon table:
+Workspace quirks, and why they exist:
 
-```ts
-import { Funnel, issueAssetRecipe, confirmReadback } from '@kaleidorg/mind';
-import { MockWallet, scriptedProvider } from '@kaleidorg/mind/testing';
+- **`.npmrc` uses `node-linker=hoisted` and `shamefully-hoist=true`.** The QVAC
+  / Bare native toolchain resolves the project root and its sibling addon
+  packages by walking a flat `node_modules`. pnpm's symlinked layout breaks
+  this, and `loadModel()` then fails with *"No binaries found for target"*.
+- **`@qvac/sdk` is a root dependency.** `apps/cli` and `apps/playground`
+  declare it as a peer, and the root install is the copy they (and local runs
+  of the examples) use. Core itself only imports QVAC types.
+- **`require-asset` is a root dependency.** The platform runtime
+  (`bare-runtime-darwin-arm64` and similar) needs it, but pnpm does not install
+  it for that optional platform package. Without the root entry,
+  `import('@qvac/sdk')` crashes when the Bare worker starts. Verified against
+  `@qvac/sdk` 0.21.0. Remove it only after a model loads without it.
 
-const wallet = new MockWallet();                 // BTC on Spark/RLN/Arkade, USDT, contacts
-const funnel = new Funnel({
-  provider: scriptedProvider(),                  // swap for a QVAC provider when ready
-  tools: wallet.registry(),
-  recipes: [issueAssetRecipe],
-});
+CI (`.github/workflows/ci.yml`) builds, typechecks (packages, apps and
+examples), runs the core tests and runs the `rgb-agent` example offline.
+Releases are described in [docs/PUBLISHING.md](./docs/PUBLISHING.md) and
+[CHANGELOG.md](./CHANGELOG.md).
 
-const out = await funnel.runTurn('issue 1000 TICKET tokens called Hackathon Ticket', {
-  onConfirm: async (call) => {
-    console.log(confirmReadback(call));          // "Issue 1,000 TICKET (Hackathon Ticket), a new RGB asset. Confirm?"
-    return { approved: true };
-  },
-});
-console.log(out.text);                           // "Issued 1000 TICKET. Asset id: rgb:mock-ticket-…"
-```
+## Evaluation
 
-Swap `wallet.registry()` for a real binding (`bindWalletTools` over WDK
-adapters, or an MCP source such as `wdk-wallet-rln-mcp`) and the same code
-drives a real RGB Lightning Node.
+The headline benchmark is [Product Evaluation v3](./docs/EVALUATION_V3.md).
+Realistic wallet, trading, node, discovery and safety scenarios run through the
+production funnel, and each run is graded on route, arguments, confirmation
+behavior, side effects and the final answer. See
+[docs/BENCHMARK.md](./docs/BENCHMARK.md) for methodology and
+[REPRODUCE.md](./REPRODUCE.md) for producing timestamped evidence on your own
+hardware.
 
 ## Docs
 
-- [ARCHITECTURE.md](./docs/ARCHITECTURE.md) — cross-surface design + the tool contract
-- [ROADMAP.md](./docs/ROADMAP.md) — the master plan + phase status
-- [BENCHMARK.md](./docs/BENCHMARK.md) — eval methodology, results, limitations
-- [EVALUATION_V3.md](./docs/EVALUATION_V3.md) — product scenario schema and grading
-- [MEMORY_RAG.md](./docs/MEMORY_RAG.md) — memory + retrieval
-- [INTEGRATION.md](./docs/INTEGRATION.md) — embedding the engine in a host
+- [ARCHITECTURE.md](./docs/ARCHITECTURE.md): cross-surface design and the tool contract
+- [FUNCTION_CALLING.md](./docs/FUNCTION_CALLING.md): how tool calls flow through QVAC
+- [INTEGRATION.md](./docs/INTEGRATION.md): embedding the engine in a host
+- [MEMORY_RAG.md](./docs/MEMORY_RAG.md): memory and retrieval
+- [MODEL_MANAGEMENT.md](./docs/MODEL_MANAGEMENT.md): models and hardware budgets
+- [BENCHMARK.md](./docs/BENCHMARK.md) · [EVALUATION_V3.md](./docs/EVALUATION_V3.md): evaluation
+- [ROADMAP.md](./docs/ROADMAP.md) · [PUBLISHING.md](./docs/PUBLISHING.md)
 
-## Hackathon tracks
+## QVAC Hackathon submission
 
-- 📱 **Mobile** — the public [Rate](https://github.com/kaleidoswap/Rate) wallet runs the funnel, recipes, voice and confirmation gate on a physical iPhone through QVAC.
-- 🖥️ **General Purpose** — the [desktop app](https://github.com/kaleidoswap/desktop-app) runs the same engine over a local RGB Lightning Node and can serve as a paired, user-controlled QVAC inference peer.
-
-The eval harness can test other QVAC-compatible GGUF models, but the submission
-does not claim the Psy or Tinkerer tracks.
+kaleido-mind was first built for the QVAC Hackathon. The demo video, tracks,
+remote-API disclosure and evidence are in [submission/](./submission/README.md).
 
 ## License
 
-Apache 2.0 — see [LICENSE](./LICENSE).
+Apache 2.0. See [LICENSE](./LICENSE).

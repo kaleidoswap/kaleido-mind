@@ -20,6 +20,7 @@ import type * as QvacSdk from '@qvac/sdk';
 import type { InferenceMetrics, LLMProvider, TurnInput, TurnOutput } from '../providers/types.js';
 import type { QvacTurnStats } from './parse.js';
 import { consumeRun } from './stream.js';
+import { toQvacTools } from './tools.js';
 
 type CompletionFn = typeof QvacSdk.completion;
 type CancelFn = typeof QvacSdk.cancel;
@@ -82,19 +83,11 @@ export function createQvacProvider(options: QvacProviderOptions): LLMProvider {
         ? [{ role: 'system', content: input.system }, ...input.messages]
         : input.messages;
 
-      // Tools are forwarded by schema only (name/description/parameters). We
-      // carry `parameters` through verbatim (Zod for in-process tools, JSON
-      // Schema for MCP) — the model only needs the shape to pick a call; the
-      // Engine validates + executes.
-      const tools = input.tools.length
-        ? input.tools.map((t) => ({
-            name: t.name,
-            description: t.description,
-            parameters: t.parameters,
-          }))
-        : undefined;
+      // Tools are forwarded by schema only — the Engine validates + executes.
+      // JSON-Schema tools are normalised to the SDK's Tool shape (see tools.ts).
+      const tools = toQvacTools(input.tools);
 
-      // QVAC 0.13 nests sampling under `generationParams`; top-level
+      // QVAC (0.13+) nests sampling under `generationParams`; top-level
       // `temperature`/`max_tokens` (as older rate code passed) are dropped by
       // validation, so the cap silently no-op'd. Build it here, and only send it
       // when a value is set so a host that passes neither keeps SDK defaults.
@@ -155,8 +148,11 @@ export function createQvacProvider(options: QvacProviderOptions): LLMProvider {
       // instead of an empty bubble so the agentic loop ends cleanly.
       const text =
         result.text || (result.thinkingBudgetExceeded ? THINKING_BUDGET_FALLBACK : result.text);
-      const totalTokens = result.stats?.totalTokens;
       const promptTokens = result.stats?.promptTokens;
+      const generated = result.stats?.generatedTokens;
+      const totalTokens =
+        result.stats?.totalTokens ??
+        (typeof generated === 'number' && typeof promptTokens === 'number' ? promptTokens + generated : undefined);
       const inference: InferenceMetrics = {
         requestId: result.requestId,
         durationMs: result.timing.durationMs,
