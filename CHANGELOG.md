@@ -7,6 +7,16 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **RGB issuance tools aligned with kaleido-mcp**, which now ships them as
+  `wdk_*` / `rln_*`: `rln_list_transfers` takes `asset_id` (in-app wallets still
+  accept a ticker), `rln_create_utxos` adds optional `size`, `up_to` and
+  `fee_rate`, and `rln_issue_asset` adds `details` and only requires `name`
+  (`ticker` for NIA/UDA and `amount` for NIA/CFA are checked by the tool).
+  The `rgb-lightning-node` skill documents the shared schemas and gains an
+  "issue your own RGB asset" recipe.
+
 ## [0.7.0] — 2026-10-06
 
 Core `@kaleidorg/mind` 0.7.0 and `@kaleidorg/mind-provider` 0.7.0.

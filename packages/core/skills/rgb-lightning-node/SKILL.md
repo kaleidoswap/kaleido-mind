@@ -5,7 +5,7 @@ tools: rln_get_node_info, rln_get_balances, rln_list_channels, rln_list_assets, 
 triggers: node, nodeinfo, pubkey, peer, channels, channel capacity, list channels, open channel, close channel, inbound, capacity, asset balance, whitelist, taker, swapstring, swaps, payments, invoice, receive, send asset, send rgb, on-chain address, deposit, rgb invoice, ln invoice, issue, mint, new token, nft, utxos, transfers
 metadata:
   author: kaleidoswap
-  version: "0.3.1"
+  version: "0.3.2"
 ---
 
 # RGB Lightning Node (taker-side)
@@ -160,33 +160,50 @@ Reply with the full `invoice` string; the payer needs all of it.
 Use when the user wants to **receive** an RGB asset directly (not over
 Lightning). Outside the atomic swap flow.
 
-### `rln_list_transfers` — { asset }
+### `rln_list_transfers` — { asset_id }
 Transfers for one asset (issuance, sends, receives) with `status`
 (`WaitingCounterparty`, `WaitingConfirmations`, `Settled`, `Failed`). Use it to
-answer "has my RGB invoice been paid?".
+answer "has my RGB invoice been paid?". Pass the `asset_id` (`rgb:…`) from
+`rln_list_assets` or `rln_issue_asset`; in-app wallets also accept a ticker.
 
-### `rln_create_utxos` — { num? } — 🔒 confirm-gated
+### `rln_create_utxos` — { num?, size?, up_to?, fee_rate? } — 🔒 confirm-gated
 Creates colorable UTXOs (spends a little on-chain BTC). A fresh node needs
 these before it can **issue** or **receive** RGB assets. Call it when an RGB
-call fails with "no available UTXOs", then retry the original action.
+call fails with "no available UTXOs", then retry the original action. The
+defaults (`num` 5, `fee_rate` 1) are fine; set `up_to: true` to only top up to
+`num` free UTXOs.
 
-### `rln_issue_asset` — { name, ticker, amount, precision?, schema? } — 🔒 confirm-gated
+### `rln_issue_asset` — { name, ticker?, amount?, precision?, schema?, details? } — 🔒 confirm-gated
 Creates a **new** RGB asset owned by this node. `schema`: `NIA` fungible token
-(default), `CFA` collectible, `UDA` unique asset / NFT (supply 1). `amount` is
-whole units. Reply with the returned `asset_id` — the user needs it to invoice
-or send the new asset.
+(default), `CFA` collectible, `UDA` unique asset / NFT (supply 1).
+- `ticker` (uppercase, 1–8 letters/digits) is required for `NIA` and `UDA`.
+- `amount` is the total supply in display units, required for `NIA` and `CFA`;
+  the raw supply is `amount × 10^precision` (`precision` defaults to 0).
+- `details` is an optional description for `CFA` and `UDA`.
+
+Reply with the returned `asset_id` — the user needs it to invoice or send the
+new asset.
 
 Examples:
 - "issue 1000 TICKET tokens called Hackathon Ticket" →
   `rln_issue_asset { name: "Hackathon Ticket", ticker: "TICKET", amount: 1000 }`
 - "mint an NFT called Genesis Badge" →
-  `rln_issue_asset { name: "Genesis Badge", ticker: "GENESISB", amount: 1, schema: "UDA" }`
+  `rln_issue_asset { name: "Genesis Badge", ticker: "GENESISB", schema: "UDA" }`
 - "has anyone paid my TICKET invoice?" → `rln_refresh_transfers` →
-  `rln_list_transfers { asset: "TICKET" }`
+  `rln_list_transfers { asset_id: "<TICKET asset_id from rln_list_assets>" }`
 
-`rln_list_transfers`, `rln_create_utxos` and `rln_issue_asset` are provided by
-in-app wallets and the CLI; kaleido-mcp does not expose them yet. If a tool is
-not in your list, say so instead of guessing.
+kaleido-mcp exposes these three as `wdk_issue_asset`, `wdk_create_utxos` and
+`wdk_list_transfers`, with the same arguments and `rln_*` aliases.
+
+### Recipe: issue your own RGB asset
+1. `rln_get_node_info` — the node is reachable and unlocked.
+2. `rln_create_utxos {}` — skip if the node already has free colored UTXOs;
+   wait for the funding tx to confirm before issuing.
+3. `rln_issue_asset { name, ticker, amount }` — confirm with the user first.
+4. `rln_create_rgb_invoice` on the receiver's node, then `rln_send_asset` with
+   the new `asset_id` to distribute it.
+5. `rln_refresh_transfers` → `rln_list_transfers { asset_id }` until the
+   transfer is `Settled`.
 
 ## The maker / node split
 

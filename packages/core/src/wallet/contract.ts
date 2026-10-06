@@ -111,16 +111,22 @@ export const WALLET_TOOLS: WalletToolDef[] = [
   t('rln', 'rln_atomic_taker', 'Whitelist a maker swap on the node (taker side). Pass the swapstring from kaleidoswap_atomic_init, before kaleidoswap_atomic_execute.', { swapstring: { type: 'string' } }, ['swapstring'], true),
   t('rln', 'rln_list_swaps', 'List atomic swaps on the RLN node (maker and taker sides).'),
   t('rln', 'rln_get_swap', 'Get an atomic swap by payment_hash.', { payment_hash: { type: 'string' }, taker: { type: 'boolean', description: 'Taker-side swap' } }, ['payment_hash']),
-  t('rln', 'rln_list_transfers', 'List RGB transfers for one asset with their status — use to check if an RGB invoice was paid.', { asset: { type: 'string', description: 'Asset ticker or asset_id' } }, ['asset']),
+  t('rln', 'rln_list_transfers', 'List RGB transfers for one asset (issuance, sends, receives) with their status — use to check if an RGB invoice was paid.', { asset_id: { type: 'string', description: 'RGB asset id (in-app wallets also accept a ticker)' } }, ['asset_id']),
   // Issuance + UTXO prep spend on-chain BTC and are irreversible → gated like any spend.
-  t('rln', 'rln_create_utxos', 'Create colorable UTXOs on the RLN node — needed before issuing or receiving RGB assets on a fresh node.', { num: { type: 'number', description: 'How many UTXOs (default 5)' } }, [], true),
+  t('rln', 'rln_create_utxos', 'Create colorable UTXOs on the RLN node — needed before issuing or receiving RGB assets on a fresh node.', {
+    num: { type: 'number', description: 'How many UTXOs (default 5)' },
+    size: { type: 'number', description: 'Size of each UTXO in sats (default: node decides)' },
+    up_to: { type: 'boolean', description: 'Only top up to `num` free UTXOs (default false)' },
+    fee_rate: { type: 'number', description: 'sat/vbyte (default 1)' },
+  }, [], true),
   t('rln', 'rln_issue_asset', 'Issue a NEW RGB asset owned by this node (e.g. an event ticket or loyalty token).', {
-    name: { type: 'string', description: 'Asset name, e.g. "Hackathon Ticket"' },
-    ticker: { type: 'string', description: 'Uppercase ticker, e.g. "TICKET"' },
-    amount: { type: 'number', description: 'Total supply in whole units' },
-    precision: { type: 'number', description: 'Decimal places (default 0)' },
     schema: { type: 'string', enum: ['NIA', 'CFA', 'UDA'], description: 'NIA = token (default), CFA = collectible, UDA = unique/NFT' },
-  }, ['name', 'ticker', 'amount'], true),
+    name: { type: 'string', description: 'Asset name, e.g. "Hackathon Ticket"' },
+    ticker: { type: 'string', description: 'Uppercase ticker, e.g. "TICKET". Required for NIA and UDA' },
+    amount: { type: 'number', description: 'Total supply in display units. Required for NIA and CFA; UDA is always 1' },
+    precision: { type: 'number', description: 'Decimal places (default 0)' },
+    details: { type: 'string', description: 'Optional description (CFA and UDA)' },
+  }, ['name'], true),
 
   // ── Arkade ─────────────────────────────────────────────────────────────
   t('arkade', 'arkade_get_balance', 'Get the Arkade wallet balance.'),

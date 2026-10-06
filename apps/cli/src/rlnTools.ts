@@ -180,10 +180,11 @@ const ROUTES: Record<string, Route> = {
       const raw = Math.round(Number(a.amount ?? 1) * 10 ** precision);
       const name = String(a.name ?? a.ticker ?? '');
       const ticker = String(a.ticker ?? '').toUpperCase();
+      const details = a.details != null ? String(a.details) : null;
       if (schema === 'UDA') {
-        return { ticker, name, details: null, precision, media_file_digest: null, attachments_file_digests: [] };
+        return { ticker, name, details, precision, media_file_digest: null, attachments_file_digests: [] };
       }
-      if (schema === 'CFA') return { amounts: [raw], name, details: null, precision, file_digest: null };
+      if (schema === 'CFA') return { amounts: [raw], name, details, precision, file_digest: null };
       return { amounts: [raw], ticker, name, precision };
     },
     // Flatten { asset: {...} } so callers (and the recipe summary) see asset_id directly.
@@ -277,7 +278,7 @@ const descriptions: Record<string, string> = {
     'receiving RGB assets on a fresh node. SPEND: confirmation-gated.',
   rln_issue_asset:
     'Issue a NEW RGB asset owned by the local node. Args: `name`, `ticker` ' +
-    '(uppercase), `amount` (whole units), optional `precision`, optional ' +
+    '(uppercase), `amount` (display units), optional `precision`, optional ' +
     '`schema` (NIA token, CFA collectible, UDA unique/NFT). SPEND: confirmation-gated.',
 };
 
@@ -329,16 +330,22 @@ const schemas: Record<string, { type: 'object'; properties: Record<string, { typ
   },
   rln_create_utxos: {
     type: 'object',
-    properties: { num: { type: 'number', description: 'How many UTXOs to create. Default 5.' } },
+    properties: {
+      num: { type: 'number', description: 'How many UTXOs to create. Default 5.' },
+      size: { type: 'number', description: 'Size of each UTXO in sats. Default: node decides.' },
+      up_to: { type: 'boolean', description: 'Only top up to `num` free UTXOs. Default false.' },
+      fee_rate: { type: 'number', description: 'sat/vbyte. Default 1.' },
+    },
   },
   rln_issue_asset: {
     type: 'object',
     properties: {
       name: { type: 'string', description: 'Asset name, e.g. "Hackathon Ticket".' },
       ticker: { type: 'string', description: 'Uppercase ticker, e.g. "TICKET".' },
-      amount: { type: 'number', description: 'Total supply in whole units.' },
+      amount: { type: 'number', description: 'Total supply in display units (raw = amount × 10^precision).' },
       precision: { type: 'number', description: 'Decimal places. Default 0.' },
       schema: { type: 'string', description: 'NIA (default), CFA or UDA.' },
+      details: { type: 'string', description: 'Optional description (CFA and UDA).' },
     },
     required: ['name', 'ticker', 'amount'],
   },
