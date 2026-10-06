@@ -17,7 +17,7 @@
     "submission:evidence": "node scripts/run-submission-benchmark.mjs",
     "submission:evidence:mock": "node scripts/run-submission-benchmark.mjs --mock"
   },
-  "packageManager": "pnpm@9.0.0",
+  "packageManager": "pnpm@9.15.9",
   "devDependencies": {
     "@types/node": "^26.6.4",
     "tsx": "^4.23.15",
