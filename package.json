@@ -6,7 +6,8 @@
   "license": "Apache-2.0",
   "workspaces": [
     "packages/*",
-    "apps/*"
+    "apps/*",
+    "examples/*"
   ],
   "scripts": {
     "build": "pnpm -r run build",
