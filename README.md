@@ -38,13 +38,33 @@ Skills format, so Claude can use them directly, together with the
 ```
 
 The plugin installs the skills and starts `npx -y kaleido-mcp` over stdio. The
-server reads three variables from your environment:
+server reads these variables from your environment:
 
 | Variable | Default | Purpose |
 |---|---|---|
 | `KALEIDO_NETWORK` | `signet` | KaleidoSwap network preset (kaleido-mcp 0.3.0+) |
 | `RLN_NODE_URL` | `http://localhost:3001` | your RGB Lightning Node API |
-| `WDK_SEED` | empty | seed for the Spark wallet tools; leave empty to skip them |
+
+There is no public mainnet KaleidoSwap API: with `KALEIDO_NETWORK=mainnet`,
+kaleido-mcp 0.3.1+ also needs `KALEIDOSWAP_API_URL` set to your maker endpoint.
+
+**Spark and Liquid wallets.** Since kaleido-mcp 0.3.1 these are optional peer
+dependencies that plain `npx -y kaleido-mcp` does not install; with `WDK_SEED`
+or `LIQUID_MNEMONIC` set but the package missing, the server starts and logs an
+install hint. To enable them, add the packages to the command and pass the seeds:
+
+```json
+{
+  "mcpServers": {
+    "kaleido": {
+      "command": "npx",
+      "args": ["-y", "-p", "kaleido-mcp", "-p", "@tetherto/wdk-wallet-spark",
+               "-p", "@kaleidorg/wdk-wallet-liquid", "kaleido-mcp"],
+      "env": { "KALEIDO_NETWORK": "signet", "WDK_SEED": "...", "LIQUID_MNEMONIC": "..." }
+    }
+  }
+}
+```
 
 **Plain MCP (Claude Desktop, other clients).** Add the server to
 `claude_desktop_config.json` (or a project `.mcp.json`):

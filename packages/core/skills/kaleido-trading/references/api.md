@@ -1,8 +1,8 @@
 # KaleidoSwap maker API (what the tools call)
 
-Base URLs: `https://api.kaleidoswap.com` (mainnet),
-`https://api.signet.kaleidoswap.com` (signet, `KALEIDO_NETWORK=signet` in
-kaleido-mcp). The MCP tools wrap these endpoints; you normally never call them
+Base URL: `https://api.signet.kaleidoswap.com` (signet, `KALEIDO_NETWORK=signet`
+in kaleido-mcp). There is no public mainnet API; for mainnet, set
+`KALEIDOSWAP_API_URL` to your own maker endpoint. The MCP tools wrap these endpoints; you normally never call them
 directly. Amounts on the wire are raw units (see `assets.md`).
 
 | Endpoint | Tool |

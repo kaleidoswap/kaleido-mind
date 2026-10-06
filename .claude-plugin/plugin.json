@@ -17,8 +17,7 @@
       "args": ["-y", "kaleido-mcp"],
       "env": {
         "KALEIDO_NETWORK": "${KALEIDO_NETWORK:-signet}",
-        "RLN_NODE_URL": "${RLN_NODE_URL:-http://localhost:3001}",
-        "WDK_SEED": "${WDK_SEED:-}"
+        "RLN_NODE_URL": "${RLN_NODE_URL:-http://localhost:3001}"
       }
     }
   }
