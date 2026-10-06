@@ -58,7 +58,7 @@
     "bundle-skills": "node scripts/bundle-skills.mjs"
   },
   "peerDependencies": {
-    "@qvac/sdk": ">=0.12.2"
+    "@qvac/sdk": ">=0.21.0"
   },
   "peerDependenciesMeta": {
     "@qvac/sdk": {
@@ -66,8 +66,8 @@
     }
   },
   "devDependencies": {
-    "@qvac/sdk": "^0.13.5",
-    "@types/node": "^20.19.43",
-    "vitest": "^1.6.1"
+    "@qvac/sdk": "^0.21.0",
+    "@types/node": "^26.6.4",
+    "vitest": "^5.0.3"
   }
 }

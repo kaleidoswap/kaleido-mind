@@ -45,7 +45,7 @@ async function loadOrCreateMnemonic(): Promise<{ mnemonic: string; created: bool
 
   // Generate fresh 24-word BIP39 mnemonic.
   const bip39 = await import('@scure/bip39');
-  const { wordlist } = await import('@scure/bip39/wordlists/english');
+  const { wordlist } = await import('@scure/bip39/wordlists/english.js');
   const mnemonic = bip39.generateMnemonic(wordlist, 256);
 
   await mkdir(dirname(MNEMONIC_PATH), { recursive: true });
