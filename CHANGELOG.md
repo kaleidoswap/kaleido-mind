@@ -7,8 +7,29 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.7.0] — 2026-10-06
+
+Core `@kaleidorg/mind` 0.7.0 and `@kaleidorg/mind-provider` 0.7.0.
+
 ### Added
 
+- **Package README** with install, a five-minute QVAC quickstart, subpath
+  exports, the wallet tool contract, MCP wiring and how to write tools and
+  skills.
+- **`examples/node-minimal`** (Engine + QVAC + one in-process tool and skill)
+  and **`examples/rgb-agent`** (a local model driving an RGB Lightning Node via
+  kaleido-mcp on signet, with a mock mode that needs no node). Both are
+  typechecked in CI; the rgb-agent offline mode runs in CI too.
+- **RLN contract aligned with kaleido-mcp.** New `rln_*` tools with
+  kaleido-mcp's argument names: `rln_get_asset_balance`,
+  `rln_refresh_transfers`, `rln_get_address`, `rln_send_btc` 🔒,
+  `rln_list_payments`, `rln_connect_peer`, `rln_open_channel` 🔒,
+  `rln_close_channel` 🔒, `rln_get_channel_id`, `rln_atomic_taker` 🔒,
+  `rln_list_swaps`, `rln_get_swap`. `confirmReadback` speaks the new spend
+  tools and kaleido-mcp's `asset_id` / `recipient_id` for `rln_send_asset`.
+  Existing tool schemas are unchanged.
+- **`toQvacTools`** (`@kaleidorg/mind/qvac`) — maps engine tools to the
+  `completion({ tools })` shape.
 - **`@kaleidorg/mind/testing`** — a new subpath export so hosts can build and
   demo an agent with no node, no funds and no model. `MockWallet` (moved from
   the CLI eval, unchanged behaviour for the existing tools) binds the canonical
@@ -28,6 +49,32 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `rln_list_transfers` to a real node.
 - `rgb-lightning-node` skill 0.2.0 documents the issuance tools with few-shot
   examples.
+
+### Changed
+
+- `rgb-lightning-node` skill 0.3.0: documents every declared tool, drops the
+  non-existent `rln_whitelist_swap` (use `rln_atomic_taker`), and notes where
+  in-app and kaleido-mcp argument names differ.
+- `@qvac/sdk` optional peer range is `>=0.13.1` (core) / `>=0.13.5`
+  (provider); developed and tested against 0.21.0. P2P delegation needs
+  0.13–0.18: QVAC 0.19 removed `startQVACProvider` and `loadModel({ delegate })`.
+- Development dependencies: `@qvac/sdk` 0.21.0, `@modelcontextprotocol/sdk`
+  1.32.1 (provider, examples), vitest 5; `packageManager` is pnpm 9.15.9.
+
+### Fixed
+
+- **Tool arguments reached QVAC models empty.** The provider sent JSON-Schema
+  tools without `type: 'function'`, so the SDK treated them as Zod inputs and
+  dropped every parameter. JSON-Schema tools are now normalised to the SDK's
+  `Tool` shape (affects every contract and MCP tool on 0.13 and 0.21).
+- **Cancelled turns threw instead of returning.** Since QVAC 0.11 a cancelled
+  run rejects `final` with `InferenceCancelledError`; `consumeRun` now folds it
+  into a `stopReason: 'cancelled'` turn, so a stop button and the thinking-token
+  budget end the turn cleanly (the budget fallback text is shown again).
+- Per-turn `completionTokens` / `totalTokens` are derived from the SDK's
+  `generatedTokens` stat.
+- Provider sidecar: with an SDK that has no P2P provider it now reports that
+  and runs desktop-only instead of failing after a misleading 60 s timeout.
 
 ## [0.6.4] — 2026-06-21
 
