@@ -39,6 +39,11 @@
       "types": "./dist/qvac/index.d.ts",
       "import": "./dist/qvac/index.js",
       "default": "./dist/qvac/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing/index.d.ts",
+      "import": "./dist/testing/index.js",
+      "default": "./dist/testing/index.js"
     }
   },
   "files": [

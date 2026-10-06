@@ -1,11 +1,11 @@
 ---
 name: rgb-lightning-node
-description: "Drive the user's local RGB Lightning Node (RLN) — read its pubkey/status, list channels and their capacities, check RGB asset balances, manage channels/peers, whitelist a swap, or create Lightning/RGB receive invoices. Triggers when the user asks about the node, their channels or capacities, needs an invoice, or is mid-atomic-swap and the maker needs the node pubkey or a swapstring whitelisted."
-tools: rln_get_node_info, rln_get_balances, rln_list_channels, rln_list_assets, rln_get_asset_balance, rln_open_channel, rln_close_channel, rln_connect_peer, rln_get_channel_id, rln_whitelist_swap, rln_atomic_taker, rln_list_payments, rln_create_ln_invoice, rln_create_rgb_invoice
-triggers: node, nodeinfo, pubkey, peer, channels, channel capacity, list channels, inbound, capacity, asset balance, whitelist, taker, swapstring, invoice, receive, rgb invoice, ln invoice
+description: "Drive the user's local RGB Lightning Node (RLN) — read its pubkey/status, list channels and their capacities, check RGB asset balances, manage channels/peers, whitelist a swap, or create Lightning/RGB receive invoices. Triggers when the user asks about the node, their channels or capacities, needs an invoice, wants to issue/mint a new RGB token or NFT, or is mid-atomic-swap and the maker needs the node pubkey or a swapstring whitelisted."
+tools: rln_get_node_info, rln_get_balances, rln_list_channels, rln_list_assets, rln_get_asset_balance, rln_open_channel, rln_close_channel, rln_connect_peer, rln_get_channel_id, rln_whitelist_swap, rln_atomic_taker, rln_list_payments, rln_create_ln_invoice, rln_create_rgb_invoice, rln_list_transfers, rln_create_utxos, rln_issue_asset
+triggers: node, nodeinfo, pubkey, peer, channels, channel capacity, list channels, inbound, capacity, asset balance, whitelist, taker, swapstring, invoice, receive, rgb invoice, ln invoice, issue, mint, new token, nft, utxos, transfers
 metadata:
   author: kaleidoswap
-  version: "0.1.0"
+  version: "0.2.0"
 ---
 
 # RGB Lightning Node (taker-side)
@@ -107,6 +107,30 @@ Args:
 
 Use when the user wants to **receive** an RGB asset directly (not over
 Lightning). Outside the atomic swap flow.
+
+### `rln_list_transfers` — { asset_id }
+Transfers for one asset (issuance, sends, receives) with `status`
+(`WaitingCounterparty`, `WaitingConfirmations`, `Settled`, `Failed`). Use it to
+answer "has my RGB invoice been paid?".
+
+### `rln_create_utxos` — { num? } — 🔒 confirm-gated
+Creates colorable UTXOs (spends a little on-chain BTC). A fresh node needs
+these before it can **issue** or **receive** RGB assets. Call it when an RGB
+call fails with "no available UTXOs", then retry the original action.
+
+### `rln_issue_asset` — { name, ticker, amount, precision?, schema? } — 🔒 confirm-gated
+Creates a **new** RGB asset owned by this node. `schema`: `NIA` fungible token
+(default), `CFA` collectible, `UDA` unique asset / NFT (supply 1). `amount` is
+whole units. Reply with the returned `asset_id` — the user needs it to invoice
+or send the new asset.
+
+Examples:
+- "issue 1000 TICKET tokens called Hackathon Ticket" →
+  `rln_issue_asset { name: "Hackathon Ticket", ticker: "TICKET", amount: 1000 }`
+- "mint an NFT called Genesis Badge" →
+  `rln_issue_asset { name: "Genesis Badge", ticker: "GENESISB", amount: 1, schema: "UDA" }`
+- "has anyone paid my TICKET invoice?" → `rln_list_assets` (find the asset_id) →
+  `rln_list_transfers { asset_id }`
 
 ## The maker / node split
 

@@ -115,6 +115,36 @@ pnpm submission:evidence -- --tracks safety,multistep,quality,capability
 pnpm play "pay bob 3 eur"
 ```
 
+## Build without a node, funds or a model
+
+`@kaleidorg/mind/testing` gives you a stateful mock wallet bound to the real
+tool contract and a scripted provider, so the full Funnel (fast-path, recipes,
+confirm gate) runs anywhere — CI, a laptop, a hackathon table:
+
+```ts
+import { Funnel, issueAssetRecipe, confirmReadback } from '@kaleidorg/mind';
+import { MockWallet, scriptedProvider } from '@kaleidorg/mind/testing';
+
+const wallet = new MockWallet();                 // BTC on Spark/RLN/Arkade, USDT, contacts
+const funnel = new Funnel({
+  provider: scriptedProvider(),                  // swap for a QVAC provider when ready
+  tools: wallet.registry(),
+  recipes: [issueAssetRecipe],
+});
+
+const out = await funnel.runTurn('issue 1000 TICKET tokens called Hackathon Ticket', {
+  onConfirm: async (call) => {
+    console.log(confirmReadback(call));          // "Issue 1,000 TICKET (Hackathon Ticket), a new RGB asset. Confirm?"
+    return { approved: true };
+  },
+});
+console.log(out.text);                           // "Issued 1000 TICKET. Asset id: rgb:mock-ticket-…"
+```
+
+Swap `wallet.registry()` for a real binding (`bindWalletTools` over WDK
+adapters, or an MCP source such as `wdk-wallet-rln-mcp`) and the same code
+drives a real RGB Lightning Node.
+
 ## Docs
 
 - [ARCHITECTURE.md](./docs/ARCHITECTURE.md) — cross-surface design + the tool contract

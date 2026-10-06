@@ -91,6 +91,17 @@ export const WALLET_TOOLS: WalletToolDef[] = [
   t('rln', 'rln_create_rgb_invoice', 'Create an RGB asset invoice to receive an asset (e.g. USDT).', { asset, amount: { type: 'number', description: 'Asset amount' } }, ['asset', 'amount']),
   t('rln', 'rln_pay_invoice', 'Pay a Lightning invoice from the RLN node.', { invoice: { type: 'string' } }, ['invoice'], true),
   t('rln', 'rln_send_asset', 'Send an RGB asset (e.g. USDT) to a recipient.', { asset, amount: { type: 'number' }, to: { type: 'string' } }, ['asset', 'amount', 'to'], true),
+  t('rln', 'rln_list_assets', 'List RGB assets held by the RLN node (asset_id, ticker, name, precision, balances).'),
+  t('rln', 'rln_list_transfers', 'List RGB transfers for one asset with their status — use to check if an RGB invoice was paid.', { asset: { type: 'string', description: 'Asset ticker or asset_id' } }, ['asset']),
+  // Issuance + UTXO prep spend on-chain BTC and are irreversible → gated like any spend.
+  t('rln', 'rln_create_utxos', 'Create colorable UTXOs on the RLN node — needed before issuing or receiving RGB assets on a fresh node.', { num: { type: 'number', description: 'How many UTXOs (default 5)' } }, [], true),
+  t('rln', 'rln_issue_asset', 'Issue a NEW RGB asset owned by this node (e.g. an event ticket or loyalty token).', {
+    name: { type: 'string', description: 'Asset name, e.g. "Hackathon Ticket"' },
+    ticker: { type: 'string', description: 'Uppercase ticker, e.g. "TICKET"' },
+    amount: { type: 'number', description: 'Total supply in whole units' },
+    precision: { type: 'number', description: 'Decimal places (default 0)' },
+    schema: { type: 'string', enum: ['NIA', 'CFA', 'UDA'], description: 'NIA = token (default), CFA = collectible, UDA = unique/NFT' },
+  }, ['name', 'ticker', 'amount'], true),
 
   // ── Arkade ─────────────────────────────────────────────────────────────
   t('arkade', 'arkade_get_balance', 'Get the Arkade wallet balance.'),

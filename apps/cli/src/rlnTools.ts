@@ -10,6 +10,11 @@
  *   - rln_create_ln_invoice    (POST /lninvoice)
  *   - rln_create_rgb_invoice   (POST /rgbinvoice)
  *
+ * And RGB issuance (the contract's rln_issue_asset recipe target):
+ *   - rln_create_utxos         (POST /createutxos)
+ *   - rln_issue_asset          (POST /issueasset{nia,cfa,uda})
+ *   - rln_list_transfers       (POST /listtransfers)
+ *
  * The mind never sees URLs — the fetch lives here. Same shape as kaleidoswapTools.
  *
  * NOT exposed: /makerinit, /makerexecute. Those are for when the LOCAL node
@@ -30,7 +35,8 @@ export interface RlnHttpOptions {
 
 interface Route {
   method: 'GET' | 'POST';
-  path: string;
+  /** Static path, or derived from the args (e.g. issuance picks the schema endpoint). */
+  path: string | ((args: Record<string, unknown>) => string);
   body?: (args: Record<string, unknown>) => unknown;
   /** Optional spend flag (forwarded to InProcessTool.requiresConfirmation). */
   spend?: boolean;
@@ -147,7 +153,51 @@ const ROUTES: Record<string, Route> = {
     path: '/assetbalance',
     body: (a) => ({ asset_id: String(a.asset_id ?? a.asset ?? '') }),
   },
+  rln_list_transfers: {
+    method: 'POST',
+    path: '/listtransfers',
+    body: (a) => ({ asset_id: String(a.asset_id ?? a.asset ?? '') }),
+  },
+  rln_create_utxos: {
+    method: 'POST',
+    path: '/createutxos',
+    spend: true, // spends on-chain BTC into colorable UTXOs
+    body: (a) => ({
+      up_to: Boolean(a.up_to ?? false),
+      num: Number(a.num ?? 5),
+      ...(a.size != null ? { size: Number(a.size) } : {}),
+      fee_rate: Number(a.fee_rate ?? 1),
+      skip_sync: false,
+    }),
+  },
+  rln_issue_asset: {
+    method: 'POST',
+    path: (a) => `/issueasset${issueSchema(a).toLowerCase()}`,
+    spend: true, // irreversible on-chain issuance
+    body: (a) => {
+      const schema = issueSchema(a);
+      const precision = Number(a.precision ?? 0);
+      const raw = Math.round(Number(a.amount ?? 1) * 10 ** precision);
+      const name = String(a.name ?? a.ticker ?? '');
+      const ticker = String(a.ticker ?? '').toUpperCase();
+      if (schema === 'UDA') {
+        return { ticker, name, details: null, precision, media_file_digest: null, attachments_file_digests: [] };
+      }
+      if (schema === 'CFA') return { amounts: [raw], name, details: null, precision, file_digest: null };
+      return { amounts: [raw], ticker, name, precision };
+    },
+    // Flatten { asset: {...} } so callers (and the recipe summary) see asset_id directly.
+    transformResponse: (data: unknown) => {
+      const asset = (data as any)?.asset;
+      return asset ? { issued: true, ...asset } : data;
+    },
+  },
 };
+
+function issueSchema(a: Record<string, unknown>): 'NIA' | 'CFA' | 'UDA' {
+  const s = String(a.schema ?? 'NIA').toUpperCase();
+  return s === 'CFA' || s === 'UDA' ? s : 'NIA';
+}
 
 /** Build an InProcessToolSource that proxies every taker-side RLN tool over HTTP. */
 export function buildRlnToolSource(opts: RlnHttpOptions): InProcessToolSource {
@@ -162,7 +212,8 @@ export function buildRlnToolSource(opts: RlnHttpOptions): InProcessToolSource {
       parameters: schemas[name] ?? { type: 'object', properties: {} },
       requiresConfirmation: !!route.spend,
       handler: async (args) => {
-        const url = new URL(base + route.path);
+        const path = typeof route.path === 'function' ? route.path(args ?? {}) : route.path;
+        const url = new URL(base + path);
         const headers: Record<string, string> = { 'content-type': 'application/json' };
         if (opts.apiKey) headers.authorization = `Bearer ${opts.apiKey}`;
         const init: RequestInit = { method: route.method, headers };
@@ -218,6 +269,16 @@ const descriptions: Record<string, string> = {
   rln_get_asset_balance:
     "Get the balance for one RGB asset on the local node, by asset_id. Returns " +
     '`settled`, `future`, `spendable`, `offchain_outbound`, `offchain_inbound`.',
+  rln_list_transfers:
+    'List RGB transfers for one asset (by asset_id) with status — use to check ' +
+    'whether an RGB invoice was paid.',
+  rln_create_utxos:
+    'Create colorable UTXOs on the local node — required before issuing or ' +
+    'receiving RGB assets on a fresh node. SPEND: confirmation-gated.',
+  rln_issue_asset:
+    'Issue a NEW RGB asset owned by the local node. Args: `name`, `ticker` ' +
+    '(uppercase), `amount` (whole units), optional `precision`, optional ' +
+    '`schema` (NIA token, CFA collectible, UDA unique/NFT). SPEND: confirmation-gated.',
 };
 
 const schemas: Record<string, { type: 'object'; properties: Record<string, { type: string; description?: string }>; required?: string[] }> = {
@@ -260,5 +321,25 @@ const schemas: Record<string, { type: 'object'; properties: Record<string, { typ
     type: 'object',
     properties: { asset_id: { type: 'string', description: 'RGB asset id (e.g. rgb:...)' } },
     required: ['asset_id'],
+  },
+  rln_list_transfers: {
+    type: 'object',
+    properties: { asset_id: { type: 'string', description: 'RGB asset id (e.g. rgb:...)' } },
+    required: ['asset_id'],
+  },
+  rln_create_utxos: {
+    type: 'object',
+    properties: { num: { type: 'number', description: 'How many UTXOs to create. Default 5.' } },
+  },
+  rln_issue_asset: {
+    type: 'object',
+    properties: {
+      name: { type: 'string', description: 'Asset name, e.g. "Hackathon Ticket".' },
+      ticker: { type: 'string', description: 'Uppercase ticker, e.g. "TICKET".' },
+      amount: { type: 'number', description: 'Total supply in whole units.' },
+      precision: { type: 'number', description: 'Decimal places. Default 0.' },
+      schema: { type: 'string', description: 'NIA (default), CFA or UDA.' },
+    },
+    required: ['name', 'ticker', 'amount'],
   },
 };

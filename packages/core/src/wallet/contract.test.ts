@@ -40,9 +40,13 @@ describe('WALLET_TOOLS contract', () => {
     expect(isSpendTool('execute_swap')).toBe(true);
     expect(isSpendTool('spark_send')).toBe(true);
     expect(isSpendTool('spark_pay_invoice')).toBe(true);
+    expect(isSpendTool('rln_issue_asset')).toBe(true);
+    expect(isSpendTool('rln_create_utxos')).toBe(true);
     // reads are not
     expect(isSpendTool('get_balances')).toBe(false);
     expect(isSpendTool('get_price')).toBe(false);
+    expect(isSpendTool('rln_list_assets')).toBe(false);
+    expect(isSpendTool('rln_list_transfers')).toBe(false);
     expect([...SPEND_TOOLS].length).toBeGreaterThanOrEqual(5);
   });
 
