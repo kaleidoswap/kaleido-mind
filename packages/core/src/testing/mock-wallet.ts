@@ -11,6 +11,7 @@
 
 import { bindWalletTools, type WalletHandler } from '../wallet/contract.js';
 import { ToolRegistry } from '../tools/registry.js';
+import { bindSubmarineTools, type SubmarineHandler } from '../submarine/contract.js';
 
 export interface SendRecord {
   tool: string;
@@ -28,6 +29,8 @@ export interface MockWalletOptions {
   assets?: Record<string, number>;
   /** Free colored UTXOs on the RLN node (issuance / RGB receive consume one). */
   utxos?: number;
+  /** Liquid balances in smallest units (L-USDT: 8 decimals, L-BTC: sats) for submarine swaps. */
+  liquid?: { 'L-USDT': number; 'L-BTC': number };
 }
 export interface MockRgbAsset {
   asset_id: string;
@@ -52,6 +55,9 @@ export class MockWallet {
   assets: Record<string, number>;
   contacts: MockContact[];
   utxos: number;
+  liquid: { 'L-USDT': number; 'L-BTC': number };
+  /** Submarine swaps opened against the mock /v2 maker, by id. */
+  submarineSwaps: Record<string, { from: 'L-USDT' | 'L-BTC'; invoice: string; expected: number; funded: boolean }> = {};
   /** RGB assets the node knows about (seeded USDT/XAUT + anything issued). */
   rgbAssets: MockRgbAsset[];
   transfers: MockTransfer[] = [];
@@ -73,6 +79,7 @@ export class MockWallet {
       { name: 'john', ln_address: 'john.doe@kaleidoswap.com' }, // ambiguous on purpose
     ];
     this.utxos = o.utxos ?? 5;
+    this.liquid = { ...(o.liquid ?? { 'L-USDT': 100 * 1e8, 'L-BTC': 200_000 }) };
     this.rgbAssets = Object.keys(this.assets).map((ticker) => ({
       asset_id: mockAssetId(ticker),
       ticker,
@@ -200,10 +207,56 @@ export class MockWallet {
     };
   }
 
+  /**
+   * The KaleidoSwap /v2 submarine contract against a toy maker: 0.5% fee, the
+   * invoice amount read from its BOLT11 human-readable part, L-USDT at `priceUsd`.
+   */
+  submarineHandlers(): Record<string, SubmarineHandler> {
+    return {
+      kaleidoswap_submarine_pairs: async () => ({
+        pairs: [
+          { from: 'L-USDT', to: 'BTC', fees: { percentage: 0.5 }, limits: { minimal: 10 * 1e8, maximal: 1_000 * 1e8 } },
+          { from: 'L-BTC', to: 'BTC', fees: { percentage: 0.5 }, limits: { minimal: 10_000, maximal: 1_000_000 } },
+        ],
+      }),
+      kaleidoswap_submarine_create: async ({ invoice, from_asset }) => {
+        const from = (from_asset ?? 'L-USDT') as 'L-USDT' | 'L-BTC';
+        if (from !== 'L-USDT' && from !== 'L-BTC') throw new Error(`Unsupported from_asset "${String(from_asset)}".`);
+        const sats = bolt11Sats(String(invoice));
+        if (sats == null) throw new Error('invalid_invoice: the invoice must be BOLT11 with an amount.');
+        const withFee = sats * 1.005;
+        const expected = Math.ceil(from === 'L-USDT' ? (withFee / 1e8) * this.priceUsd * 1e8 : withFee);
+        const id = `sub${Object.keys(this.submarineSwaps).length + 1}`;
+        this.submarineSwaps[id] = { from, invoice: String(invoice), expected, funded: false };
+        return { swap_id: id, from_asset: from, expected_amount: String(expected), lockup_address: `tlq1qmock${id}` };
+      },
+      kaleidoswap_submarine_fund: async ({ swap_id }) => {
+        const swap = this.submarineSwaps[String(swap_id)];
+        if (!swap) throw new Error(`No submarine swap "${String(swap_id)}" was created by this server.`);
+        if (swap.funded) throw new Error(`Swap ${String(swap_id)} is already funded.`);
+        if (this.liquid[swap.from] < swap.expected) throw new Error(`Insufficient ${swap.from} balance.`);
+        this.liquid[swap.from] -= swap.expected;
+        swap.funded = true;
+        this.sends.push({ tool: 'kaleidoswap_submarine_fund', to: swap.invoice, asset: swap.from, amount: swap.expected });
+        return { funded: true, swap_id, asset: swap.from, amount: String(swap.expected), txid: `mocktx${String(swap_id)}` };
+      },
+      kaleidoswap_submarine_status: async ({ swap_id }) => {
+        const swap = this.submarineSwaps[String(swap_id)];
+        if (!swap) throw new Error(`invalid_swap_id: "${String(swap_id)}" is not a swap id`);
+        const status = swap.funded ? 'transaction.claimed' : 'swap.created';
+        return { swap_id, status, done: swap.funded, failed: false, funded: swap.funded };
+      },
+    };
+  }
+
   /** Bind the contract tools to this wallet (optionally overriding some — e.g. to inject). */
   registry(overrides?: Partial<Record<string, WalletHandler>>): ToolRegistry {
     const h = { ...this.handlers(), ...(overrides ?? {}) } as Record<string, WalletHandler>;
-    return new ToolRegistry([bindWalletTools(h, { layers: ['spark', 'rln', 'arkade', 'core'], allowMissing: true })]);
+    const sub = { ...this.submarineHandlers(), ...(overrides ?? {}) } as Record<string, SubmarineHandler>;
+    return new ToolRegistry([
+      bindWalletTools(h, { layers: ['spark', 'rln', 'arkade', 'core'], allowMissing: true }),
+      bindSubmarineTools(sub, { allowMissing: true }),
+    ]);
   }
 }
 
@@ -212,4 +265,14 @@ function mockAssetId(ticker: string): string {
   let h = 0;
   for (const c of ticker) h = (h * 31 + c.charCodeAt(0)) >>> 0;
   return `rgb:mock-${ticker.toLowerCase()}-${h.toString(36)}`;
+}
+
+/** Amount in sats from a BOLT11 human-readable part ("lntbs10u…" → 1000), or null. */
+function bolt11Sats(invoice: string): number | null {
+  const m = invoice.toLowerCase().match(/^ln(?:bcrt|tbs|bc|tb)(\d+)([munp])?1/);
+  if (!m) return null;
+  const n = Number(m[1]);
+  const mult = { m: 1e5, u: 100, n: 0.1, p: 0.0001 }[m[2] ?? ''] ?? 1e8;
+  const sats = n * mult;
+  return sats >= 1 ? Math.round(sats) : null;
 }
