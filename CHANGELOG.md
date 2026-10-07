@@ -5,6 +5,22 @@ apps) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [mind-provider 0.10.1] — 2026-10-07
+
+### Added
+
+- `complete` command: inference on the loaded model for another client (the
+  desktop serving a phone). Takes `messages`, optional `tools` (schemas only),
+  `toolChoice`, `maxTokens`, `temperature`; streams `completion_delta`;
+  returns `{ text, rawContent, toolCalls, toolErrors?, inference? }`. Tools are
+  never executed, no agent prompt, skills or memory are added, chat history is
+  untouched, and no `chat_*` / `tool_confirm_*` / thinking events are emitted.
+  Fails with `QVAC model not loaded` without a model. `cancel_completion`
+  aborts one by id.
+- Model calls from chat, scheduled tasks and `complete` run one at a time on
+  the shared model handle (per call, so a chat waiting on a confirmation does
+  not block other clients).
+
 ## [0.10.5] — 2026-10-07
 
 `@kaleidorg/mind` 0.10.5, `@kaleidorg/create-mind` 0.3.3.
