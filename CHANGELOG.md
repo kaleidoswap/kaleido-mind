@@ -5,7 +5,31 @@ apps) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.8.1] — 2026-10-07
+
+Faster requests on small local models. Measured with the rgb-agent eval
+(Qwen3.5 2B, fake RLN node): balance and asset list 25–110 s → instant;
+issue, invoices and send 60–130 s → 9–11 s.
+
+### Added
+
+- Fast path on RLN tools: each fast-path intent has `fallbackTools`, so the
+  balance intent uses `rln_get_balances` / `wdk_get_balances` when the host has
+  no aggregate `get_balances`, and the address intent `rln_get_address`. New
+  `assets` intent on `rln_list_assets`. Results from the aggregate wallet,
+  kaleido-mcp and `MockWallet` are rendered without a model.
+- `TurnInput.thinking: 'off'`; the QVAC provider sends `reasoning_budget: 0`.
+  The Engine turns reasoning off on a forced first tool call
+  (`EngineOptions.thinkOnForcedCalls` keeps it on).
+- `TurnInput.sessionKey` and `LLMProvider.endSession`: one key per agentic
+  run. With `sessionCache: true` and the injected `deleteCache`, the QVAC
+  provider passes it as `kvCache`, so calls after the first send only the new
+  tool result instead of the ~5k-token prompt (time to first token ~7 s →
+  ~0.2 s on Qwen3.5 2B). Opt-in.
+
+## [0.8.0] — 2026-10-07
+
+Core `@kaleidorg/mind` 0.8.0, `@kaleidorg/mind-provider` 0.8.0 and `@kaleidorg/create-mind` 0.1.0.
 
 ### Added
 
@@ -59,10 +83,6 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   otherwise spend the whole turn reasoning. Qwen3.5 ignores `/no_think`; the
   budget is what limits its reasoning.
 - The `rgb-agent` and `node-minimal` examples cap reasoning at 128 tokens.
-
-## [0.8.0] — 2026-10-07
-
-Core `@kaleidorg/mind` 0.8.0 and `@kaleidorg/mind-provider` 0.8.0.
 
 ### Added
 
