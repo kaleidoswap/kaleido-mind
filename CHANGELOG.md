@@ -49,6 +49,37 @@ Core `@kaleidorg/mind` 0.8.0 and `@kaleidorg/mind-provider` 0.8.0.
 - Provider: catalog entries carry `recommended` (the 2B default) and
   `tool_confirm_request` carries the optional `summary` readback.
 
+### Added
+
+- **Submarine swaps on the KaleidoSwap /v2 maker** (kaleidoswap-maker-rs): pay a
+  Lightning invoice from Liquid funds.
+  - New contract `SUBMARINE_TOOLS` (`kaleidoswap_submarine_pairs`, `_create`,
+    `_fund`, `_status`, the same names kaleido-mcp implements) with
+    `bindSubmarineTools`. Only `_fund` is a spend, and it takes nothing but the
+    swap id.
+  - `submarinePayRecipe` (opt-in, register before `paymentsRecipe`): "pay <invoice>
+    with L-USDT" / "paga <invoice> con USDT su Liquid" → create → one
+    confirmation showing the maker's exact amount → fund. A bare "USDT" stays
+    RGB USDT and is not matched.
+  - `MockWallet` simulates the /v2 maker (Liquid balances, 0.5% fee, BOLT11
+    amount parsing), and a new `submarine-swaps` skill covers the flow.
+### Fixed
+
+- **`issueAssetRecipe` slot extraction.** Issuance is irreversible, so these
+  matter even behind the confirm gate:
+  - "1.000" / "1,000" are read as one thousand (was 1); "1,5k" is 1500.
+  - The supply is never taken from a number inside the asset name
+    ("Web3 Summit 2026, supply 300" → 300). Without a clear supply, the recipe
+    is not confident and falls back to the model.
+  - The recipe fires only when the request opens with the verb, so "I have an
+    issue with my tokens" or "how do I create a token?" reach the model.
+  - Apostrophes in names ("Joe's Pizza", "dell'Arte") are no longer read as
+    quotes.
+- `MockWallet.reset()` restores the full initial state (balances, contacts,
+  UTXOs, issued assets), not only the send/transfer history.
+- CLI `rln_issue_asset` no longer defaults a missing `amount` to 1; it rejects
+  any amount that isn't a positive safe integer after `precision` scaling.
+
 ### Changed
 
 - **Model catalog moved to Qwen3.5.** The provider and CLI catalogs, examples
@@ -84,6 +115,26 @@ Core `@kaleidorg/mind` 0.8.0 and `@kaleidorg/mind-provider` 0.8.0.
   (`ticker` for NIA/UDA and `amount` for NIA/CFA are checked by the tool).
   The `rgb-lightning-node` skill documents the shared schemas and gains an
   "issue your own RGB asset" recipe.
+
+### Removed
+
+- **KaleidoSwap order flow.** The maker no longer offers order-based swaps
+  (kaleido-sdk 0.1.12 dropped them), so `kaleidoswap_place_order`,
+  `kaleidoswap_get_order_status` and `kaleidoswap_get_order_history` are gone
+  from the KaleidoSwap contract, together with its `orders` group, the CLI and
+  playground maker routes, the `kaleido-trading` skill, evals and docs. Swaps
+  run through the atomic flow (`kaleidoswap_get_quote` →
+  `kaleidoswap_atomic_init` → `rln_atomic_taker` →
+  `kaleidoswap_atomic_execute` → `kaleidoswap_atomic_status`). Hosts that bound
+  handlers for the order tools or passed `groups: ['orders']` must move to the
+  atomic tools.
+
+### Fixed
+
+- **CLI chat no longer throws at startup** binding the KaleidoSwap contract:
+  the CLI has no maker route for `kaleidoswap_lsp_quote_asset_channel` /
+  `kaleidoswap_lsp_create_asset_channel`, so it now binds with
+  `allowMissing: true` like its other tool sources.
 
 ## [0.7.0] — 2026-10-06
 

@@ -1,7 +1,7 @@
 ---
 name: kaleido-trading
-description: "Trade on KaleidoSwap — quote and execute swaps between BTC and RGB assets (USDT, XAUT). Get assets and pairs, pull an executable quote, place a market order, track orders, or run/poll an atomic swap end-to-end. Triggers when the user wants a quote, to swap or trade assets, to rebalance between BTC and stablecoins, or to check the status of an order / swap / atomic swap."
-tools: kaleidoswap_get_assets, kaleidoswap_get_pairs, kaleidoswap_get_quote, kaleidoswap_place_order, kaleidoswap_get_order_status, kaleidoswap_atomic_init, kaleidoswap_atomic_execute, kaleidoswap_atomic_status, rln_get_node_info, rln_atomic_taker, rln_refresh_transfers, rln_get_asset_balance, rln_list_channels, rln_list_swaps, rln_get_swap
+description: "Trade on KaleidoSwap — quote and execute swaps between BTC and RGB assets (USDT, XAUT). Get assets and pairs, pull an executable quote, or run/poll an atomic swap end-to-end. Triggers when the user wants a quote, to swap or trade assets, to rebalance between BTC and stablecoins, or to check the status of a swap / atomic swap."
+tools: kaleidoswap_get_assets, kaleidoswap_get_pairs, kaleidoswap_get_quote, kaleidoswap_atomic_init, kaleidoswap_atomic_execute, kaleidoswap_atomic_status, rln_get_node_info, rln_atomic_taker, rln_refresh_transfers, rln_get_asset_balance, rln_list_channels, rln_list_swaps, rln_get_swap
 triggers: quote, swap, trade, rebalance, slippage, pair, pairs, usdt, xaut, kaleidoswap, rfq, check status, order status, check the order, swap status, check my swap, atomic status
 metadata:
   author: kaleidoswap
@@ -110,7 +110,7 @@ verbatim. Do NOT do any arithmetic yourself.** The response looks like:
 To state the answer, copy the strings:
 - Receive amount → `to_amount_display`.
 - Fee → `fee_display`.
-- `rfq_id` is the quote handle (needed to place the swap), short-lived (~60s) —
+- `rfq_id` is the quote handle (needed to start the atomic swap), short-lived (~60s) —
   mention it expires soon.
 
 **Read `to_amount_display` / `fee_display` exactly as given.** Do NOT compute
@@ -121,21 +121,18 @@ correct numbers are the `*_display` strings in the CURRENT tool result.
 A good reply: *"100,000 sats → <to_amount_display> (fee <fee_display>). Quote
 <rfq_id> is valid ~60s — want me to place it?"*
 
-### `kaleidoswap_place_order(quote_id)` 🔒 spend
+### `kaleidoswap_atomic_init` 🔒 spend
 Only after `kaleidoswap_get_quote` returned an `rfq_id` THIS turn, and only when
-the user has explicitly approved the amount + direction. Pass the `rfq_id` as
-`quote_id`.
+the user has explicitly approved the amount + direction. Starts the atomic
+swap from that quote; the rest of the chain (`rln_atomic_taker` →
+`kaleidoswap_atomic_execute` → `kaleidoswap_atomic_status`) is described
+below and in `references/atomic.md`.
 
-**Save the `order_id` AND `access_token` from the result** (BOTH required — never omit either). Extract them verbatim from the tool result (or the most recent assistant summary that listed "order_id=... access_token=..."). If memory/remember is available, first recall the last order details before polling status. You will need both for `kaleidoswap_get_order_status` later.
-
-### `kaleidoswap_get_order_status(order_id, access_token)`
-**Args: `order_id`, `access_token` (BOTH required — never omit either).**
-Poll after placing an order (or atomic). `order_state` (or equivalent) progresses
-to terminal states. Always pass the exact values from the previous
-`kaleidoswap_place_order` result **or from the most recent assistant message/summary**
-(the one that said something like "order_id=xxx access_token=yyy" or "To check status use: kaleidoswap_get_order_status(order_id=..., access_token=...)").
-If memory/remember is available, first recall the last order/swap details.
-Report the outcome plainly.
+### `kaleidoswap_atomic_status`
+Poll after executing an atomic swap until it reaches a terminal state
+(completed / failed / expired). Pass the exact ids returned by
+`kaleidoswap_atomic_init` (or surfaced in the most recent swap summary) — never
+invent them. Report the outcome plainly.
 
 ## Flow
 
@@ -143,12 +140,15 @@ Report the outcome plainly.
 2. **Quote** — `kaleidoswap_get_quote`. REQUIRES amount; ask if missing.
 3. **Read + present** — compute the receive amount + fee from the response (see
    "Reading the quote response"). **Never hide cost.**
-4. **Place** — spend-gated by the engine. The host pauses for the user.
-5. **Track** — poll `kaleidoswap_get_order_status(order_id, access_token)` (use both values saved from place_order or the explicit "To check status..." template) until it terminates. For atomic swaps the status tool is `kaleidoswap_atomic_status(atomic_id)`.
+4. **Swap** — `kaleidoswap_atomic_init` → `rln_atomic_taker` →
+   `kaleidoswap_atomic_execute`. Spend-gated by the engine; the host pauses for
+   the user.
+5. **Track** — poll `kaleidoswap_atomic_status` with the ids from
+   `kaleidoswap_atomic_init` until it terminates.
 
 ## Don'ts
 
-- Don't invent prices, quotes, rfq_ids, order_ids, or access_tokens.
+- Don't invent prices, quotes, rfq_ids, swap ids, or access_tokens.
 - Don't reuse a number from a previous turn.
 - Don't describe how a tool works — call it.
 - Don't call `kaleidoswap_get_quote` with from/to only — ask for the amount.
@@ -158,13 +158,8 @@ Report the outcome plainly.
 - Don't accept `XAU` as `XAUT` or `USD` as `USDT` silently — confirm.
 - Don't retry the same failing tool call in a loop. If a call fails, read the
   error and either ask the user, fix the args, or stop.
-- Don't claim an order completed without polling the status tool with BOTH
-  required ids/tokens and seeing a terminal state.
-- Never call `kaleidoswap_get_order_status` with only the access_token or only
-  the order_id. Always extract the exact values from the previous turn's summary
-  (the one that said "order_id=... access_token=..." or the explicit "To check
-  status use..." line) and pass them as separate arguments. If using the
-  `remember` tool, first recall the last order details.
+- Don't claim a swap completed without polling `kaleidoswap_atomic_status`
+  and seeing a terminal state.
 
 For the full atomic-swap flow (init → whitelist on the RGB node → execute), a
 deterministic recipe drives the chain — the agentic loop is not safe to plan a
@@ -173,8 +168,7 @@ multi-step, two-service swap on a small model. Status for atomics uses the
 
 ## Over kaleido-mcp (desktop, Claude Code)
 
-kaleido-mcp 0.3.0+ is **atomic-only**: there is no `kaleidoswap_place_order`
-or order status. Its quote takes `from_asset_id` / `from_layer` /
+kaleido-mcp 0.3.0+ is **atomic-only**. Its quote takes `from_asset_id` / `from_layer` /
 `from_amount` (display units) and returns `amount_raw` values that
 `kaleidoswap_atomic_init` takes unchanged. The full chain is quote →
 `kaleidoswap_atomic_init` → `rln_atomic_taker` + `rln_get_node_info` →

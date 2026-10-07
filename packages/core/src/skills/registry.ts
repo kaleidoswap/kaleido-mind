@@ -20,7 +20,7 @@ export const READ_REFERENCE_TOOL = 'read_skill_reference';
  *   ---
  *   name: portfolio-manager
  *   description: Rebalance BTC/USDT/XAUT to target allocations.
- *   tools: get_balance, kaleidoswap_get_quote, kaleidoswap_place_order
+ *   tools: get_balance, kaleidoswap_get_quote, kaleidoswap_atomic_init
  *   triggers: rebalance, allocation, portfolio
  *   ---
  *   <instructions…>

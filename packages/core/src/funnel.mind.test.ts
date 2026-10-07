@@ -335,11 +335,13 @@ describe('desktop mind — skill scoping (real skills)', () => {
     expect(node.tools?.every((tool) => tool.startsWith('rln_'))).toBe(true);
   });
 
-  it('kaleido-trading drops the phantom kaleidoswap_get_nodeinfo / get_order_history names', () => {
+  it('kaleido-trading drops the phantom kaleidoswap_get_nodeinfo / removed order-flow names', () => {
     const trading = SKILLS.find((s) => s.name === 'kaleido-trading')!;
     expect(trading.tools).not.toContain('kaleidoswap_get_nodeinfo');
     expect(trading.tools).not.toContain('kaleidoswap_get_order_history');
-    expect(trading.tools).toEqual(expect.arrayContaining(['kaleidoswap_get_quote', 'kaleidoswap_place_order']));
+    expect(trading.tools).not.toContain('kaleidoswap_place_order');
+    expect(trading.tools).not.toContain('kaleidoswap_get_order_status');
+    expect(trading.tools).toEqual(expect.arrayContaining(['kaleidoswap_get_quote', 'kaleidoswap_atomic_init']));
     expect(trading.tools).not.toEqual(
       expect.arrayContaining([
         'kaleidoswap_get_spreads',

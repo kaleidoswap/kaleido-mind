@@ -83,7 +83,6 @@ expose only the read tools to an eval/sandbox.
 | Group | Tools |
 |---|---|
 | **market** (read) | `kaleidoswap_get_assets` · `kaleidoswap_get_pairs` · `kaleidoswap_get_quote(from,to,amount,side?)` · `kaleidoswap_get_nodeinfo` |
-| **orders** | `kaleidoswap_place_order(quote_id)` 🔒 · `kaleidoswap_get_order_status(order_id)` · `kaleidoswap_get_order_history` |
 | **atomic** | `kaleidoswap_atomic_init(quote_id, receive_invoice)` 🔒 · `kaleidoswap_atomic_execute(atomic_id)` 🔒 · `kaleidoswap_atomic_status(atomic_id)` |
 
 The atomic chain is driven deterministically by `kaleidoswapAtomicRecipe` —

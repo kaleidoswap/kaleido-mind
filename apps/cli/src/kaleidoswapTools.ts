@@ -167,7 +167,7 @@ function normalizeAsset(asset: unknown): string {
   return a;
 }
 
-/** Build the nested SwapLegInput object the maker expects on quote/order requests. */
+/** Build the nested SwapLegInput object the maker expects on quote requests. */
 function leg(asset: unknown, amount?: unknown) {
   const id = normalizeAsset(asset);
   const out: Record<string, unknown> = { asset_id: id, layer: defaultLayer(id) };
@@ -201,35 +201,6 @@ const ROUTES: Record<string, Route> = {
   kaleidoswap_get_nodeinfo: {
     method: 'GET',
     path: '/api/v1/swaps/nodeinfo',
-  },
-  kaleidoswap_place_order: {
-    method: 'POST',
-    path: '/api/v1/swaps/orders',
-    // Maker expects { rfq_id, from_asset: SwapLeg, to_asset: SwapLeg }.
-    // We accept either { quote_id } (the agent-friendly shape) or a full
-    // explicit body — and re-derive the legs from the prior quote args
-    // when the agent only passes quote_id (the recipe path does this).
-    body: (a) => {
-      const rfq_id = a.quote_id ?? a.rfq_id;
-      if (a.from_asset != null && a.to_asset != null) return { rfq_id, from_asset: leg(a.from_asset, a.amount), to_asset: leg(a.to_asset) };
-      return { rfq_id };
-    },
-  },
-  kaleidoswap_get_order_status: {
-    method: 'POST',
-    path: '/api/v1/swaps/orders/status',
-    // OrderRequest = { order_id, access_token? }
-    body: (a) => ({ order_id: a.order_id, access_token: a.access_token ?? '' }),
-  },
-  kaleidoswap_get_order_history: {
-    method: 'GET',
-    path: '/api/v1/swaps/orders/history',
-    query: (a) => {
-      const q: Record<string, string> = {};
-      if (a.limit != null) q.limit = String(a.limit);
-      if (a.cursor != null) q.cursor = String(a.cursor);
-      return q;
-    },
   },
   kaleidoswap_atomic_init: {
     method: 'POST',
@@ -313,5 +284,7 @@ export function buildKaleidoswapToolSource(opts: KaleidoswapHttpOptions): InProc
     };
   }
 
-  return bindKaleidoswapTools(handlers);
+  // allowMissing: the contract also declares tools this CLI has no maker route
+  // for (the LSP asset-channel pair); skip them instead of throwing at startup.
+  return bindKaleidoswapTools(handlers, { allowMissing: true });
 }
