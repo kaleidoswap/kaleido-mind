@@ -22,11 +22,11 @@ import {
   InProcessToolSource,
   TurnLogger,
   defaultMask,
-  createBtcMapToolSource,
   type LLMProvider,
   type InProcessTool,
   type LoggerIO,
 } from '@kaleidorg/mind';
+import { createBtcMapToolSource } from '@kaleidorg/mind/knowledge';
 import { buildKaleidoswapToolSource, buildLsps1ToolSource } from './kaleidoswapTools.js';
 
 const KALEIDOSWAP_BASE_URL = process.env.KALEIDOSWAP_BASE_URL ?? 'http://localhost:8000';

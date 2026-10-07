@@ -17,11 +17,8 @@
  * No mocks. If the SDK fails to load, the binder throws on first use.
  */
 
-import {
-  bindFlashnetTools,
-  type FlashnetHandler,
-  type InProcessToolSource,
-} from '@kaleidorg/mind';
+import { type FlashnetHandler, type InProcessToolSource } from '@kaleidorg/mind';
+import { bindFlashnetTools } from '@kaleidorg/mind/flashnet';
 import { getSparkWallet } from './sparkWallet.js';
 
 /** Flashnet SDK network names: SparkNetworkType is uppercase. */

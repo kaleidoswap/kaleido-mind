@@ -23,11 +23,11 @@ import {
   ToolRegistry,
   Retriever,
   ContextBuilder,
-  BITCOIN_COPILOT_DOCS,
   type EmbeddingProvider,
   type LLMProvider,
   type AgentProfile,
 } from '@kaleidorg/mind';
+import { BITCOIN_COPILOT_DOCS } from '@kaleidorg/mind/knowledge';
 
 const MODEL_PATH =
   process.env.QVAC_MODEL_PATH ||

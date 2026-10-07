@@ -15,11 +15,8 @@
  * `app/api/v1/lsps1.py` + `app/models/lsps1.py`.
  */
 
-import {
-  bindLsps1Tools,
-  type InProcessToolSource,
-  type Lsps1Handler,
-} from '@kaleidorg/mind';
+import { type InProcessToolSource, type Lsps1Handler } from '@kaleidorg/mind';
+import { bindLsps1Tools } from '@kaleidorg/mind/lsps1';
 
 export interface Lsps1HttpOptions {
   /** LSP base URL, e.g. http://localhost:8000. No trailing slash. */

@@ -35,9 +35,6 @@ import {
   ToolRegistry,
   SkillRegistry,
   createSkillReferenceToolSource,
-  buyAssetChannelRecipe,
-  kaleidoswapAtomicRecipe,
-  kaleidoswapChannelOrderRecipe,
   assetSendRecipe,
   paymentsRecipe,
   receiveRecipe,
@@ -63,6 +60,11 @@ import {
   type Message,
   type ToolSource,
 } from '@kaleidorg/mind';
+import {
+  buyAssetChannelRecipe,
+  kaleidoswapAtomicRecipe,
+  kaleidoswapChannelOrderRecipe,
+} from '@kaleidorg/mind/kaleidoswap';
 import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
 import { createQvacProvider, QWEN35_MODELS, DEFAULT_MODEL_ID } from '@kaleidorg/mind/qvac';
 
