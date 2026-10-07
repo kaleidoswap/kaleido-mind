@@ -5,6 +5,47 @@ apps) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] — 2026-10-07
+
+`@kaleidorg/mind` 0.10.0, `@kaleidorg/mind-provider` 0.10.0,
+`@kaleidorg/create-mind` 0.3.0.
+
+### Changed
+
+- Skills 15 → 12, about 24k → 6k tokens in total: `liquidity-optimizer` and
+  `kaleido-lsps` merge into `channel-manager`, `dca` into `portfolio-manager`.
+  Every skill follows one short template: a one-line description, exact
+  `tools` and `requires-tools`, a short Do list and worked examples with
+  kaleido-mcp's argument names and units. Skills that need an in-app tool are
+  not selected on kaleido-mcp hosts. Long material moves to `references/`.
+  With the rgb-agent eval the agentic prompt drops from ~5,200 to ~2,800
+  tokens.
+- Contracts take kaleido-mcp's argument names and units:
+  `kaleidoswap_get_quote` takes `from_asset_id` / `to_asset_id` and
+  `from_amount` or `to_amount` in display units; atomic init / execute /
+  status take the quote's `rfq_id`, raw amounts, `swapstring` and
+  `payment_hash`; `rln_send_asset` and `rln_create_rgb_invoice` take
+  `asset_id` / `recipient_id`; `get_price` takes `vs_currency`. The binders
+  fill the previous names for existing handlers (`normalizeWalletArgs`,
+  `normalizeKaleidoswapArgs`). A quote with a BTC amount of 1000 or more is
+  rejected as sats passed as BTC.
+
+### Added
+
+- `catalog.test.ts`: every skill's tools exist in the in-app contracts or the
+  vendored kaleido-mcp snapshot (`scripts/snapshot-mcp-tools.mjs`), shared
+  tools take the same arguments, worked examples are valid calls, prompts
+  select the expected skill. `skills/README.md` explains how to write a skill.
+- `MockWallet` implements `rln_get_node_info`, so skills that require it are
+  selected on the fake node.
+
+### Fixed
+
+- QVAC provider: a turn that fails with "Unexpected empty grammar stack after
+  accepting piece: </think>" (the tool grammar rejecting the `</think>`
+  llama.cpp inserts when the reasoning budget runs out) is retried once with
+  reasoning off instead of failing the request.
+
 ## [0.9.0] — 2026-10-07
 
 Requires `@qvac/sdk` 0.20 or later. `@kaleidorg/mind` 0.9.0,

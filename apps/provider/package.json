@@ -1,6 +1,6 @@
 {
   "name": "@kaleidorg/mind-provider",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Node sidecar that runs a @kaleidorg/mind agent on @qvac/sdk and speaks JSON-RPC over stdio.",
   "license": "Apache-2.0",
   "type": "module",

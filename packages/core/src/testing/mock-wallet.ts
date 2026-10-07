@@ -149,6 +149,12 @@ export class MockWallet {
       }),
       spark_get_balance: async () => ({ btc_sats: this.balances.spark }),
       rln_get_balances: async () => ({ btc_sats: this.balances.rln, assets: this.assets }),
+      rln_get_node_info: async () => ({
+        pubkey: '02' + 'ab'.repeat(32),
+        num_channels: 0,
+        num_usable_channels: 0,
+        local_balance_sat: 0,
+      }),
       arkade_get_balance: async () => ({ btc_sats: this.balances.arkade }),
       spark_get_address: async () => ({ address: 'bc1qspark0mockreceiveaddr' }),
       arkade_get_address: async () => ({ address: 'ark1q0mockreceiveaddr' }),

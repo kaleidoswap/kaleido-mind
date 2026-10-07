@@ -76,11 +76,17 @@ export interface QvacTurnInput extends TurnInput {
   onStats?: (stats: QvacTurnStats) => void;
 }
 
-export function createQvacProvider(options: QvacProviderOptions): LLMProvider {
-  return {
-    name: 'qvac',
+/**
+ * llama.cpp's tool-call grammar can reject the `</think>` it inserts when a
+ * reasoning budget runs out ("Unexpected empty grammar stack after accepting
+ * piece: </think>"), which aborts the turn.
+ */
+function isReasoningGrammarError(err: unknown): boolean {
+  return /empty grammar stack/i.test(err instanceof Error ? err.message : String(err));
+}
 
-    async runTurn(input: QvacTurnInput): Promise<TurnOutput> {
+export function createQvacProvider(options: QvacProviderOptions): LLMProvider {
+  const runTurnOnce = async (input: QvacTurnInput): Promise<TurnOutput> => {
       const modelId = options.getModelId();
       if (!modelId) throw new Error('QVAC model not loaded');
 
@@ -192,6 +198,19 @@ export function createQvacProvider(options: QvacProviderOptions): LLMProvider {
         inference,
         ...(incomplete ? { incomplete: true } : {}),
       };
+  };
+
+  return {
+    name: 'qvac',
+
+    async runTurn(input: QvacTurnInput): Promise<TurnOutput> {
+      try {
+        return await runTurnOnce(input);
+      } catch (err) {
+        // Retry once without reasoning: no budget, so nothing to insert.
+        if (input.thinking === 'off' || !isReasoningGrammarError(err)) throw err;
+        return runTurnOnce({ ...input, thinking: 'off' });
+      }
     },
 
     async endSession(sessionKey: string): Promise<void> {
