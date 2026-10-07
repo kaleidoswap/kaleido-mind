@@ -8,6 +8,7 @@ and confirmed by you first.
 |---|---|---|
 | `pnpm start` | [kaleido-mcp](https://www.npmjs.com/package/kaleido-mcp) over stdio, on signet | Qwen3.5 2B via `@qvac/sdk` |
 | `pnpm start:mock` | in-process fake RLN (`MockWallet`) — no node needed | Qwen3.5 2B |
+| `OPENAI_BASE_URL=… OPENAI_MODEL=… pnpm start:mock` | fake RLN | any OpenAI-compatible server (Ollama, LM Studio, …) |
 | `pnpm start:offline` | fake RLN | scripted, no download (used in CI) |
 
 ```bash

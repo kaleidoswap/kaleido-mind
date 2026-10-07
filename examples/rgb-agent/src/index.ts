@@ -9,6 +9,7 @@
  * Flags: --mock (fake RLN tools), --scripted (no model), --yes (auto-approve spends).
  * Env:   RECIPIENT_INVOICE  RGB invoice to pay in step 3 (real mode)
  *        MODEL              @qvac/sdk model constant (default: QWEN3_5_2B_MULTIMODAL_Q4_K_M)
+ *        OPENAI_BASE_URL    use an OpenAI-compatible server instead of QVAC (with OPENAI_MODEL, OPENAI_API_KEY)
  *        KALEIDO_NETWORK    passed to kaleido-mcp (default: signet)
  *        RLN_NODE_URL       your RLN node (default inside kaleido-mcp: http://localhost:3001)
  */
@@ -23,7 +24,7 @@ import {
 } from '@kaleidorg/mind';
 import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
 import { scriptedProvider } from '@kaleidorg/mind/testing';
-import { createTools, loadQvacProvider } from './setup.js';
+import { createTools, loadProvider } from './setup.js';
 
 const flag = (name: string) => process.argv.includes(`--${name}`);
 const MOCK = flag('mock') || process.env.MOCK === '1';
@@ -46,7 +47,7 @@ async function createProvider(): Promise<{ provider: LLMProvider; dispose: () =>
       dispose: async () => {},
     };
   }
-  return loadQvacProvider(process.env.MODEL);
+  return loadProvider();
 }
 
 function recipient(): string {

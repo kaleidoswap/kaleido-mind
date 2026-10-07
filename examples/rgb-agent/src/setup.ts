@@ -1,6 +1,7 @@
 /** Tool and model setup shared by the agent (index.ts) and the eval (eval.ts). */
 import { bindWalletTools, type LLMProvider, type ToolSource } from '@kaleidorg/mind';
 import { McpToolSource } from '@kaleidorg/mind/mcp';
+import { createOpenAICompatibleProvider } from '@kaleidorg/mind/openai';
 import { createQvacProvider } from '@kaleidorg/mind/qvac';
 import { MockWallet } from '@kaleidorg/mind/testing';
 
@@ -44,6 +45,28 @@ export async function createTools(opts: {
   });
   await mcp.connect();
   return { source: mcp, close: () => mcp.close() };
+}
+
+/**
+ * The model: an OpenAI-compatible server when OPENAI_BASE_URL is set (Ollama,
+ * LM Studio, llama.cpp, a hosted API), otherwise QVAC on-device.
+ */
+export async function loadProvider(): Promise<{ provider: LLMProvider; dispose: () => Promise<void> }> {
+  const baseUrl = process.env.OPENAI_BASE_URL;
+  if (!baseUrl) return loadQvacProvider(process.env.MODEL);
+  const model = process.env.OPENAI_MODEL;
+  if (!model) throw new Error('Set OPENAI_MODEL to the model name your server knows, e.g. qwen3.5:4b');
+  console.error(`[using ${model} at ${baseUrl}]`);
+  return {
+    provider: createOpenAICompatibleProvider({
+      baseUrl,
+      model,
+      apiKey: process.env.OPENAI_API_KEY,
+      defaultTemperature: 0.1,
+      defaultMaxTokens: 1536,
+    }),
+    dispose: async () => {},
+  };
 }
 
 /** Load a Qwen3.5 model through @qvac/sdk. `model` is an @qvac/sdk constant name. */

@@ -26,7 +26,8 @@ npm i @kaleidorg/mind @qvac/sdk
 ```
 
 You need `@qvac/sdk` only to run QVAC models. The engine accepts any
-`LLMProvider`, and `@kaleidorg/mind/testing` includes a scripted provider that
+`LLMProvider`: `@kaleidorg/mind/openai` talks to any OpenAI-compatible server
+(see below), and `@kaleidorg/mind/testing` includes a scripted provider that
 needs no model. To connect MCP servers, also install
 `@modelcontextprotocol/sdk`.
 
@@ -117,12 +118,37 @@ await close();
 A runnable copy (with a `--mock` mode) is in
 [`examples/node-minimal`](https://github.com/kaleidoswap/kaleido-mind/tree/main/examples/node-minimal).
 
+## Models you already serve
+
+`createOpenAICompatibleProvider` runs the same engine on any server that speaks
+the OpenAI Chat Completions API with tool calling: Ollama, LM Studio, llama.cpp
+`llama-server`, vLLM, `qvac serve` or a hosted API. It has no dependencies
+(it uses `fetch`).
+
+```ts
+import { createOpenAICompatibleProvider } from '@kaleidorg/mind/openai';
+
+const provider = createOpenAICompatibleProvider({
+  baseUrl: 'http://localhost:11434/v1', // Ollama
+  model: 'qwen3.5:2b',
+  apiKey: process.env.OPENAI_API_KEY,    // optional; sent as a bearer token
+  defaultTemperature: 0.1,
+  defaultMaxTokens: 1536,
+});
+```
+
+It streams tokens, forwards `toolChoice` as `tool_choice`, reports arguments
+that are not valid JSON as `toolErrors` (so the engine retries once), and
+aborts the request on `signal`. Reasoning deltas (`reasoning_content`) go to
+`onThinking`. Server-specific fields go in `extraBody`.
+
 ## Subpath exports
 
 | Import | What it gives you | Runtime |
 |---|---|---|
 | `@kaleidorg/mind` | `Engine`, `Funnel` (fast-path → recipe → agent), `ToolRegistry`, `InProcessToolSource`, `SkillRegistry`, wallet / KaleidoSwap / LSPS1 / Bitrefill / Flashnet contracts and binders, `confirmReadback`, recipes, memory, RAG, context budgeting, L402 and CLI tool sources | Any (RN-safe) |
 | `@kaleidorg/mind/qvac` | `createQvacProvider`, `toQvacTools`, `consumeRun`, voice (`createQvacVoice`, `runVoiceAssistant`), model configs, delegation helpers | Any; you inject the SDK functions |
+| `@kaleidorg/mind/openai` | `createOpenAICompatibleProvider` for Ollama, LM Studio, llama.cpp, vLLM, hosted APIs | Any with `fetch` |
 | `@kaleidorg/mind/mcp` | `McpToolSource`: tools from an MCP server over stdio or streamable HTTP | Node |
 | `@kaleidorg/mind/skills` | `loadSkillsDir`, `loadSkillFromDir`, `packagedSkillsDir()` (the 14 bundled skills) | Node (fs) |
 | `@kaleidorg/mind/testing` | `MockWallet` (stateful fake wallet bound to the real contract), `scriptedProvider` | Any |

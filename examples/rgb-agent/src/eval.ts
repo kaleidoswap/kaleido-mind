@@ -7,6 +7,7 @@
  *   pnpm eval                   # kaleido-mcp on signet + local model (issues a test asset)
  *
  * Env:   MODEL   @qvac/sdk model constant (default: QWEN3_5_2B_MULTIMODAL_Q4_K_M)
+ *        OPENAI_BASE_URL / OPENAI_MODEL / OPENAI_API_KEY   use an OpenAI-compatible server instead
  *        THINK   reasoning budget in tokens (default: 128)
  *        ONLY    comma-separated scenario ids to run, e.g. ONLY=issue,send
  *        OUT     append one JSON line per scenario to this file
@@ -17,7 +18,7 @@
 import { appendFileSync } from 'node:fs';
 import { Funnel, ToolRegistry, type ConfirmDecision } from '@kaleidorg/mind';
 import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
-import { createTools, loadQvacProvider } from './setup.js';
+import { createTools, loadProvider } from './setup.js';
 
 const MOCK = process.argv.includes('--mock') || process.env.MOCK === '1';
 
@@ -100,7 +101,7 @@ const only = process.env.ONLY?.split(',').map((s) => s.trim());
 const scenarios = SCENARIOS.filter((s) => (!s.liveOnly || !MOCK) && (!only || only.includes(s.id)));
 
 const tools = await createTools({ mock: MOCK, allow: LIVE_TOOLS });
-const { provider, dispose } = await loadQvacProvider(process.env.MODEL);
+const { provider, dispose } = await loadProvider();
 let failures = 0;
 try {
   const funnel = new Funnel({
@@ -134,7 +135,7 @@ try {
     if (process.env.OUT) {
       appendFileSync(
         process.env.OUT,
-        JSON.stringify({ model: process.env.MODEL ?? 'QWEN3_5_2B_MULTIMODAL_Q4_K_M', mock: MOCK, id: s.id, pass: !failure, failure, seconds, ...run, text: run.text.slice(0, 600) }) + '\n',
+        JSON.stringify({ model: process.env.OPENAI_MODEL ?? process.env.MODEL ?? 'QWEN3_5_2B_MULTIMODAL_Q4_K_M', mock: MOCK, id: s.id, pass: !failure, failure, seconds, ...run, text: run.text.slice(0, 600) }) + '\n',
       );
     }
   }

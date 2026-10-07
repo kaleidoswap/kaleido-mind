@@ -27,6 +27,16 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   scaled by `precision`), and an answer that calls an asset balance sats is
   relabelled (`annotateRgbBalances`, `fixRgbBalanceUnits`,
   `formatRgbAmount`).
+- `@kaleidorg/mind/openai`: `createOpenAICompatibleProvider` runs the engine
+  on any OpenAI Chat Completions server with tool calling (Ollama, LM Studio,
+  llama.cpp, vLLM, hosted APIs). Streaming, `tool_choice`, `toolErrors` for
+  arguments that are not valid JSON, abort on `signal`; no dependencies.
+- `@kaleidorg/create-mind` 0.1.0: `npm create @kaleidorg/mind my-agent`
+  scaffolds a standalone copy of `examples/rgb-agent`, generated from the
+  example at pack time. CI scaffolds it, installs it with npm against the
+  commit's `@kaleidorg/mind`, typechecks it and runs it offline.
+- `examples/rgb-agent`: `OPENAI_BASE_URL` / `OPENAI_MODEL` / `OPENAI_API_KEY`
+  switch the model to an OpenAI-compatible server.
 - `examples/rgb-agent`: `pnpm eval` / `pnpm eval:mock` run seven wallet
   requests through the Funnel with a local model and check each result.
 
