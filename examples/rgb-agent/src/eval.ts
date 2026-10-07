@@ -11,6 +11,7 @@
  *        THINK   reasoning budget in tokens (default: 128)
  *        ONLY    comma-separated scenario ids to run, e.g. ONLY=issue,send
  *        OUT     append one JSON line per scenario to this file
+ *        REPEAT  run each scenario this many times and report the pass rate (default 1)
  *
  * Exits 1 when a scenario fails. The issue scenario is approved at the
  * confirmation gate (a real asset on signet); the send is always declined.
@@ -21,6 +22,7 @@ import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
 import { createTools, loadProvider } from './setup.js';
 
 const MOCK = process.argv.includes('--mock') || process.env.MOCK === '1';
+const REPEAT = Math.max(1, Number(process.env.REPEAT ?? 1) || 1);
 
 const LIVE_TOOLS = [
   'rln_get_balances', 'rln_get_node_info', 'rln_list_assets', 'rln_get_asset_balance', 'rln_refresh_transfers',
@@ -113,7 +115,8 @@ try {
     compressToolOutput: true,
   });
 
-  for (const s of scenarios) {
+  const passes = new Map<string, number>();
+  for (const s of scenarios) for (let rep = 1; rep <= REPEAT; rep++) {
     const run: Run = { text: '', tier: '', tools: [], gates: [] };
     const started = Date.now();
     let error = '';
@@ -137,16 +140,22 @@ try {
     }
     const failure = error ? `error: ${error}` : s.check(run);
     if (failure) failures += 1;
+    else passes.set(s.id, (passes.get(s.id) ?? 0) + 1);
     const seconds = +((Date.now() - started) / 1000).toFixed(1);
     console.log(`${failure ? 'FAIL' : 'PASS'}  ${s.id.padEnd(12)} ${String(seconds).padStart(6)}s  ${run.tier}${run.route ? `/${run.route}` : ''}  [${run.tools.join(', ')}]${failure ? `  — ${failure}` : ''}`);
     if (process.env.OUT) {
       appendFileSync(
         process.env.OUT,
-        JSON.stringify({ model: process.env.OPENAI_MODEL ?? process.env.MODEL ?? 'QWEN3_5_2B_MULTIMODAL_Q4_K_M', mock: MOCK, id: s.id, pass: !failure, failure, seconds, ...run, text: run.text.slice(0, 600) }) + '\n',
+        JSON.stringify({ model: process.env.OPENAI_MODEL ?? process.env.MODEL ?? 'QWEN3_5_2B_MULTIMODAL_Q4_K_M', mock: MOCK, id: s.id, rep, pass: !failure, failure, seconds, ...run, text: run.text.slice(0, 600) }) + '\n',
       );
     }
   }
-  console.log(`\n${scenarios.length - failures}/${scenarios.length} passed`);
+  if (REPEAT > 1) {
+    console.log('\npass rate per scenario:');
+    for (const sc of scenarios) console.log(`  ${sc.id.padEnd(12)} ${passes.get(sc.id) ?? 0}/${REPEAT}`);
+  }
+  const runs = scenarios.length * REPEAT;
+  console.log(`\n${runs - failures}/${runs} passed`);
 } finally {
   await dispose();
   await tools.close();

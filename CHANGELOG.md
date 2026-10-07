@@ -23,6 +23,14 @@ Gemma4 2B 5/6 (rgb-invoice now passes), Llama 3.2 tool-calling 1B 3/6 (was
   instead of failing the request.
 - Text tool-call recovery accepts a reply that is only a call in the skills'
   example notation, `` `tool_name {"arg": 1}` ``.
+- A `*_send_asset` / `*_create_rgb_invoice` call that passes a ticker
+  (`USDT`) as `asset_id` / `asset` is resolved to the asset id with the same
+  host's `*_list_assets` before validation, on in-app and kaleido-mcp hosts.
+
+### Added
+
+- rgb-agent eval: `REPEAT=n` runs each scenario n times and prints the pass
+  rate per scenario. `@kaleidorg/create-mind` 0.3.1 ships it.
 
 ## [0.10.0] — 2026-10-07
 

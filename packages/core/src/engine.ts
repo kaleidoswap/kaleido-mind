@@ -29,6 +29,7 @@ import {
 } from './guards.js';
 import { confirmReadback } from './wallet/confirm.js';
 import { annotateRgbBalances } from './context/rgb-units.js';
+import { resolveRgbTicker } from './engine/rgb-ticker.js';
 import {
   REPEATED_CALL_REPLY,
   TOOL_CALL_FAILED_REPLY,
@@ -355,7 +356,11 @@ export class Engine {
     } else if (!def) {
       result = { error: `Unknown tool "${call.name}".` };
     } else {
-      const check = validateToolArgs(def, call.arguments);
+      const callArgs = await resolveRgbTicker(call.name, call.arguments, {
+        hasTool: async (name) => !!(await this.registry.getDef(name)),
+        run: (name, a) => this.safeExecute(name, a),
+      });
+      const check = validateToolArgs(def, callArgs);
       if (!check.ok) {
         result = {
           error: `Invalid arguments for ${call.name}: ${check.errors.join('; ')}. Fix them or ask the user for the missing values.`,

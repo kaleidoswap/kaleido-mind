@@ -47,6 +47,7 @@ gate. It prints PASS/FAIL per request and exits 1 on any failure.
 pnpm eval:mock                                   # fake RLN node, no node needed
 RLN_NODE_URL=http://localhost:3001 pnpm eval     # your signet node
 MODEL=QWEN3_5_2B_MULTIMODAL_Q4_K_M ONLY=issue,send OUT=eval.jsonl pnpm eval:mock
+REPEAT=3 pnpm eval:mock                          # pass rate per scenario over 3 runs
 ```
 
 The live run issues a new test asset (approved at the gate), so the node needs
