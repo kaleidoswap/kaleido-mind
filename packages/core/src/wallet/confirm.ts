@@ -106,6 +106,15 @@ export function confirmReadback(call: { name: string; arguments: Record<string, 
       return ask(`Accept atomic swap ${shortRef(String(a.swapstring ?? ''))} on your node`);
     case 'execute_swap':
       return ask(`Swap ${asset(a.amount, a.from_asset)} for ${label(a.to_asset)}`);
+    // The order total is only known once the LSP creates the order; the
+    // payment that follows is confirmed separately with that amount.
+    case 'lsp_create_order':
+    case 'kaleidoswap_lsp_create_order': {
+      const pushed = num(a.client_balance_sat) ? `, ${sats(a.client_balance_sat)} pushed to you` : '';
+      return ask(`Order a Lightning channel from the LSP with ${sats(a.lsp_balance_sat)} inbound${pushed}. The order total is paid in a separate step`);
+    }
+    case 'kaleidoswap_lsp_create_asset_channel':
+      return ask(`Order a channel from the LSP with ${asset(a.asset_amount, a.asset)} inbound. The order total is paid in a separate step`);
     default:
       // Unknown but spend-flagged tool → a generic, still-honest readback.
       return getWalletTool(name)?.spend ? ask(`Confirm ${name.replace(/_/g, ' ')}`) : null;

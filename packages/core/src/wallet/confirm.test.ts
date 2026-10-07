@@ -79,3 +79,14 @@ describe('confirmReadback', () => {
       .toBe('Send 100 sats to mum over Arkade. Confirm?');
   });
 });
+
+describe('confirmReadback: LSP orders', () => {
+  it('says what is ordered and that the total is paid separately', () => {
+    expect(
+      confirmReadback({ name: 'kaleidoswap_lsp_create_order', arguments: { client_pubkey: '02ab', lsp_balance_sat: 50000, client_balance_sat: 0, channel_expiry_blocks: 4320 } }),
+    ).toBe('Order a Lightning channel from the LSP with 50,000 sats inbound. The order total is paid in a separate step. Confirm?');
+    expect(
+      confirmReadback({ name: 'kaleidoswap_lsp_create_asset_channel', arguments: { asset: 'USDT', asset_amount: 10, rfq_id: 'r' } }),
+    ).toBe('Order a channel from the LSP with 10 USDT inbound. The order total is paid in a separate step. Confirm?');
+  });
+});
