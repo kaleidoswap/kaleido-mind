@@ -90,8 +90,8 @@ async function createProvider(): Promise<{ provider: LLMProvider; dispose: () =>
     };
   }
   const sdk = await import('@qvac/sdk');
-  console.error('[loading Qwen3 1.7B — the first run downloads ~1 GB]');
-  const modelId = await sdk.loadModel({ modelSrc: sdk.QWEN3_1_7B_INST_Q4, modelConfig: { ctx_size: 8192, tools: true } });
+  console.error('[loading Qwen3.5 4B — the first run downloads ~2.7 GB]');
+  const modelId = await sdk.loadModel({ modelSrc: sdk.QWEN3_5_4B_MULTIMODAL_Q4_K_M, modelConfig: { ctx_size: 8192, tools: true } });
   return {
     provider: createQvacProvider({
       completion: sdk.completion,

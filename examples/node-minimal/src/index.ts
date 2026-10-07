@@ -2,7 +2,7 @@
  * The smallest useful @kaleidorg/mind agent:
  *   QVAC local model -> Engine -> one in-process tool, routed by one skill.
  *
- *   pnpm start                       # downloads Qwen3 1.7B (~1 GB) on first run
+ *   pnpm start                       # downloads Qwen3.5 4B (~2.7 GB) on first run
  *   pnpm start "price of bitcoin in EUR?"
  *   pnpm start:mock                  # no model: a scripted provider replays the turn
  */
@@ -52,10 +52,10 @@ async function createProvider(): Promise<{ provider: LLMProvider; dispose: () =>
     return { provider, dispose: async () => {} };
   }
   const sdk = await import('@qvac/sdk');
-  console.error('[loading Qwen3 1.7B — the first run downloads ~1 GB]');
+  console.error('[loading Qwen3.5 4B — the first run downloads ~2.7 GB]');
   let lastPct = -1;
   const modelId = await sdk.loadModel({
-    modelSrc: sdk.QWEN3_1_7B_INST_Q4,
+    modelSrc: sdk.QWEN3_5_4B_MULTIMODAL_Q4_K_M,
     modelConfig: { ctx_size: 4096, tools: true },
     onProgress: (p: { percentage?: number }) => {
       const pct = Math.floor(p.percentage ?? 0);

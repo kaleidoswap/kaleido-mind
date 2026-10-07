@@ -10,6 +10,7 @@
  * full toolset has 7 tools; each skill exposes a curated 2–3.
  */
 
+import { getRecommendedModel, DEFAULT_MODEL_ID } from '@kaleidorg/mind/qvac';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -22,7 +23,7 @@ import {
 } from '@kaleidorg/mind';
 
 const MODEL_PATH =
-  process.env.QVAC_MODEL_PATH || join(homedir(), '.kaleido', 'models', 'Qwen3-0.6B-Q4_K_M.gguf');
+  process.env.QVAC_MODEL_PATH || join(homedir(), '.kaleido', 'models', getRecommendedModel(DEFAULT_MODEL_ID)!.hfFile);
 
 // Full tool surface (mock data) — far more than any one task needs.
 const allTools: InProcessTool[] = [

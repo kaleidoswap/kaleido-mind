@@ -105,7 +105,7 @@ frontmatter lines are read by the mind runtime; Claude ignores them.
 ```bash
 corepack enable
 pnpm install && pnpm build
-cd examples/node-minimal && pnpm start      # downloads Qwen3 1.7B (~1 GB) on first run
+cd examples/node-minimal && pnpm start      # downloads Qwen3.5 4B (~2.7 GB) on first run
 cd ../rgb-agent && pnpm start:mock          # fake RLN node, real local model
 ```
 

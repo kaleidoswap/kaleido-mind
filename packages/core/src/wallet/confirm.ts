@@ -41,8 +41,26 @@ function over(name: string, args: Record<string, unknown>): string {
   return label ? ` over ${label}` : '';
 }
 
-const sats = (v: unknown) => `${fmtNum(Number(v))} sats`;
-const asset = (amount: unknown, ticker: unknown) => `${fmtNum(Number(amount))} ${String(ticker)}`;
+/** A finite number from a tool arg, else undefined (never NaN in a readback). */
+function num(v: unknown): number | undefined {
+  if (typeof v === 'number') return Number.isFinite(v) ? v : undefined;
+  if (typeof v === 'string' && v.trim() !== '' && Number.isFinite(Number(v))) return Number(v);
+  return undefined;
+}
+
+/** A display string from a tool arg, stripped of stray quotes/commas a model may leave in. */
+function label(v: unknown): string {
+  return String(v ?? '').trim().replace(/^[\s'"`,]+|[\s'"`,]+$/g, '') || '?';
+}
+
+const sats = (v: unknown) => {
+  const n = num(v);
+  return n === undefined ? 'an unspecified amount of sats' : `${fmtNum(n)} sats`;
+};
+const asset = (amount: unknown, ticker: unknown) => {
+  const n = num(amount);
+  return n === undefined ? `an unspecified amount of ${label(ticker)}` : `${fmtNum(n)} ${label(ticker)}`;
+};
 
 /** A spoken confirmation ending in "Confirm?", or null for non-spend tools. */
 export function confirmReadback(call: { name: string; arguments: Record<string, unknown> }): string | null {
@@ -68,18 +86,18 @@ export function confirmReadback(call: { name: string; arguments: Record<string, 
     case 'spark_pay_invoice':
       return ask(`Pay Lightning invoice ${shortRef(String(a.invoice ?? ''))}${over(name, a)}`);
     case 'rln_issue_asset': {
-      const label = a.name != null && a.ticker != null && String(a.name) !== String(a.ticker) ? ` (${String(a.name)})` : '';
+      const named = a.name != null && a.ticker != null && label(a.name) !== label(a.ticker) ? ` (${label(a.name)})` : '';
       return a.schema === 'UDA'
-        ? ask(`Issue unique asset ${String(a.ticker ?? a.name)}${label} on RGB`)
-        : ask(`Issue ${asset(a.amount, a.ticker ?? a.name)}${label}, a new RGB asset`);
+        ? ask(`Issue unique asset ${label(a.ticker ?? a.name)}${named} on RGB`)
+        : ask(`Issue ${asset(a.amount, a.ticker ?? a.name)}${named}, a new RGB asset`);
     }
     case 'rln_create_utxos':
-      return ask(`Create ${fmtNum(Number(a.num ?? 5))} RGB UTXOs on-chain${over(name, a)}`);
+      return ask(`Create ${fmtNum(num(a.num) ?? 5)} RGB UTXOs on-chain${over(name, a)}`);
     case 'rln_send_btc':
       return ask(`Send ${sats(a.amount_sat)} on-chain to ${to('address')}${over(name, a)}`);
     case 'rln_open_channel': {
       const peer = shortRef(String(a.peer_pubkey_and_addr ?? '').split('@')[0] ?? '');
-      const withAsset = a.asset_id != null && a.asset_amount != null ? ` with ${fmtNum(Number(a.asset_amount))} of ${shortRef(String(a.asset_id))}` : '';
+      const withAsset = a.asset_id != null && num(a.asset_amount) !== undefined ? ` with ${fmtNum(num(a.asset_amount)!)} of ${shortRef(String(a.asset_id))}` : '';
       return ask(`Open a ${sats(a.capacity_sat)} channel to ${peer}${withAsset}`);
     }
     case 'rln_close_channel':
@@ -87,7 +105,7 @@ export function confirmReadback(call: { name: string; arguments: Record<string, 
     case 'rln_atomic_taker':
       return ask(`Accept atomic swap ${shortRef(String(a.swapstring ?? ''))} on your node`);
     case 'execute_swap':
-      return ask(`Swap ${fmtNum(Number(a.amount))} ${String(a.from_asset)} for ${String(a.to_asset)}`);
+      return ask(`Swap ${asset(a.amount, a.from_asset)} for ${label(a.to_asset)}`);
     default:
       // Unknown but spend-flagged tool → a generic, still-honest readback.
       return getWalletTool(name)?.spend ? ask(`Confirm ${name.replace(/_/g, ' ')}`) : null;

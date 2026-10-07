@@ -114,6 +114,13 @@ describe('finalToTurn', () => {
       ]);
     });
 
+    it('recovers a Qwen3.5 XML-style call', () => {
+      const calls = extractTextToolCalls(
+        '<tool_call>\n<function=rln_issue_asset>\n<parameter=name>\nHack\n</parameter>\n<parameter=amount>\n1000\n</parameter>\n</function>\n</tool_call>',
+      );
+      expect(calls).toEqual([{ name: 'rln_issue_asset', arguments: { name: 'Hack', amount: 1000 } }]);
+    });
+
     it('returns [] for plain prose', () => {
       expect(extractTextToolCalls('just a normal answer')).toEqual([]);
     });

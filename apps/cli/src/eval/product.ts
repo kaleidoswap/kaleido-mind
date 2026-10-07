@@ -630,7 +630,7 @@ export async function runProductSuite(opts: ProductEvalOptions = {}): Promise<Pr
   const scenarios = opts.scenarioIds?.length
     ? all.filter((scenario) => opts.scenarioIds!.includes(scenario.id))
     : all;
-  const modelIds = opts.mock ? ['mock'] : (opts.models?.length ? opts.models : ['qwen3-0.6b']);
+  const modelIds = opts.mock ? ['mock'] : (opts.models?.length ? opts.models : ['qwen3.5-0.8b']);
   const sdk = opts.mock ? null : await import('@qvac/sdk');
   const results: ProductResult[] = [];
   const total = modelIds.length * scenarios.length;

@@ -4,7 +4,7 @@
 #
 #   ./apps/cli/run-all-evals.sh
 #   ./apps/cli/run-all-evals.sh --quick
-#   MODELS=qwen3-0.6b,qwen3-1.7b REPEATS=5 ./apps/cli/run-all-evals.sh
+#   MODELS=qwen3.5-0.8b,qwen3.5-2b REPEATS=5 ./apps/cli/run-all-evals.sh
 
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"

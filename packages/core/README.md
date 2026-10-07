@@ -35,6 +35,27 @@ needs no model. To connect MCP servers, also install
 | 0.19 – 0.21 | Supported (tested with 0.21.0). There is no P2P delegated inference: QVAC removed `startQVACProvider` / `loadModel({ delegate })` in 0.19. |
 | 0.13.1 – 0.18 | Supported, including P2P delegation (`buildDelegateConfig`, `allowListFirewall`). |
 
+The Qwen3.5 model constants used below (`QWEN3_5_*_MULTIMODAL_Q4_K_M`) exist in
+every supported `@qvac/sdk` version (0.13.1+).
+
+## Models
+
+We recommend Qwen3.5. Qwen3 (0.6B–4B) and Hermes 3 kept mangling the arguments of
+multi-field wallet calls such as `rln_issue_asset`, so they are no longer in the
+catalog; any GGUF still loads by path or Hugging Face URL.
+
+| Model | `@qvac/sdk` constant | Download | RAM | Use |
+|---|---|---|---|---|
+| Qwen3.5 0.8B | `QWEN3_5_0_8B_MULTIMODAL_Q4_K_M` | 0.53 GB | ~1.5 GB | Smoke tests; unreliable on multi-argument tool calls |
+| Qwen3.5 2B | `QWEN3_5_2B_MULTIMODAL_Q4_K_M` | 1.3 GB | ~3 GB | Default for phones and small devices |
+| Qwen3.5 4B | `QWEN3_5_4B_MULTIMODAL_Q4_K_M` | 2.7 GB | ~5 GB | Default for desktop |
+| Qwen3.5 9B | `QWEN3_5_9B_MULTIMODAL_Q4_K_M` | 5.7 GB | ~9 GB | 16 GB machines; stronger multi-step planning |
+| Qwen3.6 35B-A3B (MoE) | `QWEN3_6_35B_A3B_MULTIMODAL_Q4_K_M` | 22 GB | ~26 GB | 32 GB+ machines |
+
+The same list is exported as data from `@kaleidorg/mind/qvac` (`QWEN35_MODELS`,
+`DEFAULT_MODEL_ID`, `DEFAULT_QVAC_MODEL`, `DEFAULT_SMALL_DEVICE_QVAC_MODEL`).
+Only the text weights are loaded; the vision projector is not needed.
+
 ## Quickstart (5 minutes)
 
 This example loads a small GGUF model through QVAC, registers one tool and one
@@ -42,14 +63,14 @@ skill, and runs one turn.
 
 ```ts
 // quickstart.ts — run with: npx tsx quickstart.ts
-import { completion, cancel, loadModel, unloadModel, close, QWEN3_1_7B_INST_Q4 } from '@qvac/sdk';
+import { completion, cancel, loadModel, unloadModel, close, QWEN3_5_4B_MULTIMODAL_Q4_K_M } from '@qvac/sdk';
 import { Engine, InProcessToolSource, SkillRegistry, ToolRegistry } from '@kaleidorg/mind';
 import { createQvacProvider } from '@kaleidorg/mind/qvac';
 
-// 1. Model: Qwen3 1.7B Q4 (~1 GB, cached after the first download).
-//    QWEN3_600M_INST_Q4 (~380 MB) also works but is weaker at tool calls.
+// 1. Model: Qwen3.5 4B Q4 (~2.7 GB, cached after the first download).
+//    On a phone or small laptop use QWEN3_5_2B_MULTIMODAL_Q4_K_M (~1.3 GB).
 const modelId = await loadModel({
-  modelSrc: QWEN3_1_7B_INST_Q4,
+  modelSrc: QWEN3_5_4B_MULTIMODAL_Q4_K_M,
   modelConfig: { ctx_size: 4096, tools: true }, // `tools: true` turns on tool calling
 });
 const provider = createQvacProvider({ completion, cancel, getModelId: () => modelId, defaultTemperature: 0.2 });
@@ -183,6 +204,29 @@ spend flags. Use `walletTools({ layers })` to select tools,
 🔒 = `requiresConfirmation`. `confirmReadback(call)` turns a pending call into a
 deterministic sentence for your confirm sheet, e.g. *"Send 5 USDT to utxob:…ij90
 over RLN. Confirm?"*.
+
+### Agent guards
+
+The engine and funnel check the model's tool use before anything reaches the
+user:
+
+- **Schema validation.** Arguments are checked against the tool's JSON Schema
+  (or Zod schema) before `onConfirm`: required fields, types, enums, ranges,
+  finite numbers. Invalid calls go back to the model as a tool error and the
+  user is never asked. `onConfirm` receives the validated arguments plus a
+  `summary` readback.
+- **Repeated calls.** A second identical call (same name and arguments) is not
+  re-run; the model gets the earlier result and is told to answer. A third
+  forces a final answer with no tools.
+- **Unambiguous declines.** A declined call returns `DECLINED_TOOL_MESSAGE` to
+  the model ("The user declined this action at the confirmation prompt…").
+- **No made-up payment data.** A final answer containing an invoice, offer,
+  address or RGB invoice that no tool returned and the user never typed is
+  replaced with a refusal (`guardUngroundedPaymentData`, default on).
+- **Skills that can act.** The funnel skips skills whose `requires-tools` are
+  not live and prefers skills with at least one live tool. If the request is a
+  wallet action (create an invoice, get an address, pay, send) and no tool in
+  scope can do it, it answers "I can't do that here" without calling the model.
 
 ```ts
 const wallet = bindWalletTools(

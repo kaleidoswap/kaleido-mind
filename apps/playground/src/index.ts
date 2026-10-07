@@ -11,6 +11,7 @@
  * the real wallet adapters (mobile) and the engine behaves identically.
  */
 
+import { getRecommendedModel, DEFAULT_MODEL_ID } from '@kaleidorg/mind/qvac';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
@@ -49,7 +50,7 @@ const loggerIO: LoggerIO = {
 
 const MODEL_PATH =
   process.env.QVAC_MODEL_PATH ||
-  join(homedir(), '.kaleido', 'models', 'Qwen3-0.6B-Q4_K_M.gguf');
+  join(homedir(), '.kaleido', 'models', getRecommendedModel(DEFAULT_MODEL_ID)!.hfFile);
 
 // ── Demo wallet tools (mock data) ──────────────────────────────────────
 const demoTools: InProcessTool[] = [

@@ -217,6 +217,8 @@ export interface CatalogModel {
   hfFile: string;
   ramHintGb: number;
   notes?: string;
+  /** The default pick for this host (exactly one catalog entry). */
+  recommended?: boolean;
 }
 
 export interface DownloadProgress {
@@ -250,6 +252,8 @@ export interface ToolConfirmRequestEvent {
   type: 'tool_confirm_request';
   confirmId: string;
   call: { name: string; arguments: Record<string, unknown> };
+  /** Deterministic readback of the call ("Send 4,800 sats to bob. Confirm?"), when known. */
+  summary?: string;
   timeoutMs: number;
 }
 

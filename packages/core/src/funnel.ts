@@ -29,7 +29,8 @@ import { paymentsRecipe } from './recipe/payments.js';
 import { receiveRecipe } from './recipe/receive.js';
 import { assetSendRecipe } from './recipe/asset-send.js';
 import type { Recipe } from './recipe/types.js';
-import { SkillRegistry } from './skills/registry.js';
+import { READ_REFERENCE_TOOL, SkillRegistry } from './skills/registry.js';
+import { detectWalletAction, hasCapableTool, noToolReply } from './guards.js';
 import type { Skill } from './skills/types.js';
 import type { LLMProvider } from './providers/types.js';
 import type { InferenceMetrics } from './providers/types.js';
@@ -172,6 +173,19 @@ export interface FunnelOptions {
   retriever?: Retriever;
   /** How many chunks to auto-inject when `retriever` is set. Default 3. */
   topKRag?: number;
+}
+
+/**
+ * Whether a skill can act on this host. A `requires-tools` frontmatter list must
+ * be fully live; otherwise at least one of the skill's scoped tools must be.
+ */
+export function skillAvailable(skill: Skill, present: ReadonlySet<string>): boolean {
+  const required = skill.metadata?.['requires-tools'];
+  if (required) {
+    return required.split(',').map((t) => t.trim()).filter(Boolean).every((t) => present.has(t));
+  }
+  if (!skill.tools?.length) return true;
+  return skill.tools.some((t) => t !== READ_REFERENCE_TOOL && present.has(t));
 }
 
 function defaultRenderFast(intent: string, r: any): string {
@@ -320,7 +334,14 @@ export class Funnel {
 
     // ── T1: skill-scoped agentic loop ──
     const skills = this.skillsFor(settings.disabledSkills);
-    const skill = skills.select(text);
+    const liveTools = (await this.registry.listTools()).map((t) => t.name);
+    const present = new Set(liveTools);
+    // Prefer skills that can act here; a skill whose `requires-tools` are
+    // missing is never picked, one with only zero live tools is a last resort.
+    const usable = skills.list().filter((s) => skillAvailable(s, present));
+    const skill =
+      new SkillRegistry(usable).select(text) ??
+      new SkillRegistry(skills.list().filter((s) => !s.metadata?.['requires-tools'] && !usable.includes(s))).select(text);
     let base = settings.persona ? `${this.system}\n\n## Your persona\n${settings.persona}` : this.system;
 
     // Auto-inject relevant knowledge chunks (best-effort — corpus is grounding
@@ -357,7 +378,6 @@ export class Funnel {
       // leaves the model TOOL-LESS — it then narrates "the tool isn't available"
       // instead of acting. If NONE of the scoped tools resolve against the live
       // registry, widen to the full surface so the agent can still work.
-      const present = new Set((await this.registry.listTools()).map((t) => t.name));
       if (!scoped.some((n) => present.has(n))) {
         this.log(
           `tier=agentic: skill '${skill?.name ?? '?'}' tools resolved to 0 live tools — using full tool surface`,
@@ -367,8 +387,23 @@ export class Funnel {
     } else if (disabledAmbient.length) {
       // No skill matched but a toggle is off: expose everything except the
       // disabled ambient tools (the sources stay mounted — no rebuild).
-      const all = (await this.registry.listTools()).map((t) => t.name);
-      scoped = all.filter((n) => !disabledAmbient.includes(n));
+      scoped = liveTools.filter((n) => !disabledAmbient.includes(n));
+    }
+
+    // A wallet action with no tool able to perform it: answer deterministically
+    // instead of letting the model improvise an invoice/address/payment.
+    const action = detectWalletAction(text);
+    if (action) {
+      const inScope = (scoped ?? liveTools).filter((n) => present.has(n));
+      if (!hasCapableTool(action, inScope)) {
+        if (scoped && hasCapableTool(action, liveTools)) {
+          this.log(`tier=agentic: skill '${skill?.name ?? '?'}' has no tool for ${action.id} — using full tool surface`);
+          scoped = liveTools.filter((n) => !disabledAmbient.includes(n));
+        } else {
+          this.log(`tier=agentic: no tool for ${action.id} — refusing`);
+          return { text: noToolReply(action), tier: 'agentic', route: 'no-tool', toolCalls: [], turns: 0, inference: [] };
+        }
+      }
     }
 
     // Trim history so the prompt (system + skill + tools + history) stays

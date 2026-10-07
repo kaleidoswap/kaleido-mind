@@ -5,7 +5,7 @@ tools: rln_get_node_info, rln_get_balances, rln_list_channels, rln_list_assets, 
 triggers: node, nodeinfo, pubkey, peer, channels, channel capacity, list channels, open channel, close channel, inbound, capacity, asset balance, whitelist, taker, swapstring, swaps, payments, invoice, receive, send asset, send rgb, on-chain address, deposit, rgb invoice, ln invoice, issue, mint, new token, nft, utxos, transfers
 metadata:
   author: kaleidoswap
-  version: "0.3.2"
+  version: "0.3.3"
 ---
 
 # RGB Lightning Node (taker-side)
@@ -70,14 +70,26 @@ ASYNCHRONOUSLY (seconds to minutes after payment). If the new channel isn't
 listed yet, say it's still opening and suggest checking again — don't claim
 failure.
 
-### `rln_list_assets` — no args
-Lists RGB assets known to the node with per-asset balances (settled, future,
-spendable, offchain_outbound, offchain_inbound). Use for "what assets do I
-hold / what's my USDT balance".
+### `rln_list_assets` — { schemas? }
+Lists RGB assets known to the node: `asset_id`, `ticker`, `name`, `precision`
+(in-app wallets also return balances). `schemas` is an optional filter — an
+array of `"Nia"`, `"Uda"`, `"Cfa"`; call it with `{}` to list everything.
+Use for "what assets do I hold / what's my USDT balance".
+
+Call it **once** per question. An empty list is a real answer: the node holds
+no RGB assets yet — tell the user that (and offer to issue one) instead of
+calling it again.
+
+### Tickers are not asset ids
+`asset_id` arguments take the full RGB id (`rgb:…`), never a ticker like
+`USDT` or `HCK`. When the user names an asset by ticker or name, first call
+`rln_list_assets`, find the entry whose `ticker`/`name` matches, and pass its
+`asset_id`. If nothing matches, say the node has no such asset — do not guess
+an id.
 
 ### `rln_get_asset_balance` — { asset_id }
-Balance for one RGB asset by id. Use after `rln_list_assets` gave you the id,
-or when the user names a specific asset.
+Balance for one RGB asset by id. Resolve a ticker to its `asset_id` with
+`rln_list_assets` first.
 
 | Field | Meaning |
 |---|---|
@@ -105,7 +117,8 @@ the amount.
 Sends an RGB asset to the recipient encoded in an RGB invoice. Use the argument
 names of the schema you were given: in-app wallets take `{ asset, amount, to }`
 (ticker or asset_id, units, the invoice); kaleido-mcp takes
-`{ asset_id, amount, recipient_id }`. Never invent a recipient.
+`{ asset_id, amount, recipient_id }`, where `asset_id` is the `rgb:…` id from
+`rln_list_assets`. Never invent a recipient.
 
 ### `rln_pay_invoice` — { invoice } — 🔒 confirm-gated
 Pays a BOLT11 Lightning invoice from the node. Pass the full invoice string.
@@ -144,7 +157,11 @@ Call this **after** `kaleidoswap_atomic_init` and **before**
 ### `rln_create_ln_invoice` — Lightning invoice for receiving sats
 Args:
 - `amount_sats` (optional) — omit for an amountless invoice.
+- `description` (optional, kaleido-mcp) — memo shown to the payer.
 - `expiry_sec` (default 3600, kaleido-mcp only) — invoice TTL in seconds.
+
+Reply with the full `invoice` string from the result — never write an invoice
+yourself.
 
 Use when the user wants to **receive** a Lightning payment. Do NOT call inside
 an atomic swap flow unless the user explicitly asked to invoice someone.
@@ -152,8 +169,9 @@ an atomic swap flow unless the user explicitly asked to invoice someone.
 ### `rln_create_rgb_invoice` — on-chain RGB receive invoice
 Args (use the names in your schema):
 - in-app wallets: `asset` (ticker or asset_id) + `amount`.
-- kaleido-mcp: `asset_id` (omit for an any-asset invoice), `amount` (display
-  units), `duration_seconds` (default 86400).
+- kaleido-mcp: `asset_id` (the `rgb:…` id from `rln_list_assets` — never a
+  ticker; omit for an any-asset invoice), `amount` (display units),
+  `duration_seconds` (default 86400).
 
 Reply with the full `invoice` string; the payer needs all of it.
 
@@ -176,8 +194,10 @@ defaults (`num` 5, `fee_rate` 1) are fine; set `up_to: true` to only top up to
 ### `rln_issue_asset` — { name, ticker?, amount?, precision?, schema?, details? } — 🔒 confirm-gated
 Creates a **new** RGB asset owned by this node. `schema`: `NIA` fungible token
 (default), `CFA` collectible, `UDA` unique asset / NFT (supply 1).
-- `ticker` (uppercase, 1–8 letters/digits) is required for `NIA` and `UDA`.
-- `amount` is the total supply in display units, required for `NIA` and `CFA`;
+- `ticker` (uppercase, 1–8 letters/digits, nothing else) is required for `NIA`
+  and `UDA`.
+- `amount` is the total supply in display units (a number), required for `NIA`
+  and `CFA` — if the user did not say how many, ask before calling;
   the raw supply is `amount × 10^precision` (`precision` defaults to 0).
 - `details` is an optional description for `CFA` and `UDA`.
 

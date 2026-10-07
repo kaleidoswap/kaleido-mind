@@ -19,6 +19,7 @@ name: my-skill                 # required — stable id
 description: When to use this…  # required — selection signal (embed triggers here)
 tools: tool_a, tool_b          # optional — scope the model to these tools
 triggers: foo, bar             # optional — keywords that boost selection
+requires-tools: tool_a         # optional — skip this skill unless ALL of these tools are live
 metadata:                      # optional — anything else (author, version, …)
   author: kaleidoswap
 ---

@@ -5,9 +5,59 @@ apps) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.8.0] — 2026-10-07
+
+Core `@kaleidorg/mind` 0.8.0 and `@kaleidorg/mind-provider` 0.8.0.
+
+### Added
+
+- **Qwen3.5 model list** in `@kaleidorg/mind/qvac`: `QWEN35_MODELS` (Qwen3.5
+  0.8B / 2B / 4B / 9B and Qwen3.6 35B-A3B MoE, Q4_K_M, with exact sizes, RAM
+  hints and the matching `@qvac/sdk` constant names), `DEFAULT_MODEL_ID` (4B,
+  desktop), `DEFAULT_SMALL_DEVICE_MODEL_ID` (2B), `DEFAULT_QVAC_MODEL`,
+  `DEFAULT_SMALL_DEVICE_QVAC_MODEL` and `getRecommendedModel`.
+- **Agent guards** (`validateToolArgs`, `findUngroundedPaymentData`,
+  `detectWalletAction`, `hasCapableTool`, `DECLINED_TOOL_MESSAGE`):
+  - Tool arguments are validated against the tool's JSON Schema / Zod schema
+    (plus conditional rules for `rln_issue_asset`) before `onConfirm`. Invalid
+    calls return a tool error to the model; the user is not asked.
+    `onConfirm` now receives the validated (coerced) arguments and a
+    `summary` readback.
+  - A repeated identical tool call in one run is answered from the earlier
+    result instead of re-running; a third repeat forces a tool-less answer.
+    A confirm-gated call resets this cache.
+  - A final answer that contains an invoice, offer, LNURL, address or RGB
+    invoice that no tool returned and the user never typed is replaced with a
+    refusal (`EngineOptions.guardUngroundedPaymentData`, default on).
+  - The funnel skips skills whose `requires-tools` frontmatter is not fully
+    live, prefers skills with at least one live tool, and answers a wallet
+    action (invoice, address, pay, send) that no tool in scope can perform
+    with a fixed "I can't do that here" reply (`route: 'no-tool'`), without
+    calling the model. `skillAvailable()` is exported.
+- Text tool-call recovery understands Qwen3.5's XML call format
+  (`<function=…><parameter=…>`).
+- Provider: catalog entries carry `recommended` (the 4B default) and
+  `tool_confirm_request` carries the optional `summary` readback.
 
 ### Changed
+
+- **Model catalog moved to Qwen3.5.** The provider and CLI catalogs, examples
+  and quickstarts now use Qwen3.5 (default 4B on desktop, 2B on small devices).
+  Qwen3 (0.6B–30B-A3B) and Hermes 3 are removed: they garbled multi-argument
+  wallet calls such as `rln_issue_asset`. Previously downloaded GGUFs no longer
+  appear as installed catalog models; add them back by Hugging Face URL if
+  needed. The Qwen3.5 constants exist in every supported `@qvac/sdk` (0.13.1+),
+  so peer ranges are unchanged.
+- **Declines are unambiguous.** A declined call returns
+  `{ declined: true, message: DECLINED_TOOL_MESSAGE }` (plus the host's
+  `reason`, if any) instead of `reason: 'user declined'`.
+- `confirmReadback` never prints `NaN`: missing or non-numeric amounts read as
+  "an unspecified amount", and stray quotes/commas are trimmed from tickers.
+- `rgb-lightning-node` skill 0.3.3: `rln_list_assets` documents its optional
+  `schemas` filter and says to call it once; tickers must be resolved to an
+  `asset_id` via `rln_list_assets` before invoices, balances and sends; LN
+  invoices must come from the tool. `spark-wallet` declares
+  `requires-tools: spark_get_balance`.
 
 - **RGB issuance tools aligned with kaleido-mcp**, which now ships them as
   `wdk_*` / `rln_*`: `rln_list_transfers` takes `asset_id` (in-app wallets still

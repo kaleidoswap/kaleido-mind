@@ -11,10 +11,11 @@
  *     context — no cloud, no data leaving the device.
  *
  *   QVAC_EMBED_MODEL=GTE_LARGE_FP16 \
- *   QVAC_MODEL_PATH=~/.kaleido/models/Qwen3-4B-Q4_K_M.gguf \
+ *   QVAC_MODEL_PATH=~/.kaleido/models/Qwen3.5-4B-Q4_K_M.gguf \
  *   pnpm --filter @kaleidorg/mind-playground exec tsx src/rag-demo.ts
  */
 
+import { getRecommendedModel, DEFAULT_MODEL_ID } from '@kaleidorg/mind/qvac';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -30,7 +31,7 @@ import {
 
 const MODEL_PATH =
   process.env.QVAC_MODEL_PATH ||
-  join(homedir(), '.kaleido', 'models', 'Qwen3-0.6B-Q4_K_M.gguf');
+  join(homedir(), '.kaleido', 'models', getRecommendedModel(DEFAULT_MODEL_ID)!.hfFile);
 
 // The shipped Bitcoin-copilot corpus. In the real app, add the KaleidoSwap docs,
 // BOLT/RGB specs, the user's wallet history (walletHistoryToDocuments), etc.

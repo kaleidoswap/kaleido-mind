@@ -138,7 +138,9 @@ describe('Engine agentic loop', () => {
   it('stops at maxTurns if the model never stops calling tools', async () => {
     const engine = new Engine({
       provider: scriptedProvider([
-        { text: 'loop', toolCalls: [{ name: 'get_balance', arguments: {} }] }, // always calls a tool
+        { text: 'loop', toolCalls: [{ name: 'get_balance', arguments: { n: 1 } }] },
+        { text: 'loop', toolCalls: [{ name: 'get_balance', arguments: { n: 2 } }] },
+        { text: 'loop', toolCalls: [{ name: 'get_balance', arguments: { n: 3 } }] },
       ]),
       tools: freshTools(),
       defaultMaxTurns: 3,

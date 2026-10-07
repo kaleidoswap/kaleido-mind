@@ -6,8 +6,8 @@ and confirmed by you first.
 
 | Command | Tools | Model |
 |---|---|---|
-| `pnpm start` | [kaleido-mcp](https://www.npmjs.com/package/kaleido-mcp) over stdio, on signet | Qwen3 1.7B via `@qvac/sdk` |
-| `pnpm start:mock` | in-process fake RLN (`MockWallet`) — no node needed | Qwen3 1.7B |
+| `pnpm start` | [kaleido-mcp](https://www.npmjs.com/package/kaleido-mcp) over stdio, on signet | Qwen3.5 4B via `@qvac/sdk` |
+| `pnpm start:mock` | in-process fake RLN (`MockWallet`) — no node needed | Qwen3.5 4B |
 | `pnpm start:offline` | fake RLN | scripted, no download (used in CI) |
 
 ```bash

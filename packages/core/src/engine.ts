@@ -19,6 +19,14 @@ import type { LLMProvider } from './providers/types.js';
 import type { InferenceMetrics } from './providers/types.js';
 import type { ToolRegistry } from './tools/registry.js';
 import { compressToolResult, type ToolCrushOptions } from './context/compress.js';
+import {
+  DECLINED_TOOL_MESSAGE,
+  callKey,
+  findUngroundedPaymentData,
+  ungroundedReply,
+  validateToolArgs,
+} from './guards.js';
+import { confirmReadback } from './wallet/confirm.js';
 
 export interface EngineOptions {
   provider: LLMProvider;
@@ -36,6 +44,11 @@ export interface EngineOptions {
    * The `onToolResult` callback and `toolCalls` still carry the raw result.
    */
   compressToolOutput?: boolean | ToolCrushOptions;
+  /**
+   * Replace a final answer that contains an invoice/address/payment request no
+   * tool returned and the user never typed. Default true.
+   */
+  guardUngroundedPaymentData?: boolean;
 }
 
 export interface AgenticOptions {
@@ -52,7 +65,7 @@ export interface AgenticOptions {
    */
   onToolResult?: (event: { name: string; arguments: Record<string, unknown>; result: unknown }, turn: number) => void;
   /** Human-in-the-loop gate for tools flagged requiresConfirmation. */
-  onConfirm?: (call: { name: string; arguments: Record<string, unknown> }) => Promise<ConfirmDecision>;
+  onConfirm?: (call: { name: string; arguments: Record<string, unknown>; summary?: string }) => Promise<ConfirmDecision>;
   /**
    * Restrict the tools exposed to the model this run (progressive disclosure).
    * Typically the active skill's tool list — see SkillRegistry.compose().
@@ -80,12 +93,14 @@ export class Engine {
   private readonly defaultSystem?: string;
   private readonly defaultMaxTurns: number;
   private readonly compressOpts?: ToolCrushOptions;
+  private readonly guardPaymentData: boolean;
 
   constructor(opts: EngineOptions) {
     this.provider = opts.provider;
     this.registry = opts.tools;
     this.defaultSystem = opts.defaultSystem;
     this.defaultMaxTurns = opts.defaultMaxTurns ?? 5;
+    this.guardPaymentData = opts.guardUngroundedPaymentData ?? true;
     this.compressOpts = opts.compressToolOutput
       ? opts.compressToolOutput === true
         ? {}
@@ -110,6 +125,7 @@ export class Engine {
     let finalText = '';
     let turns = 0;
     const inference: InferenceMetrics[] = [];
+    const seen = new Map<string, { result: unknown; count: number }>();
 
     for (let turn = 1; turn <= maxTurns; turn++) {
       turns = turn;
@@ -134,32 +150,80 @@ export class Engine {
       // Anchor the next turn with the raw assistant frame.
       history.push({ role: 'assistant', content: out.rawContent || finalText });
 
+      let repeatedAgain = false;
       for (const call of out.toolCalls) {
         opts.onToolCall?.({ name: call.name, arguments: call.arguments }, turn);
         const def = await this.registry.getDef(call.name);
+        const key = callKey(call.name, call.arguments);
+        const previous = seen.get(key);
 
+        let args = call.arguments;
         let result: unknown;
-        if (def?.requiresConfirmation) {
-          const decision = opts.onConfirm
-            ? await opts.onConfirm({ name: call.name, arguments: call.arguments })
-            : { approved: false, reason: 'no confirmation handler available' };
-          if (decision.approved) {
-            result = await this.safeExecute(call.name, call.arguments);
-          } else {
-            result = { declined: true, reason: decision.reason ?? 'user declined' };
-          }
+        if (previous) {
+          previous.count += 1;
+          if (previous.count > 2) repeatedAgain = true;
+          result = {
+            error:
+              `You already called ${call.name} with these arguments; the result was: ` +
+              `${this.toHistoryContent(previous.result)}. Do not call it again — answer the user now.`,
+          };
+        } else if (!def) {
+          result = { error: `Unknown tool "${call.name}".` };
         } else {
-          result = await this.safeExecute(call.name, call.arguments);
+          const check = validateToolArgs(def, call.arguments);
+          if (!check.ok) {
+            result = {
+              error: `Invalid arguments for ${call.name}: ${check.errors.join('; ')}. Fix them or ask the user for the missing values.`,
+            };
+          } else if (def.requiresConfirmation) {
+            args = check.args;
+            const summary = confirmReadback({ name: call.name, arguments: args }) ?? undefined;
+            const decision = opts.onConfirm
+              ? await opts.onConfirm({ name: call.name, arguments: args, ...(summary ? { summary } : {}) })
+              : { approved: false, reason: 'no confirmation handler available' };
+            result = decision.approved
+              ? await this.safeExecute(call.name, args)
+              : { declined: true, message: DECLINED_TOOL_MESSAGE, ...(decision.reason ? { reason: decision.reason } : {}) };
+          } else {
+            args = check.args;
+            result = await this.safeExecute(call.name, args);
+          }
         }
 
-        executed.push({ name: call.name, arguments: call.arguments, result });
-        opts.onToolResult?.({ name: call.name, arguments: call.arguments, result }, turn);
+        if (!previous) {
+          // A mutating (confirm-gated) call can change what reads return.
+          if (def?.requiresConfirmation) seen.clear();
+          seen.set(key, { result, count: 1 });
+        }
+        executed.push({ name: call.name, arguments: args, result });
+        opts.onToolResult?.({ name: call.name, arguments: args, result }, turn);
         history.push({ role: 'tool', content: this.toHistoryContent(result) });
+      }
+
+      if (repeatedAgain) {
+        const forced = await this.provider.runTurn({
+          messages: history,
+          tools: [],
+          system,
+          onToken: opts.onToken ? (t) => opts.onToken!(t, turn) : undefined,
+          signal: opts.signal,
+        });
+        if (forced.inference) inference.push(forced.inference);
+        finalText = (forced.text || '').trim() || 'I could not get a different result from the wallet — please try a more specific request.';
+        break;
       }
 
       if (turn === maxTurns && !finalText) {
         finalText = 'I had to stop after several steps — please try a more specific request.';
       }
+    }
+
+    if (this.guardPaymentData && finalText) {
+      const ungrounded = findUngroundedPaymentData(finalText, [
+        ...messages.map((m) => m.content),
+        ...executed.map((e) => e.result),
+      ]);
+      if (ungrounded.length) finalText = ungroundedReply(ungrounded);
     }
 
     // Append the final answer so the returned conversation is complete (the
