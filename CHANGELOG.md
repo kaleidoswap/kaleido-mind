@@ -44,7 +44,7 @@ Requires `@qvac/sdk` 0.20 or later. `@kaleidorg/mind` 0.9.0,
 
 Faster requests on small local models. Measured with the rgb-agent eval
 (Qwen3.5 2B, fake RLN node): balance and asset list 25–110 s → instant;
-issue, invoices and send 60–130 s → 9–11 s.
+issue, invoices and send 60–130 s → 11–19 s.
 
 ### Added
 
@@ -60,7 +60,9 @@ issue, invoices and send 60–130 s → 9–11 s.
   run. With `sessionCache: true` and the injected `deleteCache`, the QVAC
   provider passes it as `kvCache`, so calls after the first send only the new
   tool result instead of the ~5k-token prompt (time to first token ~7 s →
-  ~0.2 s on Qwen3.5 2B). Opt-in.
+  ~0.2 s on Qwen3.5 2B). Experimental and off by default: with it on, the
+  model copied a Lightning invoice correctly in 4/10 eval runs vs 10/10
+  without. The rgb-agent example enables it with `SESSION_CACHE=1`.
 
 ## [0.8.0] — 2026-10-07
 
