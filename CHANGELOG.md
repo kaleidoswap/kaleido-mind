@@ -22,7 +22,11 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `fixSatsBtcConversions` / `formatSatsAsBtc`: the Engine recomputes a BTC
   figure paired with a sats amount in the final answer ("4,277 sats
   (42.77 BTC)" → "4,277 sats (0.00004277 BTC)").
-  `EngineOptions.fixAmountConversions` (default on).
+  `EngineOptions.fixAmountConversions` (default on). Under the same switch,
+  RGB asset results reach the model with a `balance_display` ("1,000 USDT",
+  scaled by `precision`), and an answer that calls an asset balance sats is
+  relabelled (`annotateRgbBalances`, `fixRgbBalanceUnits`,
+  `formatRgbAmount`).
 - `examples/rgb-agent`: `pnpm eval` / `pnpm eval:mock` run seven wallet
   requests through the Funnel with a local model and check each result.
 

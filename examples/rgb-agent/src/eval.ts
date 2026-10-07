@@ -59,7 +59,9 @@ const SCENARIOS: Scenario[] = [
   {
     id: 'assets',
     prompt: 'Which RGB assets do I hold, and what are the balances?',
-    check: (r) => need(called(r, 'rln_list_assets', 'rln_get_asset_balance'), 'assets not listed'),
+    check: (r) =>
+      need(called(r, 'rln_list_assets', 'rln_get_asset_balance'), 'assets not listed') ??
+      need(!/\d\s*(satoshis|sats?)\b/i.test(r.text), 'asset balances labelled as sats'),
   },
   {
     id: 'issue',

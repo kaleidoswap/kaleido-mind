@@ -28,6 +28,7 @@ import {
   validateToolArgs,
 } from './guards.js';
 import { confirmReadback } from './wallet/confirm.js';
+import { annotateRgbBalances, fixRgbBalanceUnits } from './context/rgb-units.js';
 
 export interface EngineOptions {
   provider: LLMProvider;
@@ -50,7 +51,11 @@ export interface EngineOptions {
    * tool returned and the user never typed. Default true.
    */
   guardUngroundedPaymentData?: boolean;
-  /** Recompute BTC figures paired with a sats amount in the final answer. Default true. */
+  /**
+   * Keep amounts honest: recompute BTC figures paired with a sats amount, add
+   * `balance_display` to RGB asset balances the model sees, and relabel an
+   * asset balance the answer calls sats. Default true.
+   */
   fixAmountConversions?: boolean;
 }
 
@@ -241,7 +246,7 @@ export class Engine {
         }
         executed.push({ name: call.name, arguments: args, result });
         opts.onToolResult?.({ name: call.name, arguments: args, result }, turn);
-        history.push({ role: 'tool', content: this.toHistoryContent(result) });
+        history.push({ role: 'tool', content: this.toHistoryContent(this.fixAmounts ? annotateRgbBalances(result) : result) });
       }
 
       if (repeatedAgain) {
@@ -262,7 +267,9 @@ export class Engine {
     // Never return an empty answer (e.g. the last turn ran out of tokens).
     if (!finalText && !opts.signal?.aborted) finalText = STOPPED_MESSAGE;
 
-    if (this.fixAmounts && finalText) finalText = fixSatsBtcConversions(finalText);
+    if (this.fixAmounts && finalText) {
+      finalText = fixRgbBalanceUnits(fixSatsBtcConversions(finalText), executed.map((e) => e.result));
+    }
 
     if (this.guardPaymentData && finalText) {
       const ungrounded = findUngroundedPaymentData(finalText, [
