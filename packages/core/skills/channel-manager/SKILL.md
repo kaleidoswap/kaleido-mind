@@ -25,9 +25,10 @@ numbers from this turn's results only. All `*_sat` fields are sats.
      `lsp_balance_sat` (min 50,000) is inbound; `client_balance_sat` is your
      outbound, paid by you. For a BTC→asset swap add `asset_id` (the `rgb:` id)
      and `lsp_asset_amount` in raw units (USDT: 10 USDT = 10000000).
-  5. Pay `order_total_sat` (fee + `client_balance_sat`, not `fee_total_sat`).
+  5. Pay `amount_due_sat` (fee + `client_balance_sat`), never `fee_sat`.
      With no channel, pay on-chain: `rln_send_btc` to `payment.onchain.address`.
-  6. Poll `rln_list_channels` until `is_usable` (~1 block). Fees: `references/lsp.md`.
+  6. Poll `kaleidoswap_lsp_get_order` with `order_id` + `access_token`, then
+     `rln_list_channels` until `is_usable`. Fees: `references/lsp.md`.
 - Wants to hold an asset (USDT/XAUT) bought with the channel →
   `kaleidoswap_lsp_quote_asset_channel` then
   `kaleidoswap_lsp_create_asset_channel` with the fresh `rfq_id`.
