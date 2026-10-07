@@ -189,6 +189,9 @@ export class Engine {
     const executed: ToolResult[] = [];
     let lastRequestId: string | undefined;
     let finalText = '';
+    // Set when finalText is one of the engine's own fixed replies, which the
+    // answer guards below must not rewrite.
+    let engineReply = false;
     let turns = 0;
     const inference: InferenceMetrics[] = [];
     const seen = new Map<string, { result: unknown; count: number }>();
@@ -235,6 +238,7 @@ export class Engine {
           continue;
         }
         finalText = TOOL_CALL_FAILED_MESSAGE;
+        engineReply = true;
         break;
       }
 
@@ -304,6 +308,7 @@ export class Engine {
 
       if (this.endTurnOnDecline && declinedThisTurn.length && declinedThisTurn.length === out.toolCalls.length) {
         finalText = `Cancelled — you declined: ${declinedThisTurn.join('; ')}. Nothing was sent or changed.`;
+        engineReply = true;
         break;
       }
 
@@ -323,13 +328,16 @@ export class Engine {
     }
 
     // Never return an empty answer (e.g. the last turn ran out of tokens).
-    if (!finalText && !opts.signal?.aborted) finalText = STOPPED_MESSAGE;
+    if (!finalText && !opts.signal?.aborted) {
+      finalText = STOPPED_MESSAGE;
+      engineReply = true;
+    }
 
-    if (this.fixAmounts && finalText) {
+    if (this.fixAmounts && finalText && !engineReply) {
       finalText = fixRgbBalanceUnits(fixSatsBtcConversions(finalText), executed.map((e) => e.result));
     }
 
-    if (this.guardPaymentData && finalText) {
+    if (this.guardPaymentData && finalText && !engineReply) {
       const ungrounded = findUngroundedPaymentData(finalText, [
         ...messages.map((m) => m.content),
         ...executed.map((e) => e.result),

@@ -367,6 +367,8 @@ describe('fixSatsBtcConversions', () => {
   it('recomputes a wrong BTC figure from the sats figure', () => {
     expect(fixSatsBtcConversions('Vanilla UTXOs: 4,277 sats (42.77 BTC)')).toBe('Vanilla UTXOs: 4,277 sats (0.00004277 BTC)');
     expect(fixSatsBtcConversions('0.5 BTC (5,000 sats)')).toBe('0.00005 BTC (5,000 sats)');
+    expect(fixSatsBtcConversions('You have **300,000 satoshis** (3 BTC) on-chain.')).toBe('You have **300,000 satoshis** (0.003 BTC) on-chain.');
+    expect(fixSatsBtcConversions('**0.5 BTC** (5,000 sats)')).toBe('**0.00005 BTC** (5,000 sats)');
   });
 
   it('leaves correct pairs and lone amounts alone', () => {
@@ -378,5 +380,20 @@ describe('fixSatsBtcConversions', () => {
     expect(formatSatsAsBtc(100_000_000)).toBe('1');
     expect(formatSatsAsBtc(4_277)).toBe('0.00004277');
     expect(formatSatsAsBtc(0)).toBe('0');
+  });
+});
+
+describe('engine replies skip the answer guards', () => {
+  it('a declined send keeps its cancel message even though the readback shortens the invoice', async () => {
+    const to = 'rgb:~/~/~/sig/any/1/utxob:test-recipient';
+    const engine = engineWith(
+      [{ name: 'rln_send_asset', description: '', parameters: {}, requiresConfirmation: true, handler: async () => ({ ok: true }) }],
+      [{ tool: 'rln_send_asset', args: { asset: 'USDT', amount: 1, to } }, { text: 'unused' }],
+    );
+    const res = await engine.runAgentic([{ role: 'user', content: `Send 1 USDT to this RGB invoice: ${to}` }], {
+      onConfirm: async () => ({ approved: false, reason: 'no' }),
+    });
+    expect(res.text).toMatch(/^Cancelled — you declined/);
+    expect(res.text).not.toMatch(/won't make one up/);
   });
 });

@@ -37,6 +37,19 @@ jobs:
           pnpm --filter @kaleidorg/example-node-minimal run start:mock
           pnpm --filter @kaleidorg/example-rgb-agent run start:offline
 
+      # What `npm create @kaleidorg/mind` produces, installed with npm against
+      # this commit's @kaleidorg/mind, outside the workspace.
+      - name: Starter (create-mind)
+        run: |
+          mkdir -p /tmp/starter
+          (cd packages/core && pnpm pack --pack-destination /tmp/starter)
+          node packages/create-mind/bin/create-mind.js /tmp/starter/app
+          cd /tmp/starter/app
+          npm pkg set "dependencies.@kaleidorg/mind=file:$(ls /tmp/starter/kaleidorg-mind-*.tgz)"
+          npm install --no-audit --no-fund
+          npx tsc --noEmit
+          npm run start:offline
+
       # Offline eval gate — no model, no QVAC worker. Exercises the full
       # dataset -> run -> grade -> aggregate pipeline for Tracks B and C via the
       # mock provider. Non-blocking: the @qvac/sdk dependency in apps/* may not

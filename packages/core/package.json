@@ -40,6 +40,11 @@
       "import": "./dist/qvac/index.js",
       "default": "./dist/qvac/index.js"
     },
+    "./openai": {
+      "types": "./dist/providers/openai.d.ts",
+      "import": "./dist/providers/openai.js",
+      "default": "./dist/providers/openai.js"
+    },
     "./testing": {
       "types": "./dist/testing/index.d.ts",
       "import": "./dist/testing/index.js",

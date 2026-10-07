@@ -177,8 +177,9 @@ export function ungroundedReply(items: UngroundedItem[]): string {
 
 const NUM = String.raw`(\d[\d,]*(?:\.\d+)?)`;
 const SATS = String.raw`(?:sats?|satoshis)`;
-const SATS_THEN_BTC = new RegExp(String.raw`${NUM}\s*${SATS}(\s*\(\s*~?\s*)${NUM}(\s*BTC\b)`, 'gi');
-const BTC_THEN_SATS = new RegExp(String.raw`${NUM}(\s*BTC\s*\(\s*~?\s*)${NUM}(\s*${SATS}\b)`, 'gi');
+// `[*_]*` lets markdown emphasis sit between the parts: **300,000 sats** (3 BTC).
+const SATS_THEN_BTC = new RegExp(String.raw`${NUM}\s*${SATS}([*_]*\s*\(\s*~?\s*)${NUM}(\s*BTC\b)`, 'gi');
+const BTC_THEN_SATS = new RegExp(String.raw`${NUM}(\s*BTC[*_]*\s*\(\s*~?\s*)${NUM}(\s*${SATS}\b)`, 'gi');
 
 const toNumber = (s: string): number => Number(s.replace(/,/g, ''));
 

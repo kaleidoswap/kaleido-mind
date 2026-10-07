@@ -104,3 +104,13 @@ export function toQvacTools(
   }
   return tools.map(toQvacTool);
 }
+
+/**
+ * JSON Schema for a tool's parameters: a JSON-Schema def is returned as is
+ * (nested objects intact), a Zod schema is converted to a flat object schema.
+ */
+export function toolParametersSchema(t: Pick<ToolDef, 'name' | 'description' | 'parameters'>): Record<string, unknown> {
+  const p = t.parameters as Obj | null | undefined;
+  if (p && typeof p === 'object' && !isZodLike(p) && ('properties' in p || p.type === 'object')) return p;
+  return toQvacTool(t).parameters;
+}
