@@ -5,6 +5,25 @@ apps) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.1] — 2026-10-07
+
+Robustness on models other than Qwen. rgb-agent eval (fake RLN node):
+Gemma4 2B 5/6 (rgb-invoice now passes), Llama 3.2 tool-calling 1B 3/6 (was
+2/6, with every agentic turn failing).
+
+### Fixed
+
+- Invoices and addresses that receive tools return are shown verbatim. If
+  the answer leaves them out they are appended; if it carries a partial or
+  garbled copy, the answer is built from the tool's value instead of the
+  "won't make one up" refusal (`producedPaymentData`, `producedPaymentReply`,
+  `paymentStrings`).
+- QVAC provider: "tool_choice demanded a tool call, but the chat template did
+  not render the tool definitions" is retried once without `tool_choice`
+  instead of failing the request.
+- Text tool-call recovery accepts a reply that is only a call in the skills'
+  example notation, `` `tool_name {"arg": 1}` ``.
+
 ## [0.10.0] — 2026-10-07
 
 `@kaleidorg/mind` 0.10.0, `@kaleidorg/mind-provider` 0.10.0,
