@@ -8,7 +8,14 @@
  * quotes a readback from being mistaken for an invented invoice.
  */
 import type { ToolCallError } from '../providers/types.js';
-import { findUngroundedPaymentData, fixSatsBtcConversions, ungroundedReply } from '../guards.js';
+import {
+  findUngroundedPaymentData,
+  fixSatsBtcConversions,
+  paymentStrings,
+  producedPaymentReply,
+  ungroundedReply,
+  type UngroundedItem,
+} from '../guards.js';
 import { fixRgbBalanceUnits } from '../context/rgb-units.js';
 
 export interface Answer {
@@ -49,6 +56,8 @@ export interface FinalizeOptions {
   sources: unknown[];
   /** Tool results, for relabelling RGB balances. */
   toolResults: unknown[];
+  /** Invoices and addresses receive tools returned this run (`producedPaymentData`). */
+  produced?: UngroundedItem[];
   aborted: boolean;
 }
 
@@ -59,8 +68,23 @@ export function finalizeAnswer(answer: Answer, opts: FinalizeOptions): string {
   let text = answer.text;
   if (opts.fixAmounts) text = fixRgbBalanceUnits(fixSatsBtcConversions(text), opts.toolResults);
   if (opts.guardPaymentData) {
+    const produced = opts.produced ?? [];
+    const lower = text.toLowerCase();
+    const missing = produced.filter((p) => !lower.includes(p.value.toLowerCase()));
+    // A partial or garbled copy of a value a tool produced (it shares the
+    // value's start, or is cut out of it): show the tool's value instead.
+    const mangled = paymentStrings(text).some((f) => {
+      const v = f.value.toLowerCase();
+      return missing.some((p) => {
+        const want = p.value.toLowerCase();
+        return want.includes(v) || v.slice(0, 12) === want.slice(0, 12);
+      });
+    });
+    if (mangled) return producedPaymentReply(produced);
     const ungrounded = findUngroundedPaymentData(text, opts.sources);
-    if (ungrounded.length) text = ungroundedReply(ungrounded);
+    if (ungrounded.length) return produced.length ? producedPaymentReply(produced) : ungroundedReply(ungrounded);
+    // The model left out the invoice/address it was asked for: add it verbatim.
+    if (missing.length) text = `${text}\n\n${producedPaymentReply(missing)}`;
   }
   return text;
 }

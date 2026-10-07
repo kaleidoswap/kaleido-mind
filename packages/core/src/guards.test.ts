@@ -409,3 +409,30 @@ describe('engine replies skip the answer guards', () => {
     expect(res.text).not.toMatch(/won't make one up/);
   });
 });
+
+describe('invoices and addresses come from the tool, not the model', () => {
+  const invoice = 'rgb:~/~/~/sig/rgb:usdt/10/utxob:abcdefghijklmnop';
+  const tools = [{ name: 'rln_create_rgb_invoice', description: '', parameters: {}, handler: async () => ({ invoice }) }];
+
+  it('appends the invoice when the model leaves it out', async () => {
+    const engine = engineWith(tools, [{ tool: 'rln_create_rgb_invoice' }, { text: 'Here is the full invoice string for receiving 10 USDT.' }]);
+    const res = await engine.runAgentic([{ role: 'user', content: 'Create an RGB invoice for 10 USDT' }]);
+    expect(res.text).toBe(`Here is the full invoice string for receiving 10 USDT.\n\nHere is your RGB invoice:\n\n\`${invoice}\``);
+  });
+
+  it("replaces a mangled copy with the tool's value instead of refusing", async () => {
+    const engine = engineWith(tools, [{ tool: 'rln_create_rgb_invoice' }, { text: 'Invoice: rgb:~/~/~/sig/rgb:usdt/10/utxob:abcdefgh' }]);
+    const res = await engine.runAgentic([{ role: 'user', content: 'Create an RGB invoice for 10 USDT' }]);
+    expect(res.text).toBe(`Here is your RGB invoice:\n\n\`${invoice}\``);
+  });
+
+  it('leaves a correct answer alone and ignores payment data from other tools', async () => {
+    const ok = engineWith(tools, [{ tool: 'rln_create_rgb_invoice' }, { text: `Your invoice: ${invoice}` }]);
+    expect((await ok.runAgentic([{ role: 'user', content: 'invoice me 10 USDT' }])).text).toBe(`Your invoice: ${invoice}`);
+    const reads = engineWith(
+      [{ name: 'rln_list_transfers', description: '', parameters: {}, handler: async () => ({ transfers: [{ invoice }] }) }],
+      [{ tool: 'rln_list_transfers' }, { text: 'You have one transfer.' }],
+    );
+    expect((await reads.runAgentic([{ role: 'user', content: 'list my transfers' }])).text).toBe('You have one transfer.');
+  });
+});

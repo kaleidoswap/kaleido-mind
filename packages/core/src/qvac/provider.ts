@@ -85,6 +85,15 @@ function isReasoningGrammarError(err: unknown): boolean {
   return /empty grammar stack/i.test(err instanceof Error ? err.message : String(err));
 }
 
+/**
+ * Some chat templates (e.g. Llama 3.2 tool-calling 1B) don't render the tool
+ * definitions the way a forced `tool_choice` needs ("tool_choice demanded a
+ * tool call, but the chat template did not render the tool definitions").
+ */
+function isToolChoiceTemplateError(err: unknown): boolean {
+  return /did not render the tool definitions/i.test(err instanceof Error ? err.message : String(err));
+}
+
 export function createQvacProvider(options: QvacProviderOptions): LLMProvider {
   const runTurnOnce = async (input: QvacTurnInput): Promise<TurnOutput> => {
       const modelId = options.getModelId();
@@ -208,8 +217,13 @@ export function createQvacProvider(options: QvacProviderOptions): LLMProvider {
         return await runTurnOnce(input);
       } catch (err) {
         // Retry once without reasoning: no budget, so nothing to insert.
-        if (input.thinking === 'off' || !isReasoningGrammarError(err)) throw err;
-        return runTurnOnce({ ...input, thinking: 'off' });
+        if (input.thinking !== 'off' && isReasoningGrammarError(err)) return runTurnOnce({ ...input, thinking: 'off' });
+        // Retry once without forcing a tool call; the model may still call one.
+        if (input.toolChoice && isToolChoiceTemplateError(err)) {
+          const { toolChoice: _forced, ...rest } = input;
+          return runTurnOnce(rest);
+        }
+        throw err;
       }
     },
 

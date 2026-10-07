@@ -1,6 +1,6 @@
 {
   "name": "@kaleidorg/create-mind",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Scaffold a local-LLM agent for an RGB Lightning Node with @kaleidorg/mind: npm create @kaleidorg/mind my-agent",
   "license": "Apache-2.0",
   "type": "module",

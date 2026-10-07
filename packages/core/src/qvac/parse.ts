@@ -136,6 +136,17 @@ export function extractTextToolCalls(
     if (c) calls.push(c);
   }
   if (calls.length) return calls;
+  // The whole reply is one call in the skills' example notation,
+  // `tool_name {"arg": 1}` (models without native tool calling copy it).
+  const bare = text.trim().match(/^`?([a-z][a-z0-9]*(?:_[a-z0-9]+)+)\s*(\{[\s\S]*\})`?$/);
+  if (bare) {
+    try {
+      const args = JSON.parse(bare[2]!);
+      if (args && typeof args === 'object' && !Array.isArray(args)) return [{ name: bare[1]!, arguments: args }];
+    } catch {
+      /* not a call */
+    }
+  }
   // No tags — accept a bare tool-call object only at the very start of the
   // text (so we don't misread JSON the model is merely talking about).
   if (/^\s*\{?\s*"name"\s*:/i.test(text)) {

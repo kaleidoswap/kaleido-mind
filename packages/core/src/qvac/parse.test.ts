@@ -126,3 +126,17 @@ describe('finalToTurn', () => {
     });
   });
 });
+
+describe('extractTextToolCalls: skill example notation', () => {
+  it('recovers a reply that is only `tool_name {json}`', () => {
+    expect(extractTextToolCalls('`rln_create_ln_invoice {"amount_sats":5000}`')).toEqual([
+      { name: 'rln_create_ln_invoice', arguments: { amount_sats: 5000 } },
+    ]);
+    expect(extractTextToolCalls('rln_list_assets {}')).toEqual([{ name: 'rln_list_assets', arguments: {} }]);
+  });
+
+  it('ignores prose that mentions a call', () => {
+    expect(extractTextToolCalls('I would call rln_list_assets {} next.')).toEqual([]);
+    expect(extractTextToolCalls('listassets {"a":1}')).toEqual([]);
+  });
+});

@@ -18,9 +18,18 @@ import type { ConfirmDecision, Message, ToolCall, ToolDef, ToolResult } from './
 import type { InferenceMetrics, LLMProvider, ToolChoice } from './providers/types.js';
 import type { ToolRegistry } from './tools/registry.js';
 import { compressToolResult, type ToolCrushOptions } from './context/compress.js';
-import { callKey, declinedToolResult, detectWalletAction, hasCapableTool, noToolReply, validateToolArgs } from './guards.js';
+import {
+  callKey,
+  declinedToolResult,
+  detectWalletAction,
+  hasCapableTool,
+  noToolReply,
+  producedPaymentData,
+  validateToolArgs,
+} from './guards.js';
 import { confirmReadback } from './wallet/confirm.js';
 import { annotateRgbBalances } from './context/rgb-units.js';
+import { resolveRgbTicker } from './engine/rgb-ticker.js';
 import {
   REPEATED_CALL_REPLY,
   TOOL_CALL_FAILED_REPLY,
@@ -279,6 +288,7 @@ export class Engine {
       guardPaymentData: this.guardPaymentData,
       sources: [...messages.map((m) => m.content), ...state.executed.map((e) => e.result)],
       toolResults: state.executed.map((e) => e.result),
+      produced: producedPaymentData(state.executed),
       aborted: !!opts.signal?.aborted,
     });
     // Append the final answer so the returned conversation is complete (the
@@ -346,7 +356,11 @@ export class Engine {
     } else if (!def) {
       result = { error: `Unknown tool "${call.name}".` };
     } else {
-      const check = validateToolArgs(def, call.arguments);
+      const callArgs = await resolveRgbTicker(call.name, call.arguments, {
+        hasTool: async (name) => !!(await this.registry.getDef(name)),
+        run: (name, a) => this.safeExecute(name, a),
+      });
+      const check = validateToolArgs(def, callArgs);
       if (!check.ok) {
         result = {
           error: `Invalid arguments for ${call.name}: ${check.errors.join('; ')}. Fix them or ask the user for the missing values.`,
