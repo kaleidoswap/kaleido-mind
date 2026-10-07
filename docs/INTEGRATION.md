@@ -82,7 +82,6 @@ const wallet = bindWalletTools({
 
 const kswap = bindKaleidoswapTools({
   kaleidoswap_get_quote: async (a) => swapProtocol.quote(a),
-  kaleidoswap_place_order: async ({ quote_id }) => swapProtocol.placeOrder({ quoteId: quote_id }),
   kaleidoswap_atomic_init: async (a) => swapProtocol.atomicInit(a),
   // …one handler per KALEIDOSWAP_TOOLS entry
 });
