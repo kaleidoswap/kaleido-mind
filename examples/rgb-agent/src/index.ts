@@ -12,7 +12,6 @@
  *        RLN_NODE_URL       your RLN node (default inside kaleido-mcp: http://localhost:3001)
  */
 import { createInterface } from 'node:readline/promises';
-import { join } from 'node:path';
 import {
   Engine,
   SkillRegistry,
@@ -24,7 +23,7 @@ import {
   type ToolSource,
 } from '@kaleidorg/mind';
 import { McpToolSource } from '@kaleidorg/mind/mcp';
-import { loadSkillFromDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
+import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
 import { createQvacProvider } from '@kaleidorg/mind/qvac';
 import { MockWallet, scriptedProvider } from '@kaleidorg/mind/testing';
 
@@ -90,16 +89,17 @@ async function createProvider(): Promise<{ provider: LLMProvider; dispose: () =>
     };
   }
   const sdk = await import('@qvac/sdk');
-  console.error('[loading Qwen3.5 4B — the first run downloads ~2.7 GB]');
-  const modelId = await sdk.loadModel({ modelSrc: sdk.QWEN3_5_4B_MULTIMODAL_Q4_K_M, modelConfig: { ctx_size: 8192, tools: true } });
+  console.error('[loading Qwen3.5 2B — the first run downloads ~1.3 GB]');
+  const modelId = await sdk.loadModel({ modelSrc: sdk.QWEN3_5_2B_MULTIMODAL_Q4_K_M, modelConfig: { ctx_size: 8192, tools: true, device: 'gpu', gpu_layers: 99 } });
   return {
     provider: createQvacProvider({
       completion: sdk.completion,
       cancel: sdk.cancel,
       getModelId: () => modelId,
       defaultTemperature: 0.1,
-      defaultMaxTokens: 512,
-      maxThinkingTokens: 512,
+      // Qwen3.5 reasons before answering; leave room for both or the answer is cut off.
+      defaultMaxTokens: 1536,
+      maxThinkingTokens: 768,
     }),
     dispose: async () => {
       await sdk.unloadModel({ modelId });
@@ -128,10 +128,11 @@ async function confirm(call: { name: string; arguments: Record<string, unknown> 
 const tools = await createTools();
 const { provider, dispose } = await createProvider();
 try {
-  const skill = loadSkillFromDir(join(packagedSkillsDir(), 'rgb-lightning-node'));
-  const skills = new SkillRegistry([skill]);
+  // All bundled skills. composeSkill() skips the ones whose tools this registry
+  // lacks (e.g. spark-wallet without Spark tools) before the model runs.
+  const skills = new SkillRegistry(loadSkillsDir(packagedSkillsDir()));
   const engine = new Engine({ provider, tools: new ToolRegistry([tools.source]), compressToolOutput: true });
-  const base = 'You operate the user\'s RGB Lightning Node. Use tools for every value; never invent ids or invoices. Copy invoices exactly. /no_think';
+  const base = 'You operate the user\'s RGB Lightning Node. Use tools for every value; never invent ids or invoices. Copy invoices exactly.';
 
   const steps = [
     'Which RGB assets do I hold, and what are the balances?',
@@ -141,15 +142,15 @@ try {
   if (!recipient()) console.error('[skipping the send step: set RECIPIENT_INVOICE to an RGB invoice to pay]');
 
   for (const question of steps) {
-    const { system } = skills.compose(base, skill);
-    console.error(`\n> ${question}`);
+    const { skill, system, allowedTools } = await engine.composeSkill(skills, question, base);
+    console.error(`\n> ${question}  [skill: ${skill?.name ?? 'none'}]`);
     const result = await engine.runAgentic(
       [
         { role: 'system', content: system },
         { role: 'user', content: question },
       ],
       {
-        allowedTools: RLN_TOOLS,
+        allowedTools,
         onConfirm: confirm,
         onToolCall: (c) => console.error(`  tool ${c.name} ${JSON.stringify(c.arguments)}`),
       },

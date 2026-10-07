@@ -11,7 +11,7 @@
  *     context — no cloud, no data leaving the device.
  *
  *   QVAC_EMBED_MODEL=GTE_LARGE_FP16 \
- *   QVAC_MODEL_PATH=~/.kaleido/models/Qwen3.5-4B-Q4_K_M.gguf \
+ *   QVAC_MODEL_PATH=~/.kaleido/models/Qwen3.5-2B-Q4_K_M.gguf \
  *   pnpm --filter @kaleidorg/mind-playground exec tsx src/rag-demo.ts
  */
 

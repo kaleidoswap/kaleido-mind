@@ -3,7 +3,7 @@ import { Engine } from './engine.js';
 import { Funnel } from './funnel.js';
 import { ToolRegistry } from './tools/registry.js';
 import { InProcessToolSource } from './tools/in-process.js';
-import { parseSkill } from './skills/registry.js';
+import { parseSkill, SkillRegistry } from './skills/registry.js';
 import { scriptedProvider } from './testing/scripted-provider.js';
 import { confirmReadback } from './wallet/confirm.js';
 import {
@@ -89,9 +89,24 @@ describe('findUngroundedPaymentData / detectWalletAction', () => {
   });
 });
 
-function engineWith(tools: ConstructorParameters<typeof InProcessToolSource>[1], turns: Parameters<typeof scriptedProvider>[0]) {
-  return new Engine({ provider: scriptedProvider(turns), tools: new ToolRegistry([new InProcessToolSource('t', tools)]) });
+function engineWith(
+  tools: ConstructorParameters<typeof InProcessToolSource>[1],
+  turns: Parameters<typeof scriptedProvider>[0],
+  opts: Partial<ConstructorParameters<typeof Engine>[0]> = {},
+) {
+  return new Engine({ provider: scriptedProvider(turns), tools: new ToolRegistry([new InProcessToolSource('t', tools)]), ...opts });
 }
+
+const LIST_ASSETS_RESULT = [
+  {
+    asset_id: 'rgb:rXXZqZR5-g9x7NDo-fXkijg3-BhJAbGd-Y24H0f2-Rgw1PkE', ticker: 'Q35A', name: 'Bench Q35A', details: null, precision: 0,
+    issued_supply: 1_000_000, balance: { settled: 1_000_000, future: 1_000_000, spendable: 1_000_000, offchain_outbound: 0, offchain_inbound: 0 },
+  },
+  {
+    asset_id: 'rgb:WBq3wXtG-xG8XBXq-ALV6AP3-wL6qamB-_X4StEv-Jaxl~ME', ticker: 'QNINE', name: 'Bench QNINE', details: null, precision: 0,
+    issued_supply: 1_000_000, balance: { settled: 1_000_000, future: 1_000_000, spendable: 1_000_000, offchain_outbound: 0, offchain_inbound: 0 },
+  },
+];
 
 describe('Engine guards', () => {
   it('F2: answers from the cached result instead of re-running an identical call, then forces an answer', async () => {
@@ -163,12 +178,76 @@ describe('Engine guards', () => {
       [{ tool: 'rln_send_btc', args: { address: 'tb1q', amount_sat: 1000 } }, { text: 'Cancelled.' }],
     );
     const res = await engine.runAgentic([{ role: 'user', content: 'send' }], { onConfirm: async () => ({ approved: false }) });
-    expect(res.toolCalls[0]!.result).toEqual({ declined: true, message: DECLINED_TOOL_MESSAGE });
-    expect(res.messages.find((m) => m.role === 'tool')!.content).toContain('The user declined this action at the confirmation prompt');
+    expect(res.toolCalls[0]!.result).toEqual({ status: 'cancelled_by_user', declined_by: 'user', tool: 'rln_send_btc', message: DECLINED_TOOL_MESSAGE });
+    expect(res.messages.find((m) => m.role === 'tool')!.content).toContain('Cancelled by the user');
+    expect(res.text).toBe('Cancelled — you declined: Send 1,000 sats on-chain to tb1q over RLN. Nothing was sent or changed.');
+    expect(res.turns).toBe(1);
+  });
+
+  it('F4: declining rln_create_utxos ends the turn without letting the model blame the node', async () => {
+    const utxos = vi.fn(async () => ({ created: 5 }));
+    const engine = engineWith(
+      [{ name: 'rln_create_utxos', description: '', parameters: {}, requiresConfirmation: true, handler: utxos }],
+      [{ tool: 'rln_create_utxos', args: {} }, { text: 'The node declined the UTXO creation.' }],
+    );
+    const res = await engine.runAgentic([{ role: 'user', content: 'create utxos' }], { onConfirm: async () => ({ approved: false }) });
+    expect(utxos).not.toHaveBeenCalled();
+    expect(res.text).toBe('Cancelled — you declined: Create 5 RGB UTXOs on-chain over RLN. Nothing was sent or changed.');
+  });
+
+  it('keeps a realistic asset-list answer with rgb: asset ids intact', async () => {
+    const answer =
+      'You hold 2 RGB assets: | Asset ID | Ticker | Balance | |---|---|---| ' +
+      '| rgb:rXXZqZR5-g9x7NDo-fXkijg3-BhJAbGd-Y24H0f2-Rgw1PkE | Q35A | 1,000,000 | ' +
+      '| rgb:WBq3wXtG-xG8XBXq-ALV6AP3-wL6qamB-_X4StEv-Jaxl~ME | QNINE | 1,000,000 |. Truncated: rgb:WBq3wXtG-xG8X';
+    const engine = engineWith(
+      [{ name: 'rln_list_assets', description: '', parameters: { type: 'object', properties: { schemas: { type: 'array' } } }, handler: async () => LIST_ASSETS_RESULT }],
+      [{ tool: 'rln_list_assets', args: { schemas: [] } }, { text: answer }],
+      { compressToolOutput: true },
+    );
+    const res = await engine.runAgentic([{ role: 'user', content: 'Which RGB assets do I hold, and what are the balances?' }]);
+    expect(res.text).toBe(answer);
+  });
+
+  it('recovers when the answer turn comes back empty (reasoning ate the output budget)', async () => {
+    const turns = [
+      { text: '', toolCalls: [{ name: 'rln_list_assets', arguments: {} }] },
+      { text: '', toolCalls: [], incomplete: true },
+      { text: 'You hold Q35A and QNINE, 1,000,000 each.', toolCalls: [] },
+    ];
+    let i = 0;
+    const provider = { name: 'p', runTurn: vi.fn(async () => ({ rawContent: '', ...turns[i++]! })) };
+    const engine = new Engine({ provider, tools: new ToolRegistry([new InProcessToolSource('t', [{ name: 'rln_list_assets', description: '', parameters: {}, handler: async () => LIST_ASSETS_RESULT }])]) });
+    const res = await engine.runAgentic([{ role: 'user', content: 'Which RGB assets do I hold?' }]);
+    expect(res.text).toBe('You hold Q35A and QNINE, 1,000,000 each.');
+    expect(provider.runTurn.mock.calls[2]![0].tools).toEqual([]);
+  });
+
+  it('falls back to the tool result when the recovery turn is empty too', async () => {
+    const engine = engineWith(
+      [{ name: 'rln_list_assets', description: '', parameters: {}, handler: async () => LIST_ASSETS_RESULT }],
+      [{ tool: 'rln_list_assets' }, { text: '' }, { text: '' }],
+    );
+    const res = await engine.runAgentic([{ role: 'user', content: 'Which RGB assets do I hold?' }]);
+    expect(res.text).toMatch(/^I couldn't phrase an answer in time\. Here is what rln list assets returned:/);
+    expect(res.text).toContain('Q35A');
+  });
+
+  it('F1: refuses a wallet action with no capable tool before any inference', async () => {
+    const provider = scriptedProvider([{ text: `Here is your invoice: ${INVOICE}` }]);
+    const runTurn = vi.spyOn(provider, 'runTurn');
+    const engine = new Engine({
+      provider,
+      tools: new ToolRegistry([new InProcessToolSource('t', [{ name: 'bitrefill_create_invoice', description: '', parameters: {}, handler: async () => ({}) }])]),
+    });
+    const res = await engine.runAgentic([{ role: 'user', content: 'Create a Lightning invoice for 5000 sats' }]);
+    expect(runTurn).not.toHaveBeenCalled();
+    expect(res.turns).toBe(0);
+    expect(res.text).toMatch(/no tool for creating an invoice/);
   });
 
   it('F1: replaces an invoice the model made up', async () => {
-    const engine = engineWith([], [{ text: `Here is your invoice: ${INVOICE}` }]);
+    const engine = engineWith([], [{ text: `Here is your invoice: ${INVOICE}` }], { guardMissingTools: false });
     const res = await engine.runAgentic([{ role: 'user', content: 'Create a Lightning invoice for 5000 sats' }]);
     expect(res.text).not.toContain(INVOICE);
     expect(res.text).toMatch(/won't make one up/);
@@ -204,6 +283,26 @@ const RLN_SKILL = parseSkill([
   '---',
   'Use rln tools.',
 ].join('\n'));
+
+describe('Engine.composeSkill', () => {
+  it('skips a skill whose requires-tools are not in the registry (no app wiring needed)', async () => {
+    const engine = new Engine({
+      provider: scriptedProvider([]),
+      tools: new ToolRegistry([
+        new InProcessToolSource('t', [
+          { name: 'bitrefill_search', description: '', parameters: {}, handler: async () => ({}) },
+          { name: 'rln_create_ln_invoice', description: '', parameters: {}, handler: async () => ({}) },
+        ]),
+      ]),
+    });
+    const skills = new SkillRegistry([SPARK_SKILL, RLN_SKILL]);
+    expect(skills.select('Create a Lightning invoice for 5000 sats')?.name).toBe('spark-wallet');
+    const composed = await engine.composeSkill(skills, 'Create a Lightning invoice for 5000 sats', 'base');
+    expect(composed.skill?.name).toBe('rgb-lightning-node');
+    expect(composed.system).toContain('Active skill: rgb-lightning-node');
+    expect(composed.allowedTools).toContain('rln_create_ln_invoice');
+  });
+});
 
 describe('Funnel F1 guards', () => {
   it('skips a skill whose required tools are missing and picks one that can act', async () => {

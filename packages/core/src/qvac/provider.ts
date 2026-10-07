@@ -175,12 +175,15 @@ export function createQvacProvider(options: QvacProviderOptions): LLMProvider {
         ...(result.stopReason ? { stopReason: result.stopReason } : {}),
       };
 
+      const incomplete =
+        !result.text && result.toolCalls.length === 0 && (result.thinkingBudgetExceeded || !!result.truncated);
       return {
         text,
         rawContent: result.rawContent,
         toolCalls: result.toolCalls,
         requestId: result.requestId,
         inference,
+        ...(incomplete ? { incomplete: true } : {}),
       };
     },
 

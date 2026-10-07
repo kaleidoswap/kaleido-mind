@@ -111,8 +111,8 @@ describe('Engine agentic loop', () => {
     const res = await engine.runAgentic([{ role: 'user', content: 'pay lnbc1' }], { onConfirm });
 
     expect(payTool.handler).not.toHaveBeenCalled();
-    expect(res.toolCalls[0].result).toMatchObject({ declined: true, reason: 'cancelled' });
-    expect(res.text).toBe('Okay, cancelled.');
+    expect(res.toolCalls[0].result).toMatchObject({ status: 'cancelled_by_user', declined_by: 'user', host_reason: 'cancelled' });
+    expect(res.text).toBe('Cancelled — you declined: pay invoice. Nothing was sent or changed.');
   });
 
   it('chains multiple tool calls across turns', async () => {

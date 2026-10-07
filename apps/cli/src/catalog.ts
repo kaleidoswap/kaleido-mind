@@ -4,7 +4,7 @@
  * loaded by the QVAC SDK. Probe-verified repos (mirror of apps/provider).
  */
 
-import { QWEN35_MODELS, DEFAULT_MODEL_ID, DEFAULT_SMALL_DEVICE_MODEL_ID } from '@kaleidorg/mind/qvac';
+import { QWEN35_MODELS, DEFAULT_MODEL_ID } from '@kaleidorg/mind/qvac';
 
 export type ModelKind = 'llm' | 'embeddings' | 'psy';
 
@@ -77,8 +77,5 @@ export function hfUrl(m: CatalogModel): string {
 export function recommendChatModel(totalMemBytes: number): CatalogModel {
   const gb = totalMemBytes / 1024 ** 3;
   const pick = (id: string) => getModel(cliId(id))!;
-  if (gb < 4) return pick('qwen3.5-0.8b-q4_k_m');
-  if (gb < 8) return pick(DEFAULT_SMALL_DEVICE_MODEL_ID);
-  if (gb < 16) return pick(DEFAULT_MODEL_ID);
-  return pick('qwen3.5-9b-q4_k_m');
+  return gb < 3 ? pick('qwen3.5-0.8b-q4_k_m') : pick(DEFAULT_MODEL_ID);
 }

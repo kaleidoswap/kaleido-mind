@@ -13,8 +13,8 @@ Core `@kaleidorg/mind` 0.8.0 and `@kaleidorg/mind-provider` 0.8.0.
 
 - **Qwen3.5 model list** in `@kaleidorg/mind/qvac`: `QWEN35_MODELS` (Qwen3.5
   0.8B / 2B / 4B / 9B and Qwen3.6 35B-A3B MoE, Q4_K_M, with exact sizes, RAM
-  hints and the matching `@qvac/sdk` constant names), `DEFAULT_MODEL_ID` (4B,
-  desktop), `DEFAULT_SMALL_DEVICE_MODEL_ID` (2B), `DEFAULT_QVAC_MODEL`,
+  hints and the matching `@qvac/sdk` constant names), `DEFAULT_MODEL_ID` and
+  `DEFAULT_SMALL_DEVICE_MODEL_ID` (both Qwen3.5 2B), `DEFAULT_QVAC_MODEL`,
   `DEFAULT_SMALL_DEVICE_QVAC_MODEL` and `getRecommendedModel`.
 - **Agent guards** (`validateToolArgs`, `findUngroundedPaymentData`,
   `detectWalletAction`, `hasCapableTool`, `DECLINED_TOOL_MESSAGE`):
@@ -29,28 +29,46 @@ Core `@kaleidorg/mind` 0.8.0 and `@kaleidorg/mind-provider` 0.8.0.
   - A final answer that contains an invoice, offer, LNURL, address or RGB
     invoice that no tool returned and the user never typed is replaced with a
     refusal (`EngineOptions.guardUngroundedPaymentData`, default on).
-  - The funnel skips skills whose `requires-tools` frontmatter is not fully
-    live, prefers skills with at least one live tool, and answers a wallet
-    action (invoice, address, pay, send) that no tool in scope can perform
-    with a fixed "I can't do that here" reply (`route: 'no-tool'`), without
-    calling the model. `skillAvailable()` is exported.
+  - `Engine.composeSkill(skills, query, base)` (and `selectAvailableSkill`,
+    `skillAvailable`) pick a skill that can act with the engine's tools:
+    skills whose `requires-tools` frontmatter is not fully live are skipped,
+    skills with at least one live tool are preferred. The funnel uses the same
+    selection.
+  - A wallet action (invoice, address, pay, send) that no exposed tool can
+    perform gets a fixed "I can't do that here" reply without inference
+    (`EngineOptions.guardMissingTools`, default on; funnel `route: 'no-tool'`).
+  - When the user declines every call in a turn the run ends with a fixed
+    "Cancelled — you declined: … Nothing was sent or changed." reply
+    (`EngineOptions.endTurnOnDecline`, default on).
+  - An empty answer after tool calls (e.g. reasoning used the whole output
+    budget) triggers one tool-less retry, then falls back to the last tool
+    result. `TurnOutput.incomplete` marks such turns; the QVAC provider sets
+    it.
 - Text tool-call recovery understands Qwen3.5's XML call format
   (`<function=…><parameter=…>`).
-- Provider: catalog entries carry `recommended` (the 4B default) and
+- Provider: catalog entries carry `recommended` (the 2B default) and
   `tool_confirm_request` carries the optional `summary` readback.
 
 ### Changed
 
 - **Model catalog moved to Qwen3.5.** The provider and CLI catalogs, examples
-  and quickstarts now use Qwen3.5 (default 4B on desktop, 2B on small devices).
+  and quickstarts now use Qwen3.5 2B by default: on an M4 it passed all 7 signet
+  RGB wallet tasks at 45–150 s per question; 4B was equally correct but about
+  twice as slow, 9B slower still, and 0.8B loops on actions.
   Qwen3 (0.6B–30B-A3B) and Hermes 3 are removed: they garbled multi-argument
   wallet calls such as `rln_issue_asset`. Previously downloaded GGUFs no longer
   appear as installed catalog models; add them back by Hugging Face URL if
   needed. The Qwen3.5 constants exist in every supported `@qvac/sdk` (0.13.1+),
   so peer ranges are unchanged.
-- **Declines are unambiguous.** A declined call returns
-  `{ declined: true, message: DECLINED_TOOL_MESSAGE }` (plus the host's
-  `reason`, if any) instead of `reason: 'user declined'`.
+- **Declines are attributed to the user.** A declined call returns
+  `{ status: 'cancelled_by_user', declined_by: 'user', tool, message }` (plus
+  `host_reason` when the host gave one) instead of
+  `{ declined: true, reason: 'user declined' }`.
+- Provider defaults: `KALEIDO_MIND_MAX_THINKING_TOKENS` 128 → 512 and
+  `KALEIDO_MIND_MAX_TOKENS` 512 → 1536. Qwen3.5 2B used 80–390 thinking tokens
+  per wallet turn; the old caps cut turns off before a tool call or answer.
+- RGB invoices are only treated as payment data when they carry a path or
+  beneficiary; plain `rgb:` asset ids never trip the payment-data guard.
 - `confirmReadback` never prints `NaN`: missing or non-numeric amounts read as
   "an unspecified amount", and stray quotes/commas are trimmed from tickers.
 - `rgb-lightning-node` skill 0.3.3: `rln_list_assets` documents its optional

@@ -61,6 +61,7 @@ export {
   detectWalletAction,
   hasCapableTool,
   DECLINED_TOOL_MESSAGE,
+  declinedToolResult,
 } from './guards.js';
 export type { ArgValidation, UngroundedItem, WalletAction } from './guards.js';
 
@@ -213,10 +214,11 @@ export type {
 } from './knowledge/btc-map.js';
 
 export { Engine } from './engine.js';
-export type { EngineOptions, AgenticOptions, AgenticResult } from './engine.js';
+export type { EngineOptions, AgenticOptions, AgenticResult, ComposedSkill } from './engine.js';
 
 // ── Funnel (T0 fast-path → T2 recipe → T1 agentic — the tiered agent) ───────
-export { Funnel, DEFAULT_WALLET_SYSTEM, skillAvailable } from './funnel.js';
+export { Funnel, DEFAULT_WALLET_SYSTEM } from './funnel.js';
+export { skillAvailable, selectAvailableSkill } from './skills/select.js';
 export type { FunnelOptions, FunnelSettings, FunnelCallbacks, FunnelResult } from './funnel.js';
 
 export {

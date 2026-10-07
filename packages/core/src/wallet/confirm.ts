@@ -31,7 +31,7 @@ function isRef(s: string): boolean {
 /** Shorten an address/invoice for speech; leave contact names intact. */
 function shortRef(s: string): string {
   const v = s.trim();
-  return isRef(v) ? `${v.slice(0, 6)}…${v.slice(-4)}` : v;
+  return isRef(v) && v.length > 12 ? `${v.slice(0, 6)}…${v.slice(-4)}` : v;
 }
 
 /** " over Spark" suffix for the call's layer (explicit arg wins, else the tool's). */
