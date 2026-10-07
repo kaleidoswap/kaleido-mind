@@ -63,6 +63,8 @@ export {
   detectWalletAction,
   hasCapableTool,
   wantsToolCall,
+  fixSatsBtcConversions,
+  formatSatsAsBtc,
   DECLINED_TOOL_MESSAGE,
 } from './guards.js';
 export type { ArgValidation, UngroundedItem, WalletAction } from './guards.js';

@@ -23,6 +23,7 @@ import {
   DECLINED_TOOL_MESSAGE,
   callKey,
   findUngroundedPaymentData,
+  fixSatsBtcConversions,
   ungroundedReply,
   validateToolArgs,
 } from './guards.js';
@@ -49,6 +50,8 @@ export interface EngineOptions {
    * tool returned and the user never typed. Default true.
    */
   guardUngroundedPaymentData?: boolean;
+  /** Recompute BTC figures paired with a sats amount in the final answer. Default true. */
+  fixAmountConversions?: boolean;
 }
 
 export interface AgenticOptions {
@@ -113,6 +116,7 @@ export class Engine {
   private readonly defaultMaxTurns: number;
   private readonly compressOpts?: ToolCrushOptions;
   private readonly guardPaymentData: boolean;
+  private readonly fixAmounts: boolean;
 
   constructor(opts: EngineOptions) {
     this.provider = opts.provider;
@@ -120,6 +124,7 @@ export class Engine {
     this.defaultSystem = opts.defaultSystem;
     this.defaultMaxTurns = opts.defaultMaxTurns ?? 5;
     this.guardPaymentData = opts.guardUngroundedPaymentData ?? true;
+    this.fixAmounts = opts.fixAmountConversions ?? true;
     this.compressOpts = opts.compressToolOutput
       ? opts.compressToolOutput === true
         ? {}
@@ -256,6 +261,8 @@ export class Engine {
 
     // Never return an empty answer (e.g. the last turn ran out of tokens).
     if (!finalText && !opts.signal?.aborted) finalText = STOPPED_MESSAGE;
+
+    if (this.fixAmounts && finalText) finalText = fixSatsBtcConversions(finalText);
 
     if (this.guardPaymentData && finalText) {
       const ungrounded = findUngroundedPaymentData(finalText, [

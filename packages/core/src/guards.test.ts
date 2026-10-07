@@ -10,6 +10,8 @@ import {
   DECLINED_TOOL_MESSAGE,
   detectWalletAction,
   wantsToolCall,
+  fixSatsBtcConversions,
+  formatSatsAsBtc,
   findUngroundedPaymentData,
   hasCapableTool,
   validateToolArgs,
@@ -259,5 +261,23 @@ describe('Funnel F1 guards', () => {
     expect(runTurn).not.toHaveBeenCalled();
     expect(res.route).toBe('no-tool');
     expect(res.text).toMatch(/no tool for creating an invoice/);
+  });
+});
+
+describe('fixSatsBtcConversions', () => {
+  it('recomputes a wrong BTC figure from the sats figure', () => {
+    expect(fixSatsBtcConversions('Vanilla UTXOs: 4,277 sats (42.77 BTC)')).toBe('Vanilla UTXOs: 4,277 sats (0.00004277 BTC)');
+    expect(fixSatsBtcConversions('0.5 BTC (5,000 sats)')).toBe('0.00005 BTC (5,000 sats)');
+  });
+
+  it('leaves correct pairs and lone amounts alone', () => {
+    const ok = 'You have 150,000,000 sats (1.5 BTC) and 0.001 BTC (100,000 sats). Fee: 300 sats.';
+    expect(fixSatsBtcConversions(ok)).toBe(ok);
+  });
+
+  it('formats sats as BTC without trailing zeros', () => {
+    expect(formatSatsAsBtc(100_000_000)).toBe('1');
+    expect(formatSatsAsBtc(4_277)).toBe('0.00004277');
+    expect(formatSatsAsBtc(0)).toBe('0');
   });
 });

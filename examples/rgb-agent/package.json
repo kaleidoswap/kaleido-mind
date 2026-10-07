@@ -9,6 +9,8 @@
     "start": "tsx src/index.ts",
     "start:mock": "tsx src/index.ts --mock",
     "start:offline": "tsx src/index.ts --mock --scripted --yes",
+    "eval": "tsx src/eval.ts",
+    "eval:mock": "tsx src/eval.ts --mock",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
