@@ -46,6 +46,10 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   parse error (or, when the output hit the token cap, a "one call at a time"
   hint); if it fails again the run ends with a fixed message instead of
   showing the broken frame. The retry does not count against `maxTurns`.
+- The answer guards (ungrounded payment data, amount fixes) only check text
+  the model wrote, not the engine's own fixed replies. A declined send whose
+  readback shortens the invoice was replaced by the "won't make one up"
+  refusal.
 - `runAgentic` never returns an empty answer: a run whose last turn produced
   no text ends with the "had to stop" message.
 - Recipe slot extraction forces the extraction tool (`toolChoice`).
