@@ -63,6 +63,8 @@ export interface EngineOptions {
    * asset balance the answer calls sats. Default true.
    */
   fixAmountConversions?: boolean;
+  /** Let the model reason on a forced first tool call. Default false (thinking off). */
+  thinkOnForcedCalls?: boolean;
   /**
    * Answer a wallet action (create an invoice, get an address, pay, send) with
    * a fixed "no tool" reply, without inference, when no exposed tool can do it.
@@ -105,6 +107,8 @@ export interface AgenticOptions {
    * made-up data. Later rounds are left to the model.
    */
   firstTurnToolChoice?: ToolChoice;
+  /** Session key passed to every model call of this run. Default: a fresh key per run. */
+  sessionKey?: string;
   signal?: AbortSignal;
 }
 
@@ -142,6 +146,7 @@ export class Engine {
   private readonly compressOpts?: ToolCrushOptions;
   private readonly guardPaymentData: boolean;
   private readonly fixAmounts: boolean;
+  private readonly thinkOnForcedCalls: boolean;
   private readonly guardMissingTools: boolean;
   private readonly endTurnOnDecline: boolean;
 
@@ -152,6 +157,7 @@ export class Engine {
     this.defaultMaxTurns = opts.defaultMaxTurns ?? 5;
     this.guardPaymentData = opts.guardUngroundedPaymentData ?? true;
     this.fixAmounts = opts.fixAmountConversions ?? true;
+    this.thinkOnForcedCalls = opts.thinkOnForcedCalls ?? false;
     this.guardMissingTools = opts.guardMissingTools ?? true;
     this.endTurnOnDecline = opts.endTurnOnDecline ?? true;
     this.compressOpts = opts.compressToolOutput
@@ -175,6 +181,15 @@ export class Engine {
   }
 
   async runAgentic(messages: Message[], opts: AgenticOptions = {}): Promise<AgenticResult> {
+    const sessionKey = opts.sessionKey ?? `mind-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    try {
+      return await this.runAgenticSession(messages, { ...opts, sessionKey });
+    } finally {
+      if (!opts.sessionKey) await this.provider.endSession?.(sessionKey).catch(() => {});
+    }
+  }
+
+  private async runAgenticSession(messages: Message[], opts: AgenticOptions): Promise<AgenticResult> {
     const maxTurns = opts.maxTurns ?? this.defaultMaxTurns;
     const hasSystem = messages.some((m) => m.role === 'system');
     const system = hasSystem ? undefined : this.defaultSystem;
@@ -211,11 +226,14 @@ export class Engine {
       if (opts.signal?.aborted) break;
 
       const out = await this.provider.runTurn({
+      sessionKey: opts.sessionKey,
         messages: history,
         tools: allTools,
         system,
+        // A forced first call only picks the tool and its arguments; reasoning
+        // there costs most of the turn's time on small models.
         ...(turn === 1 && opts.firstTurnToolChoice && allTools.length
-          ? { toolChoice: opts.firstTurnToolChoice }
+          ? { toolChoice: opts.firstTurnToolChoice, ...(this.thinkOnForcedCalls ? {} : { thinking: 'off' as const }) }
           : {}),
         onToken: opts.onToken ? (t) => opts.onToken!(t, turn) : undefined,
         signal: opts.signal,
@@ -314,6 +332,7 @@ export class Engine {
 
       if (repeatedAgain) {
         const forced = await this.provider.runTurn({
+      sessionKey: opts.sessionKey,
           messages: history,
           tools: [],
           system,
@@ -375,6 +394,7 @@ export class Engine {
   ): Promise<string> {
     if (opts.signal?.aborted) return '';
     const retry = await this.provider.runTurn({
+      sessionKey: opts.sessionKey,
       messages: [
         ...history,
         { role: 'user', content: 'Answer my question now from the tool results above, in a few short sentences.' },

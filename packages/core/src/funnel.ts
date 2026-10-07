@@ -22,6 +22,7 @@
 import { Engine } from './engine.js';
 import type { ToolCrushOptions } from './context/compress.js';
 import type { ToolRegistry } from './tools/registry.js';
+import { defaultRenderFast } from './fastpath/render.js';
 import { FastPath, WALLET_FAST_INTENTS } from './fastpath/fastpath.js';
 import type { FastIntent } from './fastpath/fastpath.js';
 import { RecipeRegistry, runRecipe } from './recipe/runner.js';
@@ -176,18 +177,6 @@ export interface FunnelOptions {
   topKRag?: number;
 }
 
-function defaultRenderFast(intent: string, r: any): string {
-  if (intent === 'balance') {
-    const sats = Number(r?.total_sats ?? 0);
-    const n = r?.layers?.length ?? 0;
-    return `You have ${sats.toLocaleString()} sats${n > 1 ? ` across ${n} layers` : ''}.`;
-  }
-  if (intent === 'address') {
-    return r?.address ? `Here's your receive address:\n\n\`${r.address}\`` : 'No address available right now.';
-  }
-  return `Bitcoin is $${Number(r?.price_usd ?? 0).toLocaleString()}.`;
-}
-
 export class Funnel {
   private readonly provider: LLMProvider;
   private readonly registry: ToolRegistry;
@@ -251,9 +240,16 @@ export class Funnel {
     // tool — a partial tool surface (e.g. desktop without the core aggregate
     // helpers) falls through to the agentic tier instead of erroring.
     const fast = this.fastPath.select(text);
-    if (fast && (await this.registry.getDef(fast.tool))) {
-      this.log(`tier=fast-path → ${fast.tool}`);
-      const r = await this.registry.execute(fast.tool, fast.args);
+    let fastTool: string | undefined;
+    for (const name of fast?.tools ?? []) {
+      if (await this.registry.getDef(name)) {
+        fastTool = name;
+        break;
+      }
+    }
+    if (fast && fastTool) {
+      this.log(`tier=fast-path → ${fastTool}`);
+      const r = await this.registry.execute(fastTool, fast.args);
       return { text: this.renderFast(fast.intent.name, r), tier: 'fast', route: fast.intent.name, intent: fast.intent.name, data: r };
     }
 

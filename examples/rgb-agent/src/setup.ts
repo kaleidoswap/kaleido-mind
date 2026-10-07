@@ -83,6 +83,9 @@ export async function loadQvacProvider(
       completion: sdk.completion,
       cancel: sdk.cancel,
       getModelId: () => modelId,
+      // Each request's tool loop reuses the prompt already in the KV cache.
+      sessionCache: process.env.SESSION_CACHE !== '0',
+      deleteCache: sdk.deleteCache,
       defaultTemperature: 0.1,
       defaultMaxTokens: 1536,
       // Qwen3.5 ignores /no_think; this budget is what keeps a turn from

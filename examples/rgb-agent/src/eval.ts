@@ -35,6 +35,8 @@ interface Run {
   route?: string;
   tools: string[];
   gates: { name: string; summary?: string; approved: boolean }[];
+  /** Per model call: time to first token, duration, prompt tokens. */
+  inference?: { ttftMs?: number; durationMs: number; promptTokens?: number }[];
 }
 
 interface Scenario {
@@ -61,7 +63,7 @@ const SCENARIOS: Scenario[] = [
     id: 'assets',
     prompt: 'Which RGB assets do I hold, and what are the balances?',
     check: (r) =>
-      need(called(r, 'rln_list_assets', 'rln_get_asset_balance'), 'assets not listed') ??
+      need(r.tier === 'fast' || called(r, 'rln_list_assets', 'rln_get_asset_balance'), 'assets not listed') ??
       need(!/\d\s*(satoshis|sats?)\b/i.test(r.text), 'asset balances labelled as sats'),
   },
   {
@@ -124,7 +126,12 @@ try {
           return s.approve ? { approved: true } : { approved: false, reason: 'declined by the eval' };
         },
       });
-      Object.assign(run, { text: res.text, tier: res.tier, route: res.route });
+      Object.assign(run, {
+        text: res.text,
+        tier: res.tier,
+        route: res.route,
+        inference: res.inference?.map((i) => ({ ttftMs: i.ttftMs, durationMs: i.durationMs, promptTokens: i.promptTokens })),
+      });
     } catch (err) {
       error = err instanceof Error ? err.message : String(err);
     }

@@ -16,6 +16,8 @@ export interface FastIntent {
   name: string;
   /** Contract tool to call when this intent matches. */
   tool: string;
+  /** Equivalent tools to try, in order, when the host doesn't expose `tool`. */
+  fallbackTools?: string[];
   /** True only when this intent UNAMBIGUOUSLY matches the text. */
   match: (text: string) => boolean;
   /** Optional args derived from the text (default: none). */
@@ -24,7 +26,10 @@ export interface FastIntent {
 
 export interface FastHit {
   intent: FastIntent;
+  /** The intent's primary tool. */
   tool: string;
+  /** Primary tool first, then the fallbacks. */
+  tools: string[];
   args: Record<string, unknown>;
 }
 
@@ -42,24 +47,39 @@ export class FastPath {
   /** The first unambiguously-matching intent, or null. */
   select(text: string): FastHit | null {
     const intent = this.intents.find((i) => i.match(text));
-    return intent ? { intent, tool: intent.tool, args: intent.args?.(text) ?? {} } : null;
+    return intent
+      ? { intent, tool: intent.tool, tools: [intent.tool, ...(intent.fallbackTools ?? [])], args: intent.args?.(text) ?? {} }
+      : null;
   }
 }
 
 // A "spend or compound" guard — never fast-path anything that moves money or
 // chains another action ("send", "pay", "and then", "swap").
 const ACTIONY = /\b(send|pay|transfer|swap|buy|sell|then|after that)\b/i;
+// Asks that create something are not reads, even when they mention assets.
+const CREATEY = /\b(issue|mint|create|make|new|generate|invoice|receive|request)\b/i;
 
-/** Default wallet read intents (balance / receive address / price). */
+/** Default wallet read intents (balance / RGB assets / receive address / price). */
 export const WALLET_FAST_INTENTS: FastIntent[] = [
   {
     name: 'balance',
     tool: 'get_balances',
+    fallbackTools: ['rln_get_balances', 'wdk_get_balances'],
     match: (t) => !ACTIONY.test(t) && /\b(balance|funds|how much (do i|have i|i have)|how much.* (do i have|in my wallet))\b/i.test(t),
+  },
+  {
+    name: 'assets',
+    tool: 'rln_list_assets',
+    fallbackTools: ['wdk_list_assets'],
+    match: (t) =>
+      !ACTIONY.test(t) &&
+      !CREATEY.test(t) &&
+      /\b(which|what|list|show|my)\b[^.?!]*\b(rgb assets?|assets?|tokens?)\b|\b(rgb assets?|tokens?) (do i|i) (have|hold|own)\b/i.test(t),
   },
   {
     name: 'address',
     tool: 'spark_get_address',
+    fallbackTools: ['rln_get_address', 'wdk_get_address'],
     match: (t) => !ACTIONY.test(t) && /\b(receive address|deposit address|my address|an address|get .*address|where.* receive)\b/i.test(t),
   },
   {

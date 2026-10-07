@@ -224,6 +224,45 @@ describe('Engine agentic loop', () => {
     expect(seen).toEqual(['required', undefined]);
   });
 
+  it('passes one session key to every call of a run and ends the session', async () => {
+    const keys: Array<string | undefined> = [];
+    const ended: string[] = [];
+    const provider: LLMProvider = {
+      name: 'rec',
+      async runTurn(input) {
+        keys.push(input.sessionKey);
+        return keys.length === 1
+          ? { text: '', rawContent: '', toolCalls: [{ name: 'get_balance', arguments: {} }] }
+          : { text: 'done', rawContent: 'done', toolCalls: [] };
+      },
+      async endSession(key) {
+        ended.push(key);
+      },
+    };
+    const engine = new Engine({ provider, tools: freshTools() });
+    await engine.runAgentic([{ role: 'user', content: 'x' }]);
+    await engine.runAgentic([{ role: 'user', content: 'y' }]);
+    expect(keys[0]).toBeTruthy();
+    expect(keys[1]).toBe(keys[0]);
+    expect(keys[2]).not.toBe(keys[0]);
+    expect(ended).toEqual([keys[0], keys[2]]);
+  });
+
+  it('turns thinking off on the forced first call only', async () => {
+    const thinking: Array<string | undefined> = [];
+    const provider: LLMProvider = {
+      name: 'rec',
+      async runTurn(input) {
+        thinking.push(input.thinking);
+        return thinking.length === 1
+          ? { text: '', rawContent: '', toolCalls: [{ name: 'get_balance', arguments: {} }] }
+          : { text: 'done', rawContent: 'done', toolCalls: [] };
+      },
+    };
+    await new Engine({ provider, tools: freshTools() }).runAgentic([{ role: 'user', content: 'x' }], { firstTurnToolChoice: 'required' });
+    expect(thinking).toEqual(['off', undefined]);
+  });
+
   it('feeds an unparseable tool call back to the model once, then gives up cleanly', async () => {
     const histories: number[] = [];
     const provider: LLMProvider = {

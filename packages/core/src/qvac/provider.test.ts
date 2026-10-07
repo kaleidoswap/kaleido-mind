@@ -120,6 +120,26 @@ describe('createQvacProvider.runTurn', () => {
     expect(calls[0].generationParams).toEqual({ reasoning_budget: 128 });
   });
 
+  it("sends reasoning_budget 0 when a turn asks for thinking 'off'", async () => {
+    const { fn, calls } = fakeCompletion({ contentText: 'ok', toolCalls: [], raw: { fullText: 'ok' } });
+    const p = createQvacProvider({ completion: fn as any, cancel: noopCancel, getModelId: () => 'm1', maxThinkingTokens: 128 });
+    await p.runTurn({ messages: [{ role: 'user', content: 'x' }], tools: [], thinking: 'off' });
+    expect(calls[0].generationParams).toEqual({ reasoning_budget: 0 });
+  });
+
+  it('uses the session key as kvCache when sessionCache is on, and deletes it at the end', async () => {
+    const { fn, calls } = fakeCompletion({ contentText: 'ok', toolCalls: [], raw: { fullText: 'ok' } });
+    const deleted: unknown[] = [];
+    const on = createQvacProvider({ completion: fn as any, cancel: noopCancel, getModelId: () => 'm1', sessionCache: true, deleteCache: (async (p: unknown) => void deleted.push(p)) as any });
+    const off = createQvacProvider({ completion: fn as any, cancel: noopCancel, getModelId: () => 'm1' });
+    await on.runTurn({ messages: [{ role: 'user', content: 'x' }], tools: [], sessionKey: 'run-1' });
+    await off.runTurn({ messages: [{ role: 'user', content: 'x' }], tools: [], sessionKey: 'run-1' });
+    await on.endSession!('run-1');
+    expect(calls[0].kvCache).toBe('run-1');
+    expect(calls[1].kvCache).toBeUndefined();
+    expect(deleted).toEqual([{ kvCacheKey: 'run-1' }]);
+  });
+
   it('keeps the reasoning budget below the output cap', async () => {
     const { fn, calls } = fakeCompletion({ contentText: 'ok', toolCalls: [], raw: { fullText: 'ok' } });
     const p = createQvacProvider({ completion: fn as any, cancel: noopCancel, getModelId: () => 'm1', defaultMaxTokens: 512, maxThinkingTokens: 512 });

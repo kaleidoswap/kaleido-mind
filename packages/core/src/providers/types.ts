@@ -23,6 +23,17 @@ export interface TurnInput {
    * empty or the provider has no such control.
    */
   toolChoice?: ToolChoice;
+  /**
+   * `'off'` asks the provider to skip reasoning for this turn (e.g. a forced
+   * tool call). Ignored by providers without reasoning control.
+   */
+  thinking?: 'off';
+  /**
+   * Same value on every call of one agentic run, whose history only grows.
+   * Providers with a session cache (QVAC `kvCache`) can then send only the new
+   * message instead of the whole prompt.
+   */
+  sessionKey?: string;
   /** Visible content tokens as they stream. */
   onToken?: (token: string) => void;
   signal?: AbortSignal;
@@ -82,6 +93,8 @@ export interface LLMProvider {
   readonly name: string;
   /** Run one completion turn. */
   runTurn(input: TurnInput): Promise<TurnOutput>;
+  /** Drop whatever the provider cached for `sessionKey` (end of an agentic run). */
+  endSession?(sessionKey: string): Promise<void>;
   /** Cancel an in-flight turn by request id, if the provider supports it. */
   cancel?(requestId: string): Promise<void>;
 }
