@@ -107,6 +107,8 @@ export interface AgenticOptions {
    * made-up data. Later rounds are left to the model.
    */
   firstTurnToolChoice?: ToolChoice;
+  /** Session key passed to every model call of this run. Default: a fresh key per run. */
+  sessionKey?: string;
   signal?: AbortSignal;
 }
 
@@ -179,6 +181,15 @@ export class Engine {
   }
 
   async runAgentic(messages: Message[], opts: AgenticOptions = {}): Promise<AgenticResult> {
+    const sessionKey = opts.sessionKey ?? `mind-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    try {
+      return await this.runAgenticSession(messages, { ...opts, sessionKey });
+    } finally {
+      if (!opts.sessionKey) await this.provider.endSession?.(sessionKey).catch(() => {});
+    }
+  }
+
+  private async runAgenticSession(messages: Message[], opts: AgenticOptions): Promise<AgenticResult> {
     const maxTurns = opts.maxTurns ?? this.defaultMaxTurns;
     const hasSystem = messages.some((m) => m.role === 'system');
     const system = hasSystem ? undefined : this.defaultSystem;
@@ -215,6 +226,7 @@ export class Engine {
       if (opts.signal?.aborted) break;
 
       const out = await this.provider.runTurn({
+      sessionKey: opts.sessionKey,
         messages: history,
         tools: allTools,
         system,
@@ -320,6 +332,7 @@ export class Engine {
 
       if (repeatedAgain) {
         const forced = await this.provider.runTurn({
+      sessionKey: opts.sessionKey,
           messages: history,
           tools: [],
           system,
@@ -381,6 +394,7 @@ export class Engine {
   ): Promise<string> {
     if (opts.signal?.aborted) return '';
     const retry = await this.provider.runTurn({
+      sessionKey: opts.sessionKey,
       messages: [
         ...history,
         { role: 'user', content: 'Answer my question now from the tool results above, in a few short sentences.' },

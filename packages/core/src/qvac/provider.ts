@@ -24,6 +24,7 @@ import { toQvacTools } from './tools.js';
 
 type CompletionFn = typeof QvacSdk.completion;
 type CancelFn = typeof QvacSdk.cancel;
+type DeleteCacheFn = typeof QvacSdk.deleteCache;
 
 export interface QvacProviderOptions {
   /** The SDK's `completion` (injected — see module docs). */
@@ -48,6 +49,14 @@ export interface QvacProviderOptions {
    * unlimited reasoning.
    */
   maxThinkingTokens?: number;
+  /**
+   * Keep each agentic run in a QVAC KV-cache session (`kvCache: sessionKey`),
+   * so calls after the first send only the new message instead of re-reading
+   * the whole prompt. Needs `deleteCache` to drop the session at the end.
+   */
+  sessionCache?: boolean;
+  /** The SDK's `deleteCache` (injected); used with `sessionCache`. */
+  deleteCache?: DeleteCacheFn;
   /** Stream the model's `<think>` reasoning, when a host wants to surface it. */
   onThinking?: (token: string) => void;
   /**
@@ -119,6 +128,7 @@ export function createQvacProvider(options: QvacProviderOptions): LLMProvider {
         // Split `<think>` into separate thinkingDelta events so reasoning never
         // pollutes the visible answer.
         captureThinking: true,
+        ...(options.sessionCache && input.sessionKey ? { kvCache: input.sessionKey } : {}),
         ...(generationParams ? { generationParams } : {}),
         ...(tools ? { tools } : {}),
       } as unknown as Parameters<CompletionFn>[0]);
@@ -199,6 +209,15 @@ export function createQvacProvider(options: QvacProviderOptions): LLMProvider {
         inference,
         ...(incomplete ? { incomplete: true } : {}),
       };
+    },
+
+    async endSession(sessionKey: string): Promise<void> {
+      if (!options.sessionCache || !options.deleteCache) return;
+      try {
+        await options.deleteCache({ kvCacheKey: sessionKey });
+      } catch (err) {
+        console.warn('[qvac] deleteCache failed:', err);
+      }
     },
 
     async cancel(requestId: string): Promise<void> {
