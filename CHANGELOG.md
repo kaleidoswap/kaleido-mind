@@ -5,6 +5,41 @@ apps) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] — 2026-10-07
+
+Requires `@qvac/sdk` 0.20 or later. `@kaleidorg/mind` 0.9.0,
+`@kaleidorg/mind-provider` 0.9.0, `@kaleidorg/create-mind` 0.2.0.
+
+### Removed
+
+- P2P delegated inference: `allowListFirewall`, `denyListFirewall`,
+  `firewallFromKeyList`, `buildDelegateConfig` and their types are gone from
+  `@kaleidorg/mind/qvac`. `@qvac/sdk` 0.19 removed the provider API they
+  configured. To run the model on another machine, use an OpenAI-compatible
+  server with `@kaleidorg/mind/openai`.
+- Provider app: no P2P bootstrap and no Whisper/TTS models for paired phones.
+  The status snapshot still carries `publicKey`, `sttReady` and `ttsReady`
+  (always `null`/`false`) for protocol compatibility.
+- QVAC provider: the cancel-at-cap thinking backstop and its fallback message.
+  `reasoning_budget` bounds reasoning and the output cap bounds the turn.
+
+### Changed
+
+- Peer dependency `@qvac/sdk >= 0.20.0` (was `>= 0.13.1`); the provider sends
+  `tool_choice` and `reasoning_budget`, which older SDKs reject or ignore.
+- `capabilityProfile({ delegated })` → `capabilityProfile({ remote })`;
+  evidence `model.source` `'delegated'` → `'remote'`.
+- Engine internals: run state in one object, `callModel` / `executeCall`
+  extracted, and `engine/answer.ts` holds the fixed replies and
+  `finalizeAnswer`, the single place that decides what reaches the user.
+  Behaviour unchanged.
+
+### Added
+
+- Subpath exports for the domain packs: `@kaleidorg/mind/kaleidoswap`,
+  `/lsps1`, `/submarine`, `/bitrefill`, `/flashnet`, `/knowledge`. The root
+  still re-exports them; 1.0 drops those re-exports.
+
 ## [0.8.1] — 2026-10-07
 
 Faster requests on small local models. Measured with the rgb-agent eval
