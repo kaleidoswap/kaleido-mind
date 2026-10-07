@@ -11,7 +11,7 @@
  * `{role:'tool'}` results into history each round, loop until the model stops
  * calling tools. Money tools pause for an `onConfirm` gate; their handlers run
  * wherever the ToolSource lives (on the phone for the wallet), even when
- * inference is delegated to a remote provider.
+ * inference runs on a remote server.
  */
 
 import type { ConfirmDecision, Message, ToolResult } from './types.js';

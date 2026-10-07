@@ -20,8 +20,8 @@ changes. This makes skills portable and the model comparison honest.
      no CLI                        + CLI                         (benchmark)
   in-process funcs            one MCP, namespaced            stub handlers
   → WDK adapters              (spark_* rln_* arkade_*)       (canned, repro)
-  (local default) ──P2P──▶    + `kaleido` CLI mirror
-  delegate optional
+  (local default)             + `kaleido` CLI mirror
+  remote model optional
   confirm → UI sheet          confirm → dialog               auto-approve
 ```
 
@@ -33,13 +33,13 @@ changes. This makes skills portable and the model comparison honest.
   (core). The MCP server, the mobile in-process source, and the CLI all import
   the same schemas — one source of truth.
 - **Mobile execution:** **in-process by default** (WDK adapters, fully on-device
-  + private); **P2P-delegate to a paired desktop's MCP optional** for heavy work.
+  + private); a larger remote model (OpenAI-compatible server) is optional for heavy work.
 
 ## 2. Cross-surface transport matrix
 
 | | Mobile (rate) | Desktop (Tauri) | Eval |
 |---|---|---|---|
-| Reasoning | QVAC on-device / delegated | QVAC local (sidecar) | QVAC |
+| Reasoning | QVAC on-device | QVAC local (sidecar) or an OpenAI-compatible server | QVAC |
 | Tool execution | in-process → WDK adapters | `kaleido-mcp` (namespaced) **+ CLI** | stubs |
 | Tool source | `InProcessToolSource` | `McpToolSource` (+ `createCliToolSource`) | stub source |
 | Mechanisms tested | `fc`, `skill` | `fc`, `mcp`, `skill`, `cli` | all |

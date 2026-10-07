@@ -4,7 +4,7 @@
  * injected (type-only `@qvac/sdk` import, erased at build) so this carries no
  * runtime SDK dependency and is unit-testable with fakes.
  *
- * The host still owns model lifecycle (download, load, local-vs-delegated) and
+ * The host still owns model lifecycle (download, load) and
  * audio I/O (mic capture, playback). It passes the loaded model-id resolvers;
  * this module does the SDK calls + the text gating that must be identical
  * everywhere (payment-string redaction, U+0060 refusal, file:// stripping).

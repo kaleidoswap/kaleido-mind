@@ -37,7 +37,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@qvac/sdk':
-        specifier: '*'
+        specifier: ^0.21.0
         version: 0.21.0(bare-fetch@3.4.0(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-pipe@4.3.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)))(bare-pipe@4.3.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))(bare-tcp@2.6.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)(bare-pipe@4.3.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)))(bare-url@2.5.4)(tsx@4.23.15)
       '@scure/bip39':
         specifier: ^2.4.0
@@ -59,7 +59,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@qvac/sdk':
-        specifier: '*'
+        specifier: ^0.21.0
         version: 0.21.0(bare-fetch@3.4.0(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-pipe@4.3.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)))(bare-pipe@4.3.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))(bare-tcp@2.6.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)(bare-pipe@4.3.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)))(bare-url@2.5.4)(tsx@4.23.15)
     devDependencies:
       '@types/node':

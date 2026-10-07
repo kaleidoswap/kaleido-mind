@@ -10,11 +10,10 @@
  * desktop sidecar its lazily-loaded SDK facade — which also makes this provider
  * unit-testable with a fake completion.
  *
- * The host owns model lifecycle (load/unload, local-vs-delegated) and passes
+ * The host owns model lifecycle (load/unload) and passes
  * `getModelId()` so a turn always runs against the currently-loaded model.
  * Tools are forwarded by schema only; the Engine executes them via its
- * ToolSources, so signing/spending stays on the host even when inference is
- * delegated to a desktop peer.
+ * ToolSources, so signing and spending stay on the host.
  */
 import type * as QvacSdk from '@qvac/sdk';
 import type { InferenceMetrics, LLMProvider, TurnInput, TurnOutput } from '../providers/types.js';

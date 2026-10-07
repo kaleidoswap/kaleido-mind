@@ -1,5 +1,9 @@
 # KaleidoMind — Master Plan
 
+> P2P delegation to a paired desktop, mentioned below, used QVAC's provider
+> API, which `@qvac/sdk` 0.19 removed. A remote model is now reached through an
+> OpenAI-compatible server (`@kaleidorg/mind/openai`).
+
 Consolidated execution plan: architecture, the mobile-optimized agent (incl.
 multi-step on a phone), skills, safety, the eval, and the phased roadmap.
 Design rationale lives in [ARCHITECTURE.md](./ARCHITECTURE.md); methodology
@@ -106,7 +110,7 @@ exceptions for better NL handling).
 | Mode | Where | How |
 |---|---|---|
 | **Recipe** | mobile default | skill = ordered plan; 1 structured extraction (+ optional model-assisted via `forceModelExtract` for complex cases like atomic swaps, with precision fallbacks) + deterministic execution |
-| **Free agentic** | desktop / delegated | model plans each step in a full loop |
+| **Free agentic** | desktop / remote model | model plans each step in a full loop |
 
 Implementation: a lightweight **Recipe** abstraction — a skill may declare an
 ordered list of steps (deterministic tool calls + the one LLM extraction). The

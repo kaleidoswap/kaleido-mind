@@ -69,8 +69,8 @@ describe('capabilityProfile', () => {
     expect(c.mergeMemory).toBe(false); // never run merge inference on a tiny phone
   });
 
-  it('desktop / delegated: RAG on, memory merge on', () => {
-    const c = capabilityProfile({ modelCtxTokens: 8192, hasEmbeddings: true, delegated: true });
+  it('remote model: RAG on, memory merge on', () => {
+    const c = capabilityProfile({ modelCtxTokens: 8192, hasEmbeddings: true, remote: true });
     expect(c.rag).toBe(true);
     expect(c.topKRag).toBeGreaterThan(0);
     expect(c.semanticMemory).toBe(true);

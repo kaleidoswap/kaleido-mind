@@ -1,6 +1,6 @@
 # Function Calling — design
 
-How KaleidoMind turns "pay Alice 5000 sats" into a signed Lightning payment, whether the model runs on the phone or on a delegated desktop.
+How KaleidoMind turns "pay Alice 5000 sats" into a signed Lightning payment, whether the model runs on the phone or on a remote server.
 
 All findings below are verified against `@qvac/sdk@0.12.0` source in `rate/node_modules/@qvac/sdk`.
 
@@ -28,7 +28,7 @@ Requirements:
 
 ### The handler runs on the CONSUMER, always
 
-`utils/tool-helpers.d.ts` → `attachHandlersToToolCalls(toolCalls, handlers)`. The handler map is **client-side**. `call.invoke()` executes the local handler **on the device that called `completion()`** — i.e. the phone — even when inference is delegated to a remote provider.
+`utils/tool-helpers.d.ts` → `attachHandlersToToolCalls(toolCalls, handlers)`. The handler map is **client-side**. `call.invoke()` executes the local handler **on the device that called `completion()`** — i.e. the phone — even when the model runs on a remote server.
 
 **This is the security model, and it's free:**
 
@@ -174,5 +174,5 @@ Removes the current `pending`-tool re-invocation dance (lines 435-449) — the l
 
 1. **Per-turn cancel** — `cancelRequest(requestId)` cancels one `completion`. The loop generates a new requestId per turn; the stop button must cancel the *current* turn's id and break the loop. Track the live requestId in the loop.
 2. **Context growth** — each turn appends assistant+tool messages. For long chains the history grows; rely on `kvCache` + a turn cap. Summarize/trim if we ever hit ctx limits on small mobile models.
-3. **Small-model reliability** — Qwen3-0.6B may mis-call tools. The bench harness (`docs/BENCHMARK.md`) measures tool-selection accuracy; if 0.6B is weak, delegation to the desktop 14B/30B is the answer (and the demo).
+3. **Small-model reliability** — Qwen3-0.6B may mis-call tools. The bench harness (`docs/BENCHMARK.md`) measures tool-selection accuracy; if a small model is weak, a larger model on a remote OpenAI-compatible server is the answer.
 4. **Tool errors** — a handler throw becomes `{ error }` fed back; the model should apologize/retry. Cap retries to avoid loops on a persistently failing tool.

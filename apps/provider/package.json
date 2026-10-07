@@ -31,7 +31,7 @@
     "@modelcontextprotocol/sdk": "^1.32.1"
   },
   "peerDependencies": {
-    "@qvac/sdk": ">=0.13.5"
+    "@qvac/sdk": ">=0.20.0"
   },
   "devDependencies": {
     "@qvac/sdk": "^0.21.0",

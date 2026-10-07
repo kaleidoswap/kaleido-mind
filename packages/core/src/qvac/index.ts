@@ -75,11 +75,3 @@ export {
   type VoiceTranscriptEvent,
 } from './assistant.js';
 
-export {
-  allowListFirewall,
-  denyListFirewall,
-  firewallFromKeyList,
-  buildDelegateConfig,
-  type ProviderFirewall,
-  type DelegateConfig,
-} from './delegate.js';

@@ -27,7 +27,7 @@ export interface EvidenceEvent {
   model?: {
     name: string;
     version?: string;
-    source?: 'local' | 'delegated';
+    source?: 'local' | 'remote';
   };
   hardware?: {
     device: string;

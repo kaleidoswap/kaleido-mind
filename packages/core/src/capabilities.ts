@@ -16,8 +16,8 @@ export interface CapabilityInput {
   modelCtxTokens: number;
   /** Whether an EmbeddingProvider is wired (QVAC embed, etc.). */
   hasEmbeddings?: boolean;
-  /** Running inference on a remote provider (desktop/server) — relaxes limits. */
-  delegated?: boolean;
+  /** Inference runs on a larger remote model (e.g. an OpenAI-compatible server) — relaxes limits. */
+  remote?: boolean;
 }
 
 export interface MindCapabilities {
@@ -27,7 +27,7 @@ export interface MindCapabilities {
   semanticMemory: boolean;
   /** Embedding-only dedup of near-duplicate memories (zero inference — mobile-safe). */
   dedupeMemory: boolean;
-  /** LLM merge of near-duplicate memories (an extra inference — capable/delegated only). */
+  /** LLM merge of near-duplicate memories (an extra inference — capable/remote only). */
   mergeMemory: boolean;
   /** Retrieval-augmented generation (needs embeddings + enough RAM/context). */
   rag: boolean;
@@ -42,7 +42,7 @@ export interface MindCapabilities {
 const GiB = 1024 * 1024 * 1024;
 
 export function capabilityProfile(input: CapabilityInput): MindCapabilities {
-  const ramGb = input.delegated ? Infinity : (input.ramBytes ?? 0) / GiB;
+  const ramGb = input.remote ? Infinity : (input.ramBytes ?? 0) / GiB;
   const ctx = input.modelCtxTokens;
   const hasEmb = !!input.hasEmbeddings;
 
@@ -54,13 +54,13 @@ export function capabilityProfile(input: CapabilityInput): MindCapabilities {
 
   // Consolidation: embedding-only dedup is cheap (no inference) — on wherever
   // semantic memory is. The LLM merge costs an extra inference, so reserve it
-  // for delegated or roomy on-device setups; never run it on a tiny phone model.
+  // for remote or roomy on-device setups; never run it on a tiny phone model.
   const dedupeMemory = semanticMemory;
-  const mergeMemory = dedupeMemory && (input.delegated || (ramGb >= 4 && ctx >= 4096));
+  const mergeMemory = dedupeMemory && (input.remote || (ramGb >= 4 && ctx >= 4096));
 
   // RAG is the expensive one: needs embeddings, a non-tiny context window, and
   // (on-device) enough RAM to hold an embedding model + index.
-  const rag = hasEmb && ctx >= 4096 && (input.delegated || ramGb >= 3);
+  const rag = hasEmb && ctx >= 4096 && (input.remote || ramGb >= 3);
 
   // Scale how much we pull in with the available window.
   const topKMemory = budget >= 1500 ? 4 : budget >= 700 ? 3 : 2;

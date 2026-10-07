@@ -1,5 +1,9 @@
 # Model Management — UX spec for `rate`
 
+> P2P delegation to a paired desktop, mentioned below, used QVAC's provider
+> API, which `@qvac/sdk` 0.19 removed. A remote model is now reached through an
+> OpenAI-compatible server (`@kaleidorg/mind/openai`).
+
 A dedicated screen in the `rate` mobile app where users see, download, switch and configure their on-device models, and pair / unpair with a desktop peer for delegation.
 
 This screen is the **runtime control surface** for KaleidoMind on mobile. Everything else (chat, voice, tool calls) is downstream of choices made here.

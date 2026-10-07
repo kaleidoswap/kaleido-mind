@@ -33,11 +33,11 @@ needs no model. To connect MCP servers, also install
 
 | `@qvac/sdk` | Status |
 |---|---|
-| 0.19 – 0.21 | Supported (tested with 0.21.0). There is no P2P delegated inference: QVAC removed `startQVACProvider` / `loadModel({ delegate })` in 0.19. |
-| 0.13.1 – 0.18 | Supported, including P2P delegation (`buildDelegateConfig`, `allowListFirewall`). |
+| 0.20 – 0.21 | Supported (tested with 0.21.0). |
+| < 0.20 | Not supported from mind 0.9: the provider sends `tool_choice` and `reasoning_budget`, which older SDKs reject or ignore. Use mind 0.8.x. |
 
 The Qwen3.5 model constants used below (`QWEN3_5_*_MULTIMODAL_Q4_K_M`) exist in
-every supported `@qvac/sdk` version (0.13.1+).
+every supported `@qvac/sdk` version.
 
 ## Models
 
