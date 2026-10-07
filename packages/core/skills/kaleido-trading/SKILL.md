@@ -1,18 +1,22 @@
 ---
 name: kaleido-trading
 description: "Quote and run KaleidoSwap atomic swaps between BTC and RGB assets (USDT, XAUT): pairs, assets, quotes, swap execution and swap status."
-tools: kaleidoswap_get_pairs, kaleidoswap_get_assets, kaleidoswap_get_quote, kaleidoswap_atomic_init, rln_atomic_taker, rln_get_node_info, kaleidoswap_atomic_execute, kaleidoswap_atomic_status, rln_refresh_transfers
+tools: kaleidoswap_get_pairs, kaleidoswap_get_assets, kaleidoswap_get_quote, kaleidoswap_atomic_init, rln_atomic_taker, rln_get_node_info, kaleidoswap_atomic_execute, kaleidoswap_atomic_status, rln_refresh_transfers, rln_list_channels
 requires-tools: kaleidoswap_get_quote
 triggers: quote, swap, trade, pair, pairs, usdt, xaut, kaleidoswap, rfq, atomic, swap status
 metadata:
   author: kaleidoswap
-  version: "0.6.0"
+  version: "0.7.0"
 ---
 # KaleidoSwap trading
 
 Amounts in `kaleidoswap_get_quote` are **display units**: `from_amount: 0.0005`
 means 0.0005 BTC (50,000 sats; 1 BTC = 100,000,000 sats). Asset ids accept a
 ticker (`BTC`, `USDT`, `XAUT`) or an `rgb:…` id.
+
+A swap runs over Lightning: it needs a channel with enough outbound in the
+asset you send and enough inbound in the asset you receive. If
+`rln_list_channels` shows none, buy one first (see `channel-manager`).
 
 ## Do
 - Quote with exactly one amount: `from_amount` to sell a fixed input,

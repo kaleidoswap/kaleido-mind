@@ -197,6 +197,7 @@ describe('skill selection by surface', () => {
     ['Create a Lightning invoice for 5000 sats.', 'rgb-lightning-node'],
     ["what's my balance?", 'rgb-lightning-node'],
     ['buy 500k sats of inbound liquidity', 'channel-manager'],
+    ['I want to swap BTC for USDT but I have no channel. Buy me a channel from the KaleidoSwap LSP.', 'channel-manager'],
     ['unlock my node', 'kaleido-node'],
     ['pay lntbs10u1pexample with L-USDT', 'submarine-swaps'],
   ])('kaleido-mcp: %s → %s', (query, expected) => {

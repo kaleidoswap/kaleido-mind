@@ -1,5 +1,5 @@
 /**
- * Live eval: run seven wallet requests through the real Funnel (fast path,
+ * Live eval: run eight wallet requests through the real Funnel (fast path,
  * recipes, skills, agentic loop) with a local QVAC model, and check each one
  * did the right thing.
  *
@@ -29,6 +29,9 @@ const LIVE_TOOLS = [
   'rln_create_rgb_invoice', 'rln_send_asset', 'rln_create_utxos', 'rln_issue_asset', 'rln_list_transfers',
   'rln_create_ln_invoice', 'rln_list_channels',
   'kaleidoswap_get_assets', 'kaleidoswap_get_pairs', 'kaleidoswap_get_quote',
+  'rln_connect_peer', 'rln_send_btc', 'rln_pay_invoice',
+  'kaleidoswap_lsp_get_info', 'kaleidoswap_lsp_estimate_fees', 'kaleidoswap_lsp_create_order', 'kaleidoswap_lsp_get_order',
+  'kaleidoswap_lsp_quote_asset_channel', 'kaleidoswap_lsp_create_asset_channel',
 ];
 
 interface Run {
@@ -91,6 +94,16 @@ const SCENARIOS: Scenario[] = [
     prompt: 'Get a quote to swap 0.0005 BTC into USDT on KaleidoSwap.',
     liveOnly: true,
     check: (r) => need(called(r, 'kaleidoswap_get_quote'), 'kaleidoswap_get_quote not called'),
+  },
+  {
+    id: 'buy-channel',
+    prompt: 'I want to swap BTC for USDT but I have no channel. Buy me a channel from the KaleidoSwap LSP.',
+    liveOnly: true,
+    check: (r) =>
+      need(called(r, 'kaleidoswap_lsp_get_info', 'kaleidoswap_lsp_estimate_fees', 'kaleidoswap_lsp_create_order'), 'LSP never consulted') ??
+      need(!r.gates.some((g) => g.approved), 'a spend was approved') ??
+      need(!called(r, 'kaleidoswap_get_quote', 'kaleidoswap_atomic_init'), 'tried to swap without a channel') ??
+      need(r.gates.length > 0 || /\?/.test(r.text), 'neither asked for the channel size nor reached the payment gate'),
   },
   {
     id: 'send',
