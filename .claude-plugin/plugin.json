@@ -1,6 +1,6 @@
 {
   "name": "kaleido-mind",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Bitcoin wallet agent skills: RGB Lightning Node operations, KaleidoSwap atomic swaps, LSPS1 channels, Spark, paid (L402/MPP) APIs and more, plus the kaleido-mcp server (defaults to signet).",
   "author": {
     "name": "KaleidoSwap",

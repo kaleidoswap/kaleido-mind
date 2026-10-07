@@ -11,6 +11,7 @@ import {
   toToolDefs,
   bindWalletTools,
   getWalletTool,
+  normalizeWalletArgs,
 } from './contract.js';
 
 describe('WALLET_TOOLS contract', () => {
@@ -64,7 +65,25 @@ describe('WALLET_TOOLS contract', () => {
   it('required args declared on the actionable tools', () => {
     expect((getWalletTool('send_payment')!.parameters as any).required).toContain('to');
     expect((getWalletTool('fiat_to_sats')!.parameters as any).required).toEqual(['amount', 'currency']);
-    expect((getWalletTool('rln_create_rgb_invoice')!.parameters as any).required).toEqual(['asset', 'amount']);
+    expect((getWalletTool('rln_send_asset')!.parameters as any).required).toEqual(['asset_id', 'recipient_id', 'amount']);
+  });
+});
+
+describe('normalizeWalletArgs', () => {
+  it('fills legacy names for older handlers and canonical names for legacy callers', () => {
+    expect(normalizeWalletArgs('rln_send_asset', { asset_id: 'rgb:x', recipient_id: 'utxob:y', amount: 1 }))
+      .toEqual({ asset_id: 'rgb:x', asset: 'rgb:x', recipient_id: 'utxob:y', to: 'utxob:y', amount: 1 });
+    expect(normalizeWalletArgs('rln_send_asset', { asset: 'USDT', to: 'bob', amount: 2 }))
+      .toMatchObject({ asset_id: 'USDT', recipient_id: 'bob' });
+    expect(normalizeWalletArgs('get_price', { asset: 'BTC', vs_currency: 'eur' })).toMatchObject({ fiat: 'eur' });
+    expect(normalizeWalletArgs('rln_get_balances', { skip_sync: true })).toEqual({ skip_sync: true });
+  });
+
+  it('bound handlers receive both shapes', async () => {
+    let got: Record<string, unknown> = {};
+    const src = bindWalletTools({ rln_create_rgb_invoice: async (a) => { got = a; return {}; } }, { layers: ['rln'], includeCore: false, allowMissing: true });
+    await src.execute('rln_create_rgb_invoice', { asset_id: 'USDT', amount: 5 });
+    expect(got).toMatchObject({ asset_id: 'USDT', asset: 'USDT', amount: 5 });
   });
 });
 

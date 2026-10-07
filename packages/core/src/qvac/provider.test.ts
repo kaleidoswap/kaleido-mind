@@ -123,6 +123,23 @@ describe('createQvacProvider.runTurn', () => {
     expect(deleted).toEqual([{ kvCacheKey: 'run-1' }]);
   });
 
+  it('retries a turn without reasoning when the tool grammar rejects the inserted </think>', async () => {
+    const calls: any[] = [];
+    const fn = (params: any) => {
+      calls.push(params);
+      if (calls.length === 1) throw new Error('Unexpected empty grammar stack after accepting piece: </think> (248069)');
+      return { requestId: 'req-2', events: (async function* () {})(), final: Promise.resolve({ contentText: 'ok', toolCalls: [], raw: { fullText: 'ok' } }) };
+    };
+    const p = createQvacProvider({ completion: fn as any, cancel: noopCancel, getModelId: () => 'm1', maxThinkingTokens: 128 });
+    const out = await p.runTurn({ messages: [{ role: 'user', content: 'x' }], tools: [] });
+    expect(out.text).toBe('ok');
+    expect(calls.map((c) => c.generationParams?.reasoning_budget)).toEqual([128, 0]);
+    await expect(
+      createQvacProvider({ completion: (() => { throw new Error('boom'); }) as any, cancel: noopCancel, getModelId: () => 'm1' })
+        .runTurn({ messages: [{ role: 'user', content: 'x' }], tools: [] }),
+    ).rejects.toThrow('boom');
+  });
+
   it('keeps the reasoning budget below the output cap', async () => {
     const { fn, calls } = fakeCompletion({ contentText: 'ok', toolCalls: [], raw: { fullText: 'ok' } });
     const p = createQvacProvider({ completion: fn as any, cancel: noopCancel, getModelId: () => 'm1', defaultMaxTokens: 512, maxThinkingTokens: 512 });

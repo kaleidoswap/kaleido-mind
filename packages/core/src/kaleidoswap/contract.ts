@@ -70,14 +70,16 @@ export const KALEIDOSWAP_TOOLS: KaleidoswapToolDef[] = [
 
   t('market',
     'kaleidoswap_get_quote',
-    'Get an executable quote for swapping a specific amount on one pair. Returns a quote id (use it with atomic_init), the expected receive amount, fees, slippage, and how long the quote is valid for. Re-quote rather than reusing a stale id.',
+    'Get an executable quote for one pair. Amounts are DISPLAY units (0.0005 = 0.0005 BTC = 50,000 sats). Give exactly one of from_amount (sell a fixed input) or to_amount (buy a fixed output). Returns rfq_id, from_asset/to_asset with amount_display and amount_raw, price and expires_at (~60s).',
     {
-      from_asset: { type: 'string', description: 'Asset to spend, e.g. "BTC" or "USDT".' },
-      to_asset:   { type: 'string', description: 'Asset to receive, e.g. "USDT" or "BTC".' },
-      amount:     { type: 'number', description: 'Amount of from_asset to swap. BTC is in satoshis; RGB assets use their asset-defined precision.' },
-      side:       { type: 'string', enum: ['buy', 'sell'], description: 'Default "sell" (you sell from_asset). Use "buy" only when from_asset is the quote currency you spend to acquire to_asset.' },
+      from_asset_id: { type: 'string', description: "Asset to sell: ticker ('BTC', 'USDT') or RGB id ('rgb:…')." },
+      to_asset_id:   { type: 'string', description: "Asset to buy: ticker ('USDT', 'BTC') or RGB id ('rgb:…')." },
+      from_layer:    { type: 'string', description: "Optional: 'BTC_LN', 'RGB_LN', 'BTC_SPARK'. Derived from the asset when omitted." },
+      to_layer:      { type: 'string', description: "Optional: 'RGB_LN', 'BTC_LN', 'BTC_SPARK'. Derived from the asset when omitted." },
+      from_amount:   { type: 'number', description: 'Amount to SELL in display units (e.g. 0.001 BTC, 10 USDT).' },
+      to_amount:     { type: 'number', description: 'Amount to BUY in display units (e.g. 10 USDT).' },
     },
-    ['from_asset', 'to_asset', 'amount']),
+    ['from_asset_id', 'to_asset_id']),
 
   t('market',
     'kaleidoswap_get_nodeinfo',
@@ -86,30 +88,36 @@ export const KALEIDOSWAP_TOOLS: KaleidoswapToolDef[] = [
   // ─── atomic (the trust-minimised swap chain — used by the recipe) ───────
   t('atomic',
     'kaleidoswap_atomic_init',
-    "Initialise an atomic swap from a quote. Requires the receiver's RGB/LN invoice so the maker can lock the outgoing leg. SPEND: confirmation-gated. Returns the maker's invoice for the user to pay and an atomic id to track.",
+    'Start an atomic swap from a fresh quote. SPEND: confirmation-gated. Pass the quote rfq_id, both asset ids and the quote legs\' amount_raw values unchanged. Returns swapstring, payment_hash and access_token (keep it for status).',
     {
-      quote_id:        { type: 'string', description: 'The quote id from kaleidoswap_get_quote.' },
-      receive_invoice: { type: 'string', description: "The user's RGB or Lightning invoice for to_asset, created on the user's own node." },
+      rfq_id:          { type: 'string', description: 'rfq_id from kaleidoswap_get_quote.' },
+      from_asset_id:   { type: 'string', description: 'from_asset.asset_id from the quote.' },
+      from_amount_raw: { type: 'integer', description: 'from_asset.amount_raw from the quote, unchanged.' },
+      to_asset_id:     { type: 'string', description: 'to_asset.asset_id from the quote.' },
+      to_amount_raw:   { type: 'integer', description: 'to_asset.amount_raw from the quote, unchanged.' },
     },
-    ['quote_id', 'receive_invoice'],
+    ['rfq_id', 'from_asset_id', 'from_amount_raw', 'to_asset_id', 'to_amount_raw'],
     /* spend */ true),
 
   t('atomic',
     'kaleidoswap_atomic_execute',
-    "Tell the maker to release the receive leg now that the user has paid the maker's invoice. SPEND: confirmation-gated (committing the swap). Returns an updated atomic status.",
+    'Confirm the swap after rln_atomic_taker whitelisted the swapstring. SPEND: confirmation-gated. taker_pubkey is the pubkey from rln_get_node_info.',
     {
-      atomic_id: { type: 'string', description: 'The atomic id from kaleidoswap_atomic_init.' },
+      swapstring:   { type: 'string', description: 'swapstring from kaleidoswap_atomic_init.' },
+      taker_pubkey: { type: 'string', description: 'Node pubkey from rln_get_node_info.' },
+      payment_hash: { type: 'string', description: 'payment_hash from kaleidoswap_atomic_init.' },
     },
-    ['atomic_id'],
+    ['swapstring', 'taker_pubkey', 'payment_hash'],
     /* spend */ true),
 
   t('atomic',
     'kaleidoswap_atomic_status',
-    'Poll the status of an atomic swap — pending_payment / paid / settling / completed / failed / expired. Use this in a loop after execute until it terminates.',
+    'Poll an atomic swap by payment_hash: Waiting → Pending → Succeeded | Expired | Failed.',
     {
-      atomic_id: { type: 'string', description: 'The atomic id from kaleidoswap_atomic_init.' },
+      payment_hash: { type: 'string', description: 'payment_hash from kaleidoswap_atomic_init.' },
+      access_token: { type: 'string', description: 'access_token from kaleidoswap_atomic_init, when the host needs it.' },
     },
-    ['atomic_id']),
+    ['payment_hash']),
 
   // ─── liquidity (buy a NEW channel pre-loaded with an asset — onboarding) ──
   t('liquidity',
@@ -157,6 +165,46 @@ export function kaleidoswapTools(
   return KALEIDOSWAP_TOOLS.filter((x) => groups.has(x.group));
 }
 
+const isBtc = (asset: unknown) => typeof asset === 'string' && /^(btc|sats?)$/i.test(asset.trim());
+
+/**
+ * Map kaleido-mcp argument names onto the pre-0.9 contract names (and back), so
+ * one call shape works on every surface and older host handlers keep working.
+ * Canonical names win; legacy names are only filled in when absent. The legacy
+ * quote `amount` is sats for BTC and display units otherwise.
+ */
+export function normalizeKaleidoswapArgs(name: string, args: Record<string, unknown>): Record<string, unknown> {
+  const a: Record<string, unknown> = { ...args };
+  const alias = (canonical: string, legacy: string) => {
+    if (a[canonical] == null && a[legacy] != null) a[canonical] = a[legacy];
+    if (a[legacy] == null && a[canonical] != null) a[legacy] = a[canonical];
+  };
+  if (name === 'kaleidoswap_get_quote') {
+    if (a.from_asset_id == null && a.from_asset != null) a.from_asset_id = a.from_asset;
+    if (a.to_asset_id == null && a.to_asset != null) a.to_asset_id = a.to_asset;
+    if (a.from_amount == null && a.to_amount == null && a.amount != null) {
+      const side = a.amount_side === 'to' || a.side === 'buy' ? 'to' : 'from';
+      const asset = side === 'to' ? a.to_asset_id : a.from_asset_id;
+      const display = isBtc(asset) ? Number(a.amount) / 1e8 : Number(a.amount);
+      a[side === 'to' ? 'to_amount' : 'from_amount'] = display;
+    }
+    a.from_asset ??= a.from_asset_id;
+    a.to_asset ??= a.to_asset_id;
+    if (a.amount == null) {
+      const toSide = a.from_amount == null && a.to_amount != null;
+      const display = Number(toSide ? a.to_amount : a.from_amount);
+      const asset = toSide ? a.to_asset_id : a.from_asset_id;
+      if (Number.isFinite(display)) a.amount = isBtc(asset) ? Math.round(display * 1e8) : display;
+      if (toSide) a.amount_side = 'to';
+    }
+  } else if (name === 'kaleidoswap_atomic_init') {
+    alias('rfq_id', 'quote_id');
+  } else if (name === 'kaleidoswap_atomic_execute' || name === 'kaleidoswap_atomic_status') {
+    alias('payment_hash', 'atomic_id');
+  }
+  return a;
+}
+
 /** A handler bound to one contract tool. Args validated by JSON schema upstream. */
 export type KaleidoswapHandler = (args: Record<string, unknown>) => Promise<unknown>;
 
@@ -199,7 +247,7 @@ export function bindKaleidoswapTools(
       description: def.description,
       parameters: def.parameters,
       requiresConfirmation: def.requiresConfirmation,
-      handler,
+      handler: (args) => handler(normalizeKaleidoswapArgs(def.name, args)),
     });
   }
   return new InProcessToolSource(opts.id ?? 'kaleidoswap', bound);

@@ -257,7 +257,7 @@ describe('runRecipe — asset send', () => {
     const res = await runRecipe(assetSendRecipe, 'send 10 usdt to bob', { provider: approve, tools, onConfirm });
     expect(res.status).toBe('done');
     expect(onConfirm).toHaveBeenCalledOnce();
-    expect(sent[0]).toEqual({ asset: 'USDT', amount: 10, to: 'bob@x.com' });
+    expect(sent[0]).toEqual({ asset_id: 'USDT', amount: 10, recipient_id: 'bob@x.com' });
   });
 });
 

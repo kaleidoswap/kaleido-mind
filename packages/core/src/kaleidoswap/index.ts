@@ -3,6 +3,7 @@ export {
   KALEIDOSWAP_TOOLS,
   KALEIDOSWAP_SPEND_TOOLS,
   isKaleidoswapSpendTool,
+  normalizeKaleidoswapArgs,
   getKaleidoswapTool,
   kaleidoswapTools,
   bindKaleidoswapTools,

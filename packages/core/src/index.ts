@@ -49,6 +49,7 @@ export {
   walletTools,
   toToolDefs,
   bindWalletTools,
+  normalizeWalletArgs,
 } from './wallet/contract.js';
 export type {
   WalletLayer,

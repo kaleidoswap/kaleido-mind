@@ -6,6 +6,7 @@ import { InProcessToolSource } from './tools/in-process.js';
 import { parseSkill, SkillRegistry } from './skills/registry.js';
 import { scriptedProvider } from './testing/scripted-provider.js';
 import { confirmReadback } from './wallet/confirm.js';
+import { getKaleidoswapTool } from './kaleidoswap/contract.js';
 import {
   DECLINED_TOOL_MESSAGE,
   detectWalletAction,
@@ -31,7 +32,18 @@ const ISSUE_SCHEMA = {
 
 const INVOICE = 'lnbcrt50u1pn9xyzpp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypq';
 
+const QUOTE = { name: 'kaleidoswap_get_quote', parameters: getKaleidoswapTool('kaleidoswap_get_quote')!.parameters };
+
 describe('validateToolArgs', () => {
+  it('rejects sats passed as a BTC display amount and names the BTC value', () => {
+    const r = validateToolArgs(QUOTE, { from_asset_id: 'BTC', to_asset_id: 'USDT', from_amount: 50_000 });
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toMatch(/from_amount: 0\.0005/);
+    expect(validateToolArgs(QUOTE, { from_asset_id: 'BTC', to_asset_id: 'USDT', from_amount: 0.0005 }).ok).toBe(true);
+    expect(validateToolArgs(QUOTE, { from_asset_id: 'USDT', to_asset_id: 'BTC', from_amount: 5000 }).ok).toBe(true);
+    expect(validateToolArgs(QUOTE, { from_asset_id: 'BTC', to_asset_id: 'USDT', from_amount: 1, to_amount: 2 }).ok).toBe(false);
+  });
+
   it('accepts valid args and coerces numeric strings', () => {
     const r = validateToolArgs({ name: 'rln_issue_asset', parameters: ISSUE_SCHEMA }, { name: 'Hack', ticker: 'HCK', amount: '1000' });
     expect(r.ok).toBe(true);
