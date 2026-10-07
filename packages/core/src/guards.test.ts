@@ -9,6 +9,7 @@ import { confirmReadback } from './wallet/confirm.js';
 import {
   DECLINED_TOOL_MESSAGE,
   detectWalletAction,
+  wantsToolCall,
   findUngroundedPaymentData,
   hasCapableTool,
   validateToolArgs,
@@ -86,6 +87,20 @@ describe('findUngroundedPaymentData / detectWalletAction', () => {
     expect(hasCapableTool(a, ['bitrefill_create_invoice', 'get_price'])).toBe(false);
     expect(hasCapableTool(a, ['rln_create_ln_invoice'])).toBe(true);
     expect(detectWalletAction('what is the BTC price?')).toBeNull();
+  });
+
+  it('detects asset issuance', () => {
+    const a = detectWalletAction('issue a new asset HCK with 1000 units')!;
+    expect(a.id).toBe('issue-asset');
+    expect(hasCapableTool(a, ['rln_list_assets'])).toBe(false);
+    expect(hasCapableTool(a, ['rln_issue_asset'])).toBe(true);
+  });
+
+  it('wantsToolCall: actions yes, how-to questions no', () => {
+    expect(wantsToolCall('send 1000 sats to bob')).toBe(true);
+    expect(wantsToolCall('Can you create an invoice for 5000 sats?')).toBe(true);
+    expect(wantsToolCall('how do I send sats to someone?')).toBe(false);
+    expect(wantsToolCall('what is the BTC price?')).toBe(false);
   });
 });
 

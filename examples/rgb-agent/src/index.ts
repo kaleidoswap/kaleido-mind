@@ -97,9 +97,10 @@ async function createProvider(): Promise<{ provider: LLMProvider; dispose: () =>
       cancel: sdk.cancel,
       getModelId: () => modelId,
       defaultTemperature: 0.1,
-      // Qwen3.5 reasons before answering; leave room for both or the answer is cut off.
+      // Qwen3.5 ignores /no_think: the reasoning budget is what keeps a turn
+      // from spending every token thinking. 128 passes the rgb-agent eval.
       defaultMaxTokens: 1536,
-      maxThinkingTokens: 768,
+      maxThinkingTokens: 128,
     }),
     dispose: async () => {
       await sdk.unloadModel({ modelId });

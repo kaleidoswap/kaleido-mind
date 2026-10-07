@@ -480,9 +480,9 @@ function resetTurnStats(): void {
 }
 
 // Cap the model's <think> reasoning by TOKENS (not seconds — tok/s varies by
-// model + hardware, and the SDK exposes no numeric reasoning budget). Qwen3.5 2B
-// used 80–390 thinking tokens per wallet turn on signet; a lower cap cancels
-// the turn before it calls a tool or answers.
+// model + hardware); sent as the SDK's reasoning_budget, so at the cap the model
+// closes its reasoning and answers. Qwen3.5 2B used 80–390 thinking tokens per
+// wallet turn on signet.
 // Tune with KALEIDO_MIND_MAX_THINKING_TOKENS (0 ⇒ unlimited).
 const MAX_THINKING_TOKENS: number | undefined = ((): number | undefined => {
   const env = process.env.KALEIDO_MIND_MAX_THINKING_TOKENS;

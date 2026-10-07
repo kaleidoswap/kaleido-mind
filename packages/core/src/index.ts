@@ -20,6 +20,8 @@ export type {
 export type {
   InferenceMetrics,
   LLMProvider,
+  ToolCallError,
+  ToolChoice,
   TurnInput,
   TurnOutput,
 } from './providers/types.js';
@@ -60,6 +62,7 @@ export {
   findUngroundedPaymentData,
   detectWalletAction,
   hasCapableTool,
+  wantsToolCall,
   DECLINED_TOOL_MESSAGE,
   declinedToolResult,
 } from './guards.js';

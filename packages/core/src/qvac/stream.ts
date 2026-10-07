@@ -28,11 +28,9 @@ export interface StreamHandlers {
   /** The model's `<think>` reasoning, streamed separately. */
   onThinking?: (token: string) => void;
   /**
-   * Cap the `<think>` reasoning at this many tokens. The cap is on TOKENS, not
-   * wall-clock seconds — tok/s varies by model and hardware, so a time budget is
-   * unreliable; the SDK has no numeric reasoning budget (`reasoning_budget` is
-   * only on/off), so we count thinking tokens and stop the run once they exceed
-   * this. Omit for unlimited reasoning.
+   * Stop the run once `<think>` reasoning exceeds this many tokens (estimated
+   * from characters). A backstop for the SDK's own `reasoning_budget`. Omit for
+   * unlimited reasoning.
    */
   maxThinkingTokens?: number;
   /**

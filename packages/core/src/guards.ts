@@ -177,7 +177,7 @@ export function ungroundedReply(items: UngroundedItem[]): string {
 
 /** A wallet action the user asked for, and how to recognise a tool that can do it. */
 export interface WalletAction {
-  id: 'receive-invoice' | 'receive-address' | 'pay' | 'send';
+  id: 'receive-invoice' | 'receive-address' | 'pay' | 'send' | 'issue-asset';
   label: string;
   tool: RegExp;
 }
@@ -207,7 +207,23 @@ const WALLET_ACTIONS: Array<WalletAction & { request: RegExp }> = [
     request: /\bsend\b[^.?!]*\b(\d|sats?|btc|usdt|xaut|asset|to)\b/i,
     tool: /send|pay|transfer/i,
   },
+  {
+    id: 'issue-asset',
+    label: 'issuing an asset',
+    request: /\b(issue|mint|create)\b[^.?!]*\b(asset|token|coin|nia|cfa|uda)\b/i,
+    tool: /issue_asset/i,
+  },
 ];
+
+const HOW_TO_QUESTION = /^\s*(how|what|why|when|where|which|who)\b/i;
+
+/**
+ * True when the request is a wallet action the model should act on with a
+ * tool right away — not a question about how such an action works.
+ */
+export function wantsToolCall(text: string): boolean {
+  return detectWalletAction(text) !== null && !HOW_TO_QUESTION.test(text);
+}
 
 /** The wallet action a request asks for, or null. Payment tools from commerce sources don't count. */
 export function detectWalletAction(text: string): WalletAction | null {

@@ -31,7 +31,7 @@ import { assetSendRecipe } from './recipe/asset-send.js';
 import type { Recipe } from './recipe/types.js';
 import { SkillRegistry } from './skills/registry.js';
 import { selectAvailableSkill } from './skills/select.js';
-import { detectWalletAction, hasCapableTool, noToolReply } from './guards.js';
+import { detectWalletAction, hasCapableTool, noToolReply, wantsToolCall } from './guards.js';
 import type { Skill } from './skills/types.js';
 import type { LLMProvider } from './providers/types.js';
 import type { InferenceMetrics } from './providers/types.js';
@@ -414,6 +414,7 @@ export class Funnel {
       },
       onToolResult: cbs.onToolResult,
       onConfirm: cbs.onConfirm,
+      ...(wantsToolCall(text) ? { firstTurnToolChoice: 'required' as const } : {}),
       signal: cbs.signal,
     });
     return {

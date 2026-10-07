@@ -16,7 +16,7 @@
 
 import type { ConfirmDecision, Message, ToolResult } from './types.js';
 import type { LLMProvider } from './providers/types.js';
-import type { InferenceMetrics } from './providers/types.js';
+import type { InferenceMetrics, ToolCallError, ToolChoice } from './providers/types.js';
 import type { ToolRegistry } from './tools/registry.js';
 import { compressToolResult, type ToolCrushOptions } from './context/compress.js';
 import {
@@ -91,6 +91,12 @@ export interface AgenticOptions {
    * Typically the active skill's tool list — see SkillRegistry.compose().
    */
   allowedTools?: string[];
+  /**
+   * Tool choice for the FIRST model call only — e.g. `'required'` when the
+   * request is a wallet action, so the model can't answer in prose with
+   * made-up data. Later rounds are left to the model.
+   */
+  firstTurnToolChoice?: ToolChoice;
   signal?: AbortSignal;
 }
 
@@ -105,6 +111,19 @@ export interface AgenticResult {
   latencyMs: number;
   /** One receipt per model call in this agentic run. */
   inference: InferenceMetrics[];
+}
+
+const STOPPED_MESSAGE = 'I had to stop after several steps — please try a more specific request.';
+
+const TOOL_CALL_FAILED_MESSAGE =
+  "I couldn't put together a valid request for that. Please rephrase it with the exact values (asset, amount, recipient).";
+
+function toolErrorMessage(errors: ToolCallError[], cutOff: boolean): string {
+  if (cutOff) {
+    return 'Your tool call was cut off because the output got too long. Make ONE tool call at a time with only the required arguments, or answer from the results you already have.';
+  }
+  const detail = errors.map((e) => e.message).join('; ');
+  return `Your tool call could not be read (${detail}). Call the tool again with valid JSON arguments that match its schema, or ask the user for the missing values.`;
 }
 
 export class Engine {
@@ -163,6 +182,7 @@ export class Engine {
     let turns = 0;
     const inference: InferenceMetrics[] = [];
     const seen = new Map<string, { result: unknown; count: number }>();
+    let toolErrorRetries = 0;
 
     const lastUser = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
     const action = this.guardMissingTools ? detectWalletAction(lastUser) : null;
@@ -172,7 +192,8 @@ export class Engine {
       return { text, turns: 0, toolCalls: [], messages: history, latencyMs: Date.now() - startedAt, inference };
     }
 
-    for (let turn = 1; turn <= maxTurns; turn++) {
+    // A retry after an unreadable tool call does not count against maxTurns.
+    for (let turn = 1; turn <= maxTurns + toolErrorRetries; turn++) {
       turns = turn;
       if (opts.signal?.aborted) break;
 
@@ -180,6 +201,9 @@ export class Engine {
         messages: history,
         tools: allTools,
         system,
+        ...(turn === 1 && opts.firstTurnToolChoice && allTools.length
+          ? { toolChoice: opts.firstTurnToolChoice }
+          : {}),
         onToken: opts.onToken ? (t) => opts.onToken!(t, turn) : undefined,
         signal: opts.signal,
       });
@@ -188,6 +212,21 @@ export class Engine {
       if (out.inference) inference.push(out.inference);
       if (out.requestId) opts.onStart?.(out.requestId, turn);
       finalText = out.incomplete ? '' : (out.text || '').trim();
+
+      // The model tried to call a tool but the call didn't parse: tell it what
+      // went wrong and let it try again (once) instead of showing the broken
+      // frame as the answer.
+      if ((!out.toolCalls || out.toolCalls.length === 0) && out.toolErrors?.length) {
+        if (toolErrorRetries < 1) {
+          toolErrorRetries += 1;
+          const cutOff = out.inference?.status === 'truncated';
+          history.push({ role: 'assistant', content: out.rawContent || finalText });
+          history.push({ role: 'tool', content: JSON.stringify({ error: toolErrorMessage(out.toolErrors, cutOff) }) });
+          continue;
+        }
+        finalText = TOOL_CALL_FAILED_MESSAGE;
+        break;
+      }
 
       // No tool calls ⇒ the model produced its final answer.
       if (!out.toolCalls || out.toolCalls.length === 0) {
@@ -271,10 +310,10 @@ export class Engine {
         break;
       }
 
-      if (turn === maxTurns && !finalText) {
-        finalText = 'I had to stop after several steps — please try a more specific request.';
-      }
     }
+
+    // Never return an empty answer (e.g. the last turn ran out of tokens).
+    if (!finalText && !opts.signal?.aborted) finalText = STOPPED_MESSAGE;
 
     if (this.guardPaymentData && finalText) {
       const ungrounded = findUngroundedPaymentData(finalText, [
