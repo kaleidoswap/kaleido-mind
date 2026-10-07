@@ -175,6 +175,33 @@ export function ungroundedReply(items: UngroundedItem[]): string {
     'Make sure the wallet that should create it is connected, then ask again.';
 }
 
+const NUM = String.raw`(\d[\d,]*(?:\.\d+)?)`;
+const SATS = String.raw`(?:sats?|satoshis)`;
+const SATS_THEN_BTC = new RegExp(String.raw`${NUM}\s*${SATS}(\s*\(\s*~?\s*)${NUM}(\s*BTC\b)`, 'gi');
+const BTC_THEN_SATS = new RegExp(String.raw`${NUM}(\s*BTC\s*\(\s*~?\s*)${NUM}(\s*${SATS}\b)`, 'gi');
+
+const toNumber = (s: string): number => Number(s.replace(/,/g, ''));
+
+/** Sats as a BTC decimal string, without trailing zeros. */
+export function formatSatsAsBtc(sats: number): string {
+  return (sats / 1e8).toFixed(8).replace(/\.?0+$/, '');
+}
+
+const sameBtc = (btc: number, sats: number) => Math.abs(btc * 1e8 - sats) < 0.5;
+
+/**
+ * Small models get sats↔BTC conversions wrong ("4,277 sats (42.77 BTC)").
+ * Where the answer pairs a sats amount with a BTC amount, recompute the BTC
+ * figure from the sats figure, which is the one copied from the tool result.
+ */
+export function fixSatsBtcConversions(text: string): string {
+  return text
+    .replace(SATS_THEN_BTC, (m, sats: string, mid: string, btc: string, unit: string) =>
+      sameBtc(toNumber(btc), toNumber(sats)) ? m : m.replace(`${mid}${btc}${unit}`, `${mid}${formatSatsAsBtc(toNumber(sats))}${unit}`))
+    .replace(BTC_THEN_SATS, (m, btc: string, _mid: string, sats: string) =>
+      sameBtc(toNumber(btc), toNumber(sats)) ? m : `${formatSatsAsBtc(toNumber(sats))}${m.slice(btc.length)}`);
+}
+
 /** A wallet action the user asked for, and how to recognise a tool that can do it. */
 export interface WalletAction {
   id: 'receive-invoice' | 'receive-address' | 'pay' | 'send' | 'issue-asset';

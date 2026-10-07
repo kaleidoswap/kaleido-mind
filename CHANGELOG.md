@@ -19,6 +19,17 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Asset issuance (`issue-asset`) is a detected wallet action: with no
   `*issue_asset` tool in scope the funnel refuses without calling the model.
 
+- `fixSatsBtcConversions` / `formatSatsAsBtc`: the Engine recomputes a BTC
+  figure paired with a sats amount in the final answer ("4,277 sats
+  (42.77 BTC)" → "4,277 sats (0.00004277 BTC)").
+  `EngineOptions.fixAmountConversions` (default on). Under the same switch,
+  RGB asset results reach the model with a `balance_display` ("1,000 USDT",
+  scaled by `precision`), and an answer that calls an asset balance sats is
+  relabelled (`annotateRgbBalances`, `fixRgbBalanceUnits`,
+  `formatRgbAmount`).
+- `examples/rgb-agent`: `pnpm eval` / `pnpm eval:mock` run seven wallet
+  requests through the Funnel with a local model and check each result.
+
 ### Changed
 
 - A turn whose tool call did not parse is sent back to the model once with the

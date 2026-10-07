@@ -8,6 +8,7 @@
  *
  * Flags: --mock (fake RLN tools), --scripted (no model), --yes (auto-approve spends).
  * Env:   RECIPIENT_INVOICE  RGB invoice to pay in step 3 (real mode)
+ *        MODEL              @qvac/sdk model constant (default: QWEN3_5_2B_MULTIMODAL_Q4_K_M)
  *        KALEIDO_NETWORK    passed to kaleido-mcp (default: signet)
  *        RLN_NODE_URL       your RLN node (default inside kaleido-mcp: http://localhost:3001)
  */
@@ -15,17 +16,14 @@ import { createInterface } from 'node:readline/promises';
 import {
   Engine,
   SkillRegistry,
-  bindWalletTools,
   ToolRegistry,
   confirmReadback,
   type ConfirmDecision,
   type LLMProvider,
-  type ToolSource,
 } from '@kaleidorg/mind';
-import { McpToolSource } from '@kaleidorg/mind/mcp';
 import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
-import { createQvacProvider } from '@kaleidorg/mind/qvac';
-import { MockWallet, scriptedProvider } from '@kaleidorg/mind/testing';
+import { scriptedProvider } from '@kaleidorg/mind/testing';
+import { createTools, loadQvacProvider } from './setup.js';
 
 const flag = (name: string) => process.argv.includes(`--${name}`);
 const MOCK = flag('mock') || process.env.MOCK === '1';
@@ -34,46 +32,6 @@ const AUTO_YES = flag('yes');
 
 const RLN_TOOLS = ['rln_list_assets', 'rln_get_asset_balance', 'rln_refresh_transfers', 'rln_create_rgb_invoice', 'rln_send_asset'];
 
-// ── Tools: kaleido-mcp over stdio, or an in-process fake node ───────────────
-async function createTools(): Promise<{ source: ToolSource; close: () => Promise<void> }> {
-  if (MOCK) {
-    const wallet = new MockWallet({ assets: { USDT: 1_000, XAUT: 2 } });
-    const asset = (ref: unknown) => wallet.rgbAssets.find((a) => a.asset_id === ref || a.ticker === String(ref).toUpperCase());
-    // MockWallet speaks the wallet-contract schema; add the reads kaleido-mcp also has.
-    const source = bindWalletTools(
-      {
-        ...wallet.handlers(),
-        rln_get_asset_balance: async ({ asset_id }) => {
-          const a = asset(asset_id);
-          if (!a) throw new Error(`Unknown asset ${String(asset_id)}`);
-          const amount = wallet.assets[a.ticker] ?? 0;
-          return { asset_id: a.asset_id, ticker: a.ticker, settled: amount, spendable: amount };
-        },
-        rln_refresh_transfers: async () => ({ refreshed: true }),
-        rln_create_rgb_invoice: async ({ asset: ref, amount }) => ({
-          invoice: `rgb:~/~/~/sig/${asset(ref)?.asset_id ?? 'any'}/${String(amount ?? '')}/utxob:mock-${Date.now().toString(36)}`,
-          amount,
-        }),
-      },
-      { layers: ['rln'], includeCore: false, allowMissing: true, id: 'mock-rln' },
-    );
-    return { source, close: async () => {} };
-  }
-  const mcp = new McpToolSource({
-    id: 'kaleido',
-    transport: {
-      kind: 'stdio',
-      command: 'npx',
-      args: ['-y', 'kaleido-mcp'],
-      env: { ...(process.env as Record<string, string>), KALEIDO_NETWORK: process.env.KALEIDO_NETWORK ?? 'signet' },
-    },
-    allow: RLN_TOOLS,
-  });
-  await mcp.connect();
-  return { source: mcp, close: () => mcp.close() };
-}
-
-// ── Model: QVAC on-device, or a scripted stand-in for CI ─────────────────────
 async function createProvider(): Promise<{ provider: LLMProvider; dispose: () => Promise<void> }> {
   if (SCRIPTED) {
     return {
@@ -88,25 +46,7 @@ async function createProvider(): Promise<{ provider: LLMProvider; dispose: () =>
       dispose: async () => {},
     };
   }
-  const sdk = await import('@qvac/sdk');
-  console.error('[loading Qwen3.5 2B — the first run downloads ~1.3 GB]');
-  const modelId = await sdk.loadModel({ modelSrc: sdk.QWEN3_5_2B_MULTIMODAL_Q4_K_M, modelConfig: { ctx_size: 8192, tools: true, device: 'gpu', gpu_layers: 99 } });
-  return {
-    provider: createQvacProvider({
-      completion: sdk.completion,
-      cancel: sdk.cancel,
-      getModelId: () => modelId,
-      defaultTemperature: 0.1,
-      // Qwen3.5 ignores /no_think: the reasoning budget is what keeps a turn
-      // from spending every token thinking. 128 passes the rgb-agent eval.
-      defaultMaxTokens: 1536,
-      maxThinkingTokens: 128,
-    }),
-    dispose: async () => {
-      await sdk.unloadModel({ modelId });
-      await sdk.close();
-    },
-  };
+  return loadQvacProvider(process.env.MODEL);
 }
 
 function recipient(): string {
@@ -126,7 +66,7 @@ async function confirm(call: { name: string; arguments: Record<string, unknown> 
   return /^y(es)?$/i.test(answer.trim()) ? { approved: true } : { approved: false, reason: 'user declined' };
 }
 
-const tools = await createTools();
+const tools = await createTools({ mock: MOCK, allow: RLN_TOOLS });
 const { provider, dispose } = await createProvider();
 try {
   // All bundled skills. composeSkill() skips the ones whose tools this registry

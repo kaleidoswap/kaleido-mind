@@ -63,9 +63,12 @@ export {
   detectWalletAction,
   hasCapableTool,
   wantsToolCall,
+  fixSatsBtcConversions,
+  formatSatsAsBtc,
   DECLINED_TOOL_MESSAGE,
   declinedToolResult,
 } from './guards.js';
+export { annotateRgbBalances, fixRgbBalanceUnits, formatRgbAmount } from './context/rgb-units.js';
 export type { ArgValidation, UngroundedItem, WalletAction } from './guards.js';
 
 // ── KaleidoSwap maker tool contract (single source of truth) ────────────────

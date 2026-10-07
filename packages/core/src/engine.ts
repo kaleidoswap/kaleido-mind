@@ -26,10 +26,12 @@ import {
   hasCapableTool,
   noToolReply,
   findUngroundedPaymentData,
+  fixSatsBtcConversions,
   ungroundedReply,
   validateToolArgs,
 } from './guards.js';
 import { confirmReadback } from './wallet/confirm.js';
+import { annotateRgbBalances, fixRgbBalanceUnits } from './context/rgb-units.js';
 import type { SkillRegistry } from './skills/registry.js';
 import type { Skill } from './skills/types.js';
 import { selectAvailableSkill } from './skills/select.js';
@@ -55,6 +57,12 @@ export interface EngineOptions {
    * tool returned and the user never typed. Default true.
    */
   guardUngroundedPaymentData?: boolean;
+  /**
+   * Keep amounts honest: recompute BTC figures paired with a sats amount, add
+   * `balance_display` to RGB asset balances the model sees, and relabel an
+   * asset balance the answer calls sats. Default true.
+   */
+  fixAmountConversions?: boolean;
   /**
    * Answer a wallet action (create an invoice, get an address, pay, send) with
    * a fixed "no tool" reply, without inference, when no exposed tool can do it.
@@ -133,6 +141,7 @@ export class Engine {
   private readonly defaultMaxTurns: number;
   private readonly compressOpts?: ToolCrushOptions;
   private readonly guardPaymentData: boolean;
+  private readonly fixAmounts: boolean;
   private readonly guardMissingTools: boolean;
   private readonly endTurnOnDecline: boolean;
 
@@ -142,6 +151,7 @@ export class Engine {
     this.defaultSystem = opts.defaultSystem;
     this.defaultMaxTurns = opts.defaultMaxTurns ?? 5;
     this.guardPaymentData = opts.guardUngroundedPaymentData ?? true;
+    this.fixAmounts = opts.fixAmountConversions ?? true;
     this.guardMissingTools = opts.guardMissingTools ?? true;
     this.endTurnOnDecline = opts.endTurnOnDecline ?? true;
     this.compressOpts = opts.compressToolOutput
@@ -289,7 +299,7 @@ export class Engine {
         }
         executed.push({ name: call.name, arguments: args, result });
         opts.onToolResult?.({ name: call.name, arguments: args, result }, turn);
-        history.push({ role: 'tool', content: this.toHistoryContent(result) });
+        history.push({ role: 'tool', content: this.toHistoryContent(this.fixAmounts ? annotateRgbBalances(result) : result) });
       }
 
       if (this.endTurnOnDecline && declinedThisTurn.length && declinedThisTurn.length === out.toolCalls.length) {
@@ -314,6 +324,10 @@ export class Engine {
 
     // Never return an empty answer (e.g. the last turn ran out of tokens).
     if (!finalText && !opts.signal?.aborted) finalText = STOPPED_MESSAGE;
+
+    if (this.fixAmounts && finalText) {
+      finalText = fixRgbBalanceUnits(fixSatsBtcConversions(finalText), executed.map((e) => e.result));
+    }
 
     if (this.guardPaymentData && finalText) {
       const ungrounded = findUngroundedPaymentData(finalText, [
