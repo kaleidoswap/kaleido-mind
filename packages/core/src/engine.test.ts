@@ -207,6 +207,64 @@ describe('Engine agentic loop', () => {
     expect(res.toolCalls[0].result).toMatchObject({ error: 'kaboom' });
     expect(res.text).toBe('handled the error');
   });
+
+  it('sends firstTurnToolChoice on the first call only', async () => {
+    const seen: Array<string | undefined> = [];
+    const provider: LLMProvider = {
+      name: 'rec',
+      async runTurn(input) {
+        seen.push(input.toolChoice);
+        return seen.length === 1
+          ? { text: '', rawContent: '', toolCalls: [{ name: 'get_balance', arguments: {} }] }
+          : { text: 'done', rawContent: 'done', toolCalls: [] };
+      },
+    };
+    const engine = new Engine({ provider, tools: freshTools() });
+    await engine.runAgentic([{ role: 'user', content: 'send 1000 sats' }], { firstTurnToolChoice: 'required' });
+    expect(seen).toEqual(['required', undefined]);
+  });
+
+  it('feeds an unparseable tool call back to the model once, then gives up cleanly', async () => {
+    const histories: number[] = [];
+    const provider: LLMProvider = {
+      name: 'broken',
+      async runTurn(input) {
+        histories.push(input.messages.length);
+        return {
+          text: '<tool_call>{"ticker":"HCK',
+          rawContent: '<tool_call>{"ticker":"HCK',
+          toolCalls: [],
+          toolErrors: [{ code: 'PARSE_ERROR', message: 'unterminated string' }],
+        };
+      },
+    };
+    const engine = new Engine({ provider, tools: freshTools() });
+    const res = await engine.runAgentic([{ role: 'user', content: 'issue HCK' }]);
+    expect(histories).toEqual([1, 3]);
+    expect(res.text).not.toContain('tool_call');
+    expect(res.text).toMatch(/couldn't put together a valid request/i);
+  });
+
+  it('recovers when the retried call parses', async () => {
+    const engine = new Engine({
+      provider: (() => {
+        let n = 0;
+        return {
+          name: 'retry',
+          async runTurn(): Promise<TurnOutput> {
+            n += 1;
+            if (n === 1) return { text: 'x', rawContent: 'x', toolCalls: [], toolErrors: [{ code: 'PARSE_ERROR', message: 'bad' }] };
+            if (n === 2) return { text: '', rawContent: '', toolCalls: [{ name: 'get_balance', arguments: {} }] };
+            return { text: 'You have 50,000 sats.', rawContent: '', toolCalls: [] };
+          },
+        };
+      })(),
+      tools: freshTools(),
+    });
+    const res = await engine.runAgentic([{ role: 'user', content: 'balance?' }]);
+    expect(balanceTool.handler).toHaveBeenCalledTimes(1);
+    expect(res.text).toBe('You have 50,000 sats.');
+  });
 });
 
 describe('ToolRegistry', () => {

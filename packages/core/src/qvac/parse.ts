@@ -4,6 +4,7 @@
  * is testable without loading a model, and so the same mapping runs on mobile,
  * desktop, and the eval harness.
  */
+import type { ToolCallError } from '../providers/types.js';
 import { cleanAssistantVisibleText } from './text.js';
 
 /**
@@ -32,6 +33,8 @@ export interface QvacFinalLike {
   raw?: { fullText?: string };
   /** Tool calls the model requested this turn (empty ⇒ final answer). */
   toolCalls?: Array<{ id?: string; name: string; arguments?: Record<string, unknown> }>;
+  /** Tool-call regions that failed to parse or validate (QVAC 0.20+; omitted when none). */
+  toolErrors?: ToolCallError[];
   /**
    * Why generation stopped: `"length"` when the token budget is exhausted,
    * `"cancelled"` on abort, `"eos"`/`"stopSequence"`/`undefined` on a natural stop. We surface
@@ -49,6 +52,8 @@ export interface ParsedTurn {
   rawContent: string;
   /** Tool calls the model requested (arguments defaulted to `{}`). */
   toolCalls: Array<{ id?: string; name: string; arguments: Record<string, unknown> }>;
+  /** Tool-call attempts the SDK could not parse, when no call was recovered from text. */
+  toolErrors?: ToolCallError[];
   /** True when generation was cut off by the token budget (incomplete output). */
   truncated: boolean;
   /** Raw stop reason from the SDK, when provided. */
@@ -165,6 +170,7 @@ export function finalToTurn(final: QvacFinalLike, streamed = ''): ParsedTurn {
     text,
     rawContent: final.raw?.fullText ?? rawText,
     toolCalls,
+    ...(toolCalls.length === 0 && final.toolErrors?.length ? { toolErrors: final.toolErrors } : {}),
     truncated: final.stopReason === 'length',
     stopReason: final.stopReason,
     stats: final.stats,

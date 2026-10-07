@@ -17,9 +17,24 @@ export interface TurnInput {
   tools: ToolDef[];
   /** System prompt, when not already present as a message. */
   system?: string;
+  /**
+   * `'required'` forces a tool call, a tool name forces that tool, `'none'`
+   * forbids tools. Omit for the model's own choice. Ignored when `tools` is
+   * empty or the provider has no such control.
+   */
+  toolChoice?: ToolChoice;
   /** Visible content tokens as they stream. */
   onToken?: (token: string) => void;
   signal?: AbortSignal;
+}
+
+export type ToolChoice = 'auto' | 'none' | 'required' | (string & {});
+
+/** A tool-call region the model emitted that the provider could not turn into a call. */
+export interface ToolCallError {
+  code: 'PARSE_ERROR' | 'VALIDATION_ERROR' | 'UNKNOWN_TOOL' | (string & {});
+  message: string;
+  raw?: string;
 }
 
 /** Judge-auditable metrics for one provider inference request. */
@@ -50,6 +65,8 @@ export interface TurnOutput {
   rawContent: string;
   /** Tool calls the model requested this turn (empty ⇒ final answer). */
   toolCalls: ToolCall[];
+  /** Tool-call attempts that failed to parse or validate this turn. */
+  toolErrors?: ToolCallError[];
   /** Provider request id, for cancellation. */
   requestId?: string;
   /** Optional local-inference receipt. Hosts may persist this as JSONL evidence. */

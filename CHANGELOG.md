@@ -5,6 +5,29 @@ apps) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `TurnInput.toolChoice` (`'auto' | 'none' | 'required' | <tool name>`) and
+  `TurnOutput.toolErrors`. The QVAC provider sends them as
+  `generationParams.tool_choice` and reads `final.toolErrors` (`@qvac/sdk`
+  0.20+).
+- `AgenticOptions.firstTurnToolChoice`. The funnel sets it to `'required'`
+  when the request is a wallet action (`wantsToolCall`), so the first model
+  call must be a tool call. "How/what/why…" questions are not forced.
+- Asset issuance (`issue-asset`) is a detected wallet action: with no
+  `*issue_asset` tool in scope the funnel refuses without calling the model.
+
+### Changed
+
+- A turn whose tool call did not parse is sent back to the model once with the
+  parse error; if it fails again the run ends with a fixed message instead of
+  showing the broken frame.
+- Recipe slot extraction forces the extraction tool (`toolChoice`).
+- `maxThinkingTokens` is sent as the SDK's `reasoning_budget`; the
+  cancel-on-overrun check stays as a backstop with headroom.
+
 ## [0.8.0] — 2026-10-07
 
 Core `@kaleidorg/mind` 0.8.0 and `@kaleidorg/mind-provider` 0.8.0.

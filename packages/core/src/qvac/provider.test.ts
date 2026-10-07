@@ -100,7 +100,7 @@ describe('createQvacProvider.runTurn', () => {
     const cancel = vi.fn(async () => {});
     const { fn } = fakeCompletion(
       { contentText: '', toolCalls: [], raw: { fullText: '' }, stopReason: 'cancelled' },
-      [{ type: 'thinkingDelta', text: 'z'.repeat(40) }], // ~10 tokens, budget 4
+      [{ type: 'thinkingDelta', text: 'z'.repeat(400) }], // ~100 tokens, budget 4 (+ backstop headroom)
     );
     const p = createQvacProvider({
       completion: fn as any,
@@ -111,6 +111,32 @@ describe('createQvacProvider.runTurn', () => {
     const out = await p.runTurn({ messages: [{ role: 'user', content: 'think hard' }], tools: [] });
     expect(cancel).toHaveBeenCalledWith({ requestId: 'req-1' });
     expect(out.text).toMatch(/thinking budget/i);
+  });
+
+  it('sends the thinking cap as the SDK reasoning_budget', async () => {
+    const { fn, calls } = fakeCompletion({ contentText: 'ok', toolCalls: [], raw: { fullText: 'ok' } });
+    const p = createQvacProvider({ completion: fn as any, cancel: noopCancel, getModelId: () => 'm1', maxThinkingTokens: 128 });
+    await p.runTurn({ messages: [{ role: 'user', content: 'x' }], tools: [] });
+    expect(calls[0].generationParams).toEqual({ reasoning_budget: 128 });
+  });
+
+  it('forwards toolChoice only when tools are present', async () => {
+    const tool = { name: 'get_balance', description: 'b', parameters: { type: 'object', properties: {} } };
+    const { fn, calls } = fakeCompletion({ contentText: 'ok', toolCalls: [], raw: { fullText: 'ok' } });
+    const p = createQvacProvider({ completion: fn as any, cancel: noopCancel, getModelId: () => 'm1' });
+    await p.runTurn({ messages: [{ role: 'user', content: 'x' }], tools: [tool as any], toolChoice: 'required' });
+    await p.runTurn({ messages: [{ role: 'user', content: 'x' }], tools: [], toolChoice: 'required' });
+    expect(calls[0].generationParams).toEqual({ tool_choice: 'required' });
+    expect(calls[1].generationParams).toBeUndefined();
+  });
+
+  it('returns toolErrors when the model emitted a tool call that did not parse', async () => {
+    const toolErrors = [{ code: 'PARSE_ERROR', message: 'unterminated string', raw: '{"ticker":"HCK' }];
+    const { fn } = fakeCompletion({ contentText: '', toolCalls: [], toolErrors, raw: { fullText: '<tool_call>{"ticker":"HCK' } });
+    const p = createQvacProvider({ completion: fn as any, cancel: noopCancel, getModelId: () => 'm1' });
+    const out = await p.runTurn({ messages: [{ role: 'user', content: 'x' }], tools: [] });
+    expect(out.toolCalls).toEqual([]);
+    expect(out.toolErrors).toEqual(toolErrors);
   });
 
   it('returns a cancelled turn when the SDK rejects final on abort', async () => {

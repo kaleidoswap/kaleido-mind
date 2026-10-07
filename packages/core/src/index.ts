@@ -20,6 +20,8 @@ export type {
 export type {
   InferenceMetrics,
   LLMProvider,
+  ToolCallError,
+  ToolChoice,
   TurnInput,
   TurnOutput,
 } from './providers/types.js';
