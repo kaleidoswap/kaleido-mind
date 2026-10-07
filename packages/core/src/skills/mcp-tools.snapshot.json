@@ -1,6 +1,6 @@
 {
   "source": "kaleido-mcp",
-  "version": "0.3.1",
+  "version": "0.4.1",
   "tools": {
     "get_market_data": {
       "required": [
@@ -907,7 +907,7 @@
       "properties": {
         "asset_id": {
           "type": "string",
-          "description": "RGB asset ID. Omit for any asset."
+          "description": "RGB asset ID ('rgb:...') or ticker (e.g. 'USDT'). Omit for any asset."
         },
         "amount": {
           "type": "number",
@@ -1159,7 +1159,7 @@
       "properties": {
         "asset_id": {
           "type": "string",
-          "description": "RGB asset ID"
+          "description": "RGB asset ID ('rgb:...') or ticker (e.g. 'USDT')"
         },
         "recipient_id": {
           "type": "string",
@@ -1642,7 +1642,7 @@
       "properties": {
         "asset_id": {
           "type": "string",
-          "description": "RGB asset ID. Omit for any asset."
+          "description": "RGB asset ID ('rgb:...') or ticker (e.g. 'USDT'). Omit for any asset."
         },
         "amount": {
           "type": "number",
@@ -1894,7 +1894,7 @@
       "properties": {
         "asset_id": {
           "type": "string",
-          "description": "RGB asset ID"
+          "description": "RGB asset ID ('rgb:...') or ticker (e.g. 'USDT')"
         },
         "recipient_id": {
           "type": "string",

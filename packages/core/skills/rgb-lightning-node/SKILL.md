@@ -6,12 +6,12 @@ requires-tools: rln_get_node_info
 triggers: node, pubkey, balance, balances, rgb, asset, assets, token, nft, issue, mint, utxos, transfers, invoice, receive, send asset, pay invoice, on-chain address, channels, payments
 metadata:
   author: kaleidoswap
-  version: "0.4.0"
+  version: "0.4.1"
 ---
 # RGB Lightning Node
 
-Every value in a reply comes from a tool result in this turn. RGB `asset_id`s
-look like `rgb:…`; a ticker is not an id — find the id with `rln_list_assets`.
+Every value in a reply comes from a tool result in this turn. Send and invoice
+take the ticker (`USDT`) or the `asset_id` (`rgb:…`) in `asset_id`.
 Amounts are display units (10 = 10 USDT) except fields named `*_sat`/`*_sats`.
 
 ## Do
@@ -35,8 +35,8 @@ Amounts are display units (10 = 10 USDT) except fields named `*_sat`/`*_sats`.
 ## Examples
 - "Which RGB assets do I hold?" → `rln_list_assets {}`
 - "Issue a token named Skill Test, ticker SKT, supply 1000" → `rln_issue_asset {"name":"Skill Test","ticker":"SKT","amount":1000,"precision":0}`
-- "Send 5 SKT to rgb:~/~/~/sig/any/1/utxob:abc" → `rln_list_assets {}` then `rln_send_asset {"asset_id":"<SKT asset_id>","recipient_id":"utxob:abc","amount":5}`
-- "Invoice me 10 USDT" → `rln_create_rgb_invoice {"asset_id":"<USDT asset_id>","amount":10}`
+- "Send 5 SKT to rgb:~/~/~/sig/any/1/utxob:abc" → `rln_send_asset {"asset_id":"SKT","recipient_id":"utxob:abc","amount":5}`
+- "Invoice me 10 USDT" → `rln_create_rgb_invoice {"asset_id":"USDT","amount":10}`
 - "Lightning invoice for 5000 sats" → `rln_create_ln_invoice {"amount_sats":5000}`
 
 Channels, peers and swap internals: read `references/channels.md`.

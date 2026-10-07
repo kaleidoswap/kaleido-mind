@@ -5,6 +5,17 @@ apps) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.2] — 2026-10-07
+
+### Changed
+
+- `rgb-lightning-node` skill: send and RGB invoice take the ticker (`USDT`) or
+  the `asset_id`; the worked examples pass the ticker. The engine and
+  kaleido-mcp 0.4.1 both resolve tickers, so the model no longer needs a
+  `rln_list_assets` lookup first. rgb-agent eval (`REPEAT=3`): send 2/3 → 3/3
+  on Qwen3.5 2B and 0/3 → 3/3 on Gemma4 2B, each in a single call.
+- kaleido-mcp tool snapshot refreshed to 0.4.1.
+
 ## [0.10.1] — 2026-10-07
 
 Robustness on models other than Qwen. rgb-agent eval (fake RLN node):
