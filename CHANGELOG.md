@@ -5,6 +5,14 @@ apps) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.4] — 2026-10-07
+
+### Fixed
+
+- `kaleidoswap_lsp_create_order` from kaleido-mcp is confirmation-gated, like
+  the in-app `lsp_create_order`. The kaleidoswap_ prefix kept it out of the
+  LSPS1 spend list, so an MCP host created a paid channel order without asking.
+
 ## [0.10.3] — 2026-10-07
 
 `@kaleidorg/mind` 0.10.3, `@kaleidorg/create-mind` 0.3.2.

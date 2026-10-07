@@ -35,3 +35,13 @@ describe('parseMcpResult', () => {
     expect(parseMcpResult(res)).toEqual({ a: 1, b: 2 });
   });
 });
+
+describe('MCP spend gating', () => {
+  it('gates the LSPS1 order on kaleido-mcp (kaleidoswap_ prefix) like the in-app tool', async () => {
+    const { toolRequiresConfirmation } = await import('./mcp.js');
+    expect(toolRequiresConfirmation('kaleidoswap_lsp_create_order', '')).toBe(true);
+    expect(toolRequiresConfirmation('lsp_create_order', '')).toBe(true);
+    expect(toolRequiresConfirmation('kaleidoswap_lsp_get_order', '')).toBe(false);
+    expect(toolRequiresConfirmation('kaleidoswap_lsp_quote_asset_channel', '')).toBe(false);
+  });
+});

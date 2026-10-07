@@ -24,11 +24,13 @@ import { isKaleidoswapSpendTool } from '../kaleidoswap/contract.js';
 import { isLsps1SpendTool } from '../lsps1/contract.js';
 import { isSpendTool } from '../wallet/contract.js';
 
-function toolRequiresConfirmation(name: string, description: string): boolean {
+export function toolRequiresConfirmation(name: string, description: string): boolean {
   return (
     isSpendTool(name) ||
     isKaleidoswapSpendTool(name) ||
     isLsps1SpendTool(name) ||
+    // kaleido-mcp names the LSPS1 tools with a kaleidoswap_ prefix.
+    isLsps1SpendTool(name.replace(/^kaleidoswap_/, '')) ||
     /\bSPEND\b.*\bconfirm/i.test(description)
   );
 }
