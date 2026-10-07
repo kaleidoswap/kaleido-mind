@@ -96,7 +96,7 @@ export function createQvacProvider(options: QvacProviderOptions): LLMProvider {
       const predict = input.maxTokens ?? options.defaultMaxTokens;
       // A thinking budget at or above the output cap never binds: the model can
       // spend the whole turn reasoning and return no answer. Keep half for it.
-      const thinkingCap = input.maxThinkingTokens ?? options.maxThinkingTokens;
+      const thinkingCap = input.thinking === 'off' ? 0 : (input.maxThinkingTokens ?? options.maxThinkingTokens);
       const maxThinkingTokens =
         thinkingCap !== undefined && predict !== undefined && thinkingCap >= predict
           ? Math.floor(predict / 2)

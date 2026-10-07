@@ -224,6 +224,21 @@ describe('Engine agentic loop', () => {
     expect(seen).toEqual(['required', undefined]);
   });
 
+  it('turns thinking off on the forced first call only', async () => {
+    const thinking: Array<string | undefined> = [];
+    const provider: LLMProvider = {
+      name: 'rec',
+      async runTurn(input) {
+        thinking.push(input.thinking);
+        return thinking.length === 1
+          ? { text: '', rawContent: '', toolCalls: [{ name: 'get_balance', arguments: {} }] }
+          : { text: 'done', rawContent: 'done', toolCalls: [] };
+      },
+    };
+    await new Engine({ provider, tools: freshTools() }).runAgentic([{ role: 'user', content: 'x' }], { firstTurnToolChoice: 'required' });
+    expect(thinking).toEqual(['off', undefined]);
+  });
+
   it('feeds an unparseable tool call back to the model once, then gives up cleanly', async () => {
     const histories: number[] = [];
     const provider: LLMProvider = {

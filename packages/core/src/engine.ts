@@ -63,6 +63,8 @@ export interface EngineOptions {
    * asset balance the answer calls sats. Default true.
    */
   fixAmountConversions?: boolean;
+  /** Let the model reason on a forced first tool call. Default false (thinking off). */
+  thinkOnForcedCalls?: boolean;
   /**
    * Answer a wallet action (create an invoice, get an address, pay, send) with
    * a fixed "no tool" reply, without inference, when no exposed tool can do it.
@@ -142,6 +144,7 @@ export class Engine {
   private readonly compressOpts?: ToolCrushOptions;
   private readonly guardPaymentData: boolean;
   private readonly fixAmounts: boolean;
+  private readonly thinkOnForcedCalls: boolean;
   private readonly guardMissingTools: boolean;
   private readonly endTurnOnDecline: boolean;
 
@@ -152,6 +155,7 @@ export class Engine {
     this.defaultMaxTurns = opts.defaultMaxTurns ?? 5;
     this.guardPaymentData = opts.guardUngroundedPaymentData ?? true;
     this.fixAmounts = opts.fixAmountConversions ?? true;
+    this.thinkOnForcedCalls = opts.thinkOnForcedCalls ?? false;
     this.guardMissingTools = opts.guardMissingTools ?? true;
     this.endTurnOnDecline = opts.endTurnOnDecline ?? true;
     this.compressOpts = opts.compressToolOutput
@@ -214,8 +218,10 @@ export class Engine {
         messages: history,
         tools: allTools,
         system,
+        // A forced first call only picks the tool and its arguments; reasoning
+        // there costs most of the turn's time on small models.
         ...(turn === 1 && opts.firstTurnToolChoice && allTools.length
-          ? { toolChoice: opts.firstTurnToolChoice }
+          ? { toolChoice: opts.firstTurnToolChoice, ...(this.thinkOnForcedCalls ? {} : { thinking: 'off' as const }) }
           : {}),
         onToken: opts.onToken ? (t) => opts.onToken!(t, turn) : undefined,
         signal: opts.signal,

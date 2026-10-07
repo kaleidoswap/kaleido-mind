@@ -23,6 +23,11 @@ export interface TurnInput {
    * empty or the provider has no such control.
    */
   toolChoice?: ToolChoice;
+  /**
+   * `'off'` asks the provider to skip reasoning for this turn (e.g. a forced
+   * tool call). Ignored by providers without reasoning control.
+   */
+  thinking?: 'off';
   /** Visible content tokens as they stream. */
   onToken?: (token: string) => void;
   signal?: AbortSignal;

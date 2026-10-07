@@ -17,6 +17,7 @@
  * Fully deterministic (no node/model/maker), so it runs in CI. Live tool
  * execution against a real node is the separate mcp.live.test.ts.
  */
+import type { FastIntent } from './fastpath/fastpath.js';
 import { describe, expect, it } from 'vitest';
 import { Funnel } from './funnel.js';
 import { ToolRegistry } from './tools/registry.js';
@@ -83,7 +84,7 @@ function searchMerchants(query: string): string {
  */
 function buildMind(
   provider: LLMProvider,
-  opts: { skills?: Skill[]; log?: (m: string) => void } = {},
+  opts: { skills?: Skill[]; log?: (m: string) => void; fastIntents?: FastIntent[] } = {},
 ): { funnel: Funnel; calls: Array<{ name: string; args: any }> } {
   const calls: Array<{ name: string; args: any }> = [];
   const tool = (name: string, response: any, spend = false) => ({
@@ -140,27 +141,21 @@ function buildMind(
   ]);
 
   return {
-    funnel: new Funnel({ provider, tools, recipes: DESKTOP_RECIPES, maxTurns: 8, skills: opts.skills, log: opts.log }),
+    funnel: new Funnel({ provider, tools, recipes: DESKTOP_RECIPES, maxTurns: 8, skills: opts.skills, log: opts.log, ...(opts.fastIntents ? { fastIntents: opts.fastIntents } : {}) }),
     calls,
   };
 }
 
 describe('desktop mind — balance', () => {
-  it('routes "what\'s my balance?" to the agentic tier and calls rln_get_balances', async () => {
-    const { funnel, calls } = buildMind(
-      scripted([
-        { text: '', toolCalls: [{ name: 'rln_get_balances', arguments: {} }] },
-        { text: 'You have 1,949,753 sats in Lightning.' },
-      ]),
-    );
+  it('answers "what\'s my balance?" on the fast path with rln_get_balances, no model', async () => {
+    const { funnel, calls } = buildMind(scripted([]));
 
     const res = await funnel.runTurn("what's my balance?");
 
-    expect(res.tier).toBe('agentic');
-    expect(calls.map((c) => c.name)).toContain('rln_get_balances');
-    const exec = res.toolCalls?.find((c) => c.name === 'rln_get_balances');
-    expect((exec?.result as { lightning_balance_sat?: number })?.lightning_balance_sat).toBe(1_949_753);
-    expect(res.text).toBeTruthy();
+    expect(res.tier).toBe('fast');
+    expect(calls.map((c) => c.name)).toEqual(['rln_get_balances']);
+    expect((res.data as { lightning_balance_sat?: number })?.lightning_balance_sat).toBe(1_949_753);
+    expect(res.text).toBe('On-chain: 100,000 sats spendable.\nLightning: 1,949,753 sats.');
   });
 });
 
@@ -359,7 +354,8 @@ describe('desktop mind — skill scoping (real skills)', () => {
         { text: '', toolCalls: [{ name: 'rln_get_balances', arguments: {} }] },
         { text: 'You have 1,949,753 sats.' },
       ]),
-      { skills: SKILLS, log: (m) => logs.push(m) },
+      // Fast path off, so the balance ask exercises skill scoping.
+      { skills: SKILLS, log: (m) => logs.push(m), fastIntents: [] },
     );
 
     const res = await funnel.runTurn("what's my balance?");

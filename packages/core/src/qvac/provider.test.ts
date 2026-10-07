@@ -120,6 +120,13 @@ describe('createQvacProvider.runTurn', () => {
     expect(calls[0].generationParams).toEqual({ reasoning_budget: 128 });
   });
 
+  it("sends reasoning_budget 0 when a turn asks for thinking 'off'", async () => {
+    const { fn, calls } = fakeCompletion({ contentText: 'ok', toolCalls: [], raw: { fullText: 'ok' } });
+    const p = createQvacProvider({ completion: fn as any, cancel: noopCancel, getModelId: () => 'm1', maxThinkingTokens: 128 });
+    await p.runTurn({ messages: [{ role: 'user', content: 'x' }], tools: [], thinking: 'off' });
+    expect(calls[0].generationParams).toEqual({ reasoning_budget: 0 });
+  });
+
   it('keeps the reasoning budget below the output cap', async () => {
     const { fn, calls } = fakeCompletion({ contentText: 'ok', toolCalls: [], raw: { fullText: 'ok' } });
     const p = createQvacProvider({ completion: fn as any, cancel: noopCancel, getModelId: () => 'm1', defaultMaxTokens: 512, maxThinkingTokens: 512 });
