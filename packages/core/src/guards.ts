@@ -78,6 +78,26 @@ const SEMANTIC_RULES: Record<string, (a: Record<string, unknown>) => string[]> =
 };
 SEMANTIC_RULES.wdk_issue_asset = SEMANTIC_RULES.rln_issue_asset!;
 
+/** Above this, a BTC amount in display units is almost certainly sats. */
+const MAX_PLAUSIBLE_BTC = 1000;
+
+/** KaleidoSwap quote amounts are display units; reject sats passed as BTC. */
+function btcDisplayAmounts(a: Record<string, unknown>): string[] {
+  const errors: string[] = [];
+  const legs: Array<[string, unknown]> = [['from_amount', a.from_asset_id], ['to_amount', a.to_asset_id]];
+  if (a.from_amount != null && a.to_amount != null) errors.push('give only one of "from_amount" or "to_amount"');
+  for (const [key, asset] of legs) {
+    const v = a[key];
+    if (typeof v !== 'number' || !/^btc$/i.test(String(asset ?? '').trim())) continue;
+    if (v >= MAX_PLAUSIBLE_BTC) {
+      errors.push(`"${key}" is in BTC, not sats: ${v} sats is ${+(v / 1e8).toFixed(8)} BTC — pass ${key}: ${+(v / 1e8).toFixed(8)}`);
+    }
+  }
+  return errors;
+}
+SEMANTIC_RULES.kaleidoswap_get_quote = btcDisplayAmounts;
+SEMANTIC_RULES.kaleidoswap_get_spreads = btcDisplayAmounts;
+
 /**
  * Validate (and lightly coerce) a tool call's arguments against its schema.
  * Unknown schema shapes pass through unchanged.

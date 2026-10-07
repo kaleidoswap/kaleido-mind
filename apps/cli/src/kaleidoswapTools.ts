@@ -212,10 +212,10 @@ const ROUTES: Record<string, Route> = {
     // amounts), so no re-scaling here — pass through as integers.
     body: (a) => ({
       rfq_id: a.rfq_id ?? a.quote_id,
-      from_asset: String(a.from_asset ?? ''),
-      from_amount: Math.round(Number(a.from_amount)),
-      to_asset: String(a.to_asset ?? ''),
-      to_amount: Math.round(Number(a.to_amount)),
+      from_asset: String(a.from_asset_id ?? a.from_asset ?? ''),
+      from_amount: Math.round(Number(a.from_amount_raw ?? a.from_amount)),
+      to_asset: String(a.to_asset_id ?? a.to_asset ?? ''),
+      to_amount: Math.round(Number(a.to_amount_raw ?? a.to_amount)),
     }),
   },
   kaleidoswap_atomic_execute: {

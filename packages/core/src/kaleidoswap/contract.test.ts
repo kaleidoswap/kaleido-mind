@@ -6,6 +6,7 @@ import {
   getKaleidoswapTool,
   kaleidoswapTools,
   bindKaleidoswapTools,
+  normalizeKaleidoswapArgs,
   type KaleidoswapHandler,
 } from './contract.js';
 
@@ -109,10 +110,14 @@ describe('bindKaleidoswapTools', () => {
     expect(pairs?.requiresConfirmation).toBeFalsy();
   });
 
-  it('dispatches execute() to the right handler with args', async () => {
+  it('dispatches execute() with kaleido-mcp args plus the legacy aliases', async () => {
     const src = bindKaleidoswapTools(echoHandlers());
-    const r = await src.execute('kaleidoswap_get_quote', { from_asset: 'BTC', to_asset: 'USDT', amount: 100_000 });
-    expect(r).toMatchObject({ ok: true, tool: 'get_quote', args: { from_asset: 'BTC', amount: 100_000 } });
+    const r = await src.execute('kaleidoswap_get_quote', { from_asset_id: 'BTC', to_asset_id: 'USDT', from_amount: 0.001 });
+    expect(r).toMatchObject({
+      ok: true,
+      tool: 'get_quote',
+      args: { from_asset_id: 'BTC', to_asset_id: 'USDT', from_amount: 0.001, from_asset: 'BTC', to_asset: 'USDT', amount: 100_000 },
+    });
   });
 
   it('throws when a handler is missing and allowMissing is false', () => {
@@ -140,5 +145,29 @@ describe('bindKaleidoswapTools', () => {
   it('uses opts.id for the ToolSource id', () => {
     const src = bindKaleidoswapTools(echoHandlers(), { id: 'maker-prod' });
     expect(src.id).toBe('maker-prod');
+  });
+});
+
+describe('normalizeKaleidoswapArgs', () => {
+  it('maps a display-unit quote to the legacy sats amount', () => {
+    expect(normalizeKaleidoswapArgs('kaleidoswap_get_quote', { from_asset_id: 'BTC', to_asset_id: 'USDT', from_amount: 0.0005 }))
+      .toMatchObject({ from_asset: 'BTC', to_asset: 'USDT', amount: 50_000 });
+  });
+
+  it('keeps RGB amounts in display units and marks a buy-side amount', () => {
+    expect(normalizeKaleidoswapArgs('kaleidoswap_get_quote', { from_asset_id: 'BTC', to_asset_id: 'USDT', to_amount: 10 }))
+      .toMatchObject({ amount: 10, amount_side: 'to' });
+  });
+
+  it('maps a legacy sats quote to display units', () => {
+    expect(normalizeKaleidoswapArgs('kaleidoswap_get_quote', { from_asset: 'BTC', to_asset: 'USDT', amount: 100_000 }))
+      .toMatchObject({ from_asset_id: 'BTC', to_asset_id: 'USDT', from_amount: 0.001 });
+    expect(normalizeKaleidoswapArgs('kaleidoswap_get_quote', { from_asset: 'USDT', to_asset: 'BTC', amount: 25 }))
+      .toMatchObject({ from_amount: 25 });
+  });
+
+  it('aliases rfq_id/quote_id and payment_hash/atomic_id', () => {
+    expect(normalizeKaleidoswapArgs('kaleidoswap_atomic_init', { rfq_id: 'r1' })).toMatchObject({ quote_id: 'r1' });
+    expect(normalizeKaleidoswapArgs('kaleidoswap_atomic_status', { atomic_id: 'h1' })).toMatchObject({ payment_hash: 'h1' });
   });
 });
