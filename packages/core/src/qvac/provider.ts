@@ -43,9 +43,7 @@ export interface QvacProviderOptions {
   /**
    * Cap `<think>` reasoning at this many TOKENS (not seconds — tok/s varies).
    * Sent as the SDK's `reasoning_budget`, so the model closes its reasoning and
-   * answers. If the stream still runs well past it, the run is cancelled and a
-   * short fallback is returned instead of hanging on "Thinking…". Omit for
-   * unlimited reasoning.
+   * answers. Kept below the output cap. Omit for unlimited reasoning.
    */
   maxThinkingTokens?: number;
   /**
@@ -74,11 +72,6 @@ export interface QvacTurnInput extends TurnInput {
   onThinking?: (token: string) => void;
   onStats?: (stats: QvacTurnStats) => void;
 }
-
-/** Shown when a turn is cut off because it blew its thinking-token budget. */
-const THINKING_BUDGET_FALLBACK =
-  'I spent my whole thinking budget on that one without landing an answer. ' +
-  'Try asking again, more specifically.';
 
 export function createQvacProvider(options: QvacProviderOptions): LLMProvider {
   return {
@@ -152,24 +145,12 @@ export function createQvacProvider(options: QvacProviderOptions): LLMProvider {
       const result = await consumeRun(run, {
         onToken: input.onToken,
         onThinking: input.onThinking ?? options.onThinking,
-        // Backstop only: the SDK enforces the budget itself, and our count is a
-        // char-based estimate, so leave headroom before cancelling.
-        maxThinkingTokens:
-          maxThinkingTokens === undefined ? undefined : Math.ceil(maxThinkingTokens * 1.25) + 32,
-        // Cancel the in-flight run the moment the thinking budget is blown — the
-        // SDK keeps generating otherwise. Fire-and-forget; `final` then resolves.
-        onThinkingBudgetExceeded: () => {
-          void options.cancel({ requestId: run.requestId }).catch(() => {});
-        },
       });
 
       // Surface the real per-turn inference stats (backend device + throughput).
       if (result.stats) (input.onStats ?? options.onStats)?.(result.stats);
 
-      // A turn cut off mid-reasoning has no visible answer — return a short note
-      // instead of an empty bubble so the agentic loop ends cleanly.
-      const text =
-        result.text || (result.thinkingBudgetExceeded ? THINKING_BUDGET_FALLBACK : result.text);
+      const text = result.text;
       const promptTokens = result.stats?.promptTokens;
       const generated = result.stats?.generatedTokens;
       const totalTokens =
@@ -198,7 +179,7 @@ export function createQvacProvider(options: QvacProviderOptions): LLMProvider {
       };
 
       const incomplete =
-        !result.text && result.toolCalls.length === 0 && (result.thinkingBudgetExceeded || !!result.truncated);
+        !result.text && result.toolCalls.length === 0 && !!result.truncated;
       return {
         text,
         rawContent: result.rawContent,
