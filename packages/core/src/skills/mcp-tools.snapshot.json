@@ -1,0 +1,1938 @@
+{
+  "source": "kaleido-mcp",
+  "version": "0.3.1",
+  "tools": {
+    "get_market_data": {
+      "required": [
+        "assets"
+      ],
+      "properties": {
+        "assets": {
+          "type": "array",
+          "description": ""
+        }
+      }
+    },
+    "get_ohlcv": {
+      "required": [
+        "asset"
+      ],
+      "properties": {
+        "asset": {
+          "type": "string",
+          "description": ""
+        },
+        "days": {
+          "type": "integer",
+          "description": "Days of candles (default: 1, max: 90)"
+        }
+      }
+    },
+    "get_price": {
+      "required": [
+        "asset"
+      ],
+      "properties": {
+        "asset": {
+          "type": "string",
+          "description": ""
+        },
+        "vs_currency": {
+          "type": "string",
+          "description": "Quote currency (default: usd)"
+        }
+      }
+    },
+    "get_sentiment": {
+      "required": [],
+      "properties": {}
+    },
+    "getAddress": {
+      "required": [
+        "chain"
+      ],
+      "properties": {
+        "chain": {
+          "type": "string",
+          "description": "The blockchain to get the address for"
+        }
+      }
+    },
+    "getBalance": {
+      "required": [
+        "chain"
+      ],
+      "properties": {
+        "chain": {
+          "type": "string",
+          "description": "The blockchain to get the balance for"
+        }
+      }
+    },
+    "getCurrentPrice": {
+      "required": [
+        "base",
+        "quote"
+      ],
+      "properties": {
+        "base": {
+          "type": "string",
+          "description": "Base currency symbol (e.g., \"BTC\", \"ETH\")"
+        },
+        "quote": {
+          "type": "string",
+          "description": "Quote currency symbol (e.g., \"USD\", \"USDT\")"
+        }
+      }
+    },
+    "getFeeRates": {
+      "required": [
+        "chain"
+      ],
+      "properties": {
+        "chain": {
+          "type": "string",
+          "description": "The blockchain to get fee rates for"
+        }
+      }
+    },
+    "getHistoricalPrice": {
+      "required": [
+        "from",
+        "to"
+      ],
+      "properties": {
+        "from": {
+          "type": "string",
+          "description": "Base currency symbol (e.g., \"BTC\", \"ETH\")"
+        },
+        "to": {
+          "type": "string",
+          "description": "Quote currency symbol (e.g., \"USD\", \"USDT\")"
+        },
+        "start": {
+          "type": "integer",
+          "description": "Start timestamp in milliseconds (unix epoch)"
+        },
+        "end": {
+          "type": "integer",
+          "description": "End timestamp in milliseconds (unix epoch)"
+        }
+      }
+    },
+    "getMaxSpendableBtc": {
+      "required": [],
+      "properties": {}
+    },
+    "getTokenBalance": {
+      "required": [
+        "chain",
+        "token"
+      ],
+      "properties": {
+        "chain": {
+          "type": "string",
+          "description": "The blockchain to check"
+        },
+        "token": {
+          "type": "string",
+          "description": "Token symbol (e.g., \"USDT\", \"USDC\", \"DAI\")"
+        }
+      }
+    },
+    "kaleido_node_down": {
+      "required": [],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Environment name."
+        }
+      }
+    },
+    "kaleido_node_info": {
+      "required": [],
+      "properties": {}
+    },
+    "kaleido_node_init": {
+      "required": [
+        "password"
+      ],
+      "properties": {
+        "password": {
+          "type": "string",
+          "description": "Wallet password to set."
+        },
+        "mnemonic": {
+          "type": "string",
+          "description": "Optional BIP39 mnemonic to restore from."
+        }
+      }
+    },
+    "kaleido_node_list": {
+      "required": [],
+      "properties": {}
+    },
+    "kaleido_node_lock": {
+      "required": [],
+      "properties": {}
+    },
+    "kaleido_node_ps": {
+      "required": [],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Environment name."
+        }
+      }
+    },
+    "kaleido_node_status": {
+      "required": [],
+      "properties": {}
+    },
+    "kaleido_node_stop": {
+      "required": [],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Environment name."
+        }
+      }
+    },
+    "kaleido_node_unlock": {
+      "required": [
+        "password"
+      ],
+      "properties": {
+        "password": {
+          "type": "string",
+          "description": "Wallet password."
+        },
+        "announce_alias": {
+          "type": "string",
+          "description": "Optional Lightning peer alias to announce."
+        },
+        "announce_address": {
+          "type": "string",
+          "description": "Optional public address for peer discovery (host:port)."
+        }
+      }
+    },
+    "kaleido_node_up": {
+      "required": [],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Environment name. Omit to auto-detect if only one exists."
+        }
+      }
+    },
+    "kaleido_node_use": {
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Environment name."
+        },
+        "node": {
+          "type": "number",
+          "description": "1-based node index (default: 1)."
+        }
+      }
+    },
+    "kaleidoswap_atomic_execute": {
+      "required": [
+        "swapstring",
+        "taker_pubkey",
+        "payment_hash"
+      ],
+      "properties": {
+        "swapstring": {
+          "type": "string",
+          "description": ""
+        },
+        "taker_pubkey": {
+          "type": "string",
+          "description": "Node pubkey from rln_get_node_info"
+        },
+        "payment_hash": {
+          "type": "string",
+          "description": ""
+        }
+      }
+    },
+    "kaleidoswap_atomic_init": {
+      "required": [
+        "rfq_id",
+        "from_asset_id",
+        "from_amount_raw",
+        "to_asset_id",
+        "to_amount_raw"
+      ],
+      "properties": {
+        "rfq_id": {
+          "type": "string",
+          "description": ""
+        },
+        "from_asset_id": {
+          "type": "string",
+          "description": ""
+        },
+        "from_amount_raw": {
+          "type": "integer",
+          "description": "Raw integer units from quote"
+        },
+        "to_asset_id": {
+          "type": "string",
+          "description": ""
+        },
+        "to_amount_raw": {
+          "type": "integer",
+          "description": "Raw integer units from quote"
+        }
+      }
+    },
+    "kaleidoswap_atomic_status": {
+      "required": [
+        "payment_hash"
+      ],
+      "properties": {
+        "payment_hash": {
+          "type": "string",
+          "description": ""
+        },
+        "access_token": {
+          "type": "string",
+          "description": "Per-swap token from kaleidoswap_atomic_init; required once the maker enforces it"
+        }
+      }
+    },
+    "kaleidoswap_get_assets": {
+      "required": [],
+      "properties": {}
+    },
+    "kaleidoswap_get_pairs": {
+      "required": [],
+      "properties": {}
+    },
+    "kaleidoswap_get_quote": {
+      "required": [
+        "from_asset_id",
+        "to_asset_id"
+      ],
+      "properties": {
+        "from_asset_id": {
+          "type": "string",
+          "description": "Asset to sell — ticker ('BTC') or RGB protocol ID ('rgb:...')"
+        },
+        "to_asset_id": {
+          "type": "string",
+          "description": "Asset to buy"
+        },
+        "from_layer": {
+          "type": "string",
+          "description": "Source layer: 'BTC_LN', 'BTC_SPARK', 'RGB_LN'. Optional — derived from the asset when omitted."
+        },
+        "to_layer": {
+          "type": "string",
+          "description": "Destination layer: 'RGB_LN', 'BTC_SPARK', 'BTC_LN'. Optional — derived from the asset when omitted."
+        },
+        "from_amount": {
+          "type": "number",
+          "description": "Amount to SELL in display units (e.g. 0.001 BTC). Provide either from_amount or to_amount, not both."
+        },
+        "to_amount": {
+          "type": "number",
+          "description": "Amount to BUY/receive in display units (e.g. 1.0 USDT). Provide either from_amount or to_amount, not both."
+        }
+      }
+    },
+    "kaleidoswap_get_spreads": {
+      "required": [
+        "from_asset_id",
+        "to_asset_id",
+        "from_amount"
+      ],
+      "properties": {
+        "from_asset_id": {
+          "type": "string",
+          "description": ""
+        },
+        "to_asset_id": {
+          "type": "string",
+          "description": ""
+        },
+        "from_amount": {
+          "type": "number",
+          "description": "Amount to sell in display units"
+        }
+      }
+    },
+    "kaleidoswap_lsp_create_asset_channel": {
+      "required": [
+        "asset",
+        "asset_amount",
+        "rfq_id"
+      ],
+      "properties": {
+        "asset": {
+          "type": "string",
+          "description": "Asset ticker or id (must match the quote)"
+        },
+        "asset_amount": {
+          "type": "number",
+          "description": "Asset amount in display units (must match the quote)"
+        },
+        "rfq_id": {
+          "type": "string",
+          "description": "The rfq_id from kaleidoswap_lsp_quote_asset_channel (must still be valid)"
+        },
+        "total_sat": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Internal: total cost in sats (from the quote). Do not set."
+        },
+        "btc_amount_sat": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Internal: asset price in sats (from the quote). Do not set."
+        },
+        "channel_fee_sat": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Internal: channel fee in sats (from the quote). Do not set."
+        },
+        "expires_at": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Internal: quote expiry unix seconds. Do not set."
+        }
+      }
+    },
+    "kaleidoswap_lsp_create_order": {
+      "required": [
+        "client_pubkey",
+        "lsp_balance_sat",
+        "client_balance_sat",
+        "channel_expiry_blocks"
+      ],
+      "properties": {
+        "client_pubkey": {
+          "type": "string",
+          "description": ""
+        },
+        "lsp_balance_sat": {
+          "type": "integer",
+          "description": ""
+        },
+        "client_balance_sat": {
+          "type": "integer",
+          "description": ""
+        },
+        "required_channel_confirmations": {
+          "type": "integer",
+          "description": "0 for zero-conf (default 0)"
+        },
+        "funding_confirms_within_blocks": {
+          "type": "integer",
+          "description": "default 6"
+        },
+        "channel_expiry_blocks": {
+          "type": "integer",
+          "description": ""
+        },
+        "announce_channel": {
+          "type": "boolean",
+          "description": "default false (private)"
+        },
+        "asset_id": {
+          "type": "string",
+          "description": ""
+        },
+        "lsp_asset_amount": {
+          "type": "number",
+          "description": ""
+        },
+        "client_asset_amount": {
+          "type": "number",
+          "description": ""
+        },
+        "rfq_id": {
+          "type": "string",
+          "description": ""
+        }
+      }
+    },
+    "kaleidoswap_lsp_estimate_fees": {
+      "required": [
+        "lsp_balance_sat",
+        "client_balance_sat",
+        "channel_expiry_blocks"
+      ],
+      "properties": {
+        "client_pubkey": {
+          "type": "string",
+          "description": ""
+        },
+        "lsp_balance_sat": {
+          "type": "integer",
+          "description": ""
+        },
+        "client_balance_sat": {
+          "type": "integer",
+          "description": ""
+        },
+        "channel_expiry_blocks": {
+          "type": "integer",
+          "description": ""
+        },
+        "required_channel_confirmations": {
+          "type": "integer",
+          "description": ""
+        },
+        "funding_confirms_within_blocks": {
+          "type": "integer",
+          "description": ""
+        },
+        "asset_id": {
+          "type": "string",
+          "description": ""
+        },
+        "lsp_asset_amount": {
+          "type": "number",
+          "description": ""
+        },
+        "rfq_id": {
+          "type": "string",
+          "description": ""
+        }
+      }
+    },
+    "kaleidoswap_lsp_get_info": {
+      "required": [],
+      "properties": {}
+    },
+    "kaleidoswap_lsp_get_order": {
+      "required": [
+        "order_id"
+      ],
+      "properties": {
+        "order_id": {
+          "type": "string",
+          "description": ""
+        }
+      }
+    },
+    "kaleidoswap_lsp_quote_asset_channel": {
+      "required": [
+        "asset",
+        "asset_amount"
+      ],
+      "properties": {
+        "asset": {
+          "type": "string",
+          "description": "Asset ticker or id, e.g. \"USDT\" or \"XAUT\""
+        },
+        "asset_amount": {
+          "type": "number",
+          "description": "Amount of the asset to load into the channel, in display units (e.g. 100)"
+        }
+      }
+    },
+    "kaleidoswap_submarine_create": {
+      "required": [
+        "invoice"
+      ],
+      "properties": {
+        "invoice": {
+          "type": "string",
+          "description": "BOLT11 Lightning invoice to pay (lnbc…/lntb…/lntbs…/lnbcrt…), with an amount"
+        },
+        "from_asset": {
+          "type": "string",
+          "description": "Asset to pay with (default L-USDT)"
+        }
+      }
+    },
+    "kaleidoswap_submarine_fund": {
+      "required": [
+        "swap_id"
+      ],
+      "properties": {
+        "swap_id": {
+          "type": "string",
+          "description": "Swap id returned by kaleidoswap_submarine_create"
+        }
+      }
+    },
+    "kaleidoswap_submarine_pairs": {
+      "required": [],
+      "properties": {}
+    },
+    "kaleidoswap_submarine_status": {
+      "required": [
+        "swap_id"
+      ],
+      "properties": {
+        "swap_id": {
+          "type": "string",
+          "description": "Swap id returned by kaleidoswap_submarine_create"
+        }
+      }
+    },
+    "l402_fetch_resource": {
+      "required": [
+        "resource_url",
+        "token"
+      ],
+      "properties": {
+        "resource_url": {
+          "type": "string",
+          "description": ""
+        },
+        "token": {
+          "type": "string",
+          "description": "L402 Bearer token in format \"macaroon:preimage\""
+        }
+      }
+    },
+    "l402_get_market_data": {
+      "required": [
+        "assets"
+      ],
+      "properties": {
+        "assets": {
+          "type": "array",
+          "description": ""
+        }
+      }
+    },
+    "l402_get_ohlcv": {
+      "required": [
+        "asset"
+      ],
+      "properties": {
+        "asset": {
+          "type": "string",
+          "description": ""
+        },
+        "days": {
+          "type": "integer",
+          "description": "Days of candles (default: 1, max: 90)"
+        }
+      }
+    },
+    "l402_get_price": {
+      "required": [
+        "asset"
+      ],
+      "properties": {
+        "asset": {
+          "type": "string",
+          "description": ""
+        },
+        "vs_currency": {
+          "type": "string",
+          "description": "Quote currency (default: usd)"
+        }
+      }
+    },
+    "l402_get_sentiment": {
+      "required": [],
+      "properties": {}
+    },
+    "l402_request_challenge": {
+      "required": [
+        "resource_url"
+      ],
+      "properties": {
+        "resource_url": {
+          "type": "string",
+          "description": "URL of the L402-protected resource"
+        },
+        "price_sats": {
+          "type": "integer",
+          "description": "Max price in sats willing to pay (default: 10)"
+        }
+      }
+    },
+    "liquid_get_address": {
+      "required": [],
+      "properties": {}
+    },
+    "liquid_get_asset_balance": {
+      "required": [
+        "asset_id"
+      ],
+      "properties": {
+        "asset_id": {
+          "type": "string",
+          "description": "Liquid asset id (64 hex characters)"
+        }
+      }
+    },
+    "liquid_get_balance": {
+      "required": [],
+      "properties": {}
+    },
+    "liquid_get_fee_rates": {
+      "required": [],
+      "properties": {}
+    },
+    "liquid_get_node_info": {
+      "required": [],
+      "properties": {}
+    },
+    "liquid_list_assets": {
+      "required": [],
+      "properties": {}
+    },
+    "liquid_list_transactions": {
+      "required": [],
+      "properties": {}
+    },
+    "liquid_list_unspents": {
+      "required": [],
+      "properties": {}
+    },
+    "liquid_send_asset": {
+      "required": [
+        "asset_id",
+        "recipient",
+        "amount"
+      ],
+      "properties": {
+        "asset_id": {
+          "type": "string",
+          "description": "Liquid asset id (64 hex characters)"
+        },
+        "recipient": {
+          "type": "string",
+          "description": "Liquid confidential (CT) destination address"
+        },
+        "amount": {
+          "type": "integer",
+          "description": "Amount to send, in the asset smallest unit"
+        },
+        "fee_rate": {
+          "type": "number",
+          "description": "Fee rate in sat/vB (default: network minimum)"
+        }
+      }
+    },
+    "liquid_send_btc": {
+      "required": [
+        "recipient",
+        "amount_sats"
+      ],
+      "properties": {
+        "recipient": {
+          "type": "string",
+          "description": "Liquid confidential (CT) destination address"
+        },
+        "amount_sats": {
+          "type": "integer",
+          "description": "Amount to send, in satoshis"
+        },
+        "fee_rate": {
+          "type": "number",
+          "description": "Fee rate in sat/vB (default: network minimum)"
+        }
+      }
+    },
+    "mpp_parse_challenge_header": {
+      "required": [
+        "url",
+        "www_authenticate"
+      ],
+      "properties": {
+        "url": {
+          "type": "string",
+          "description": "URL that issued the 402"
+        },
+        "www_authenticate": {
+          "type": "string",
+          "description": "Raw value of the WWW-Authenticate header"
+        }
+      }
+    },
+    "mpp_request_challenge": {
+      "required": [
+        "url"
+      ],
+      "properties": {
+        "url": {
+          "type": "string",
+          "description": "URL of the MPP-protected resource"
+        }
+      }
+    },
+    "mpp_submit_credential": {
+      "required": [
+        "url",
+        "credential"
+      ],
+      "properties": {
+        "url": {
+          "type": "string",
+          "description": "Same URL used in mpp_request_challenge"
+        },
+        "credential": {
+          "type": "string",
+          "description": "Credential JSON string from rln_mpp_pay or spark_mpp_pay"
+        }
+      }
+    },
+    "quoteSendTransaction": {
+      "required": [
+        "chain",
+        "to",
+        "value"
+      ],
+      "properties": {
+        "chain": {
+          "type": "string",
+          "description": "The blockchain to quote on"
+        },
+        "to": {
+          "type": "string",
+          "description": "The recipient address"
+        },
+        "value": {
+          "type": "string",
+          "description": "The amount to send in base unit (satoshis for Bitcoin, wei for Ethereum, etc.)"
+        }
+      }
+    },
+    "quoteTransfer": {
+      "required": [
+        "chain",
+        "token",
+        "recipient",
+        "amount"
+      ],
+      "properties": {
+        "chain": {
+          "type": "string",
+          "description": "The blockchain to quote on"
+        },
+        "token": {
+          "type": "string",
+          "description": "Token symbol (e.g., \"USDT\", \"USDC\", \"DAI\")"
+        },
+        "recipient": {
+          "type": "string",
+          "description": "The recipient address"
+        },
+        "amount": {
+          "type": "string",
+          "description": "The amount to transfer in human-readable format (e.g., \"10\" or \"0.5\")"
+        }
+      }
+    },
+    "rln_atomic_taker": {
+      "required": [
+        "swapstring"
+      ],
+      "properties": {
+        "swapstring": {
+          "type": "string",
+          "description": "Swapstring from kaleidoswap_atomic_init"
+        }
+      }
+    },
+    "rln_close_channel": {
+      "required": [
+        "channel_id",
+        "peer_pubkey"
+      ],
+      "properties": {
+        "channel_id": {
+          "type": "string",
+          "description": "Channel ID from rln_list_channels"
+        },
+        "peer_pubkey": {
+          "type": "string",
+          "description": "Peer pubkey from rln_list_channels"
+        },
+        "force": {
+          "type": "boolean",
+          "description": "Force close (unilateral). Default: false (cooperative close)"
+        }
+      }
+    },
+    "rln_connect_peer": {
+      "required": [
+        "peer_pubkey_and_addr"
+      ],
+      "properties": {
+        "peer_pubkey_and_addr": {
+          "type": "string",
+          "description": "pubkey@host:port"
+        }
+      }
+    },
+    "rln_create_ln_invoice": {
+      "required": [],
+      "properties": {
+        "amount_sats": {
+          "type": "integer",
+          "description": "Amount in satoshis. Omit for any-amount."
+        },
+        "amount_msat": {
+          "type": "integer",
+          "description": "Amount in millisatoshis, instead of amount_sats"
+        },
+        "description": {
+          "type": "string",
+          "description": ""
+        },
+        "expiry_sec": {
+          "type": "integer",
+          "description": "Expiry in seconds (default: 3600)"
+        }
+      }
+    },
+    "rln_create_rgb_invoice": {
+      "required": [],
+      "properties": {
+        "asset_id": {
+          "type": "string",
+          "description": "RGB asset ID. Omit for any asset."
+        },
+        "amount": {
+          "type": "number",
+          "description": "Expected amount in display units (e.g. 65.5 for 65.5 USDT)"
+        },
+        "duration_seconds": {
+          "type": "integer",
+          "description": "Invoice expiry (default: 86400 = 24h)"
+        },
+        "transport_endpoints": {
+          "type": "array",
+          "description": "RGB proxy endpoints the payer posts the consignment to. Defaults to the network RGB proxy (RGB_PROXY_ENDPOINT)."
+        }
+      }
+    },
+    "rln_create_utxos": {
+      "required": [],
+      "properties": {
+        "num": {
+          "type": "integer",
+          "description": "Number of UTXOs to create (default: node decides, typically 5)"
+        },
+        "size": {
+          "type": "integer",
+          "description": "Size of each UTXO in sats (default: node decides)"
+        },
+        "up_to": {
+          "type": "boolean",
+          "description": "If true, only create enough UTXOs to reach `num` free ones (default: false)"
+        },
+        "fee_rate": {
+          "type": "number",
+          "description": "On-chain fee rate in sat/vbyte (default: 1)"
+        }
+      }
+    },
+    "rln_get_address": {
+      "required": [],
+      "properties": {}
+    },
+    "rln_get_asset_balance": {
+      "required": [
+        "asset_id"
+      ],
+      "properties": {
+        "asset_id": {
+          "type": "string",
+          "description": "RGB asset ID e.g. 'rgb:2JEUOrsc-...'"
+        }
+      }
+    },
+    "rln_get_balances": {
+      "required": [],
+      "properties": {
+        "skip_sync": {
+          "type": "boolean",
+          "description": "Skip blockchain sync for faster response (default: false)"
+        }
+      }
+    },
+    "rln_get_channel_id": {
+      "required": [
+        "temporary_channel_id"
+      ],
+      "properties": {
+        "temporary_channel_id": {
+          "type": "string",
+          "description": "Temporary channel ID from rln_open_channel"
+        }
+      }
+    },
+    "rln_get_node_info": {
+      "required": [],
+      "properties": {}
+    },
+    "rln_get_swap": {
+      "required": [
+        "payment_hash"
+      ],
+      "properties": {
+        "payment_hash": {
+          "type": "string",
+          "description": "Payment hash from kaleidoswap_atomic_init"
+        },
+        "taker": {
+          "type": "boolean",
+          "description": "Filter for taker-side swap"
+        }
+      }
+    },
+    "rln_issue_asset": {
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "schema": {
+          "type": "string",
+          "description": "Asset schema (default: NIA)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Asset name, e.g. \"Hackathon Ticket\""
+        },
+        "ticker": {
+          "type": "string",
+          "description": "Uppercase ticker, e.g. \"TICKET\". Required for NIA and UDA, ignored for CFA."
+        },
+        "amount": {
+          "type": "number",
+          "description": "Total supply in display units (e.g. 1000). Required for NIA and CFA; UDA always has supply 1."
+        },
+        "precision": {
+          "type": "integer",
+          "description": "Decimal places (default: 0). Raw supply = amount × 10^precision."
+        },
+        "details": {
+          "type": "string",
+          "description": "Optional free-text description (CFA and UDA only)"
+        }
+      }
+    },
+    "rln_list_assets": {
+      "required": [],
+      "properties": {
+        "schemas": {
+          "type": "array",
+          "description": ""
+        }
+      }
+    },
+    "rln_list_channels": {
+      "required": [],
+      "properties": {
+        "usable_only": {
+          "type": "boolean",
+          "description": "Return only usable channels (default: false)"
+        }
+      }
+    },
+    "rln_list_payments": {
+      "required": [],
+      "properties": {
+        "limit": {
+          "type": "integer",
+          "description": "Max payments to return (default: 20)"
+        },
+        "inbound_only": {
+          "type": "boolean",
+          "description": ""
+        },
+        "outbound_only": {
+          "type": "boolean",
+          "description": ""
+        }
+      }
+    },
+    "rln_list_swaps": {
+      "required": [],
+      "properties": {}
+    },
+    "rln_list_transfers": {
+      "required": [
+        "asset_id"
+      ],
+      "properties": {
+        "asset_id": {
+          "type": "string",
+          "description": "RGB asset ID"
+        }
+      }
+    },
+    "rln_mpp_pay": {
+      "required": [
+        "invoice"
+      ],
+      "properties": {
+        "invoice": {
+          "type": "string",
+          "description": "BOLT11 invoice from mpp_request_challenge"
+        },
+        "challenge_id": {
+          "type": "string",
+          "description": "MPP challenge_id"
+        },
+        "macaroon": {
+          "type": "string",
+          "description": "Macaroon for L402-compatible servers"
+        }
+      }
+    },
+    "rln_open_channel": {
+      "required": [
+        "peer_pubkey_and_addr",
+        "capacity_sat"
+      ],
+      "properties": {
+        "peer_pubkey_and_addr": {
+          "type": "string",
+          "description": "pubkey@host:port"
+        },
+        "capacity_sat": {
+          "type": "integer",
+          "description": "Channel capacity in satoshis"
+        },
+        "push_msat": {
+          "type": "integer",
+          "description": "Millisatoshis to push to remote (default: 0)"
+        },
+        "asset_id": {
+          "type": "string",
+          "description": "RGB asset ID to allocate"
+        },
+        "asset_amount": {
+          "type": "number",
+          "description": "Amount of RGB asset to allocate"
+        },
+        "is_public": {
+          "type": "boolean",
+          "description": "Announce channel publicly (default: false)"
+        }
+      }
+    },
+    "rln_pay_invoice": {
+      "required": [
+        "invoice"
+      ],
+      "properties": {
+        "invoice": {
+          "type": "string",
+          "description": "BOLT11 invoice string (lnbc... or lntb...)"
+        }
+      }
+    },
+    "rln_refresh_transfers": {
+      "required": [],
+      "properties": {
+        "skip_sync": {
+          "type": "boolean",
+          "description": ""
+        }
+      }
+    },
+    "rln_send_asset": {
+      "required": [
+        "asset_id",
+        "recipient_id",
+        "amount"
+      ],
+      "properties": {
+        "asset_id": {
+          "type": "string",
+          "description": "RGB asset ID"
+        },
+        "recipient_id": {
+          "type": "string",
+          "description": "Recipient identifier from an RGB invoice"
+        },
+        "amount": {
+          "type": "number",
+          "description": "Amount in display units (e.g. 65.5 for USDT)"
+        },
+        "transport_endpoints": {
+          "type": "array",
+          "description": "RGB proxy endpoints from the receiver invoice. Defaults to the network RGB proxy (RGB_PROXY_ENDPOINT)."
+        },
+        "fee_rate": {
+          "type": "number",
+          "description": ""
+        }
+      }
+    },
+    "rln_send_btc": {
+      "required": [
+        "address",
+        "amount_sat"
+      ],
+      "properties": {
+        "address": {
+          "type": "string",
+          "description": "Destination Bitcoin address"
+        },
+        "amount_sat": {
+          "type": "integer",
+          "description": "Amount in satoshis"
+        },
+        "fee_rate": {
+          "type": "number",
+          "description": "Fee rate in sat/vbyte (default: 3)"
+        }
+      }
+    },
+    "search_paid_apis": {
+      "required": [],
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "Search keyword (e.g. \"bitcoin price\", \"on-chain analytics\", \"sentiment\")"
+        },
+        "protocol": {
+          "type": "string",
+          "description": "L402=Lightning, MPP=Stripe/Tempo, x402=Base/Solana"
+        },
+        "category": {
+          "type": "string",
+          "description": "Category filter (e.g. \"finance\", \"crypto\", \"ai\", \"data\")"
+        },
+        "health": {
+          "type": "string",
+          "description": ""
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Max results (default: 10)"
+        }
+      }
+    },
+    "sendTransaction": {
+      "required": [
+        "chain",
+        "to",
+        "value"
+      ],
+      "properties": {
+        "chain": {
+          "type": "string",
+          "description": "The blockchain to send on"
+        },
+        "to": {
+          "type": "string",
+          "description": "The recipient address"
+        },
+        "value": {
+          "type": "string",
+          "description": "The amount to send in base unit (satoshis for Bitcoin, wei for Ethereum, etc.)"
+        }
+      }
+    },
+    "sign": {
+      "required": [
+        "chain",
+        "message"
+      ],
+      "properties": {
+        "chain": {
+          "type": "string",
+          "description": "The blockchain to use for signing"
+        },
+        "message": {
+          "type": "string",
+          "description": "The message to sign"
+        }
+      }
+    },
+    "spark_create_lightning_invoice": {
+      "required": [],
+      "properties": {
+        "amount_sats": {
+          "type": "integer",
+          "description": "Amount in satoshis to receive. Omit for any-amount invoice."
+        },
+        "memo": {
+          "type": "string",
+          "description": "Invoice description"
+        }
+      }
+    },
+    "spark_create_sats_invoice": {
+      "required": [],
+      "properties": {
+        "amount_sats": {
+          "type": "integer",
+          "description": "Amount in satoshis to receive. Omit for open (any-amount) invoice."
+        },
+        "amount": {
+          "type": "integer",
+          "description": "Alias of amount_sats"
+        },
+        "memo": {
+          "type": "string",
+          "description": "Optional description"
+        },
+        "sender_spark_address": {
+          "type": "string",
+          "description": "Optional Spark address of the expected sender (restricts who can pay)"
+        },
+        "expiry_minutes": {
+          "type": "number",
+          "description": "Optional expiry in minutes from now"
+        }
+      }
+    },
+    "spark_create_tokens_invoice": {
+      "required": [],
+      "properties": {
+        "token": {
+          "type": "string",
+          "description": "Spark token identifier (btkn1...). Omit to use configured USDT token."
+        },
+        "amount": {
+          "type": "string",
+          "description": "Amount in base token units as a string integer (e.g. \"1000000\" for 1 USDT). Omit for open invoice."
+        },
+        "memo": {
+          "type": "string",
+          "description": "Optional description"
+        },
+        "sender_spark_address": {
+          "type": "string",
+          "description": "Optional Spark address of the expected sender (restricts who can pay)"
+        },
+        "expiry_minutes": {
+          "type": "number",
+          "description": "Optional expiry in minutes from now"
+        }
+      }
+    },
+    "spark_get_address": {
+      "required": [],
+      "properties": {}
+    },
+    "spark_get_balance": {
+      "required": [],
+      "properties": {}
+    },
+    "spark_get_deposit_address": {
+      "required": [],
+      "properties": {
+        "reusable": {
+          "type": "boolean",
+          "description": "Return a static reusable address (default: false = single-use)"
+        }
+      }
+    },
+    "spark_get_invoices": {
+      "required": [
+        "invoices"
+      ],
+      "properties": {
+        "invoices": {
+          "type": "array",
+          "description": "List of Spark invoice strings to query"
+        }
+      }
+    },
+    "spark_get_spark_invoices": {
+      "required": [
+        "invoices"
+      ],
+      "properties": {
+        "invoices": {
+          "type": "array",
+          "description": "List of Spark invoice strings to query"
+        }
+      }
+    },
+    "spark_get_token_balance": {
+      "required": [],
+      "properties": {
+        "token": {
+          "type": "string",
+          "description": "Spark token identifier (e.g. btkn1...). Omit to use the configured USDT token."
+        }
+      }
+    },
+    "spark_get_transfers": {
+      "required": [],
+      "properties": {
+        "direction": {
+          "type": "string",
+          "description": "Direction filter (default: 'all')"
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Max results (default: 20)"
+        }
+      }
+    },
+    "spark_mpp_pay": {
+      "required": [
+        "invoice"
+      ],
+      "properties": {
+        "invoice": {
+          "type": "string",
+          "description": "BOLT11 invoice from mpp_request_challenge"
+        },
+        "challenge_id": {
+          "type": "string",
+          "description": "MPP challenge_id"
+        },
+        "macaroon": {
+          "type": "string",
+          "description": "Macaroon for L402-compatible servers"
+        },
+        "max_fee_sats": {
+          "type": "integer",
+          "description": ""
+        }
+      }
+    },
+    "spark_pay_invoice": {
+      "required": [
+        "invoices"
+      ],
+      "properties": {
+        "invoices": {
+          "type": "array",
+          "description": "List of Spark invoices to pay"
+        }
+      }
+    },
+    "spark_pay_lightning_invoice": {
+      "required": [
+        "invoice"
+      ],
+      "properties": {
+        "invoice": {
+          "type": "string",
+          "description": "BOLT11 invoice (lnbc... or lntb...)"
+        },
+        "max_fee_sats": {
+          "type": "integer",
+          "description": "Maximum fee in satoshis"
+        }
+      }
+    },
+    "spark_pay_spark_invoice": {
+      "required": [
+        "invoices"
+      ],
+      "properties": {
+        "invoices": {
+          "type": "array",
+          "description": "List of Spark invoices to pay"
+        }
+      }
+    },
+    "spark_quote_lightning_payment": {
+      "required": [
+        "invoice"
+      ],
+      "properties": {
+        "invoice": {
+          "type": "string",
+          "description": "BOLT11 invoice to quote"
+        }
+      }
+    },
+    "spark_quote_withdraw": {
+      "required": [
+        "onchain_address",
+        "amount_sats"
+      ],
+      "properties": {
+        "onchain_address": {
+          "type": "string",
+          "description": "Destination Bitcoin L1 address"
+        },
+        "amount_sats": {
+          "type": "integer",
+          "description": "Amount in satoshis to withdraw"
+        }
+      }
+    },
+    "spark_send_sats": {
+      "required": [
+        "to",
+        "amount_sats"
+      ],
+      "properties": {
+        "to": {
+          "type": "string",
+          "description": "Destination Spark address (spark1...)"
+        },
+        "amount_sats": {
+          "type": "integer",
+          "description": "Amount in satoshis to send"
+        }
+      }
+    },
+    "spark_transfer_token": {
+      "required": [
+        "to",
+        "amount"
+      ],
+      "properties": {
+        "to": {
+          "type": "string",
+          "description": "Destination Spark address (spark1...)"
+        },
+        "amount": {
+          "type": "string",
+          "description": "Amount to send as a string integer in base units, e.g. \"1000000\" for 1 USDT with 6 decimals"
+        },
+        "token": {
+          "type": "string",
+          "description": "Spark token identifier. Omit to use the configured USDT token (SPARK_USDT_TOKEN)."
+        }
+      }
+    },
+    "spark_withdraw": {
+      "required": [
+        "onchain_address"
+      ],
+      "properties": {
+        "onchain_address": {
+          "type": "string",
+          "description": "Destination Bitcoin L1 address"
+        },
+        "amount_sats": {
+          "type": "integer",
+          "description": "Amount in satoshis (omit to withdraw all)"
+        },
+        "exit_speed": {
+          "type": "string",
+          "description": "Exit speed (default: MEDIUM)"
+        }
+      }
+    },
+    "transfer": {
+      "required": [
+        "chain",
+        "token",
+        "to",
+        "amount"
+      ],
+      "properties": {
+        "chain": {
+          "type": "string",
+          "description": "The blockchain to transfer on"
+        },
+        "token": {
+          "type": "string",
+          "description": "Token symbol (e.g., \"USDT\", \"USDC\", \"DAI\")"
+        },
+        "to": {
+          "type": "string",
+          "description": "The recipient address"
+        },
+        "amount": {
+          "type": "string",
+          "description": "The amount to transfer in human-readable format (e.g., \"10\" or \"0.5\")"
+        }
+      }
+    },
+    "verify": {
+      "required": [
+        "chain",
+        "message",
+        "signature"
+      ],
+      "properties": {
+        "chain": {
+          "type": "string",
+          "description": "The blockchain to use for verification"
+        },
+        "message": {
+          "type": "string",
+          "description": "The original message"
+        },
+        "signature": {
+          "type": "string",
+          "description": "The signature to verify"
+        }
+      }
+    },
+    "wdk_atomic_taker": {
+      "required": [
+        "swapstring"
+      ],
+      "properties": {
+        "swapstring": {
+          "type": "string",
+          "description": "Swapstring from kaleidoswap_atomic_init"
+        }
+      }
+    },
+    "wdk_close_channel": {
+      "required": [
+        "channel_id",
+        "peer_pubkey"
+      ],
+      "properties": {
+        "channel_id": {
+          "type": "string",
+          "description": "Channel ID from rln_list_channels"
+        },
+        "peer_pubkey": {
+          "type": "string",
+          "description": "Peer pubkey from rln_list_channels"
+        },
+        "force": {
+          "type": "boolean",
+          "description": "Force close (unilateral). Default: false (cooperative close)"
+        }
+      }
+    },
+    "wdk_connect_peer": {
+      "required": [
+        "peer_pubkey_and_addr"
+      ],
+      "properties": {
+        "peer_pubkey_and_addr": {
+          "type": "string",
+          "description": "pubkey@host:port"
+        }
+      }
+    },
+    "wdk_create_ln_invoice": {
+      "required": [],
+      "properties": {
+        "amount_sats": {
+          "type": "integer",
+          "description": "Amount in satoshis. Omit for any-amount."
+        },
+        "amount_msat": {
+          "type": "integer",
+          "description": "Amount in millisatoshis, instead of amount_sats"
+        },
+        "description": {
+          "type": "string",
+          "description": ""
+        },
+        "expiry_sec": {
+          "type": "integer",
+          "description": "Expiry in seconds (default: 3600)"
+        }
+      }
+    },
+    "wdk_create_rgb_invoice": {
+      "required": [],
+      "properties": {
+        "asset_id": {
+          "type": "string",
+          "description": "RGB asset ID. Omit for any asset."
+        },
+        "amount": {
+          "type": "number",
+          "description": "Expected amount in display units (e.g. 65.5 for 65.5 USDT)"
+        },
+        "duration_seconds": {
+          "type": "integer",
+          "description": "Invoice expiry (default: 86400 = 24h)"
+        },
+        "transport_endpoints": {
+          "type": "array",
+          "description": "RGB proxy endpoints the payer posts the consignment to. Defaults to the network RGB proxy (RGB_PROXY_ENDPOINT)."
+        }
+      }
+    },
+    "wdk_create_utxos": {
+      "required": [],
+      "properties": {
+        "num": {
+          "type": "integer",
+          "description": "Number of UTXOs to create (default: node decides, typically 5)"
+        },
+        "size": {
+          "type": "integer",
+          "description": "Size of each UTXO in sats (default: node decides)"
+        },
+        "up_to": {
+          "type": "boolean",
+          "description": "If true, only create enough UTXOs to reach `num` free ones (default: false)"
+        },
+        "fee_rate": {
+          "type": "number",
+          "description": "On-chain fee rate in sat/vbyte (default: 1)"
+        }
+      }
+    },
+    "wdk_get_address": {
+      "required": [],
+      "properties": {}
+    },
+    "wdk_get_asset_balance": {
+      "required": [
+        "asset_id"
+      ],
+      "properties": {
+        "asset_id": {
+          "type": "string",
+          "description": "RGB asset ID e.g. 'rgb:2JEUOrsc-...'"
+        }
+      }
+    },
+    "wdk_get_balances": {
+      "required": [],
+      "properties": {
+        "skip_sync": {
+          "type": "boolean",
+          "description": "Skip blockchain sync for faster response (default: false)"
+        }
+      }
+    },
+    "wdk_get_channel_id": {
+      "required": [
+        "temporary_channel_id"
+      ],
+      "properties": {
+        "temporary_channel_id": {
+          "type": "string",
+          "description": "Temporary channel ID from rln_open_channel"
+        }
+      }
+    },
+    "wdk_get_node_info": {
+      "required": [],
+      "properties": {}
+    },
+    "wdk_get_swap": {
+      "required": [
+        "payment_hash"
+      ],
+      "properties": {
+        "payment_hash": {
+          "type": "string",
+          "description": "Payment hash from kaleidoswap_atomic_init"
+        },
+        "taker": {
+          "type": "boolean",
+          "description": "Filter for taker-side swap"
+        }
+      }
+    },
+    "wdk_issue_asset": {
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "schema": {
+          "type": "string",
+          "description": "Asset schema (default: NIA)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Asset name, e.g. \"Hackathon Ticket\""
+        },
+        "ticker": {
+          "type": "string",
+          "description": "Uppercase ticker, e.g. \"TICKET\". Required for NIA and UDA, ignored for CFA."
+        },
+        "amount": {
+          "type": "number",
+          "description": "Total supply in display units (e.g. 1000). Required for NIA and CFA; UDA always has supply 1."
+        },
+        "precision": {
+          "type": "integer",
+          "description": "Decimal places (default: 0). Raw supply = amount × 10^precision."
+        },
+        "details": {
+          "type": "string",
+          "description": "Optional free-text description (CFA and UDA only)"
+        }
+      }
+    },
+    "wdk_list_assets": {
+      "required": [],
+      "properties": {
+        "schemas": {
+          "type": "array",
+          "description": ""
+        }
+      }
+    },
+    "wdk_list_channels": {
+      "required": [],
+      "properties": {
+        "usable_only": {
+          "type": "boolean",
+          "description": "Return only usable channels (default: false)"
+        }
+      }
+    },
+    "wdk_list_payments": {
+      "required": [],
+      "properties": {
+        "limit": {
+          "type": "integer",
+          "description": "Max payments to return (default: 20)"
+        },
+        "inbound_only": {
+          "type": "boolean",
+          "description": ""
+        },
+        "outbound_only": {
+          "type": "boolean",
+          "description": ""
+        }
+      }
+    },
+    "wdk_list_swaps": {
+      "required": [],
+      "properties": {}
+    },
+    "wdk_list_transfers": {
+      "required": [
+        "asset_id"
+      ],
+      "properties": {
+        "asset_id": {
+          "type": "string",
+          "description": "RGB asset ID"
+        }
+      }
+    },
+    "wdk_mpp_pay": {
+      "required": [
+        "invoice"
+      ],
+      "properties": {
+        "invoice": {
+          "type": "string",
+          "description": "BOLT11 invoice from mpp_request_challenge"
+        },
+        "challenge_id": {
+          "type": "string",
+          "description": "MPP challenge_id"
+        },
+        "macaroon": {
+          "type": "string",
+          "description": "Macaroon for L402-compatible servers"
+        }
+      }
+    },
+    "wdk_open_channel": {
+      "required": [
+        "peer_pubkey_and_addr",
+        "capacity_sat"
+      ],
+      "properties": {
+        "peer_pubkey_and_addr": {
+          "type": "string",
+          "description": "pubkey@host:port"
+        },
+        "capacity_sat": {
+          "type": "integer",
+          "description": "Channel capacity in satoshis"
+        },
+        "push_msat": {
+          "type": "integer",
+          "description": "Millisatoshis to push to remote (default: 0)"
+        },
+        "asset_id": {
+          "type": "string",
+          "description": "RGB asset ID to allocate"
+        },
+        "asset_amount": {
+          "type": "number",
+          "description": "Amount of RGB asset to allocate"
+        },
+        "is_public": {
+          "type": "boolean",
+          "description": "Announce channel publicly (default: false)"
+        }
+      }
+    },
+    "wdk_pay_invoice": {
+      "required": [
+        "invoice"
+      ],
+      "properties": {
+        "invoice": {
+          "type": "string",
+          "description": "BOLT11 invoice string (lnbc... or lntb...)"
+        }
+      }
+    },
+    "wdk_refresh_transfers": {
+      "required": [],
+      "properties": {
+        "skip_sync": {
+          "type": "boolean",
+          "description": ""
+        }
+      }
+    },
+    "wdk_send_asset": {
+      "required": [
+        "asset_id",
+        "recipient_id",
+        "amount"
+      ],
+      "properties": {
+        "asset_id": {
+          "type": "string",
+          "description": "RGB asset ID"
+        },
+        "recipient_id": {
+          "type": "string",
+          "description": "Recipient identifier from an RGB invoice"
+        },
+        "amount": {
+          "type": "number",
+          "description": "Amount in display units (e.g. 65.5 for USDT)"
+        },
+        "transport_endpoints": {
+          "type": "array",
+          "description": "RGB proxy endpoints from the receiver invoice. Defaults to the network RGB proxy (RGB_PROXY_ENDPOINT)."
+        },
+        "fee_rate": {
+          "type": "number",
+          "description": ""
+        }
+      }
+    },
+    "wdk_send_btc": {
+      "required": [
+        "address",
+        "amount_sat"
+      ],
+      "properties": {
+        "address": {
+          "type": "string",
+          "description": "Destination Bitcoin address"
+        },
+        "amount_sat": {
+          "type": "integer",
+          "description": "Amount in satoshis"
+        },
+        "fee_rate": {
+          "type": "number",
+          "description": "Fee rate in sat/vbyte (default: 3)"
+        }
+      }
+    }
+  }
+}
