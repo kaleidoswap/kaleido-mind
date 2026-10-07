@@ -17,6 +17,7 @@ import { createInterface } from 'node:readline/promises';
 import {
   Engine,
   SkillRegistry,
+  skillToolNames,
   ToolRegistry,
   confirmReadback,
   type ConfirmDecision,
@@ -31,7 +32,15 @@ const MOCK = flag('mock') || process.env.MOCK === '1';
 const SCRIPTED = flag('scripted');
 const AUTO_YES = flag('yes');
 
-const RLN_TOOLS = ['rln_list_assets', 'rln_get_asset_balance', 'rln_refresh_transfers', 'rln_create_rgb_invoice', 'rln_send_asset'];
+// All bundled skills. composeSkill() skips the ones whose tools this registry
+// lacks (e.g. spark-wallet without Spark tools) before the model runs.
+const skillList = loadSkillsDir(packagedSkillsDir());
+// Expose exactly what the RGB skill names (its requires-tools too), so the
+// skill is never dropped for a missing tool.
+const rgbSkill = skillList.find((s) => s.name === 'rgb-lightning-node');
+const RLN_TOOLS = rgbSkill
+  ? skillToolNames(rgbSkill)
+  : ['rln_get_node_info', 'rln_list_assets', 'rln_create_rgb_invoice', 'rln_send_asset', 'rln_create_ln_invoice'];
 
 async function createProvider(): Promise<{ provider: LLMProvider; dispose: () => Promise<void> }> {
   if (SCRIPTED) {
@@ -61,6 +70,11 @@ async function confirm(call: { name: string; arguments: Record<string, unknown> 
     console.error(`  ${line} -> yes (--yes)`);
     return { approved: true };
   }
+  // No terminal to ask on (piped or detached stdin): decline instead of waiting forever.
+  if (!process.stdin.isTTY) {
+    console.error(`  ${line} -> no (stdin is not a terminal; run interactively or pass --yes on the fake node)`);
+    return { approved: false, reason: 'no terminal to confirm on' };
+  }
   const rl = createInterface({ input: process.stdin, output: process.stderr });
   const answer = await rl.question(`  ${line} [y/N] `);
   rl.close();
@@ -70,9 +84,7 @@ async function confirm(call: { name: string; arguments: Record<string, unknown> 
 const tools = await createTools({ mock: MOCK, allow: RLN_TOOLS });
 const { provider, dispose } = await createProvider();
 try {
-  // All bundled skills. composeSkill() skips the ones whose tools this registry
-  // lacks (e.g. spark-wallet without Spark tools) before the model runs.
-  const skills = new SkillRegistry(loadSkillsDir(packagedSkillsDir()));
+  const skills = new SkillRegistry(skillList);
   const engine = new Engine({ provider, tools: new ToolRegistry([tools.source]), compressToolOutput: true });
   const base = 'You operate the user\'s RGB Lightning Node. Use tools for every value; never invent ids or invoices. Copy invoices exactly.';
 
