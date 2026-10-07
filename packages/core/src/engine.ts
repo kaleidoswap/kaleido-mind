@@ -20,13 +20,19 @@ import type { InferenceMetrics, ToolCallError, ToolChoice } from './providers/ty
 import type { ToolRegistry } from './tools/registry.js';
 import { compressToolResult, type ToolCrushOptions } from './context/compress.js';
 import {
-  DECLINED_TOOL_MESSAGE,
   callKey,
+  declinedToolResult,
+  detectWalletAction,
+  hasCapableTool,
+  noToolReply,
   findUngroundedPaymentData,
   ungroundedReply,
   validateToolArgs,
 } from './guards.js';
 import { confirmReadback } from './wallet/confirm.js';
+import type { SkillRegistry } from './skills/registry.js';
+import type { Skill } from './skills/types.js';
+import { selectAvailableSkill } from './skills/select.js';
 
 export interface EngineOptions {
   provider: LLMProvider;
@@ -49,6 +55,20 @@ export interface EngineOptions {
    * tool returned and the user never typed. Default true.
    */
   guardUngroundedPaymentData?: boolean;
+  /**
+   * Answer a wallet action (create an invoice, get an address, pay, send) with
+   * a fixed "no tool" reply, without inference, when no exposed tool can do it.
+   * Default true.
+   */
+  guardMissingTools?: boolean;
+  /** End the run with a fixed "Cancelled" reply when the user declines every call in a turn. Default true. */
+  endTurnOnDecline?: boolean;
+}
+
+export interface ComposedSkill {
+  skill: Skill | null;
+  system: string;
+  allowedTools?: string[];
 }
 
 export interface AgenticOptions {
@@ -113,6 +133,8 @@ export class Engine {
   private readonly defaultMaxTurns: number;
   private readonly compressOpts?: ToolCrushOptions;
   private readonly guardPaymentData: boolean;
+  private readonly guardMissingTools: boolean;
+  private readonly endTurnOnDecline: boolean;
 
   constructor(opts: EngineOptions) {
     this.provider = opts.provider;
@@ -120,11 +142,26 @@ export class Engine {
     this.defaultSystem = opts.defaultSystem;
     this.defaultMaxTurns = opts.defaultMaxTurns ?? 5;
     this.guardPaymentData = opts.guardUngroundedPaymentData ?? true;
+    this.guardMissingTools = opts.guardMissingTools ?? true;
+    this.endTurnOnDecline = opts.endTurnOnDecline ?? true;
     this.compressOpts = opts.compressToolOutput
       ? opts.compressToolOutput === true
         ? {}
         : opts.compressToolOutput
       : undefined;
+  }
+
+  /**
+   * Select the skill for `query` among those that can act with this engine's
+   * tools (skills whose `requires-tools` are missing are skipped), then
+   * compose its system prompt. Pass the result to runAgentic:
+   *
+   *   const { system, allowedTools } = await engine.composeSkill(skills, question, base);
+   *   await engine.runAgentic([{ role: 'system', content: system }, { role: 'user', content: question }], { allowedTools });
+   */
+  async composeSkill(skills: SkillRegistry, query: string, base: string): Promise<ComposedSkill> {
+    const skill = selectAvailableSkill(skills, query, await this.registry.listTools());
+    return { skill, ...skills.compose(base, skill) };
   }
 
   async runAgentic(messages: Message[], opts: AgenticOptions = {}): Promise<AgenticResult> {
@@ -147,6 +184,14 @@ export class Engine {
     const seen = new Map<string, { result: unknown; count: number }>();
     let toolErrorRetries = 0;
 
+    const lastUser = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
+    const action = this.guardMissingTools ? detectWalletAction(lastUser) : null;
+    if (action && !hasCapableTool(action, allTools.map((t) => t.name))) {
+      const text = noToolReply(action);
+      history.push({ role: 'assistant', content: text });
+      return { text, turns: 0, toolCalls: [], messages: history, latencyMs: Date.now() - startedAt, inference };
+    }
+
     // A retry after an unreadable tool call does not count against maxTurns.
     for (let turn = 1; turn <= maxTurns + toolErrorRetries; turn++) {
       turns = turn;
@@ -166,7 +211,7 @@ export class Engine {
       lastRequestId = out.requestId;
       if (out.inference) inference.push(out.inference);
       if (out.requestId) opts.onStart?.(out.requestId, turn);
-      finalText = (out.text || '').trim();
+      finalText = out.incomplete ? '' : (out.text || '').trim();
 
       // The model tried to call a tool but the call didn't parse: tell it what
       // went wrong and let it try again (once) instead of showing the broken
@@ -184,12 +229,17 @@ export class Engine {
       }
 
       // No tool calls ⇒ the model produced its final answer.
-      if (!out.toolCalls || out.toolCalls.length === 0) break;
+      if (!out.toolCalls || out.toolCalls.length === 0) {
+        if (!finalText && executed.length) finalText = await this.recoverAnswer(history, system, executed, inference, opts, turn);
+        else if (!finalText && out.incomplete) finalText = (out.text || '').trim();
+        break;
+      }
 
       // Anchor the next turn with the raw assistant frame.
       history.push({ role: 'assistant', content: out.rawContent || finalText });
 
       let repeatedAgain = false;
+      const declinedThisTurn: string[] = [];
       for (const call of out.toolCalls) {
         opts.onToolCall?.({ name: call.name, arguments: call.arguments }, turn);
         const def = await this.registry.getDef(call.name);
@@ -220,9 +270,12 @@ export class Engine {
             const decision = opts.onConfirm
               ? await opts.onConfirm({ name: call.name, arguments: args, ...(summary ? { summary } : {}) })
               : { approved: false, reason: 'no confirmation handler available' };
-            result = decision.approved
-              ? await this.safeExecute(call.name, args)
-              : { declined: true, message: DECLINED_TOOL_MESSAGE, ...(decision.reason ? { reason: decision.reason } : {}) };
+            if (decision.approved) {
+              result = await this.safeExecute(call.name, args);
+            } else {
+              result = declinedToolResult(call.name, decision.reason);
+              declinedThisTurn.push(summary ? summary.replace(/\.?\s*Confirm\?$/, '') : call.name.replace(/_/g, ' '));
+            }
           } else {
             args = check.args;
             result = await this.safeExecute(call.name, args);
@@ -237,6 +290,11 @@ export class Engine {
         executed.push({ name: call.name, arguments: args, result });
         opts.onToolResult?.({ name: call.name, arguments: args, result }, turn);
         history.push({ role: 'tool', content: this.toHistoryContent(result) });
+      }
+
+      if (this.endTurnOnDecline && declinedThisTurn.length && declinedThisTurn.length === out.toolCalls.length) {
+        finalText = `Cancelled — you declined: ${declinedThisTurn.join('; ')}. Nothing was sent or changed.`;
+        break;
       }
 
       if (repeatedAgain) {
@@ -278,6 +336,38 @@ export class Engine {
       latencyMs: Date.now() - startedAt,
       inference,
     };
+  }
+
+  /**
+   * The model ran tools but produced no visible answer (e.g. reasoning used the
+   * whole output budget). Ask once more without tools; if that is empty too,
+   * show the last tool result instead of an empty reply.
+   */
+  private async recoverAnswer(
+    history: Message[],
+    system: string | undefined,
+    executed: ToolResult[],
+    inference: InferenceMetrics[],
+    opts: AgenticOptions,
+    turn: number,
+  ): Promise<string> {
+    if (opts.signal?.aborted) return '';
+    const retry = await this.provider.runTurn({
+      messages: [
+        ...history,
+        { role: 'user', content: 'Answer my question now from the tool results above, in a few short sentences.' },
+      ],
+      tools: [],
+      system,
+      onToken: opts.onToken ? (t) => opts.onToken!(t, turn) : undefined,
+      signal: opts.signal,
+    });
+    if (retry.inference) inference.push(retry.inference);
+    const text = retry.incomplete ? '' : (retry.text || '').trim();
+    if (text) return text;
+    const last = executed[executed.length - 1]!;
+    const body = compressToolResult(last.result, this.compressOpts ?? {}).content;
+    return `I couldn't phrase an answer in time. Here is what ${last.name.replace(/_/g, ' ')} returned:\n\n${body.length > 2000 ? `${body.slice(0, 2000)}…` : body}`;
   }
 
   async cancel(requestId: string): Promise<void> {

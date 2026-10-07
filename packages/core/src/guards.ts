@@ -130,8 +130,10 @@ const PAYMENT_DATA: Array<{ kind: string; re: RegExp }> = [
   { kind: 'Lightning invoice', re: /\bln(?:bc|tb|bcrt|tbs|sb)[0-9a-z]{20,}\b/gi },
   { kind: 'Lightning offer', re: /\blno1[0-9a-z]{20,}\b/gi },
   { kind: 'LNURL', re: /\blnurl1[0-9a-z]{20,}\b/gi },
-  { kind: 'RGB invoice', re: /\brgb:[^\s`'"<>)]{20,}/gi },
-  { kind: 'blinded UTXO', re: /\butxob:[^\s`'"<>)]{10,}/gi },
+  // An RGB invoice carries a "/" path or a utxob:/wvout: beneficiary; plain
+  // `rgb:` asset ids (contract ids) are not payment data.
+  { kind: 'RGB invoice', re: /\brgb:[^\s`'"<>)|]*(?:\/|utxob:|wvout:)[^\s`'"<>)|]*/gi },
+  { kind: 'blinded UTXO', re: /\butxob:[^\s`'"<>)|]{10,}/gi },
   { kind: 'Spark address', re: /\bspark(?:rt|t|s)?1[0-9a-z]{20,}\b/gi },
   { kind: 'Ark address', re: /\b(?:t?ark)1[0-9a-z]{20,}\b/gi },
   { kind: 'Liquid address', re: /\b(?:lq1|ex1|tlq1|tex1|el1|ert1)[0-9a-z]{20,}\b/gi },
@@ -157,7 +159,7 @@ export function findUngroundedPaymentData(text: string, sources: unknown[]): Ung
   const seen = new Set<string>();
   for (const { kind, re } of PAYMENT_DATA) {
     for (const m of text.matchAll(re)) {
-      const value = m[0];
+      const value = m[0].replace(/[.,;:!?*]+$/, '');
       const key = value.toLowerCase();
       if (seen.has(key)) continue;
       seen.add(key);
@@ -242,8 +244,20 @@ export function noToolReply(action: WalletAction): string {
 
 /** The text fed back to the model when the user declines at the confirmation gate. */
 export const DECLINED_TOOL_MESSAGE =
-  'The user declined this action at the confirmation prompt. Nothing was sent or changed. ' +
-  'Tell the user it was cancelled. Do not retry it and do not say anyone else declined it.';
+  'Cancelled by the user: the user said no at the confirmation prompt, so this action was not run. ' +
+  'Nothing was sent or changed. Tell the user it was cancelled at their request. ' +
+  'Do not say that the node, the wallet, the recipient or anyone else declined it, and do not retry it.';
+
+/** Tool result for a call the user declined — the same shape for every confirm-gated tool. */
+export function declinedToolResult(tool: string, reason?: string): Record<string, unknown> {
+  return {
+    status: 'cancelled_by_user',
+    declined_by: 'user',
+    tool,
+    message: DECLINED_TOOL_MESSAGE,
+    ...(reason ? { host_reason: reason } : {}),
+  };
+}
 
 /** Stable key for a tool call: name + canonical JSON of its arguments. */
 export function callKey(name: string, args: Record<string, unknown>): string {

@@ -9,10 +9,10 @@
  *   - eval    → stub handlers, also via `bindKaleidoswapTools`
  *
  * Because the schemas are identical everywhere, skills are portable and the
- * model comparison is honest. Tools are grouped (`market`, `orders`, `atomic`,
+ * model comparison is honest. Tools are grouped (`market`, `atomic`,
  * `liquidity`) so a host can expose a read-only subset for sandbox/eval modes.
  *
- * Spend tools (place an order, init/execute an atomic swap) carry
+ * Spend tools (init/execute an atomic swap, buy an asset channel) carry
  * `spend: true` → `requiresConfirmation: true`, so the Engine always pauses
  * for the host's confirm gate before executing.
  *
@@ -24,7 +24,7 @@ import { InProcessToolSource } from '../tools/in-process.js';
 import type { InProcessTool } from '../tools/in-process.js';
 
 /** Functional grouping for selective binding (e.g. read-only sandbox). */
-export type KaleidoswapGroup = 'market' | 'orders' | 'atomic' | 'liquidity';
+export type KaleidoswapGroup = 'market' | 'atomic' | 'liquidity';
 
 export interface KaleidoswapToolDef extends ToolDef {
   /** Functional group — lets a host expose a subset. */
@@ -70,7 +70,7 @@ export const KALEIDOSWAP_TOOLS: KaleidoswapToolDef[] = [
 
   t('market',
     'kaleidoswap_get_quote',
-    'Get an executable quote for swapping a specific amount on one pair. Returns a quote id (use it with place_order or atomic_init), the expected receive amount, fees, slippage, and how long the quote is valid for. Re-quote rather than reusing a stale id.',
+    'Get an executable quote for swapping a specific amount on one pair. Returns a quote id (use it with atomic_init), the expected receive amount, fees, slippage, and how long the quote is valid for. Re-quote rather than reusing a stale id.',
     {
       from_asset: { type: 'string', description: 'Asset to spend, e.g. "BTC" or "USDT".' },
       to_asset:   { type: 'string', description: 'Asset to receive, e.g. "USDT" or "BTC".' },
@@ -82,33 +82,6 @@ export const KALEIDOSWAP_TOOLS: KaleidoswapToolDef[] = [
   t('market',
     'kaleidoswap_get_nodeinfo',
     "Get info about the maker's Lightning node — pubkey, host, port, connect URI. Useful before opening a channel or when the user wants to see the counterparty. No args."),
-
-  // ─── orders (orderbook / market-order flow) ─────────────────────────────
-  t('orders',
-    'kaleidoswap_place_order',
-    'Place an order using an executable quote. Returns order_id + access_token (save the token — required for get_order_status). SPEND: the host pauses for user confirmation before the maker is called. Use only after kaleidoswap_get_quote and only when the user has explicitly approved the amount + destination.',
-    {
-      quote_id: { type: 'string', description: 'The quote id returned by kaleidoswap_get_quote (must still be valid).' },
-    },
-    ['quote_id'],
-    /* spend */ true),
-
-  t('orders',
-    'kaleidoswap_get_order_status',
-    'Check the status of an order by id — pending / settling / completed / failed. Poll this after place_order until the order settles. Requires the access_token returned by place_order for authenticated orders.',
-    {
-      order_id: { type: 'string', description: 'The order id returned by kaleidoswap_place_order.' },
-      access_token: { type: 'string', description: 'The per-order access token returned by kaleidoswap_place_order. Required for status checks on the order.' },
-    },
-    ['order_id', 'access_token']),
-
-  t('orders',
-    'kaleidoswap_get_order_history',
-    "Get the user's recent KaleidoSwap orders for context (last N, paginated). Read-only.",
-    {
-      limit:  { type: 'number', description: 'Max rows (default 20, max 100).' },
-      cursor: { type: 'string', description: 'Pagination cursor from a previous call.' },
-    }),
 
   // ─── atomic (the trust-minimised swap chain — used by the recipe) ───────
   t('atomic',
@@ -205,7 +178,6 @@ export interface BindKaleidoswapOptions {
  *
  *   const source = bindKaleidoswapTools({
  *     kaleidoswap_get_quote: async (args) => makerSdk.quote(args),
- *     kaleidoswap_place_order: async ({ quote_id }) => makerSdk.placeOrder({ quoteId: quote_id }),
  *     // …
  *   });
  *   tools.register(source);

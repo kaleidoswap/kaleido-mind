@@ -71,6 +71,11 @@ export interface TurnOutput {
   requestId?: string;
   /** Optional local-inference receipt. Hosts may persist this as JSONL evidence. */
   inference?: InferenceMetrics;
+  /**
+   * True when the turn produced no visible answer because it ran out of budget
+   * (e.g. reasoning used the whole output cap). `text` may hold a placeholder.
+   */
+  incomplete?: boolean;
 }
 
 export interface LLMProvider {

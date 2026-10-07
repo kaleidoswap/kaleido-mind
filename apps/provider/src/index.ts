@@ -480,12 +480,13 @@ function resetTurnStats(): void {
 }
 
 // Cap the model's <think> reasoning by TOKENS (not seconds — tok/s varies by
-// model + hardware); sent as the SDK's reasoning_budget. ~128
-// thinking tokens keeps simple wallet actions short on slower local models.
+// model + hardware); sent as the SDK's reasoning_budget, so at the cap the model
+// closes its reasoning and answers. Qwen3.5 2B used 80–390 thinking tokens per
+// wallet turn on signet.
 // Tune with KALEIDO_MIND_MAX_THINKING_TOKENS (0 ⇒ unlimited).
 const MAX_THINKING_TOKENS: number | undefined = ((): number | undefined => {
   const env = process.env.KALEIDO_MIND_MAX_THINKING_TOKENS;
-  if (env === undefined || env === '') return 128;
+  if (env === undefined || env === '') return 512;
   const n = Number(env);
   return Number.isFinite(n) && n > 0 ? n : undefined; // 0 / invalid ⇒ unlimited
 })();
@@ -493,11 +494,12 @@ const MAX_THINKING_TOKENS: number | undefined = ((): number | undefined => {
 // Total-output backstop (predict / n_predict). The thinking cap only bites when
 // the model emits separate <think> tokens; a model that rambles in the VISIBLE
 // answer needs a hard total-token ceiling so a turn still can't run away.
-// 512 tokens is enough for wallet results without allowing a runaway answer.
+// The cap covers reasoning AND answer, so it must exceed the thinking cap with
+// room for a table of assets/channels.
 // Tune with KALEIDO_MIND_MAX_TOKENS (0 ⇒ uncapped).
 const MAX_OUTPUT_TOKENS: number | undefined = ((): number | undefined => {
   const env = process.env.KALEIDO_MIND_MAX_TOKENS;
-  if (env === undefined || env === '') return 512;
+  if (env === undefined || env === '') return 1536;
   const n = Number(env);
   return Number.isFinite(n) && n > 0 ? n : undefined;
 })();
