@@ -83,8 +83,9 @@ export async function loadQvacProvider(
       completion: sdk.completion,
       cancel: sdk.cancel,
       getModelId: () => modelId,
-      // Each request's tool loop reuses the prompt already in the KV cache.
-      sessionCache: process.env.SESSION_CACHE !== '0',
+      // Experimental: faster tool loops, but in the eval the model copied tool
+      // results less reliably with it on. Off unless SESSION_CACHE=1.
+      sessionCache: process.env.SESSION_CACHE === '1',
       deleteCache: sdk.deleteCache,
       defaultTemperature: 0.1,
       defaultMaxTokens: 1536,

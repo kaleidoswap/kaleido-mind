@@ -50,9 +50,12 @@ export interface QvacProviderOptions {
    */
   maxThinkingTokens?: number;
   /**
-   * Keep each agentic run in a QVAC KV-cache session (`kvCache: sessionKey`),
-   * so calls after the first send only the new message instead of re-reading
-   * the whole prompt. Needs `deleteCache` to drop the session at the end.
+   * Experimental. Keep each agentic run in a QVAC KV-cache session
+   * (`kvCache: sessionKey`), so calls after the first send only the new
+   * message instead of re-reading the whole prompt. Needs `deleteCache` to
+   * drop the session at the end. In the rgb-agent eval (Qwen3.5 2B) it cut
+   * time to first token from ~7 s to ~0.2 s, but the model copied a Lightning
+   * invoice correctly in 4/10 runs with it vs 10/10 without. Off by default.
    */
   sessionCache?: boolean;
   /** The SDK's `deleteCache` (injected); used with `sessionCache`. */
