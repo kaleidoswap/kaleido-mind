@@ -47,7 +47,7 @@ One or two lines of context: units, where ids come from.
   argument comes from which earlier result, what is confirm-gated.
 
 ## Examples
-- "Send 5 SKT to rgb:…/utxob:abc" → `rln_list_assets {}` then `rln_send_asset {"asset_id":"<SKT asset_id>","recipient_id":"utxob:abc","amount":5}`
+- "Send 5 SKT to rgb:…/utxob:abc" → `rln_send_asset {"asset_id":"SKT","recipient_id":"utxob:abc","amount":5}`
 ```
 
 - `tools` — the only tools the model sees while the skill is active.
