@@ -1,6 +1,6 @@
 {
   "source": "kaleido-mcp",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "tools": {
     "get_market_data": {
       "required": [
@@ -393,7 +393,7 @@
             "number",
             "null"
           ],
-          "description": "Internal: total cost in sats (from the quote). Do not set."
+          "description": "Internal: estimated total cost in sats (from the quote). Do not set."
         },
         "btc_amount_sat": {
           "type": [
@@ -428,15 +428,15 @@
       "properties": {
         "client_pubkey": {
           "type": "string",
-          "description": ""
+          "description": "Your node pubkey (rln_get_node_info)"
         },
         "lsp_balance_sat": {
           "type": "integer",
-          "description": ""
+          "description": "Inbound liquidity the LSP puts on its side, in sats"
         },
         "client_balance_sat": {
           "type": "integer",
-          "description": ""
+          "description": "Outbound liquidity pushed to you, in sats; you pay for it on top of the fee"
         },
         "required_channel_confirmations": {
           "type": "integer",
@@ -448,27 +448,31 @@
         },
         "channel_expiry_blocks": {
           "type": "integer",
-          "description": ""
+          "description": "Channel lease in blocks (max: kaleidoswap_lsp_get_info options.max_channel_expiry_blocks)"
         },
         "announce_channel": {
           "type": "boolean",
           "description": "default false (private)"
         },
+        "refund_onchain_address": {
+          "type": "string",
+          "description": "BTC address for refunds if the order fails after an on-chain payment"
+        },
         "asset_id": {
           "type": "string",
-          "description": ""
+          "description": "RGB asset id for an asset channel"
         },
         "lsp_asset_amount": {
           "type": "number",
-          "description": ""
+          "description": "Asset on the LSP side, raw units (display amount x 10^precision)"
         },
         "client_asset_amount": {
           "type": "number",
-          "description": ""
+          "description": "Asset pushed to you, raw units; requires rfq_id"
         },
         "rfq_id": {
           "type": "string",
-          "description": ""
+          "description": "Fresh rfq_id from kaleidoswap_get_quote when client_asset_amount > 0"
         }
       }
     },
@@ -485,11 +489,11 @@
         },
         "lsp_balance_sat": {
           "type": "integer",
-          "description": ""
+          "description": "Inbound liquidity on the LSP side, in sats"
         },
         "client_balance_sat": {
           "type": "integer",
-          "description": ""
+          "description": "Outbound liquidity pushed to you, in sats"
         },
         "channel_expiry_blocks": {
           "type": "integer",
@@ -505,15 +509,19 @@
         },
         "asset_id": {
           "type": "string",
-          "description": ""
+          "description": "RGB asset id for an asset channel"
         },
         "lsp_asset_amount": {
           "type": "number",
-          "description": ""
+          "description": "Asset on the LSP side, raw units"
+        },
+        "client_asset_amount": {
+          "type": "number",
+          "description": "Asset pushed to you, raw units; requires rfq_id"
         },
         "rfq_id": {
           "type": "string",
-          "description": ""
+          "description": "Fresh rfq_id from kaleidoswap_get_quote when client_asset_amount > 0"
         }
       }
     },
@@ -523,12 +531,17 @@
     },
     "kaleidoswap_lsp_get_order": {
       "required": [
-        "order_id"
+        "order_id",
+        "access_token"
       ],
       "properties": {
         "order_id": {
           "type": "string",
           "description": ""
+        },
+        "access_token": {
+          "type": "string",
+          "description": "Per-order token from kaleidoswap_lsp_create_order / kaleidoswap_lsp_create_asset_channel"
         }
       }
     },

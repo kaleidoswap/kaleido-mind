@@ -5,6 +5,26 @@ apps) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.5] — 2026-10-07
+
+`@kaleidorg/mind` 0.10.5, `@kaleidorg/create-mind` 0.3.3.
+
+### Changed
+
+- `kaleido-trading`: a Lightning swap needs a channel; when there is none,
+  buy one first. `channel-manager` and its new `references/lsp.md` carry the
+  LSP purchase flow verified on a signet RLN node with kaleido-mcp 0.4.2
+  (pay `amount_due_sat`, never `fee_sat`; `lsp_get_order` takes the order's
+  `access_token`). kaleido-mcp tool snapshot refreshed to 0.4.2.
+- Confirmation readbacks for `lsp_create_order`,
+  `kaleidoswap_lsp_create_order` and `kaleidoswap_lsp_create_asset_channel`
+  say what is ordered and that the order total is paid in a separate,
+  separately confirmed step.
+
+### Added
+
+- rgb-agent eval: `buy-channel` scenario.
+
 ## [0.10.4] — 2026-10-07
 
 ### Fixed

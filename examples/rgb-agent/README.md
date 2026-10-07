@@ -37,10 +37,11 @@ them automatically (mock runs only, please).
 
 ## Eval
 
-`src/eval.ts` sends seven wallet requests through the full `Funnel` (fast path,
+`src/eval.ts` sends eight wallet requests through the full `Funnel` (fast path,
 recipes, skills, agentic loop) with the local model and checks each result:
 balance, asset list, asset issuance, RGB invoice, Lightning invoice, a
-KaleidoSwap quote (live only) and a send that is declined at the confirmation
+KaleidoSwap quote (live only), buying a channel from the KaleidoSwap LSP (live
+only; any payment is declined) and a send that is declined at the confirmation
 gate. It prints PASS/FAIL per request and exits 1 on any failure.
 
 ```bash
