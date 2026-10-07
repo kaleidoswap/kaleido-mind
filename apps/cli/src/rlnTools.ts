@@ -177,7 +177,11 @@ const ROUTES: Record<string, Route> = {
     body: (a) => {
       const schema = issueSchema(a);
       const precision = Number(a.precision ?? 0);
-      const raw = Math.round(Number(a.amount ?? 1) * 10 ** precision);
+      // UDA supply is always 1; fungible schemas must state theirs — never default it.
+      const raw = schema === 'UDA' ? 1 : Math.round(Number(a.amount) * 10 ** precision);
+      if (!Number.isSafeInteger(raw) || raw <= 0) {
+        throw new Error('rln_issue_asset: `amount` × 10^`precision` must be a positive safe integer.');
+      }
       const name = String(a.name ?? a.ticker ?? '');
       const ticker = String(a.ticker ?? '').toUpperCase();
       const details = a.details != null ? String(a.details) : null;
