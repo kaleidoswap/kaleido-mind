@@ -93,10 +93,15 @@ export interface AgenticResult {
   inference: InferenceMetrics[];
 }
 
+const STOPPED_MESSAGE = 'I had to stop after several steps — please try a more specific request.';
+
 const TOOL_CALL_FAILED_MESSAGE =
   "I couldn't put together a valid request for that. Please rephrase it with the exact values (asset, amount, recipient).";
 
-function toolErrorMessage(errors: ToolCallError[]): string {
+function toolErrorMessage(errors: ToolCallError[], cutOff: boolean): string {
+  if (cutOff) {
+    return 'Your tool call was cut off because the output got too long. Make ONE tool call at a time with only the required arguments, or answer from the results you already have.';
+  }
   const detail = errors.map((e) => e.message).join('; ');
   return `Your tool call could not be read (${detail}). Call the tool again with valid JSON arguments that match its schema, or ask the user for the missing values.`;
 }
@@ -142,7 +147,8 @@ export class Engine {
     const seen = new Map<string, { result: unknown; count: number }>();
     let toolErrorRetries = 0;
 
-    for (let turn = 1; turn <= maxTurns; turn++) {
+    // A retry after an unreadable tool call does not count against maxTurns.
+    for (let turn = 1; turn <= maxTurns + toolErrorRetries; turn++) {
       turns = turn;
       if (opts.signal?.aborted) break;
 
@@ -166,10 +172,11 @@ export class Engine {
       // went wrong and let it try again (once) instead of showing the broken
       // frame as the answer.
       if ((!out.toolCalls || out.toolCalls.length === 0) && out.toolErrors?.length) {
-        if (toolErrorRetries < 1 && turn < maxTurns) {
+        if (toolErrorRetries < 1) {
           toolErrorRetries += 1;
+          const cutOff = out.inference?.status === 'truncated';
           history.push({ role: 'assistant', content: out.rawContent || finalText });
-          history.push({ role: 'tool', content: JSON.stringify({ error: toolErrorMessage(out.toolErrors) }) });
+          history.push({ role: 'tool', content: JSON.stringify({ error: toolErrorMessage(out.toolErrors, cutOff) }) });
           continue;
         }
         finalText = TOOL_CALL_FAILED_MESSAGE;
@@ -245,10 +252,10 @@ export class Engine {
         break;
       }
 
-      if (turn === maxTurns && !finalText) {
-        finalText = 'I had to stop after several steps — please try a more specific request.';
-      }
     }
+
+    // Never return an empty answer (e.g. the last turn ran out of tokens).
+    if (!finalText && !opts.signal?.aborted) finalText = STOPPED_MESSAGE;
 
     if (this.guardPaymentData && finalText) {
       const ungrounded = findUngroundedPaymentData(finalText, [

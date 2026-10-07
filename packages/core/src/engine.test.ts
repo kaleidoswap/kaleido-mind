@@ -245,6 +245,37 @@ describe('Engine agentic loop', () => {
     expect(res.text).toMatch(/couldn't put together a valid request/i);
   });
 
+  it('does not count the retry against maxTurns and explains a cut-off call', async () => {
+    const seen: string[] = [];
+    let n = 0;
+    const provider: LLMProvider = {
+      name: 'cutoff',
+      async runTurn(input) {
+        n += 1;
+        seen.push(input.messages[input.messages.length - 1]!.content);
+        if (n === 1) return { text: '', rawContent: '', toolCalls: [{ name: 'get_balance', arguments: {} }] };
+        if (n === 2) {
+          return {
+            text: '', rawContent: '<tool_call>{"name":"get_balance"', toolCalls: [],
+            toolErrors: [{ code: 'PARSE_ERROR', message: 'eof' }],
+            inference: { durationMs: 1, status: 'truncated' },
+          };
+        }
+        return { text: 'You have 50,000 sats.', rawContent: '', toolCalls: [] };
+      },
+    };
+    const engine = new Engine({ provider, tools: freshTools() });
+    const res = await engine.runAgentic([{ role: 'user', content: 'balance?' }], { maxTurns: 2 });
+    expect(res.text).toBe('You have 50,000 sats.');
+    expect(seen[2]).toMatch(/cut off/);
+  });
+
+  it('never returns an empty answer', async () => {
+    const engine = new Engine({ provider: scriptedProvider([{ text: '' }]), tools: freshTools() });
+    const res = await engine.runAgentic([{ role: 'user', content: 'hi' }]);
+    expect(res.text).toMatch(/had to stop/);
+  });
+
   it('recovers when the retried call parses', async () => {
     const engine = new Engine({
       provider: (() => {

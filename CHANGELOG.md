@@ -22,8 +22,11 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 
 - A turn whose tool call did not parse is sent back to the model once with the
-  parse error; if it fails again the run ends with a fixed message instead of
-  showing the broken frame.
+  parse error (or, when the output hit the token cap, a "one call at a time"
+  hint); if it fails again the run ends with a fixed message instead of
+  showing the broken frame. The retry does not count against `maxTurns`.
+- `runAgentic` never returns an empty answer: a run whose last turn produced
+  no text ends with the "had to stop" message.
 - Recipe slot extraction forces the extraction tool (`toolChoice`).
 - `maxThinkingTokens` is sent as the SDK's `reasoning_budget`; the
   cancel-on-overrun check stays as a backstop with headroom.
