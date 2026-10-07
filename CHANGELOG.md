@@ -5,6 +5,24 @@ apps) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.3] — 2026-10-07
+
+`@kaleidorg/mind` 0.10.3, `@kaleidorg/create-mind` 0.3.2.
+
+### Fixed
+
+- Starter and rgb-agent example against a real node: the kaleido-mcp allow
+  list left out `rln_get_node_info`, which `rgb-lightning-node` requires, so
+  the skill was never selected and the invoice step looped. The allow list is
+  now derived from the skill (`skillToolNames`). Checked against a signet RLN
+  node with kaleido-mcp 0.4.1: both requests select `rgb-lightning-node`.
+- The example's confirmation prompt declines instead of hanging when stdin is
+  not a terminal.
+
+### Added
+
+- `skillToolNames(skill)`: a skill's `requires-tools` plus its scoped tools.
+
 ## [0.10.2] — 2026-10-07
 
 ### Changed

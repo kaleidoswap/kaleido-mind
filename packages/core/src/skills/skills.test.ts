@@ -231,3 +231,17 @@ describe('engine honours allowedTools (progressive disclosure)', () => {
     expect(seenToolNames[0].sort()).toEqual(['get_balance', 'place_order']);
   });
 });
+
+describe('skillToolNames', () => {
+  it('lists requires-tools and scoped tools once, without the reference reader', async () => {
+    const { skillToolNames } = await import('./select.js');
+    const skill = {
+      name: 's',
+      description: '',
+      instructions: '',
+      tools: ['rln_list_assets', 'rln_get_node_info', 'read_skill_reference'],
+      metadata: { 'requires-tools': 'rln_get_node_info, rln_send_asset' },
+    };
+    expect(skillToolNames(skill as never)).toEqual(['rln_get_node_info', 'rln_send_asset', 'rln_list_assets']);
+  });
+});

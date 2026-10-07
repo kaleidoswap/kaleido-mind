@@ -7,6 +7,12 @@ import type { ToolDef } from '../types.js';
 import type { Skill } from './types.js';
 import { READ_REFERENCE_TOOL, SkillRegistry } from './registry.js';
 
+/** Every tool a skill names: its `requires-tools` plus its scoped `tools`. */
+export function skillToolNames(skill: Skill): string[] {
+  const required = (skill.metadata?.['requires-tools'] ?? '').split(',').map((t) => t.trim()).filter(Boolean);
+  return [...new Set([...required, ...(skill.tools ?? [])])].filter((t) => t !== READ_REFERENCE_TOOL);
+}
+
 /**
  * Whether a skill can act given the live tool names. A `requires-tools`
  * frontmatter list must be fully live; otherwise at least one of the skill's

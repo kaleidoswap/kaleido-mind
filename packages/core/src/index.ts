@@ -151,7 +151,7 @@ export type { EngineOptions, AgenticOptions, AgenticResult, ComposedSkill } from
 
 // ── Funnel (T0 fast-path → T2 recipe → T1 agentic — the tiered agent) ───────
 export { Funnel, DEFAULT_WALLET_SYSTEM } from './funnel.js';
-export { skillAvailable, selectAvailableSkill } from './skills/select.js';
+export { skillAvailable, selectAvailableSkill, skillToolNames } from './skills/select.js';
 export type { FunnelOptions, FunnelSettings, FunnelCallbacks, FunnelResult } from './funnel.js';
 
 export {
