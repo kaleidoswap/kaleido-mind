@@ -140,6 +140,22 @@ describe('createQvacProvider.runTurn', () => {
     ).rejects.toThrow('boom');
   });
 
+  it("retries without tool_choice when the chat template can't force a tool call", async () => {
+    const calls: any[] = [];
+    const fn = (params: any) => {
+      calls.push(params);
+      if (params.generationParams?.tool_choice) {
+        throw new Error('[TextLlm] generationParams.tool_choice demanded a tool call, but the chat template did not render the tool definitions');
+      }
+      return { requestId: 'r', events: (async function* () {})(), final: Promise.resolve({ contentText: 'ok', toolCalls: [], raw: { fullText: 'ok' } }) };
+    };
+    const tool = { name: 'get_balance', description: 'b', parameters: { type: 'object', properties: {} } };
+    const p = createQvacProvider({ completion: fn as any, cancel: noopCancel, getModelId: () => 'm1' });
+    const out = await p.runTurn({ messages: [{ role: 'user', content: 'x' }], tools: [tool as any], toolChoice: 'required' });
+    expect(out.text).toBe('ok');
+    expect(calls.map((c) => c.generationParams?.tool_choice)).toEqual(['required', undefined]);
+  });
+
   it('keeps the reasoning budget below the output cap', async () => {
     const { fn, calls } = fakeCompletion({ contentText: 'ok', toolCalls: [], raw: { fullText: 'ok' } });
     const p = createQvacProvider({ completion: fn as any, cancel: noopCancel, getModelId: () => 'm1', defaultMaxTokens: 512, maxThinkingTokens: 512 });

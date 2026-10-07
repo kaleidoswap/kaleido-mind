@@ -189,6 +189,47 @@ export function findUngroundedPaymentData(text: string, sources: unknown[]): Ung
   return out;
 }
 
+// Tools whose job is to hand the user a payment request or an address.
+const RECEIVE_TOOL = /(^|_)create_(ln_|lightning_|rgb_)?invoice$|(^|_)get_address$|(^|_)receive(_|$)|_invoice_create$/i;
+
+/**
+ * Invoices and addresses that receive tools returned in this run: what the
+ * user asked for, to be shown verbatim rather than retyped by the model.
+ */
+export function producedPaymentData(executed: Array<{ name: string; result: unknown }>): UngroundedItem[] {
+  const found: UngroundedItem[] = [];
+  for (const { name, result } of executed) {
+    if (!RECEIVE_TOOL.test(name) || (result && typeof result === 'object' && 'error' in result)) continue;
+    let text: string;
+    try {
+      text = typeof result === 'string' ? result : JSON.stringify(result);
+    } catch {
+      continue;
+    }
+    found.push(...paymentStrings(text));
+  }
+  // Keep whole values only: the utxob: inside an RGB invoice is not a second item.
+  const lower = found.map((f) => f.value.toLowerCase());
+  return found.filter((f, i) => {
+    const v = lower[i]!;
+    return lower.indexOf(v) === i && !lower.some((o, j) => j !== i && o !== v && o.includes(v));
+  });
+}
+
+/** Payment strings (invoices, addresses) in a piece of text. */
+export function paymentStrings(text: string): UngroundedItem[] {
+  const out: UngroundedItem[] = [];
+  for (const { kind, re } of PAYMENT_DATA) {
+    for (const m of text.matchAll(re)) out.push({ kind, value: m[0].replace(/[.,;:!?*\\]+$/, '') });
+  }
+  return out;
+}
+
+/** The answer built from the tool's own values, when the model's copy is unusable. */
+export function producedPaymentReply(items: UngroundedItem[]): string {
+  return items.map((i) => `Here is your ${i.kind}:\n\n\`${i.value}\``).join('\n\n');
+}
+
 export function ungroundedReply(items: UngroundedItem[]): string {
   const kinds = [...new Set(items.map((i) => i.kind))].join(' / ');
   return `I can't give you that ${kinds}: no tool produced it in this conversation, and I won't make one up. ` +

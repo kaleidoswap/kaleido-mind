@@ -18,7 +18,15 @@ import type { ConfirmDecision, Message, ToolCall, ToolDef, ToolResult } from './
 import type { InferenceMetrics, LLMProvider, ToolChoice } from './providers/types.js';
 import type { ToolRegistry } from './tools/registry.js';
 import { compressToolResult, type ToolCrushOptions } from './context/compress.js';
-import { callKey, declinedToolResult, detectWalletAction, hasCapableTool, noToolReply, validateToolArgs } from './guards.js';
+import {
+  callKey,
+  declinedToolResult,
+  detectWalletAction,
+  hasCapableTool,
+  noToolReply,
+  producedPaymentData,
+  validateToolArgs,
+} from './guards.js';
 import { confirmReadback } from './wallet/confirm.js';
 import { annotateRgbBalances } from './context/rgb-units.js';
 import {
@@ -279,6 +287,7 @@ export class Engine {
       guardPaymentData: this.guardPaymentData,
       sources: [...messages.map((m) => m.content), ...state.executed.map((e) => e.result)],
       toolResults: state.executed.map((e) => e.result),
+      produced: producedPaymentData(state.executed),
       aborted: !!opts.signal?.aborted,
     });
     // Append the final answer so the returned conversation is complete (the
