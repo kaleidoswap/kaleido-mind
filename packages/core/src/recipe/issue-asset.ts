@@ -13,30 +13,58 @@
 
 import type { Recipe, RecipeContext } from './types.js';
 
-const VERB = /\b(issue|mint|create|launch|emetti|conia|crea)\b/i;
+// The request must OPEN with the verb ("issue …", "please mint …", "puoi creare …"),
+// so "I have an issue with my tokens" or "how do I create a token?" stay with the model.
+const VERB = /^(?:(?:please|pls|per favore|can you|could you|puoi|potresti)\s+)?(issue|mint|create|launch|emetti|conia|crea|creare|emettere|coniare)\b/i;
 const NOUN = /\b(tokens?|assets?|coins?|nfts?|tickets?|gettoni|badges?)\b/i;
 const NOT_ISSUE = /\b(invoice|fattura|channel|canale|swap|buy|sell|send|pay|compra|vendi|invia|paga)\b/i;
 const NFT = /\b(nfts?|unique|unico|unica)\b/i;
 // Words that look like tickers but are part of the request, not the asset.
 const STOPWORDS = new Set(['RGB', 'NFT', 'NFTS', 'NIA', 'CFA', 'UDA', 'BTC', 'LN', 'AN', 'A']);
 
-function parseAmount(t: string): number | undefined {
-  const m = t.match(/(?:^|\s)(\d[\d.,]*)\s*([km])?(?=\s|$)/i);
-  if (!m) return undefined;
-  let n = Number(m[1]!.replace(/,/g, ''));
-  if (m[2]) n *= m[2].toLowerCase() === 'k' ? 1_000 : 1_000_000;
-  return Number.isFinite(n) && n > 0 ? n : undefined;
+// "1000", "1,000", "1.000" (it), "1.5", "1,5" (it), optionally followed by k/m.
+const NUM = String.raw`(\d{1,3}(?:[.,]\d{3})+|\d+(?:[.,]\d+)?)\s*([km])?`;
+
+function toNumber(digits: string, suffix?: string): number | undefined {
+  // Groups of exactly three digits are thousands separators in both "1,000" and "1.000";
+  // a single separator followed by another digit count is a decimal point.
+  const n = /^\d{1,3}(?:[.,]\d{3})+$/.test(digits)
+    ? Number(digits.replace(/[.,]/g, ''))
+    : Number(digits.replace(',', '.'));
+  const scaled = suffix ? n * (suffix.toLowerCase() === 'k' ? 1_000 : 1_000_000) : n;
+  return Number.isFinite(scaled) && scaled > 0 ? scaled : undefined;
 }
 
+/**
+ * The supply: an explicit "supply 300" / "1m supply" wins, then a number right before the token
+ * noun / ticker ("1000 TICKET tokens", "500 token"). Numbers inside the asset name
+ * ("Web3 Summit 2026") are never the supply.
+ */
+function parseAmount(t: string, name?: string): number | undefined {
+  const rest = name ? t.replace(name, ' ') : t;
+  const labelled = rest.match(new RegExp(String.raw`\b(?:supply|amount|quantit[àa]|totale)\s*(?:of|di|[:=])?\s*` + NUM, 'i'));
+  if (labelled) return toNumber(labelled[1]!, labelled[2]);
+  const trailing = rest.match(new RegExp(String.raw`(?:^|\s)` + NUM + String.raw`\s+(?:supply|di supply)\b`, 'i'));
+  if (trailing) return toNumber(trailing[1]!, trailing[2]);
+  const beforeNoun = rest.match(new RegExp(String.raw`(?:^|\s)` + NUM + String.raw`\s+(?:[A-Z][A-Z0-9]{1,7}\s+)?(?:tokens?|coins?|tickets?|gettoni|badges?|assets?)\b`, 'i'));
+  if (beforeNoun) return toNumber(beforeNoun[1]!, beforeNoun[2]);
+  return undefined;
+}
+
+const unquote = (s: string) => s.replace(/^["“'‘]+|["”'’]+$/g, '').trim();
+
 function parseName(t: string): string | undefined {
-  const quoted = t.match(/["“'‘]([^"”'’]{1,40})["”'’]/)?.[1];
-  if (quoted) return quoted.trim();
-  const m = t.match(/\b(?:called|named|chiamat[oaie])\s+(.+?)(?=\s+(?:with|ticker|con)\b|[,.;]|$)/i);
-  return m?.[1]?.trim() || undefined;
+  // "called Joe's Pizza with ticker 'JOE'" → Joe's Pizza (apostrophes inside a name are fine).
+  const m = t.match(/\b(?:called|named|chiamat[oaie])\s+(.+?)(?=\s+(?:with|ticker|con|supply)\b|[,;]|\.(?:\s|$)|$)/i);
+  if (m?.[1]) return unquote(m[1]) || undefined;
+  // Otherwise only a properly paired quote: double quotes, or single quotes that open
+  // after a space and close before a space/punctuation (so "Joe's" never opens one).
+  const quoted = t.match(/["“]([^"”]{1,40})["”]/)?.[1] ?? t.match(/(?:^|\s)['‘]([^'’]{1,40})['’](?=\s|$|[,.;!?])/)?.[1];
+  return quoted?.trim() || undefined;
 }
 
 function parseTicker(t: string, name?: string): string | undefined {
-  const explicit = t.match(/\bticker\s+([A-Za-z0-9]{1,8})\b/i)?.[1];
+  const explicit = t.match(/\bticker\s*[:=]?\s*["'“‘]?([A-Za-z0-9]{1,8})\b/i)?.[1];
   if (explicit) return explicit.toUpperCase();
   // An all-caps word that isn't part of the name ("1000 TICKET tokens").
   const nameWords = new Set((name ?? '').split(/\s+/));
@@ -57,7 +85,7 @@ export function extractIssueAsset(text: string): Record<string, unknown> | null 
   const schema = NFT.test(t) ? 'UDA' : 'NIA';
   const name = parseName(t);
   const ticker = parseTicker(t, name) ?? (name ? tickerFromName(name) : undefined);
-  const amount = schema === 'UDA' ? 1 : parseAmount(t);
+  const amount = schema === 'UDA' ? 1 : parseAmount(t, name);
   if (!ticker && !name) return null;
   return { name: name ?? ticker, ticker, amount, schema };
 }

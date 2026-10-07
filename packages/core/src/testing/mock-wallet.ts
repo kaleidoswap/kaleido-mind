@@ -57,12 +57,16 @@ export class MockWallet {
   transfers: MockTransfer[] = [];
   sends: SendRecord[] = [];
 
+  private readonly opts: MockWalletOptions;
+
   constructor(o: MockWalletOptions = {}) {
+    this.opts = o;
     this.priceUsd = o.priceUsd ?? 65_000;
     this.failRoute = o.failRoute ?? false;
-    this.balances = o.balances ?? { spark: 500_000, rln: 300_000, arkade: 200_000 };
-    this.assets = o.assets ?? { USDT: 25_000_000, XAUT: 0 };
-    this.contacts = o.contacts ?? [
+    // Copies: the wallet mutates its state, and reset() rebuilds from `o`.
+    this.balances = { ...(o.balances ?? { spark: 500_000, rln: 300_000, arkade: 200_000 }) };
+    this.assets = { ...(o.assets ?? { USDT: 25_000_000, XAUT: 0 }) };
+    this.contacts = o.contacts ? [...o.contacts] : [
       { name: 'bob', ln_address: 'bob@kaleidoswap.com' },
       { name: 'alice', ln_address: 'alice@kaleidoswap.com' },
       { name: 'john', ln_address: 'john.smith@kaleidoswap.com' },
@@ -112,9 +116,9 @@ export class MockWallet {
   totalSats(): number {
     return this.balances.spark + this.balances.rln + this.balances.arkade;
   }
+  /** Back to the constructor state: balances, contacts, UTXOs, issued assets, history. */
   reset(): void {
-    this.sends = [];
-    this.transfers = [];
+    Object.assign(this, new MockWallet(this.opts));
   }
 
   private send(tool: string, rec: { to: string; amount_sats?: number; asset?: string; amount?: number }) {

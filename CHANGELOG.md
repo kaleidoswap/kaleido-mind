@@ -7,6 +7,23 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **`issueAssetRecipe` slot extraction.** Issuance is irreversible, so these
+  matter even behind the confirm gate:
+  - "1.000" / "1,000" are read as one thousand (was 1); "1,5k" is 1500.
+  - The supply is never taken from a number inside the asset name
+    ("Web3 Summit 2026, supply 300" → 300). Without a clear supply, the recipe
+    is not confident and falls back to the model.
+  - The recipe fires only when the request opens with the verb, so "I have an
+    issue with my tokens" or "how do I create a token?" reach the model.
+  - Apostrophes in names ("Joe's Pizza", "dell'Arte") are no longer read as
+    quotes.
+- `MockWallet.reset()` restores the full initial state (balances, contacts,
+  UTXOs, issued assets), not only the send/transfer history.
+- CLI `rln_issue_asset` no longer defaults a missing `amount` to 1; it rejects
+  any amount that isn't a positive safe integer after `precision` scaling.
+
 ### Changed
 
 - **RGB issuance tools aligned with kaleido-mcp**, which now ships them as
