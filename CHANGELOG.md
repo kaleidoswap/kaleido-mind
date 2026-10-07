@@ -34,6 +34,13 @@ Requires `@qvac/sdk` 0.20 or later. `@kaleidorg/mind` 0.9.0,
   `finalizeAnswer`, the single place that decides what reaches the user.
   Behaviour unchanged.
 
+### Fixed
+
+- `create-mind` 0.1.1 and the 0.8.1 rgb-agent example turned the experimental
+  session cache on by default. It is off now (`SESSION_CACHE=1` to try it): with
+  it on, Qwen3.5 2B copied a Lightning invoice correctly in 4/10 eval runs vs
+  10/10 without.
+
 ### Added
 
 - Subpath exports for the domain packs: `@kaleidorg/mind/kaleidoswap`,
