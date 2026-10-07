@@ -507,7 +507,7 @@ let maxOutputTokens: number | undefined = MAX_OUTPUT_TOKENS;
 // loading), and `getModelId` returns the currently-loaded model handle so the
 // provider always runs against it. Cancellation isn't surfaced to the sidecar,
 // but we forward it to the SDK when available.
-const qvacProvider: LLMProvider = createQvacProvider({
+const sharedQvacProvider: LLMProvider = createQvacProvider({
   completion: ((params: unknown) => {
     if (!sdk) throw new Error('model not loaded');
     return sdk.completion(params);
@@ -558,6 +558,20 @@ const qvacProvider: LLMProvider = createQvacProvider({
     emit(snapshot());
   },
 });
+
+// One model handle, one context: chat turns, scheduled tasks and `complete`
+// requests take turns per model call (not per agent run, so a chat waiting on
+// a confirmation doesn't block other clients).
+let modelQueue: Promise<unknown> = Promise.resolve();
+const qvacProvider: LLMProvider = {
+  ...sharedQvacProvider,
+  name: sharedQvacProvider.name,
+  runTurn(input) {
+    const run = modelQueue.then(() => sharedQvacProvider.runTurn(input));
+    modelQueue = run.catch(() => {});
+    return run;
+  },
+};
 
 /** Connect kaleido-mcp as a tool source if KALEIDO_MCP_PATH is configured. */
 async function connectMcpIfConfigured(): Promise<void> {
@@ -1797,6 +1811,42 @@ async function capabilities(): Promise<CapabilityInfo> {
   };
 }
 
+const completeAborts = new Map<string, AbortController>();
+
+/**
+ * Tool-less inference for other clients: the model sees the tool schemas and
+ * may return tool calls, but nothing is executed here, no agent prompt,
+ * skills or memory are added, and the chat history is untouched.
+ */
+async function handleComplete(cmd: Extract<Command, { cmd: 'complete' }>) {
+  if (MOCK || !sdk || !state.qvacModelHandle) throw new Error('QVAC model not loaded');
+  const abort = new AbortController();
+  completeAborts.set(cmd.id, abort);
+  try {
+    const out = await qvacProvider.runTurn({
+      messages: cmd.messages,
+      tools: (cmd.tools ?? []).map((t) => ({ name: t.name, description: t.description ?? '', parameters: t.parameters ?? {} })),
+      ...(cmd.toolChoice ? { toolChoice: cmd.toolChoice } : {}),
+      ...(typeof cmd.maxTokens === 'number' ? { maxTokens: cmd.maxTokens } : {}),
+      ...(typeof cmd.temperature === 'number' ? { temperature: cmd.temperature } : {}),
+      // Keep this request out of the desktop chat's reasoning and stats.
+      onThinking: () => {},
+      onStats: () => {},
+      onToken: (delta: string) => emit({ type: 'completion_delta', id: cmd.id, delta }),
+      signal: abort.signal,
+    } as Parameters<LLMProvider['runTurn']>[0]);
+    return {
+      text: out.text,
+      rawContent: out.rawContent,
+      toolCalls: out.toolCalls.map((c) => ({ ...(c.id ? { id: c.id } : {}), name: c.name, arguments: c.arguments })),
+      ...(out.toolErrors?.length ? { toolErrors: out.toolErrors } : {}),
+      ...(out.inference ? { inference: out.inference } : {}),
+    };
+  } finally {
+    completeAborts.delete(cmd.id);
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────
 // Dispatcher
 // ─────────────────────────────────────────────────────────────────────
@@ -1851,6 +1901,13 @@ async function dispatch(cmd: Command): Promise<void> {
         break;
       case 'cancel_chat':
         handleCancelChat(cmd.chatId);
+        respondOk(cmd.id);
+        break;
+      case 'complete':
+        respondOk(cmd.id, await handleComplete(cmd));
+        break;
+      case 'cancel_completion':
+        completeAborts.get(cmd.target)?.abort();
         respondOk(cmd.id);
         break;
       case 'add_skill':

@@ -141,6 +141,22 @@ export type Command =
   | { id: string; cmd: 'set_active_model'; modelId: string }
   | { id: string; cmd: 'chat'; prompt: string; chatId?: string }
   | { id: string; cmd: 'cancel_chat'; chatId: string }
+  /**
+   * Raw inference on the loaded model for another client (e.g. a phone using
+   * the desktop as its model server). Tools are passed to the model as
+   * schemas only and never executed; no agent prompt, skills or memory are
+   * added and nothing is saved to chat history. Streams `completion_delta`.
+   */
+  | {
+      id: string;
+      cmd: 'complete';
+      messages: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: string }>;
+      tools?: Array<{ name: string; description?: string; parameters?: unknown }>;
+      toolChoice?: string;
+      maxTokens?: number;
+      temperature?: number;
+    }
+  | { id: string; cmd: 'cancel_completion'; target: string }
   | { id: string; cmd: 'add_skill'; name: string; description: string; instructions: string; tools?: string[] }
   | { id: string; cmd: 'delete_skill'; name: string }
   | { id: string; cmd: 'list_capabilities' }
@@ -269,6 +285,8 @@ export type Event =
   | { type: 'download_completed'; modelId: string }
   | { type: 'chat_thinking_delta'; chatId: string; delta: string }
   | { type: 'chat_content_delta'; chatId: string; delta: string }
+  /** Visible content tokens of a `complete` command, keyed by its command id. */
+  | { type: 'completion_delta'; id: string; delta: string }
   | { type: 'chat_tool_call'; chatId: string; id: string; name: string; arguments: Record<string, unknown>; requiresConfirmation?: boolean }
   | { type: 'chat_tool_result'; chatId: string; id: string; name: string; arguments: Record<string, unknown>; ok: boolean; result: unknown }
   | { type: 'capabilities_changed'; capabilities: CapabilityInfo }
