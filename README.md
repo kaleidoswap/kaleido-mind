@@ -85,9 +85,9 @@ To use the skills without the plugin, copy the skill folders you want into
 `~/.claude/skills/`.
 
 **Which skills work with kaleido-mcp alone.** `rgb-lightning-node`,
-`kaleido-node`, `kaleido-trading` (atomic swaps), `kaleido-lsps`,
-`channel-manager`, `liquidity-optimizer`, `dca`, `portfolio-manager` and
-`paid-data` use tools that kaleido-mcp provides. The other skills call tools
+`kaleido-node`, `kaleido-trading` (atomic swaps), `channel-manager`
+(channels, liquidity, LSP orders), `portfolio-manager` (rebalancing, DCA),
+`submarine-swaps` and `paid-data` use tools that kaleido-mcp provides. The other skills call tools
 that come from the `@kaleidorg/mind` runtime or from other servers:
 `spark-wallet` and `wallet-assistant` use the in-app wallet contract,
 `bitrefill` needs the Bitrefill MCP, `flashnet-swaps` needs Flashnet tools, and

@@ -1,59 +1,38 @@
 ---
 name: channel-manager
-description: "Keep the Lightning node healthy: check node info, audit channels and liquidity, flush stuck RGB transfers, and (when allowed) buy inbound/asset channel capacity via the KaleidoSwap LSP. Triggers when the user asks about node health, channels, liquidity, or inbound capacity — and is the skill the scheduled 'heartbeat' loop runs."
-tools: rln_get_node_info, rln_list_channels, rln_get_balances, rln_list_assets, rln_refresh_transfers, kaleidoswap_lsp_get_info, kaleidoswap_lsp_estimate_fees, kaleidoswap_lsp_create_order, rln_pay_invoice
-triggers: node, channel, channels, liquidity, inbound, outbound, lsp, heartbeat, health, transfers, stuck
+description: "Lightning channels and liquidity for the RGB Lightning Node: node health, channel audit, inbound/outbound balance, buying a channel or asset channel from the KaleidoSwap LSP, opening and closing channels. Runs the scheduled heartbeat."
+tools: rln_get_node_info, rln_list_channels, rln_get_balances, rln_refresh_transfers, rln_connect_peer, rln_open_channel, rln_close_channel, rln_get_channel_id, rln_pay_invoice, kaleidoswap_lsp_get_info, kaleidoswap_lsp_estimate_fees, kaleidoswap_lsp_create_order, kaleidoswap_lsp_get_order, kaleidoswap_lsp_quote_asset_channel, kaleidoswap_lsp_create_asset_channel
+requires-tools: rln_list_channels
+triggers: channel, channels, liquidity, inbound, outbound, lsp, lsps1, capacity, rebalance channel, can't receive, open channel, close channel, channel order, heartbeat, health, stuck
 metadata:
   author: kaleidoswap
-  version: "0.1.0"
+  version: "0.2.0"
 ---
-
 # Channel manager
 
-Keep the RGB Lightning node healthy and liquid. Read state every run; only buy
-capacity when the user allows it and it's actually needed.
+Read state first: `rln_get_node_info`, `rln_list_channels`, `rln_get_balances`.
+Outbound = what the node can send; inbound = what it can receive. Report
+numbers from this turn's results only.
 
-## Critical rules — these override everything else
+## Do
+- Health: count usable channels, total outbound vs inbound, channels with
+  `is_usable: false`; `rln_refresh_transfers {}` flushes pending RGB transfers.
+- Can't receive → buy inbound: `kaleidoswap_lsp_get_info` (limits and
+  `lsp_connection_url`), `rln_connect_peer`, `kaleidoswap_lsp_estimate_fees`
+  (show `total_fee`), then `kaleidoswap_lsp_create_order` with `client_pubkey`
+  from `rln_get_node_info`, pay its invoice with `rln_pay_invoice`, poll
+  `kaleidoswap_lsp_get_order` until `COMPLETED`.
+- Wants an asset (USDT/XAUT) but has no channel →
+  `kaleidoswap_lsp_quote_asset_channel` then
+  `kaleidoswap_lsp_create_asset_channel` with the fresh `rfq_id`.
+- Can't send → open a channel with spare on-chain BTC (`rln_open_channel`).
+- Every order, open, close and payment is confirm-gated; recommend first,
+  execute only on an explicit request. With `dry_run` true, describe only.
+- Heartbeat runs: `action` is `ok`, `flush`, `buy_capacity` or `alert`.
 
-- **Diagnose before acting.** `rln_get_node_info` + `rln_list_channels` +
-  `rln_get_balances` first. Report what you see; don't guess.
-- **Respect `dry_run`.** When true, describe the action you *would* take (e.g.
-  "buy 1M sat inbound") but do NOT call `kaleidoswap_lsp_create_order` or
-  `rln_pay_invoice`.
-- **Buying capacity is a spend** — it routes through the host's risk gate. Never
-  propose one that breaches the BTC reserve, and always show the LSP fee
-  (`kaleidoswap_lsp_estimate_fees`) before recommending it.
-
-## Health checks (run in order)
-
-1. **Node up?** `rln_get_node_info` — pubkey, block height, synced.
-2. **Channels.** `rln_list_channels` — count, capacity, outbound vs inbound. Flag
-   any channel whose outbound is below the configured floor.
-3. **Stuck transfers.** `rln_refresh_transfers` to flush pending RGB transfers;
-   report anything still pending afterward.
-4. **Liquidity verdict.** If usable inbound (or an asset's inbound) is below the
-   threshold in the task parameters, that's the trigger to consider buying.
-
-## Buying capacity (only when needed + allowed)
-
-1. `kaleidoswap_lsp_get_info` — confirm the LSP is reachable + its limits.
-2. `kaleidoswap_lsp_estimate_fees` — show the fee for the size you'd buy.
-3. `kaleidoswap_lsp_create_order` (spend-gated) — create the order; it returns an
-   invoice/onchain address. Pay via `rln_pay_invoice` only after approval.
-
-## Scheduled (background) runs
-
-When run by the `heartbeat` loop, return STRICT JSON only:
-
-```
-{"task":"heartbeat","timestamp":"<ISO8601>","action":"ok|flush|buy_capacity|alert","dry_run":<bool>,"reason":"<why>","details":{"channels":<n>,"outbound_sat":<n>,"inbound_sat":<n>,"pending_transfers":<n>}}
-```
-
-Use `ok` when nothing needs doing, `alert` when a human should look.
-
-## Don'ts
-
-- Don't buy capacity that isn't needed, or when within the liquidity threshold.
-- Don't pay an LSP invoice when `dry_run` is true.
-- Don't invent channel ids, balances, or fees — read them from tools.
-- Don't breach the BTC reserve to open a channel.
+## Examples
+- "How healthy is my node?" → `rln_list_channels {}`
+- "Fee for 500k sats inbound?" → `kaleidoswap_lsp_estimate_fees {"lsp_balance_sat":500000,"client_balance_sat":0,"channel_expiry_blocks":4320}`
+- "Buy 500k inbound" → `rln_get_node_info {}` then `kaleidoswap_lsp_create_order {"client_pubkey":"<pubkey>","lsp_balance_sat":500000,"client_balance_sat":0,"channel_expiry_blocks":4320}`
+- "A channel holding 100 USDT" → `kaleidoswap_lsp_quote_asset_channel {"asset":"USDT","asset_amount":100}`
+- "Did order 7a1b open?" → `kaleidoswap_lsp_get_order {"order_id":"7a1b"}`

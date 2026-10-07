@@ -323,10 +323,11 @@ describe('desktop mind — skill scoping (real skills)', () => {
     );
   });
 
-  it('wallet-assistant (triggers on "balance") exposes the real rln_*/wdk_* tool names', () => {
+  it('wallet-assistant is the in-app router; the node skill carries the rln_* balance tools', () => {
     const wallet = SKILLS.find((s) => s.name === 'wallet-assistant')!;
-    expect(wallet.tools).toEqual(expect.arrayContaining(['rln_get_balances', 'wdk_get_balances']));
-    expect(wallet.tools).toEqual(expect.arrayContaining(['rln_get_address', 'rln_send_btc', 'rln_create_ln_invoice']));
+    expect(wallet.metadata?.['requires-tools']).toBe('get_balances');
+    const node = SKILLS.find((s) => s.name === 'rgb-lightning-node')!;
+    expect(node.tools).toEqual(expect.arrayContaining(['rln_get_balances', 'rln_get_address', 'rln_send_btc', 'rln_create_ln_invoice']));
   });
 
   it('rgb-lightning-node (triggers on "channels") exposes only canonical rln_* tools', () => {
@@ -365,9 +366,9 @@ describe('desktop mind — skill scoping (real skills)', () => {
     const res = await funnel.runTurn("what's my balance?");
 
     expect(res.tier).toBe('agentic');
-    // wallet-assistant is selected AND rln_get_balances survives its scoping…
+    // Node-only host: the RGB node skill is selected AND rln_get_balances survives its scoping…
     const agenticLine = logs.find((l) => l.startsWith('tier=agentic'));
-    expect(agenticLine).toMatch(/skill=wallet-assistant/);
+    expect(agenticLine).toMatch(/skill=rgb-lightning-node/);
     expect(agenticLine).toMatch(/rln_get_balances/);
     // …and the tool actually executes (not narrated).
     expect(calls.map((c) => c.name)).toContain('rln_get_balances');
