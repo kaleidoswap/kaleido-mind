@@ -1,13 +1,11 @@
-# Atomic swap over kaleido-mcp
+# Atomic swap
 
 Every KaleidoSwap swap settles as an atomic HTLC swap between the maker and
-the user's RGB Lightning Node (RLN). There is no deposit or order flow on
-kaleido-mcp 0.3.0+. If either side fails, nothing settles. Typical end-to-end
+the user's RGB Lightning Node (RLN). There is no deposit or order flow. If either side fails, nothing settles. Typical end-to-end
 time: 2–15 s.
 
-These are kaleido-mcp's argument names. In-app wallets that bind the
-`@kaleidorg/mind` KaleidoSwap contract use the simpler `from_asset` /
-`to_asset` / `amount` quote and run the chain through a recipe instead.
+The argument names are the same in kaleido-mcp and in the `@kaleidorg/mind`
+KaleidoSwap contract.
 
 ## Steps
 
@@ -58,7 +56,7 @@ and is not an order id.
 
 The swap needs outbound capacity on the asset you send and inbound capacity on
 the asset you receive. If either side is short, `atomic_execute` fails. Buy a
-channel first (skill: `kaleido-lsps`).
+channel first (skill: `channel-manager`).
 
 ## Reading the result
 

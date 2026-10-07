@@ -40,10 +40,10 @@ Read precision from the API; the table is illustrative.
 
 | Tool | Units |
 |---|---|
-| `kaleidoswap_get_quote` (kaleido-mcp) | display (`0.001` BTC, `65.0` USDT) |
-| `kaleidoswap_atomic_init` (kaleido-mcp) | raw: pass `quote.*.amount_raw` unchanged |
-| `kaleidoswap_get_quote` (in-app contract) | sats for BTC, asset units otherwise |
-| `rln_send_asset` / `rln_create_rgb_invoice` (kaleido-mcp) | display units |
+| `kaleidoswap_get_quote` | display (`0.001` BTC, `65.0` USDT) |
+| `kaleidoswap_atomic_init` | raw: pass `quote.*.amount_raw` unchanged |
+| `rln_send_asset` / `rln_create_rgb_invoice` / `rln_issue_asset` | display units |
+| `rln_list_assets` / `rln_get_asset_balance` balances | raw: divide by 10^precision |
 
 ## Mapping user words
 
