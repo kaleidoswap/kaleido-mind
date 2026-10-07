@@ -54,8 +54,8 @@ Core `@kaleidorg/mind` 0.8.0 and `@kaleidorg/mind-provider` 0.8.0.
 
 - **Qwen3.5 model list** in `@kaleidorg/mind/qvac`: `QWEN35_MODELS` (Qwen3.5
   0.8B / 2B / 4B / 9B and Qwen3.6 35B-A3B MoE, Q4_K_M, with exact sizes, RAM
-  hints and the matching `@qvac/sdk` constant names), `DEFAULT_MODEL_ID` (4B,
-  desktop), `DEFAULT_SMALL_DEVICE_MODEL_ID` (2B), `DEFAULT_QVAC_MODEL`,
+  hints and the matching `@qvac/sdk` constant names), `DEFAULT_MODEL_ID` and
+  `DEFAULT_SMALL_DEVICE_MODEL_ID` (both Qwen3.5 2B), `DEFAULT_QVAC_MODEL`,
   `DEFAULT_SMALL_DEVICE_QVAC_MODEL` and `getRecommendedModel`.
 - **Agent guards** (`validateToolArgs`, `findUngroundedPaymentData`,
   `detectWalletAction`, `hasCapableTool`, `DECLINED_TOOL_MESSAGE`):
@@ -70,28 +70,77 @@ Core `@kaleidorg/mind` 0.8.0 and `@kaleidorg/mind-provider` 0.8.0.
   - A final answer that contains an invoice, offer, LNURL, address or RGB
     invoice that no tool returned and the user never typed is replaced with a
     refusal (`EngineOptions.guardUngroundedPaymentData`, default on).
-  - The funnel skips skills whose `requires-tools` frontmatter is not fully
-    live, prefers skills with at least one live tool, and answers a wallet
-    action (invoice, address, pay, send) that no tool in scope can perform
-    with a fixed "I can't do that here" reply (`route: 'no-tool'`), without
-    calling the model. `skillAvailable()` is exported.
+  - `Engine.composeSkill(skills, query, base)` (and `selectAvailableSkill`,
+    `skillAvailable`) pick a skill that can act with the engine's tools:
+    skills whose `requires-tools` frontmatter is not fully live are skipped,
+    skills with at least one live tool are preferred. The funnel uses the same
+    selection.
+  - A wallet action (invoice, address, pay, send) that no exposed tool can
+    perform gets a fixed "I can't do that here" reply without inference
+    (`EngineOptions.guardMissingTools`, default on; funnel `route: 'no-tool'`).
+  - When the user declines every call in a turn the run ends with a fixed
+    "Cancelled — you declined: … Nothing was sent or changed." reply
+    (`EngineOptions.endTurnOnDecline`, default on).
+  - An empty answer after tool calls (e.g. reasoning used the whole output
+    budget) triggers one tool-less retry, then falls back to the last tool
+    result. `TurnOutput.incomplete` marks such turns; the QVAC provider sets
+    it.
 - Text tool-call recovery understands Qwen3.5's XML call format
   (`<function=…><parameter=…>`).
-- Provider: catalog entries carry `recommended` (the 4B default) and
+- Provider: catalog entries carry `recommended` (the 2B default) and
   `tool_confirm_request` carries the optional `summary` readback.
+
+### Added
+
+- **Submarine swaps on the KaleidoSwap /v2 maker** (kaleidoswap-maker-rs): pay a
+  Lightning invoice from Liquid funds.
+  - New contract `SUBMARINE_TOOLS` (`kaleidoswap_submarine_pairs`, `_create`,
+    `_fund`, `_status`, the same names kaleido-mcp implements) with
+    `bindSubmarineTools`. Only `_fund` is a spend, and it takes nothing but the
+    swap id.
+  - `submarinePayRecipe` (opt-in, register before `paymentsRecipe`): "pay <invoice>
+    with L-USDT" / "paga <invoice> con USDT su Liquid" → create → one
+    confirmation showing the maker's exact amount → fund. A bare "USDT" stays
+    RGB USDT and is not matched.
+  - `MockWallet` simulates the /v2 maker (Liquid balances, 0.5% fee, BOLT11
+    amount parsing), and a new `submarine-swaps` skill covers the flow.
+### Fixed
+
+- **`issueAssetRecipe` slot extraction.** Issuance is irreversible, so these
+  matter even behind the confirm gate:
+  - "1.000" / "1,000" are read as one thousand (was 1); "1,5k" is 1500.
+  - The supply is never taken from a number inside the asset name
+    ("Web3 Summit 2026, supply 300" → 300). Without a clear supply, the recipe
+    is not confident and falls back to the model.
+  - The recipe fires only when the request opens with the verb, so "I have an
+    issue with my tokens" or "how do I create a token?" reach the model.
+  - Apostrophes in names ("Joe's Pizza", "dell'Arte") are no longer read as
+    quotes.
+- `MockWallet.reset()` restores the full initial state (balances, contacts,
+  UTXOs, issued assets), not only the send/transfer history.
+- CLI `rln_issue_asset` no longer defaults a missing `amount` to 1; it rejects
+  any amount that isn't a positive safe integer after `precision` scaling.
 
 ### Changed
 
 - **Model catalog moved to Qwen3.5.** The provider and CLI catalogs, examples
-  and quickstarts now use Qwen3.5 (default 4B on desktop, 2B on small devices).
+  and quickstarts now use Qwen3.5 2B by default: on an M4 it passed all 7 signet
+  RGB wallet tasks at 45–150 s per question; 4B was equally correct but about
+  twice as slow, 9B slower still, and 0.8B loops on actions.
   Qwen3 (0.6B–30B-A3B) and Hermes 3 are removed: they garbled multi-argument
   wallet calls such as `rln_issue_asset`. Previously downloaded GGUFs no longer
   appear as installed catalog models; add them back by Hugging Face URL if
   needed. The Qwen3.5 constants exist in every supported `@qvac/sdk` (0.13.1+),
   so peer ranges are unchanged.
-- **Declines are unambiguous.** A declined call returns
-  `{ declined: true, message: DECLINED_TOOL_MESSAGE }` (plus the host's
-  `reason`, if any) instead of `reason: 'user declined'`.
+- **Declines are attributed to the user.** A declined call returns
+  `{ status: 'cancelled_by_user', declined_by: 'user', tool, message }` (plus
+  `host_reason` when the host gave one) instead of
+  `{ declined: true, reason: 'user declined' }`.
+- Provider defaults: `KALEIDO_MIND_MAX_THINKING_TOKENS` 128 → 512 and
+  `KALEIDO_MIND_MAX_TOKENS` 512 → 1536. Qwen3.5 2B used 80–390 thinking tokens
+  per wallet turn; the old caps cut turns off before a tool call or answer.
+- RGB invoices are only treated as payment data when they carry a path or
+  beneficiary; plain `rgb:` asset ids never trip the payment-data guard.
 - `confirmReadback` never prints `NaN`: missing or non-numeric amounts read as
   "an unspecified amount", and stray quotes/commas are trimmed from tickers.
 - `rgb-lightning-node` skill 0.3.3: `rln_list_assets` documents its optional
@@ -107,6 +156,26 @@ Core `@kaleidorg/mind` 0.8.0 and `@kaleidorg/mind-provider` 0.8.0.
   (`ticker` for NIA/UDA and `amount` for NIA/CFA are checked by the tool).
   The `rgb-lightning-node` skill documents the shared schemas and gains an
   "issue your own RGB asset" recipe.
+
+### Removed
+
+- **KaleidoSwap order flow.** The maker no longer offers order-based swaps
+  (kaleido-sdk 0.1.12 dropped them), so `kaleidoswap_place_order`,
+  `kaleidoswap_get_order_status` and `kaleidoswap_get_order_history` are gone
+  from the KaleidoSwap contract, together with its `orders` group, the CLI and
+  playground maker routes, the `kaleido-trading` skill, evals and docs. Swaps
+  run through the atomic flow (`kaleidoswap_get_quote` →
+  `kaleidoswap_atomic_init` → `rln_atomic_taker` →
+  `kaleidoswap_atomic_execute` → `kaleidoswap_atomic_status`). Hosts that bound
+  handlers for the order tools or passed `groups: ['orders']` must move to the
+  atomic tools.
+
+### Fixed
+
+- **CLI chat no longer throws at startup** binding the KaleidoSwap contract:
+  the CLI has no maker route for `kaleidoswap_lsp_quote_asset_channel` /
+  `kaleidoswap_lsp_create_asset_channel`, so it now binds with
+  `allowMissing: true` like its other tool sources.
 
 ## [0.7.0] — 2026-10-06
 

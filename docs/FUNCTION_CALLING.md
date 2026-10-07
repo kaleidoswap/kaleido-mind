@@ -90,8 +90,8 @@ identical names + schemas everywhere — only `bindXxxTools(handlers)` differs.
 | **Write — receive (safe)** | `spark_create_invoice`, `rln_create_ln_invoice`, `rln_create_rgb_invoice` | none — receiving is safe |
 | **Write — wallet spend** | `send_payment`, `spark_send`, `rln_pay_invoice`, `rln_send_asset`, `arkade_send` | **required** |
 | **Read — merchant** | `find_merchant_locations`, `get_merchant_info` | none |
-| **Read — KaleidoSwap** | `kaleidoswap_get_assets`, `kaleidoswap_get_pairs`, `kaleidoswap_get_quote`, `kaleidoswap_get_nodeinfo`, `kaleidoswap_get_order_status`, `kaleidoswap_get_order_history`, `kaleidoswap_atomic_status` | none |
-| **Write — KaleidoSwap spend** | `kaleidoswap_place_order`, `kaleidoswap_atomic_init`, `kaleidoswap_atomic_execute` | **required** |
+| **Read — KaleidoSwap** | `kaleidoswap_get_assets`, `kaleidoswap_get_pairs`, `kaleidoswap_get_quote`, `kaleidoswap_get_nodeinfo`, `kaleidoswap_atomic_status` | none |
+| **Write — KaleidoSwap spend** | `kaleidoswap_atomic_init`, `kaleidoswap_atomic_execute` | **required** |
 | **Read — LSPS1** | `lsp_get_info`, `lsp_get_network_info`, `lsp_estimate_fees`, `lsp_get_order` | none |
 | **Write — LSPS1 spend** | `lsp_create_order` | **required** |
 | **Ambient** | `remember`, `recall`, `search_knowledge`, `read_skill_reference`, `fetch_paid_resource` | none (L402 spend is auto-paid under a cap) |

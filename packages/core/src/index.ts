@@ -66,6 +66,7 @@ export {
   fixSatsBtcConversions,
   formatSatsAsBtc,
   DECLINED_TOOL_MESSAGE,
+  declinedToolResult,
 } from './guards.js';
 export { annotateRgbBalances, fixRgbBalanceUnits, formatRgbAmount } from './context/rgb-units.js';
 export type { ArgValidation, UngroundedItem, WalletAction } from './guards.js';
@@ -99,6 +100,23 @@ export type {
   Lsps1Handler,
   BindLsps1Options,
 } from './lsps1/contract.js';
+
+// ── KaleidoSwap /v2 submarine swaps (pay Lightning from Liquid) ─────────────
+export {
+  SUBMARINE_TOOLS,
+  SUBMARINE_SPEND_TOOLS,
+  SUBMARINE_FROM_ASSETS,
+  isSubmarineSpendTool,
+  getSubmarineTool,
+  formatSubmarineAmount,
+  bindSubmarineTools,
+} from './submarine/contract.js';
+export type {
+  SubmarineToolDef,
+  SubmarineFromAsset,
+  SubmarineHandler,
+  BindSubmarineOptions,
+} from './submarine/contract.js';
 
 // ── Bitrefill (gift cards / mobile top-ups / eSIMs) ─────────────────────────
 export {
@@ -145,6 +163,9 @@ export { buyAssetChannelRecipe, extractBuyAsset } from './recipe/buy-asset-chann
 
 // ── Issue-an-RGB-asset recipe (opt-in — register via Funnel.recipes) ───────
 export { issueAssetRecipe, extractIssueAsset } from './recipe/issue-asset.js';
+
+// ── Submarine-pay recipe (opt-in — register via Funnel.recipes, before payments) ──
+export { submarinePayRecipe, extractSubmarinePay } from './recipe/submarine-pay.js';
 
 // ── Recipes (mobile multi-step: "recipes, not planning") ───────────────────
 export { runRecipe, extractSlots, RecipeRegistry } from './recipe/runner.js';
@@ -219,10 +240,11 @@ export type {
 } from './knowledge/btc-map.js';
 
 export { Engine } from './engine.js';
-export type { EngineOptions, AgenticOptions, AgenticResult } from './engine.js';
+export type { EngineOptions, AgenticOptions, AgenticResult, ComposedSkill } from './engine.js';
 
 // ── Funnel (T0 fast-path → T2 recipe → T1 agentic — the tiered agent) ───────
-export { Funnel, DEFAULT_WALLET_SYSTEM, skillAvailable } from './funnel.js';
+export { Funnel, DEFAULT_WALLET_SYSTEM } from './funnel.js';
+export { skillAvailable, selectAvailableSkill } from './skills/select.js';
 export type { FunnelOptions, FunnelSettings, FunnelCallbacks, FunnelResult } from './funnel.js';
 
 export {

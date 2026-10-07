@@ -48,20 +48,20 @@ export async function createTools(opts: {
 
 /** Load a Qwen3.5 model through @qvac/sdk. `model` is an @qvac/sdk constant name. */
 export async function loadQvacProvider(
-  model = 'QWEN3_5_4B_MULTIMODAL_Q4_K_M',
+  model = 'QWEN3_5_2B_MULTIMODAL_Q4_K_M',
 ): Promise<{ provider: LLMProvider; dispose: () => Promise<void> }> {
   const sdk = await import('@qvac/sdk');
   const modelSrc = (sdk as unknown as Record<string, unknown>)[model];
   if (!modelSrc) throw new Error(`@qvac/sdk has no model constant ${model}`);
   console.error(`[loading ${model} — the first run downloads it]`);
-  const modelId = await sdk.loadModel({ modelSrc: modelSrc as typeof sdk.QWEN3_5_4B_MULTIMODAL_Q4_K_M, modelConfig: { ctx_size: 8192, tools: true } });
+  const modelId = await sdk.loadModel({ modelSrc: modelSrc as typeof sdk.QWEN3_5_4B_MULTIMODAL_Q4_K_M, modelConfig: { ctx_size: 8192, tools: true, device: 'gpu', gpu_layers: 99 } });
   return {
     provider: createQvacProvider({
       completion: sdk.completion,
       cancel: sdk.cancel,
       getModelId: () => modelId,
       defaultTemperature: 0.1,
-      defaultMaxTokens: 512,
+      defaultMaxTokens: 1536,
       // Qwen3.5 ignores /no_think; this budget is what keeps a turn from
       // spending every token on reasoning.
       maxThinkingTokens: Number(process.env.THINK ?? 128),

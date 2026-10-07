@@ -31,7 +31,7 @@ export const QWEN35_MODELS: readonly RecommendedModel[] = [
     hfRepo: 'unsloth/Qwen3.5-0.8B-GGUF',
     hfFile: 'Qwen3.5-0.8B-Q4_K_M.gguf',
     ramHintGb: 1.5,
-    notes: 'Smoke-test model. Fine for chat and single read-only tool calls; unreliable on multi-argument wallet actions.',
+    notes: 'Smoke tests only. Loops on wallet actions in our signet bench; fine for chat and single read-only calls.',
   },
   {
     id: 'qwen3.5-2b-q4_k_m',
@@ -43,7 +43,7 @@ export const QWEN35_MODELS: readonly RecommendedModel[] = [
     hfRepo: 'unsloth/Qwen3.5-2B-GGUF',
     hfFile: 'Qwen3.5-2B-Q4_K_M.gguf',
     ramHintGb: 3,
-    notes: 'Phones and low-RAM laptops. Handles simple tool calls; double-check readbacks on spends.',
+    notes: 'Recommended default. Passed all 7 wallet tasks of our signet RGB bench at 45–150 s per question on an M4 laptop; also fits phones.',
   },
   {
     id: 'qwen3.5-4b-q4_k_m',
@@ -55,7 +55,7 @@ export const QWEN35_MODELS: readonly RecommendedModel[] = [
     hfRepo: 'unsloth/Qwen3.5-4B-GGUF',
     hfFile: 'Qwen3.5-4B-Q4_K_M.gguf',
     ramHintGb: 5,
-    notes: 'Recommended default for desktop. Smallest model that fills multi-argument RGB tool calls reliably in our tests.',
+    notes: 'Same correctness as 2B in our bench, about twice as slow (105–330 s per question on an M4). Pick it for longer free-form answers.',
   },
   {
     id: 'qwen3.5-9b-q4_k_m',
@@ -67,7 +67,7 @@ export const QWEN35_MODELS: readonly RecommendedModel[] = [
     hfRepo: 'unsloth/Qwen3.5-9B-GGUF',
     hfFile: 'Qwen3.5-9B-Q4_K_M.gguf',
     ramHintGb: 9,
-    notes: 'Stronger multi-step planning; needs 16 GB of RAM. Slower per token than 4B.',
+    notes: 'Needs 16 GB of RAM. Slow for interactive use (180–690 s per question on an M4); for unattended multi-step tasks.',
   },
   {
     id: 'qwen3.6-35b-a3b-q4_k_m',
@@ -83,8 +83,8 @@ export const QWEN35_MODELS: readonly RecommendedModel[] = [
   },
 ];
 
-/** Default model for desktop hosts (the provider sidecar, CLI, examples). */
-export const DEFAULT_MODEL_ID = 'qwen3.5-4b-q4_k_m';
+/** Default model for every host (provider sidecar, CLI, examples). */
+export const DEFAULT_MODEL_ID = 'qwen3.5-2b-q4_k_m';
 /** Default model for phones and other small devices. */
 export const DEFAULT_SMALL_DEVICE_MODEL_ID = 'qwen3.5-2b-q4_k_m';
 
@@ -92,7 +92,7 @@ export function getRecommendedModel(id: string): RecommendedModel | undefined {
   return QWEN35_MODELS.find((m) => m.id === id);
 }
 
-/** @qvac/sdk constant name of the desktop default, e.g. for `sdk[DEFAULT_QVAC_MODEL]`. */
+/** @qvac/sdk constant name of the default, e.g. for `sdk[DEFAULT_QVAC_MODEL]`. */
 export const DEFAULT_QVAC_MODEL = getRecommendedModel(DEFAULT_MODEL_ID)!.qvacConstant;
 /** @qvac/sdk constant name of the small-device default. */
 export const DEFAULT_SMALL_DEVICE_QVAC_MODEL = getRecommendedModel(DEFAULT_SMALL_DEVICE_MODEL_ID)!.qvacConstant;

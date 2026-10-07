@@ -6,7 +6,7 @@
  *   pnpm eval:mock              # in-process fake RLN node + local model
  *   pnpm eval                   # kaleido-mcp on signet + local model (issues a test asset)
  *
- * Env:   MODEL   @qvac/sdk model constant (default: QWEN3_5_4B_MULTIMODAL_Q4_K_M)
+ * Env:   MODEL   @qvac/sdk model constant (default: QWEN3_5_2B_MULTIMODAL_Q4_K_M)
  *        THINK   reasoning budget in tokens (default: 128)
  *        ONLY    comma-separated scenario ids to run, e.g. ONLY=issue,send
  *        OUT     append one JSON line per scenario to this file
@@ -134,7 +134,7 @@ try {
     if (process.env.OUT) {
       appendFileSync(
         process.env.OUT,
-        JSON.stringify({ model: process.env.MODEL ?? 'QWEN3_5_4B_MULTIMODAL_Q4_K_M', mock: MOCK, id: s.id, pass: !failure, failure, seconds, ...run, text: run.text.slice(0, 600) }) + '\n',
+        JSON.stringify({ model: process.env.MODEL ?? 'QWEN3_5_2B_MULTIMODAL_Q4_K_M', mock: MOCK, id: s.id, pass: !failure, failure, seconds, ...run, text: run.text.slice(0, 600) }) + '\n',
       );
     }
   }

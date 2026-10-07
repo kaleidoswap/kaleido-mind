@@ -46,10 +46,10 @@ catalog; any GGUF still loads by path or Hugging Face URL.
 
 | Model | `@qvac/sdk` constant | Download | RAM | Use |
 |---|---|---|---|---|
-| Qwen3.5 0.8B | `QWEN3_5_0_8B_MULTIMODAL_Q4_K_M` | 0.53 GB | ~1.5 GB | Smoke tests; unreliable on multi-argument tool calls |
-| Qwen3.5 2B | `QWEN3_5_2B_MULTIMODAL_Q4_K_M` | 1.3 GB | ~3 GB | Default for phones and small devices |
-| Qwen3.5 4B | `QWEN3_5_4B_MULTIMODAL_Q4_K_M` | 2.7 GB | ~5 GB | Default for desktop |
-| Qwen3.5 9B | `QWEN3_5_9B_MULTIMODAL_Q4_K_M` | 5.7 GB | ~9 GB | 16 GB machines; stronger multi-step planning |
+| Qwen3.5 0.8B | `QWEN3_5_0_8B_MULTIMODAL_Q4_K_M` | 0.53 GB | ~1.5 GB | Smoke tests only; loops on wallet actions |
+| Qwen3.5 2B | `QWEN3_5_2B_MULTIMODAL_Q4_K_M` | 1.3 GB | ~3 GB | **Default.** All 7 signet RGB wallet tasks passed, 45–150 s per question on an M4 |
+| Qwen3.5 4B | `QWEN3_5_4B_MULTIMODAL_Q4_K_M` | 2.7 GB | ~5 GB | Same correctness, ~2× slower (105–330 s) |
+| Qwen3.5 9B | `QWEN3_5_9B_MULTIMODAL_Q4_K_M` | 5.7 GB | ~9 GB | 16 GB machines; slow for chat (180–690 s) |
 | Qwen3.6 35B-A3B (MoE) | `QWEN3_6_35B_A3B_MULTIMODAL_Q4_K_M` | 22 GB | ~26 GB | 32 GB+ machines |
 
 The same list is exported as data from `@kaleidorg/mind/qvac` (`QWEN35_MODELS`,
@@ -63,14 +63,13 @@ skill, and runs one turn.
 
 ```ts
 // quickstart.ts — run with: npx tsx quickstart.ts
-import { completion, cancel, loadModel, unloadModel, close, QWEN3_5_4B_MULTIMODAL_Q4_K_M } from '@qvac/sdk';
+import { completion, cancel, loadModel, unloadModel, close, QWEN3_5_2B_MULTIMODAL_Q4_K_M } from '@qvac/sdk';
 import { Engine, InProcessToolSource, SkillRegistry, ToolRegistry } from '@kaleidorg/mind';
 import { createQvacProvider } from '@kaleidorg/mind/qvac';
 
-// 1. Model: Qwen3.5 4B Q4 (~2.7 GB, cached after the first download).
-//    On a phone or small laptop use QWEN3_5_2B_MULTIMODAL_Q4_K_M (~1.3 GB).
+// 1. Model: Qwen3.5 2B Q4 (~1.3 GB, cached after the first download).
 const modelId = await loadModel({
-  modelSrc: QWEN3_5_4B_MULTIMODAL_Q4_K_M,
+  modelSrc: QWEN3_5_2B_MULTIMODAL_Q4_K_M,
   modelConfig: { ctx_size: 4096, tools: true }, // `tools: true` turns on tool calling
 });
 const provider = createQvacProvider({ completion, cancel, getModelId: () => modelId, defaultTemperature: 0.2 });
@@ -102,8 +101,9 @@ Call get_btc_price, then answer in one sentence with the number.`);
 
 // 4. A turn.
 const question = 'What is bitcoin worth in EUR?';
-const { system, allowedTools } = skills.compose('You are a concise assistant.', skills.select(question));
 const engine = new Engine({ provider, tools });
+// composeSkill picks a skill that can act with these tools, then composes its prompt.
+const { system, allowedTools } = await engine.composeSkill(skills, question, 'You are a concise assistant.');
 const result = await engine.runAgentic(
   [{ role: 'system', content: system }, { role: 'user', content: question }],
   { allowedTools },
@@ -182,9 +182,14 @@ Never guess an address.
 ```ts
 import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
 const skills = new SkillRegistry([...loadSkillsDir(packagedSkillsDir()), ...loadSkillsDir('./skills')]);
-const skill = skills.select(userText);                 // keyword selector by default
-const { system, allowedTools } = skills.compose(baseSystem, skill);
+// Skips skills whose tools the engine's registry lacks (e.g. spark-wallet with
+// no Spark tools), so the model never runs inside a skill it can't act in.
+const { skill, system, allowedTools } = await engine.composeSkill(skills, userText, baseSystem);
 ```
+
+`skills.select()` alone only scores keywords; prefer `engine.composeSkill()`
+(or `selectAvailableSkill(skills, text, liveToolNames)`). The `Funnel` does this
+for you.
 
 ## The wallet tool contract
 
@@ -218,15 +223,28 @@ user:
 - **Repeated calls.** A second identical call (same name and arguments) is not
   re-run; the model gets the earlier result and is told to answer. A third
   forces a final answer with no tools.
-- **Unambiguous declines.** A declined call returns `DECLINED_TOOL_MESSAGE` to
-  the model ("The user declined this action at the confirmation prompt…").
+- **Declines end the turn.** When the user declines every call in a turn, the
+  run ends with a fixed reply ("Cancelled — you declined: Create 5 RGB UTXOs
+  on-chain over RLN. Nothing was sent or changed.") and no further inference.
+  The tool result in history is the same for every tool:
+  `{ status: 'cancelled_by_user', declined_by: 'user', tool, message }`.
+  Turn it off with `endTurnOnDecline: false`.
+- **No empty answers.** If the model runs tools but its answer comes back empty
+  (reasoning used the output budget), the engine asks once more without tools,
+  then falls back to showing the last tool result.
 - **No made-up payment data.** A final answer containing an invoice, offer,
   address or RGB invoice that no tool returned and the user never typed is
   replaced with a refusal (`guardUngroundedPaymentData`, default on).
-- **Skills that can act.** The funnel skips skills whose `requires-tools` are
-  not live and prefers skills with at least one live tool. If the request is a
-  wallet action (create an invoice, get an address, pay, send) and no tool in
-  scope can do it, it answers "I can't do that here" without calling the model.
+- **Skills that can act.** `engine.composeSkill()` and the funnel skip skills
+  whose `requires-tools` are not live and prefer skills with at least one live
+  tool. If the request is a wallet action (create an invoice, get an address,
+  pay, send) and no exposed tool can do it, the engine answers "I can't do that
+  here" without calling the model (`guardMissingTools`, default on).
+
+Qwen3.5 reasons before it answers: in our signet runs the 2B model used 80–390
+thinking tokens per turn. Keep `maxThinkingTokens` around 512 and the output cap
+(`defaultMaxTokens`) well above it (we use 1536); a tighter cap cuts the turn
+off before it calls a tool or answers.
 
 ```ts
 const wallet = bindWalletTools(

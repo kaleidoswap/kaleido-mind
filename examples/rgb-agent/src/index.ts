@@ -8,12 +8,11 @@
  *
  * Flags: --mock (fake RLN tools), --scripted (no model), --yes (auto-approve spends).
  * Env:   RECIPIENT_INVOICE  RGB invoice to pay in step 3 (real mode)
- *        MODEL              @qvac/sdk model constant (default: QWEN3_5_4B_MULTIMODAL_Q4_K_M)
+ *        MODEL              @qvac/sdk model constant (default: QWEN3_5_2B_MULTIMODAL_Q4_K_M)
  *        KALEIDO_NETWORK    passed to kaleido-mcp (default: signet)
  *        RLN_NODE_URL       your RLN node (default inside kaleido-mcp: http://localhost:3001)
  */
 import { createInterface } from 'node:readline/promises';
-import { join } from 'node:path';
 import {
   Engine,
   SkillRegistry,
@@ -22,7 +21,7 @@ import {
   type ConfirmDecision,
   type LLMProvider,
 } from '@kaleidorg/mind';
-import { loadSkillFromDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
+import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
 import { scriptedProvider } from '@kaleidorg/mind/testing';
 import { createTools, loadQvacProvider } from './setup.js';
 
@@ -70,10 +69,11 @@ async function confirm(call: { name: string; arguments: Record<string, unknown> 
 const tools = await createTools({ mock: MOCK, allow: RLN_TOOLS });
 const { provider, dispose } = await createProvider();
 try {
-  const skill = loadSkillFromDir(join(packagedSkillsDir(), 'rgb-lightning-node'));
-  const skills = new SkillRegistry([skill]);
+  // All bundled skills. composeSkill() skips the ones whose tools this registry
+  // lacks (e.g. spark-wallet without Spark tools) before the model runs.
+  const skills = new SkillRegistry(loadSkillsDir(packagedSkillsDir()));
   const engine = new Engine({ provider, tools: new ToolRegistry([tools.source]), compressToolOutput: true });
-  const base = 'You operate the user\'s RGB Lightning Node. Use tools for every value; never invent ids or invoices. Copy invoices exactly. /no_think';
+  const base = 'You operate the user\'s RGB Lightning Node. Use tools for every value; never invent ids or invoices. Copy invoices exactly.';
 
   const steps = [
     'Which RGB assets do I hold, and what are the balances?',
@@ -83,15 +83,15 @@ try {
   if (!recipient()) console.error('[skipping the send step: set RECIPIENT_INVOICE to an RGB invoice to pay]');
 
   for (const question of steps) {
-    const { system } = skills.compose(base, skill);
-    console.error(`\n> ${question}`);
+    const { skill, system, allowedTools } = await engine.composeSkill(skills, question, base);
+    console.error(`\n> ${question}  [skill: ${skill?.name ?? 'none'}]`);
     const result = await engine.runAgentic(
       [
         { role: 'system', content: system },
         { role: 'user', content: question },
       ],
       {
-        allowedTools: RLN_TOOLS,
+        allowedTools,
         onConfirm: confirm,
         onToolCall: (c) => console.error(`  tool ${c.name} ${JSON.stringify(c.arguments)}`),
       },
