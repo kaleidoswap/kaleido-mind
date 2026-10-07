@@ -17,8 +17,9 @@ ticker (`BTC`, `USDT`, `XAUT`) or an `rgb:…` id.
 ## Do
 - Quote with exactly one amount: `from_amount` to sell a fixed input,
   `to_amount` to buy a fixed output. No amount given → ask for one.
-- Report `to_asset.amount_display`, `from_asset.amount_display`, `price` and
-  `expires_at` from the result as given. The quote expires in about 60 s.
+- Report `from_asset.amount_display`, `to_asset.amount_display` and
+  `expires_at` as given; `price` is in the maker's raw units, don't quote it.
+  The quote expires in about 60 s.
 - Executing a swap moves funds: only after the user says yes to that quote.
   Chain: `kaleidoswap_atomic_init` (rfq_id, both asset ids, both `amount_raw`
   values unchanged) → `rln_atomic_taker` (swapstring) → `rln_get_node_info`
