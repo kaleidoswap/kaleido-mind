@@ -69,7 +69,7 @@ async function createProvider(): Promise<{ provider: LLMProvider; dispose: () =>
     getModelId: () => modelId,
     defaultTemperature: 0.2,
     defaultMaxTokens: 512,
-    maxThinkingTokens: 384,
+    maxThinkingTokens: 128,
   });
   return {
     provider,

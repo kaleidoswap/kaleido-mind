@@ -120,6 +120,13 @@ describe('createQvacProvider.runTurn', () => {
     expect(calls[0].generationParams).toEqual({ reasoning_budget: 128 });
   });
 
+  it('keeps the reasoning budget below the output cap', async () => {
+    const { fn, calls } = fakeCompletion({ contentText: 'ok', toolCalls: [], raw: { fullText: 'ok' } });
+    const p = createQvacProvider({ completion: fn as any, cancel: noopCancel, getModelId: () => 'm1', defaultMaxTokens: 512, maxThinkingTokens: 512 });
+    await p.runTurn({ messages: [{ role: 'user', content: 'x' }], tools: [] });
+    expect(calls[0].generationParams).toEqual({ predict: 512, reasoning_budget: 256 });
+  });
+
   it('forwards toolChoice only when tools are present', async () => {
     const tool = { name: 'get_balance', description: 'b', parameters: { type: 'object', properties: {} } };
     const { fn, calls } = fakeCompletion({ contentText: 'ok', toolCalls: [], raw: { fullText: 'ok' } });

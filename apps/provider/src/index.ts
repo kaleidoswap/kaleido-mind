@@ -480,7 +480,7 @@ function resetTurnStats(): void {
 }
 
 // Cap the model's <think> reasoning by TOKENS (not seconds — tok/s varies by
-// model + hardware, and the SDK exposes no numeric reasoning budget). ~128
+// model + hardware); sent as the SDK's reasoning_budget. ~128
 // thinking tokens keeps simple wallet actions short on slower local models.
 // Tune with KALEIDO_MIND_MAX_THINKING_TOKENS (0 ⇒ unlimited).
 const MAX_THINKING_TOKENS: number | undefined = ((): number | undefined => {

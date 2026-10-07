@@ -29,7 +29,11 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   no text ends with the "had to stop" message.
 - Recipe slot extraction forces the extraction tool (`toolChoice`).
 - `maxThinkingTokens` is sent as the SDK's `reasoning_budget`; the
-  cancel-on-overrun check stays as a backstop with headroom.
+  cancel-on-overrun check stays as a backstop with headroom. A budget at or
+  above the output cap is lowered to half of it, since the model could
+  otherwise spend the whole turn reasoning. Qwen3.5 ignores `/no_think`; the
+  budget is what limits its reasoning.
+- The `rgb-agent` and `node-minimal` examples cap reasoning at 128 tokens.
 
 ## [0.8.0] — 2026-10-07
 

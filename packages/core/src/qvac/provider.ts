@@ -94,7 +94,13 @@ export function createQvacProvider(options: QvacProviderOptions): LLMProvider {
       // when a value is set so a host that passes neither keeps SDK defaults.
       const temp = input.temperature ?? options.defaultTemperature;
       const predict = input.maxTokens ?? options.defaultMaxTokens;
-      const maxThinkingTokens = input.maxThinkingTokens ?? options.maxThinkingTokens;
+      // A thinking budget at or above the output cap never binds: the model can
+      // spend the whole turn reasoning and return no answer. Keep half for it.
+      const thinkingCap = input.maxThinkingTokens ?? options.maxThinkingTokens;
+      const maxThinkingTokens =
+        thinkingCap !== undefined && predict !== undefined && thinkingCap >= predict
+          ? Math.floor(predict / 2)
+          : thinkingCap;
       // `tool_choice` is only meaningful with tools; the SDK rejects a named
       // choice that isn't among them.
       const toolChoice = tools && input.toolChoice ? input.toolChoice : undefined;

@@ -99,7 +99,7 @@ async function createProvider(): Promise<{ provider: LLMProvider; dispose: () =>
       getModelId: () => modelId,
       defaultTemperature: 0.1,
       defaultMaxTokens: 512,
-      maxThinkingTokens: 512,
+      maxThinkingTokens: 128,
     }),
     dispose: async () => {
       await sdk.unloadModel({ modelId });
