@@ -2,9 +2,9 @@
  * LLMProvider — the only thing the Engine talks to for inference.
  *
  * Each host implements this over its own LLM transport:
- *   - rate (mobile): wraps @qvac/sdk completion() (local or P2P-delegated)
- *   - desktop-app:   wraps @qvac/sdk completion() in Node
- *   - kaleidoagent:  could wrap Anthropic/OpenAI
+ *   - QVAC on-device (rate, desktop sidecar, CLI): `@kaleidorg/mind/qvac`
+ *   - any OpenAI-compatible server (Ollama, LM Studio, hosted APIs):
+ *     `@kaleidorg/mind/openai`
  *
  * The core package never imports any LLM SDK — it only depends on this
  * interface, so it stays pure TS and bundles anywhere.

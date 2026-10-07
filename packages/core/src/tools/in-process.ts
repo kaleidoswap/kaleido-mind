@@ -2,8 +2,8 @@
  * InProcessToolSource — tools whose handlers run in the same process.
  *
  * Used by the mobile wallet: the handlers call the device's wallet adapters
- * (Spark / Arkade / RGB) directly, so signing happens on the phone even when
- * the model's inference is delegated to a desktop over P2P.
+ * (Spark / Arkade / RGB) directly, so signing happens on the device even when
+ * the model runs on a remote server.
  */
 
 import type { ToolDef } from '../types.js';

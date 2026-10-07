@@ -7,13 +7,9 @@
  * The mind never sees URLs — the HTTP call lives here.
  */
 
-import {
-  bindKaleidoswapTools,
-  bindLsps1Tools,
-  type InProcessToolSource,
-  type KaleidoswapHandler,
-  type Lsps1Handler,
-} from '@kaleidorg/mind';
+import { type InProcessToolSource, type KaleidoswapHandler, type Lsps1Handler } from '@kaleidorg/mind';
+import { bindKaleidoswapTools } from '@kaleidorg/mind/kaleidoswap';
+import { bindLsps1Tools } from '@kaleidorg/mind/lsps1';
 
 export interface MakerHttpOptions {
   /** Maker base URL, e.g. http://localhost:8000. No trailing slash. */

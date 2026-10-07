@@ -13,22 +13,24 @@ import {
   InMemoryMemoryStore,
   InProcessToolSource,
   ToolRegistry,
-  bindKaleidoswapTools,
   bindWalletTools,
   createMemoryToolSource,
-  kaleidoswapAtomicRecipe,
-  kaleidoswapPriceRecipe,
   paymentsRecipe,
   receiveRecipe,
   assetSendRecipe,
   SPEND_TOOLS,
-  KALEIDOSWAP_SPEND_TOOLS,
   type InProcessTool,
   type InferenceMetrics,
   type LLMProvider,
   type Message,
   type ToolCall,
 } from '@kaleidorg/mind';
+import {
+  bindKaleidoswapTools,
+  kaleidoswapAtomicRecipe,
+  kaleidoswapPriceRecipe,
+  KALEIDOSWAP_SPEND_TOOLS,
+} from '@kaleidorg/mind/kaleidoswap';
 import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
 import { getModel } from '../catalog.js';
 import { loadProvider } from './run.js';

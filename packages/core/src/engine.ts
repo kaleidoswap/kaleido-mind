@@ -11,27 +11,26 @@
  * `{role:'tool'}` results into history each round, loop until the model stops
  * calling tools. Money tools pause for an `onConfirm` gate; their handlers run
  * wherever the ToolSource lives (on the phone for the wallet), even when
- * inference is delegated to a remote provider.
+ * inference runs on a remote server.
  */
 
-import type { ConfirmDecision, Message, ToolResult } from './types.js';
-import type { LLMProvider } from './providers/types.js';
-import type { InferenceMetrics, ToolCallError, ToolChoice } from './providers/types.js';
+import type { ConfirmDecision, Message, ToolCall, ToolDef, ToolResult } from './types.js';
+import type { InferenceMetrics, LLMProvider, ToolChoice } from './providers/types.js';
 import type { ToolRegistry } from './tools/registry.js';
 import { compressToolResult, type ToolCrushOptions } from './context/compress.js';
-import {
-  callKey,
-  declinedToolResult,
-  detectWalletAction,
-  hasCapableTool,
-  noToolReply,
-  findUngroundedPaymentData,
-  fixSatsBtcConversions,
-  ungroundedReply,
-  validateToolArgs,
-} from './guards.js';
+import { callKey, declinedToolResult, detectWalletAction, hasCapableTool, noToolReply, validateToolArgs } from './guards.js';
 import { confirmReadback } from './wallet/confirm.js';
-import { annotateRgbBalances, fixRgbBalanceUnits } from './context/rgb-units.js';
+import { annotateRgbBalances } from './context/rgb-units.js';
+import {
+  REPEATED_CALL_REPLY,
+  TOOL_CALL_FAILED_REPLY,
+  cancelledReply,
+  engine,
+  finalizeAnswer,
+  model,
+  toolErrorFeedback,
+  type Answer,
+} from './engine/answer.js';
 import type { SkillRegistry } from './skills/registry.js';
 import type { Skill } from './skills/types.js';
 import { selectAvailableSkill } from './skills/select.js';
@@ -125,17 +124,16 @@ export interface AgenticResult {
   inference: InferenceMetrics[];
 }
 
-const STOPPED_MESSAGE = 'I had to stop after several steps — please try a more specific request.';
-
-const TOOL_CALL_FAILED_MESSAGE =
-  "I couldn't put together a valid request for that. Please rephrase it with the exact values (asset, amount, recipient).";
-
-function toolErrorMessage(errors: ToolCallError[], cutOff: boolean): string {
-  if (cutOff) {
-    return 'Your tool call was cut off because the output got too long. Make ONE tool call at a time with only the required arguments, or answer from the results you already have.';
-  }
-  const detail = errors.map((e) => e.message).join('; ');
-  return `Your tool call could not be read (${detail}). Call the tool again with valid JSON arguments that match its schema, or ask the user for the missing values.`;
+/** State of one agentic run. */
+interface RunState {
+  history: Message[];
+  system?: string;
+  tools: ToolDef[];
+  executed: ToolResult[];
+  inference: InferenceMetrics[];
+  /** Calls made this run, by name + arguments, with their first result. */
+  seen: Map<string, { result: unknown; count: number }>;
+  lastRequestId?: string;
 }
 
 export class Engine {
@@ -190,193 +188,196 @@ export class Engine {
   }
 
   private async runAgenticSession(messages: Message[], opts: AgenticOptions): Promise<AgenticResult> {
-    const maxTurns = opts.maxTurns ?? this.defaultMaxTurns;
-    const hasSystem = messages.some((m) => m.role === 'system');
-    const system = hasSystem ? undefined : this.defaultSystem;
-
     const startedAt = Date.now();
-    const history: Message[] = [...messages];
+    const maxTurns = opts.maxTurns ?? this.defaultMaxTurns;
     const registryTools = await this.registry.listTools();
-    // Progressive disclosure: expose only the active skill's tools when set.
-    const allTools = opts.allowedTools
-      ? registryTools.filter((t) => opts.allowedTools!.includes(t.name))
-      : registryTools;
-    const executed: ToolResult[] = [];
-    let lastRequestId: string | undefined;
-    let finalText = '';
-    // Set when finalText is one of the engine's own fixed replies, which the
-    // answer guards below must not rewrite.
-    let engineReply = false;
-    let turns = 0;
-    const inference: InferenceMetrics[] = [];
-    const seen = new Map<string, { result: unknown; count: number }>();
-    let toolErrorRetries = 0;
+    const state: RunState = {
+      history: [...messages],
+      system: messages.some((m) => m.role === 'system') ? undefined : this.defaultSystem,
+      // Progressive disclosure: expose only the active skill's tools when set.
+      tools: opts.allowedTools ? registryTools.filter((t) => opts.allowedTools!.includes(t.name)) : registryTools,
+      executed: [],
+      inference: [],
+      seen: new Map(),
+    };
 
     const lastUser = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
     const action = this.guardMissingTools ? detectWalletAction(lastUser) : null;
-    if (action && !hasCapableTool(action, allTools.map((t) => t.name))) {
+    if (action && !hasCapableTool(action, state.tools.map((t) => t.name))) {
       const text = noToolReply(action);
-      history.push({ role: 'assistant', content: text });
-      return { text, turns: 0, toolCalls: [], messages: history, latencyMs: Date.now() - startedAt, inference };
+      state.history.push({ role: 'assistant', content: text });
+      return { text, turns: 0, toolCalls: [], messages: state.history, latencyMs: Date.now() - startedAt, inference: state.inference };
     }
 
+    let answer: Answer = model('');
+    let turns = 0;
+    let toolErrorRetries = 0;
     // A retry after an unreadable tool call does not count against maxTurns.
     for (let turn = 1; turn <= maxTurns + toolErrorRetries; turn++) {
       turns = turn;
       if (opts.signal?.aborted) break;
 
-      const out = await this.provider.runTurn({
-      sessionKey: opts.sessionKey,
-        messages: history,
-        tools: allTools,
-        system,
-        // A forced first call only picks the tool and its arguments; reasoning
-        // there costs most of the turn's time on small models.
-        ...(turn === 1 && opts.firstTurnToolChoice && allTools.length
-          ? { toolChoice: opts.firstTurnToolChoice, ...(this.thinkOnForcedCalls ? {} : { thinking: 'off' as const }) }
-          : {}),
-        onToken: opts.onToken ? (t) => opts.onToken!(t, turn) : undefined,
-        signal: opts.signal,
+      // A forced first call only picks the tool and its arguments; reasoning
+      // there costs most of the turn's time on small models.
+      const forced = turn === 1 && opts.firstTurnToolChoice && state.tools.length;
+      const out = await this.callModel(state, opts, turn, {
+        tools: state.tools,
+        ...(forced ? { toolChoice: opts.firstTurnToolChoice, ...(this.thinkOnForcedCalls ? {} : { thinking: 'off' as const }) } : {}),
       });
-
-      lastRequestId = out.requestId;
-      if (out.inference) inference.push(out.inference);
       if (out.requestId) opts.onStart?.(out.requestId, turn);
-      finalText = out.incomplete ? '' : (out.text || '').trim();
+      answer = model(out.incomplete ? '' : (out.text || '').trim());
 
-      // The model tried to call a tool but the call didn't parse: tell it what
-      // went wrong and let it try again (once) instead of showing the broken
-      // frame as the answer.
-      if ((!out.toolCalls || out.toolCalls.length === 0) && out.toolErrors?.length) {
-        if (toolErrorRetries < 1) {
-          toolErrorRetries += 1;
-          const cutOff = out.inference?.status === 'truncated';
-          history.push({ role: 'assistant', content: out.rawContent || finalText });
-          history.push({ role: 'tool', content: JSON.stringify({ error: toolErrorMessage(out.toolErrors, cutOff) }) });
-          continue;
+      if (!out.toolCalls?.length) {
+        // The model tried to call a tool but the call didn't parse: tell it
+        // what went wrong and let it try once more instead of showing the
+        // broken frame as the answer.
+        if (out.toolErrors?.length) {
+          if (toolErrorRetries < 1) {
+            toolErrorRetries += 1;
+            state.history.push({ role: 'assistant', content: out.rawContent || answer.text });
+            state.history.push({
+              role: 'tool',
+              content: JSON.stringify({ error: toolErrorFeedback(out.toolErrors, out.inference?.status === 'truncated') }),
+            });
+            continue;
+          }
+          answer = engine(TOOL_CALL_FAILED_REPLY);
+          break;
         }
-        finalText = TOOL_CALL_FAILED_MESSAGE;
-        engineReply = true;
-        break;
-      }
-
-      // No tool calls ⇒ the model produced its final answer.
-      if (!out.toolCalls || out.toolCalls.length === 0) {
-        if (!finalText && executed.length) finalText = await this.recoverAnswer(history, system, executed, inference, opts, turn);
-        else if (!finalText && out.incomplete) finalText = (out.text || '').trim();
+        // No tool calls ⇒ the model produced its final answer.
+        if (!answer.text && state.executed.length) answer = await this.recoverAnswer(state, opts, turn);
+        else if (!answer.text && out.incomplete) answer = model((out.text || '').trim());
         break;
       }
 
       // Anchor the next turn with the raw assistant frame.
-      history.push({ role: 'assistant', content: out.rawContent || finalText });
+      state.history.push({ role: 'assistant', content: out.rawContent || answer.text });
 
       let repeatedAgain = false;
-      const declinedThisTurn: string[] = [];
+      const declined: string[] = [];
       for (const call of out.toolCalls) {
-        opts.onToolCall?.({ name: call.name, arguments: call.arguments }, turn);
-        const def = await this.registry.getDef(call.name);
-        const key = callKey(call.name, call.arguments);
-        const previous = seen.get(key);
-
-        let args = call.arguments;
-        let result: unknown;
-        if (previous) {
-          previous.count += 1;
-          if (previous.count > 2) repeatedAgain = true;
-          result = {
-            error:
-              `You already called ${call.name} with these arguments; the result was: ` +
-              `${this.toHistoryContent(previous.result)}. Do not call it again — answer the user now.`,
-          };
-        } else if (!def) {
-          result = { error: `Unknown tool "${call.name}".` };
-        } else {
-          const check = validateToolArgs(def, call.arguments);
-          if (!check.ok) {
-            result = {
-              error: `Invalid arguments for ${call.name}: ${check.errors.join('; ')}. Fix them or ask the user for the missing values.`,
-            };
-          } else if (def.requiresConfirmation) {
-            args = check.args;
-            const summary = confirmReadback({ name: call.name, arguments: args }) ?? undefined;
-            const decision = opts.onConfirm
-              ? await opts.onConfirm({ name: call.name, arguments: args, ...(summary ? { summary } : {}) })
-              : { approved: false, reason: 'no confirmation handler available' };
-            if (decision.approved) {
-              result = await this.safeExecute(call.name, args);
-            } else {
-              result = declinedToolResult(call.name, decision.reason);
-              declinedThisTurn.push(summary ? summary.replace(/\.?\s*Confirm\?$/, '') : call.name.replace(/_/g, ' '));
-            }
-          } else {
-            args = check.args;
-            result = await this.safeExecute(call.name, args);
-          }
-        }
-
-        if (!previous) {
-          // A mutating (confirm-gated) call can change what reads return.
-          if (def?.requiresConfirmation) seen.clear();
-          seen.set(key, { result, count: 1 });
-        }
-        executed.push({ name: call.name, arguments: args, result });
-        opts.onToolResult?.({ name: call.name, arguments: args, result }, turn);
-        history.push({ role: 'tool', content: this.toHistoryContent(this.fixAmounts ? annotateRgbBalances(result) : result) });
+        const step = await this.executeCall(state, call, opts, turn);
+        repeatedAgain ||= step.repeatedAgain;
+        if (step.declined) declined.push(step.declined);
       }
 
-      if (this.endTurnOnDecline && declinedThisTurn.length && declinedThisTurn.length === out.toolCalls.length) {
-        finalText = `Cancelled — you declined: ${declinedThisTurn.join('; ')}. Nothing was sent or changed.`;
-        engineReply = true;
+      if (this.endTurnOnDecline && declined.length && declined.length === out.toolCalls.length) {
+        answer = engine(cancelledReply(declined));
         break;
       }
 
       if (repeatedAgain) {
-        const forced = await this.provider.runTurn({
-      sessionKey: opts.sessionKey,
-          messages: history,
-          tools: [],
-          system,
-          onToken: opts.onToken ? (t) => opts.onToken!(t, turn) : undefined,
-          signal: opts.signal,
-        });
-        if (forced.inference) inference.push(forced.inference);
-        finalText = (forced.text || '').trim() || 'I could not get a different result from the wallet — please try a more specific request.';
+        const last = await this.callModel(state, opts, turn, { tools: [] });
+        const text = (last.text || '').trim();
+        answer = text ? model(text) : engine(REPEATED_CALL_REPLY);
         break;
       }
-
     }
 
-    // Never return an empty answer (e.g. the last turn ran out of tokens).
-    if (!finalText && !opts.signal?.aborted) {
-      finalText = STOPPED_MESSAGE;
-      engineReply = true;
-    }
-
-    if (this.fixAmounts && finalText && !engineReply) {
-      finalText = fixRgbBalanceUnits(fixSatsBtcConversions(finalText), executed.map((e) => e.result));
-    }
-
-    if (this.guardPaymentData && finalText && !engineReply) {
-      const ungrounded = findUngroundedPaymentData(finalText, [
-        ...messages.map((m) => m.content),
-        ...executed.map((e) => e.result),
-      ]);
-      if (ungrounded.length) finalText = ungroundedReply(ungrounded);
-    }
-
+    const text = finalizeAnswer(answer, {
+      fixAmounts: this.fixAmounts,
+      guardPaymentData: this.guardPaymentData,
+      sources: [...messages.map((m) => m.content), ...state.executed.map((e) => e.result)],
+      toolResults: state.executed.map((e) => e.result),
+      aborted: !!opts.signal?.aborted,
+    });
     // Append the final answer so the returned conversation is complete (the
     // loop breaks before pushing the no-tool-call turn).
-    if (finalText) history.push({ role: 'assistant', content: finalText });
+    if (text) state.history.push({ role: 'assistant', content: text });
 
     return {
-      text: finalText,
+      text,
       turns,
-      toolCalls: executed,
-      requestId: lastRequestId,
-      messages: history,
+      toolCalls: state.executed,
+      requestId: state.lastRequestId,
+      messages: state.history,
       latencyMs: Date.now() - startedAt,
-      inference,
+      inference: state.inference,
     };
+  }
+
+  /** One model call within the run's session; records its receipt. */
+  private async callModel(
+    state: RunState,
+    opts: AgenticOptions,
+    turn: number,
+    extra: { tools: ToolDef[]; messages?: Message[]; toolChoice?: ToolChoice; thinking?: 'off' },
+  ) {
+    const out = await this.provider.runTurn({
+      messages: extra.messages ?? state.history,
+      system: state.system,
+      sessionKey: opts.sessionKey,
+      ...extra,
+      onToken: opts.onToken ? (t) => opts.onToken!(t, turn) : undefined,
+      signal: opts.signal,
+    });
+    if (out.inference) state.inference.push(out.inference);
+    if (out.requestId) state.lastRequestId = out.requestId;
+    return out;
+  }
+
+  /**
+   * Validate, confirm (for spends) and execute one tool call, and add its
+   * result to the history. Returns the readback when the user declined it.
+   */
+  private async executeCall(
+    state: RunState,
+    call: ToolCall,
+    opts: AgenticOptions,
+    turn: number,
+  ): Promise<{ repeatedAgain: boolean; declined?: string }> {
+    opts.onToolCall?.({ name: call.name, arguments: call.arguments }, turn);
+    const def = await this.registry.getDef(call.name);
+    const key = callKey(call.name, call.arguments);
+    const previous = state.seen.get(key);
+    let repeatedAgain = false;
+    let declined: string | undefined;
+
+    let args = call.arguments;
+    let result: unknown;
+    if (previous) {
+      previous.count += 1;
+      if (previous.count > 2) repeatedAgain = true;
+      result = {
+        error:
+          `You already called ${call.name} with these arguments; the result was: ` +
+          `${this.toHistoryContent(previous.result)}. Do not call it again — answer the user now.`,
+      };
+    } else if (!def) {
+      result = { error: `Unknown tool "${call.name}".` };
+    } else {
+      const check = validateToolArgs(def, call.arguments);
+      if (!check.ok) {
+        result = {
+          error: `Invalid arguments for ${call.name}: ${check.errors.join('; ')}. Fix them or ask the user for the missing values.`,
+        };
+      } else if (def.requiresConfirmation) {
+        args = check.args;
+        const summary = confirmReadback({ name: call.name, arguments: args }) ?? undefined;
+        const decision = opts.onConfirm
+          ? await opts.onConfirm({ name: call.name, arguments: args, ...(summary ? { summary } : {}) })
+          : { approved: false, reason: 'no confirmation handler available' };
+        if (decision.approved) {
+          result = await this.safeExecute(call.name, args);
+        } else {
+          result = declinedToolResult(call.name, decision.reason);
+          declined = summary ? summary.replace(/\.?\s*Confirm\?$/, '') : call.name.replace(/_/g, ' ');
+        }
+      } else {
+        args = check.args;
+        result = await this.safeExecute(call.name, args);
+      }
+    }
+
+    if (!previous) {
+      // A mutating (confirm-gated) call can change what reads return.
+      if (def?.requiresConfirmation) state.seen.clear();
+      state.seen.set(key, { result, count: 1 });
+    }
+    state.executed.push({ name: call.name, arguments: args, result });
+    opts.onToolResult?.({ name: call.name, arguments: args, result }, turn);
+    state.history.push({ role: 'tool', content: this.toHistoryContent(this.fixAmounts ? annotateRgbBalances(result) : result) });
+    return { repeatedAgain, ...(declined ? { declined } : {}) };
   }
 
   /**
@@ -384,32 +385,22 @@ export class Engine {
    * whole output budget). Ask once more without tools; if that is empty too,
    * show the last tool result instead of an empty reply.
    */
-  private async recoverAnswer(
-    history: Message[],
-    system: string | undefined,
-    executed: ToolResult[],
-    inference: InferenceMetrics[],
-    opts: AgenticOptions,
-    turn: number,
-  ): Promise<string> {
-    if (opts.signal?.aborted) return '';
-    const retry = await this.provider.runTurn({
-      sessionKey: opts.sessionKey,
+  private async recoverAnswer(state: RunState, opts: AgenticOptions, turn: number): Promise<Answer> {
+    if (opts.signal?.aborted) return model('');
+    const retry = await this.callModel(state, opts, turn, {
+      tools: [],
       messages: [
-        ...history,
+        ...state.history,
         { role: 'user', content: 'Answer my question now from the tool results above, in a few short sentences.' },
       ],
-      tools: [],
-      system,
-      onToken: opts.onToken ? (t) => opts.onToken!(t, turn) : undefined,
-      signal: opts.signal,
     });
-    if (retry.inference) inference.push(retry.inference);
     const text = retry.incomplete ? '' : (retry.text || '').trim();
-    if (text) return text;
-    const last = executed[executed.length - 1]!;
+    if (text) return model(text);
+    const last = state.executed[state.executed.length - 1]!;
     const body = compressToolResult(last.result, this.compressOpts ?? {}).content;
-    return `I couldn't phrase an answer in time. Here is what ${last.name.replace(/_/g, ' ')} returned:\n\n${body.length > 2000 ? `${body.slice(0, 2000)}…` : body}`;
+    return engine(
+      `I couldn't phrase an answer in time. Here is what ${last.name.replace(/_/g, ' ')} returned:\n\n${body.length > 2000 ? `${body.slice(0, 2000)}…` : body}`,
+    );
   }
 
   async cancel(requestId: string): Promise<void> {

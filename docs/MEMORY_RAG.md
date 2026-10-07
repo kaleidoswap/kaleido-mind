@@ -58,7 +58,7 @@ OpenAI-coupled / won't bundle in RN); we ported only its useful behaviour:
   phone, so it's on for **Mobile** too.
 - **Merge** (optional, injected LLM) — set `consolidate.merge` to rewrite old +
   new into one consolidated fact. Costs an extra inference, so reserve it for
-  **desktop / P2P-delegated** devices.
+  **desktop** or **remote** models.
 
 ```ts
 const merge = async (existing: string, incoming: string) =>
@@ -74,7 +74,7 @@ const memory = new InMemoryMemoryStore({
 ```
 
 `capabilityProfile` decides the tiers for you: `dedupeMemory` (≈ semanticMemory)
-and `mergeMemory` (delegated, or ≥4 GB RAM @ ≥4k ctx). Omit `consolidate`
+and `mergeMemory` (remote, or ≥4 GB RAM @ ≥4k ctx). Omit `consolidate`
 entirely for the original append-only behaviour.
 
 ## RAG — injected embeddings + vector store
@@ -161,7 +161,7 @@ host.
 One call decides features from device RAM + the model's context window:
 
 ```ts
-const caps = capabilityProfile({ ramBytes, modelCtxTokens: 2048, hasEmbeddings, delegated })
+const caps = capabilityProfile({ ramBytes, modelCtxTokens: 2048, hasEmbeddings, remote })
 // → { memory, semanticMemory, rag, contextBudgetTokens, topKMemory, topKRag }
 ```
 
@@ -171,7 +171,7 @@ Rules of thumb:
 |---|---|---|---|
 | 2 GB phone, 0.6B @ 2k ctx | ✅ | only w/ embeddings | ❌ (too tight) |
 | 6 GB+ phone, 1.7–4B @ 4k+ | ✅ | ✅ | ✅ if embeddings |
-| Desktop / **delegated** | ✅ | ✅ | ✅ |
+| Desktop / **remote** | ✅ | ✅ | ✅ |
 
 Wire the result straight into the `ContextBuilder` (`budgetTokens`,
 `topKMemory`, `topKRag`) and gate whether you build a `Retriever` at all.
@@ -179,7 +179,7 @@ Wire the result straight into the `ContextBuilder` (`budgetTokens`,
 ## Putting it together (host)
 
 ```ts
-const caps = capabilityProfile({ ramBytes, modelCtxTokens, hasEmbeddings: !!embeddings, delegated })
+const caps = capabilityProfile({ ramBytes, modelCtxTokens, hasEmbeddings: !!embeddings, remote })
 const memory = new InMemoryMemoryStore({ io, embed: caps.semanticMemory ? embedOne : undefined })
 const retriever = caps.rag ? new Retriever({ embeddings }) : undefined
 const builder = new ContextBuilder({
@@ -240,10 +240,7 @@ workstation, too heavy for a 4 GB Pi. Use `capabilityProfile` to gate it:
 |---|---|---|
 | **General Purpose** (≤32 GB laptop/desktop) | `GTE_LARGE_FP16` (1024-d) | full corpus |
 | **Mobile** (flagship phone) | `GTE_LARGE_FP16`, or a small gguf (`gte-small`/`bge-small`, ~30–130 MB) | docs subset |
-| **Tinkerer** (≤4 GB Pi) | a tiny gguf embedder, or **delegate embeddings to a desktop over P2P** | small / delegated |
+| **Tinkerer** (≤4 GB Pi) | a tiny gguf embedder, or embeddings from a bigger machine's OpenAI-compatible server | small / remote |
 
-The P2P angle is a focus area in its own right: a **phone/Pi queries while a
-32 GB workstation does the embeddings + RAG over P2P** — the workstation is then
-the "main" device (General Purpose), and you've shown real-time local inference
-+ P2P load distribution. `capabilityProfile({ delegated: true })` flips RAG on
-regardless of the edge device's RAM.
+`capabilityProfile({ remote: true })` flips RAG on regardless of the edge
+device's RAM, for hosts whose model runs on a larger remote machine.

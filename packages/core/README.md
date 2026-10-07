@@ -33,11 +33,11 @@ needs no model. To connect MCP servers, also install
 
 | `@qvac/sdk` | Status |
 |---|---|
-| 0.19 – 0.21 | Supported (tested with 0.21.0). There is no P2P delegated inference: QVAC removed `startQVACProvider` / `loadModel({ delegate })` in 0.19. |
-| 0.13.1 – 0.18 | Supported, including P2P delegation (`buildDelegateConfig`, `allowListFirewall`). |
+| 0.20 – 0.21 | Supported (tested with 0.21.0). |
+| < 0.20 | Not supported from mind 0.9: the provider sends `tool_choice` and `reasoning_budget`, which older SDKs reject or ignore. Use mind 0.8.x. |
 
 The Qwen3.5 model constants used below (`QWEN3_5_*_MULTIMODAL_Q4_K_M`) exist in
-every supported `@qvac/sdk` version (0.13.1+).
+every supported `@qvac/sdk` version.
 
 ## Models
 
@@ -146,9 +146,11 @@ aborts the request on `signal`. Reasoning deltas (`reasoning_content`) go to
 
 | Import | What it gives you | Runtime |
 |---|---|---|
-| `@kaleidorg/mind` | `Engine`, `Funnel` (fast-path → recipe → agent), `ToolRegistry`, `InProcessToolSource`, `SkillRegistry`, wallet / KaleidoSwap / LSPS1 / Bitrefill / Flashnet contracts and binders, `confirmReadback`, recipes, memory, RAG, context budgeting, L402 and CLI tool sources | Any (RN-safe) |
-| `@kaleidorg/mind/qvac` | `createQvacProvider`, `toQvacTools`, `consumeRun`, voice (`createQvacVoice`, `runVoiceAssistant`), model configs, delegation helpers | Any; you inject the SDK functions |
+| `@kaleidorg/mind` | `Engine`, `Funnel` (fast-path → recipe → agent), `ToolRegistry`, `InProcessToolSource`, `SkillRegistry`, the wallet contract and binder, `confirmReadback`, recipes, memory, RAG, context budgeting, L402 and CLI tool sources | Any (RN-safe) |
+| `@kaleidorg/mind/qvac` | `createQvacProvider`, `toQvacTools`, `consumeRun`, voice (`createQvacVoice`, `runVoiceAssistant`), model configs | Any; you inject the SDK functions |
 | `@kaleidorg/mind/openai` | `createOpenAICompatibleProvider` for Ollama, LM Studio, llama.cpp, vLLM, hosted APIs | Any with `fetch` |
+| `@kaleidorg/mind/kaleidoswap` · `/lsps1` · `/submarine` · `/bitrefill` · `/flashnet` | Each domain's tool contract (`*_TOOLS`, `bind*Tools`) and its recipes. Also re-exported from the root until 1.0 | Any |
+| `@kaleidorg/mind/knowledge` | Knowledge packs (`BITCOIN_COPILOT_DOCS`), corpus adapters for RAG, `createBtcMapToolSource` | Any |
 | `@kaleidorg/mind/mcp` | `McpToolSource`: tools from an MCP server over stdio or streamable HTTP | Node |
 | `@kaleidorg/mind/skills` | `loadSkillsDir`, `loadSkillFromDir`, `packagedSkillsDir()` (the 14 bundled skills) | Node (fs) |
 | `@kaleidorg/mind/testing` | `MockWallet` (stateful fake wallet bound to the real contract), `scriptedProvider` | Any |

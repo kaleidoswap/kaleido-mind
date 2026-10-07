@@ -25,7 +25,7 @@
     "@scure/bip39": "^2.4.0"
   },
   "peerDependencies": {
-    "@qvac/sdk": "*"
+    "@qvac/sdk": "^0.21.0"
   },
   "devDependencies": {
     "@types/node": "^26.6.4",

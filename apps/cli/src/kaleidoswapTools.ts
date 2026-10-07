@@ -10,11 +10,8 @@
  * Routes + body shapes mirror `kaleido_sdk._maker_client.py` / `_generated/api_types.py`.
  */
 
-import {
-  bindKaleidoswapTools,
-  type InProcessToolSource,
-  type KaleidoswapHandler,
-} from '@kaleidorg/mind';
+import { type InProcessToolSource, type KaleidoswapHandler } from '@kaleidorg/mind';
+import { bindKaleidoswapTools } from '@kaleidorg/mind/kaleidoswap';
 
 export interface KaleidoswapHttpOptions {
   /** Maker base URL, e.g. http://localhost:8000. No trailing slash. */

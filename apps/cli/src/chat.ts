@@ -12,13 +12,7 @@ import {
   InMemoryMemoryStore,
   createMemoryToolSource,
   createRagToolSource,
-  createBtcMapToolSource,
   Retriever,
-  BITCOIN_COPILOT_DOCS,
-  kaleidoswapPriceRecipe,
-  kaleidoswapAtomicRecipe,
-  kaleidoswapChannelOrderRecipe,
-  flashnetSwapRecipe,
   paymentsRecipe,
   receiveRecipe,
   assetSendRecipe,
@@ -34,6 +28,13 @@ import {
   type Skill,
   type ToolSource,
 } from '@kaleidorg/mind';
+import { flashnetSwapRecipe } from '@kaleidorg/mind/flashnet';
+import {
+  kaleidoswapPriceRecipe,
+  kaleidoswapAtomicRecipe,
+  kaleidoswapChannelOrderRecipe,
+} from '@kaleidorg/mind/kaleidoswap';
+import { createBtcMapToolSource, BITCOIN_COPILOT_DOCS } from '@kaleidorg/mind/knowledge';
 import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
 import { c } from './ui.js';
 import { MEMORY_PATH, type CliConfig } from './config.js';

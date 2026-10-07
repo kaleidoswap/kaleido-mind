@@ -22,11 +22,8 @@
  * shapes are unchanged.
  */
 
-import {
-  bindBitrefillTools,
-  type InProcessToolSource,
-  type BitrefillHandler,
-} from '@kaleidorg/mind';
+import { type InProcessToolSource, type BitrefillHandler } from '@kaleidorg/mind';
+import { bindBitrefillTools } from '@kaleidorg/mind/bitrefill';
 
 export interface BitrefillHttpOptions {
   /** Bitrefill REST base. No trailing slash. Default `https://api.bitrefill.com/v2`. */

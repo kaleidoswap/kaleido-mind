@@ -10,11 +10,10 @@
  * desktop sidecar its lazily-loaded SDK facade — which also makes this provider
  * unit-testable with a fake completion.
  *
- * The host owns model lifecycle (load/unload, local-vs-delegated) and passes
+ * The host owns model lifecycle (load/unload) and passes
  * `getModelId()` so a turn always runs against the currently-loaded model.
  * Tools are forwarded by schema only; the Engine executes them via its
- * ToolSources, so signing/spending stays on the host even when inference is
- * delegated to a desktop peer.
+ * ToolSources, so signing and spending stay on the host.
  */
 import type * as QvacSdk from '@qvac/sdk';
 import type { InferenceMetrics, LLMProvider, TurnInput, TurnOutput } from '../providers/types.js';
@@ -44,15 +43,16 @@ export interface QvacProviderOptions {
   /**
    * Cap `<think>` reasoning at this many TOKENS (not seconds — tok/s varies).
    * Sent as the SDK's `reasoning_budget`, so the model closes its reasoning and
-   * answers. If the stream still runs well past it, the run is cancelled and a
-   * short fallback is returned instead of hanging on "Thinking…". Omit for
-   * unlimited reasoning.
+   * answers. Kept below the output cap. Omit for unlimited reasoning.
    */
   maxThinkingTokens?: number;
   /**
-   * Keep each agentic run in a QVAC KV-cache session (`kvCache: sessionKey`),
-   * so calls after the first send only the new message instead of re-reading
-   * the whole prompt. Needs `deleteCache` to drop the session at the end.
+   * Experimental. Keep each agentic run in a QVAC KV-cache session
+   * (`kvCache: sessionKey`), so calls after the first send only the new
+   * message instead of re-reading the whole prompt. Needs `deleteCache` to
+   * drop the session at the end. In the rgb-agent eval (Qwen3.5 2B) it cut
+   * time to first token from ~7 s to ~0.2 s, but the model copied a Lightning
+   * invoice correctly in 4/10 runs with it vs 10/10 without. Off by default.
    */
   sessionCache?: boolean;
   /** The SDK's `deleteCache` (injected); used with `sessionCache`. */
@@ -75,11 +75,6 @@ export interface QvacTurnInput extends TurnInput {
   onThinking?: (token: string) => void;
   onStats?: (stats: QvacTurnStats) => void;
 }
-
-/** Shown when a turn is cut off because it blew its thinking-token budget. */
-const THINKING_BUDGET_FALLBACK =
-  'I spent my whole thinking budget on that one without landing an answer. ' +
-  'Try asking again, more specifically.';
 
 export function createQvacProvider(options: QvacProviderOptions): LLMProvider {
   return {
@@ -153,24 +148,12 @@ export function createQvacProvider(options: QvacProviderOptions): LLMProvider {
       const result = await consumeRun(run, {
         onToken: input.onToken,
         onThinking: input.onThinking ?? options.onThinking,
-        // Backstop only: the SDK enforces the budget itself, and our count is a
-        // char-based estimate, so leave headroom before cancelling.
-        maxThinkingTokens:
-          maxThinkingTokens === undefined ? undefined : Math.ceil(maxThinkingTokens * 1.25) + 32,
-        // Cancel the in-flight run the moment the thinking budget is blown — the
-        // SDK keeps generating otherwise. Fire-and-forget; `final` then resolves.
-        onThinkingBudgetExceeded: () => {
-          void options.cancel({ requestId: run.requestId }).catch(() => {});
-        },
       });
 
       // Surface the real per-turn inference stats (backend device + throughput).
       if (result.stats) (input.onStats ?? options.onStats)?.(result.stats);
 
-      // A turn cut off mid-reasoning has no visible answer — return a short note
-      // instead of an empty bubble so the agentic loop ends cleanly.
-      const text =
-        result.text || (result.thinkingBudgetExceeded ? THINKING_BUDGET_FALLBACK : result.text);
+      const text = result.text;
       const promptTokens = result.stats?.promptTokens;
       const generated = result.stats?.generatedTokens;
       const totalTokens =
@@ -199,7 +182,7 @@ export function createQvacProvider(options: QvacProviderOptions): LLMProvider {
       };
 
       const incomplete =
-        !result.text && result.toolCalls.length === 0 && (result.thinkingBudgetExceeded || !!result.truncated);
+        !result.text && result.toolCalls.length === 0 && !!result.truncated;
       return {
         text,
         rawContent: result.rawContent,

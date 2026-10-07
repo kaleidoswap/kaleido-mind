@@ -5,11 +5,53 @@ apps) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] — 2026-10-07
+
+Requires `@qvac/sdk` 0.20 or later. `@kaleidorg/mind` 0.9.0,
+`@kaleidorg/mind-provider` 0.9.0, `@kaleidorg/create-mind` 0.2.0.
+
+### Removed
+
+- P2P delegated inference: `allowListFirewall`, `denyListFirewall`,
+  `firewallFromKeyList`, `buildDelegateConfig` and their types are gone from
+  `@kaleidorg/mind/qvac`. `@qvac/sdk` 0.19 removed the provider API they
+  configured. To run the model on another machine, use an OpenAI-compatible
+  server with `@kaleidorg/mind/openai`.
+- Provider app: no P2P bootstrap and no Whisper/TTS models for paired phones.
+  The status snapshot still carries `publicKey`, `sttReady` and `ttsReady`
+  (always `null`/`false`) for protocol compatibility.
+- QVAC provider: the cancel-at-cap thinking backstop and its fallback message.
+  `reasoning_budget` bounds reasoning and the output cap bounds the turn.
+
+### Changed
+
+- Peer dependency `@qvac/sdk >= 0.20.0` (was `>= 0.13.1`); the provider sends
+  `tool_choice` and `reasoning_budget`, which older SDKs reject or ignore.
+- `capabilityProfile({ delegated })` → `capabilityProfile({ remote })`;
+  evidence `model.source` `'delegated'` → `'remote'`.
+- Engine internals: run state in one object, `callModel` / `executeCall`
+  extracted, and `engine/answer.ts` holds the fixed replies and
+  `finalizeAnswer`, the single place that decides what reaches the user.
+  Behaviour unchanged.
+
+### Fixed
+
+- `create-mind` 0.1.1 and the 0.8.1 rgb-agent example turned the experimental
+  session cache on by default. It is off now (`SESSION_CACHE=1` to try it): with
+  it on, Qwen3.5 2B copied a Lightning invoice correctly in 4/10 eval runs vs
+  10/10 without.
+
+### Added
+
+- Subpath exports for the domain packs: `@kaleidorg/mind/kaleidoswap`,
+  `/lsps1`, `/submarine`, `/bitrefill`, `/flashnet`, `/knowledge`. The root
+  still re-exports them; 1.0 drops those re-exports.
+
 ## [0.8.1] — 2026-10-07
 
 Faster requests on small local models. Measured with the rgb-agent eval
 (Qwen3.5 2B, fake RLN node): balance and asset list 25–110 s → instant;
-issue, invoices and send 60–130 s → 9–11 s.
+issue, invoices and send 60–130 s → 11–19 s.
 
 ### Added
 
@@ -25,7 +67,9 @@ issue, invoices and send 60–130 s → 9–11 s.
   run. With `sessionCache: true` and the injected `deleteCache`, the QVAC
   provider passes it as `kvCache`, so calls after the first send only the new
   tool result instead of the ~5k-token prompt (time to first token ~7 s →
-  ~0.2 s on Qwen3.5 2B). Opt-in.
+  ~0.2 s on Qwen3.5 2B). Experimental and off by default: with it on, the
+  model copied a Lightning invoice correctly in 4/10 eval runs vs 10/10
+  without. The rgb-agent example enables it with `SESSION_CACHE=1`.
 
 ## [0.8.0] — 2026-10-07
 

@@ -28,9 +28,10 @@ export interface StreamHandlers {
   /** The model's `<think>` reasoning, streamed separately. */
   onThinking?: (token: string) => void;
   /**
-   * Stop the run once `<think>` reasoning exceeds this many tokens (estimated
-   * from characters). A backstop for the SDK's own `reasoning_budget`. Omit for
-   * unlimited reasoning.
+   * Stop forwarding once `<think>` reasoning exceeds this many tokens
+   * (estimated from characters) and call `onThinkingBudgetExceeded`. The QVAC
+   * provider uses the SDK's `reasoning_budget` instead; this is for callers
+   * driving `completion()` themselves.
    */
   maxThinkingTokens?: number;
   /**

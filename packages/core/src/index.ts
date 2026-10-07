@@ -71,101 +71,8 @@ export {
 export { annotateRgbBalances, fixRgbBalanceUnits, formatRgbAmount } from './context/rgb-units.js';
 export type { ArgValidation, UngroundedItem, WalletAction } from './guards.js';
 
-// ── KaleidoSwap maker tool contract (single source of truth) ────────────────
-export {
-  KALEIDOSWAP_TOOLS,
-  KALEIDOSWAP_SPEND_TOOLS,
-  isKaleidoswapSpendTool,
-  getKaleidoswapTool,
-  kaleidoswapTools,
-  bindKaleidoswapTools,
-} from './kaleidoswap/contract.js';
-export type {
-  KaleidoswapGroup,
-  KaleidoswapToolDef,
-  KaleidoswapHandler,
-  BindKaleidoswapOptions,
-} from './kaleidoswap/contract.js';
-
-// ── LSPS1 (Lightning Service Provider channel orders) ───────────────────────
-export {
-  LSPS1_TOOLS,
-  LSPS1_SPEND_TOOLS,
-  isLsps1SpendTool,
-  getLsps1Tool,
-  bindLsps1Tools,
-} from './lsps1/contract.js';
-export type {
-  Lsps1ToolDef,
-  Lsps1Handler,
-  BindLsps1Options,
-} from './lsps1/contract.js';
-
-// ── KaleidoSwap /v2 submarine swaps (pay Lightning from Liquid) ─────────────
-export {
-  SUBMARINE_TOOLS,
-  SUBMARINE_SPEND_TOOLS,
-  SUBMARINE_FROM_ASSETS,
-  isSubmarineSpendTool,
-  getSubmarineTool,
-  formatSubmarineAmount,
-  bindSubmarineTools,
-} from './submarine/contract.js';
-export type {
-  SubmarineToolDef,
-  SubmarineFromAsset,
-  SubmarineHandler,
-  BindSubmarineOptions,
-} from './submarine/contract.js';
-
-// ── Bitrefill (gift cards / mobile top-ups / eSIMs) ─────────────────────────
-export {
-  BITREFILL_TOOLS,
-  BITREFILL_SPEND_TOOLS,
-  isBitrefillSpendTool,
-  getBitrefillTool,
-  bindBitrefillTools,
-} from './bitrefill/contract.js';
-export type {
-  BitrefillToolDef,
-  BitrefillHandler,
-  BindBitrefillOptions,
-} from './bitrefill/contract.js';
-
-// ── Flashnet (Spark-native AMM — swaps over Spark) ──────────────────────────
-export {
-  FLASHNET_TOOLS,
-  FLASHNET_SPEND_TOOLS,
-  isFlashnetSpendTool,
-  getFlashnetTool,
-  bindFlashnetTools,
-} from './flashnet/contract.js';
-export type {
-  FlashnetToolDef,
-  FlashnetHandler,
-  BindFlashnetOptions,
-} from './flashnet/contract.js';
-
-// ── KaleidoSwap recipes (opt-in — register via Funnel.recipes) ──
-// price recipe is read-only (quote-only); atomic recipe runs the full swap.
-// Register the price recipe FIRST so phrasings like "BTC price" are answered
-// without firing any spend.
-export { kaleidoswapPriceRecipe } from './recipe/kaleidoswap-price.js';
-export { kaleidoswapAtomicRecipe } from './recipe/kaleidoswap-atomic.js';
-export { flashnetSwapRecipe } from './recipe/flashnet-swap.js';
-export {
-  kaleidoswapChannelOrderRecipe,
-  extractChannelOrder,
-} from './recipe/kaleidoswap-channel-order.js';
-
-// ── Buy-an-asset-channel recipe (opt-in — register via Funnel.recipes) ─────
-export { buyAssetChannelRecipe, extractBuyAsset } from './recipe/buy-asset-channel.js';
-
 // ── Issue-an-RGB-asset recipe (opt-in — register via Funnel.recipes) ───────
 export { issueAssetRecipe, extractIssueAsset } from './recipe/issue-asset.js';
-
-// ── Submarine-pay recipe (opt-in — register via Funnel.recipes, before payments) ──
-export { submarinePayRecipe, extractSubmarinePay } from './recipe/submarine-pay.js';
 
 // ── Recipes (mobile multi-step: "recipes, not planning") ───────────────────
 export { runRecipe, extractSlots, RecipeRegistry } from './recipe/runner.js';
@@ -224,20 +131,16 @@ export type { ToolCrushOptions, CrushResult } from './context/compress.js';
 export { capabilityProfile } from './capabilities.js';
 export type { CapabilityInput, MindCapabilities } from './capabilities.js';
 
-// ── Knowledge packs + corpus adapters (for RAG) ────────────────────────────
-export { BITCOIN_COPILOT_DOCS } from './knowledge/bitcoin-copilot.js';
-export { walletHistoryToDocuments, contactsToDocuments } from './knowledge/wallet.js';
-export type { WalletTx, Contact } from './knowledge/wallet.js';
-export { merchantsToDocuments } from './knowledge/merchants.js';
-export type { Merchant } from './knowledge/merchants.js';
-export { createBtcMapToolSource } from './knowledge/btc-map.js';
-export type {
-  BtcMapToolOptions,
-  BtcMapMerchant,
-  BtcMapFetch,
-  LocationProvider,
-  LatLng,
-} from './knowledge/btc-map.js';
+// ── Domain packs ─────────────────────────────────────────────────────────────
+// Each has its own subpath (`@kaleidorg/mind/kaleidoswap`, `/lsps1`,
+// `/submarine`, `/bitrefill`, `/flashnet`, `/knowledge`). The root re-exports
+// them for compatibility; 1.0 drops these re-exports.
+export * from './kaleidoswap/index.js';
+export * from './lsps1/index.js';
+export * from './submarine/index.js';
+export * from './bitrefill/index.js';
+export * from './flashnet/index.js';
+export * from './knowledge/index.js';
 
 export { Engine } from './engine.js';
 export type { EngineOptions, AgenticOptions, AgenticResult, ComposedSkill } from './engine.js';

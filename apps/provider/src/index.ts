@@ -35,9 +35,6 @@ import {
   ToolRegistry,
   SkillRegistry,
   createSkillReferenceToolSource,
-  buyAssetChannelRecipe,
-  kaleidoswapAtomicRecipe,
-  kaleidoswapChannelOrderRecipe,
   assetSendRecipe,
   paymentsRecipe,
   receiveRecipe,
@@ -63,8 +60,13 @@ import {
   type Message,
   type ToolSource,
 } from '@kaleidorg/mind';
+import {
+  buyAssetChannelRecipe,
+  kaleidoswapAtomicRecipe,
+  kaleidoswapChannelOrderRecipe,
+} from '@kaleidorg/mind/kaleidoswap';
 import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
-import { createQvacProvider, firewallFromKeyList, QWEN35_MODELS, DEFAULT_MODEL_ID } from '@kaleidorg/mind/qvac';
+import { createQvacProvider, QWEN35_MODELS, DEFAULT_MODEL_ID } from '@kaleidorg/mind/qvac';
 
 // ─────────────────────────────────────────────────────────────────────
 // IO helpers
@@ -94,15 +96,6 @@ interface QvacSDK {
   loadModel: (opts: any) => Promise<string>;
   unloadModel: (opts: { modelId: string; clearStorage?: boolean }) => Promise<void>;
   completion: (opts: any) => any;
-  // Voice capabilities — served to paired phones over P2P once the matching
-  // model is loaded (see loadVoiceModels). Optional so MOCK / older SDK builds
-  // without the whisper/tts plugins still type-check.
-  transcribe?: (opts: any) => Promise<any> | any;
-  textToSpeech?: (opts: any) => any;
-  // P2P delegated inference — present in @qvac/sdk 0.13–0.18, removed in 0.19.
-  startQVACProvider?: (opts?: any) => Promise<any>;
-  stopQVACProvider?: () => Promise<void>;
-  heartbeat?: (opts?: any) => Promise<unknown>;
   close: () => Promise<void>;
 }
 
@@ -204,8 +197,6 @@ const state = {
   activeModelId: null as string | null,
   activeModelName: null as string | null,
   qvacModelHandle: null as string | null,         // returned by loadModel()
-  qvacSttHandle: null as string | null,            // Whisper model — delegated STT
-  qvacTtsHandle: null as string | null,            // TTS model — delegated speech synthesis
   peers: new Map<string, PeerInfo>(),
   startedAt: null as number | null,
   tokensPerSecond: null as number | null,
@@ -738,8 +729,11 @@ function snapshot(): ProviderStatusEvent {
     tokensPerSecond: state.tokensPerSecond,
     startedAt: state.startedAt,
     inferenceDevice: state.inferenceDevice,
-    sttReady: state.qvacSttHandle != null,
-    ttsReady: state.qvacTtsHandle != null,
+    // Voice and the P2P public key were served to paired phones over QVAC
+    // delegation, which @qvac/sdk removed in 0.19. Kept in the snapshot for
+    // protocol compatibility.
+    sttReady: false,
+    ttsReady: false,
   };
 }
 
@@ -907,80 +901,6 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T | null> {
   ]);
 }
 
-// ─────────────────────────────────────────────────────────────────────
-// Voice (STT/TTS) delegation
-//
-// Loaded alongside the LLM so the QVAC provider advertises transcription and
-// speech-synthesis to paired phones over the same Hyperswarm channel as
-// completion. Best-effort: if the SDK build lacks the whisper/tts plugins (or
-// the model constant), the provider still serves LLM-only and just logs it.
-// Disable with KALEIDO_MIND_VOICE=0; override the models with the
-// KALEIDO_MIND_STT_MODEL / KALEIDO_MIND_TTS_MODEL env vars (names of @qvac/sdk
-// model-descriptor exports, e.g. WHISPER_LARGE_V3_TURBO).
-// ─────────────────────────────────────────────────────────────────────
-
-const DEFAULT_STT_MODEL = 'WHISPER_BASE_Q8_0';
-const DEFAULT_TTS_MODEL = 'TTS_EN_SUPERTONIC_Q4_0';
-
-/** Resolve a pre-registered @qvac/sdk model descriptor by export name. */
-function resolveModelConst(name: string): any {
-  return sdkModule?.[name] ?? null;
-}
-
-/**
- * Load the Whisper (STT) and Supertonic (TTS) models so delegated transcribe()
- * / textToSpeech() calls from paired phones are served by this provider. Each
- * is independent and best-effort — a failure on one leaves the other (and the
- * LLM) working.
- */
-async function loadVoiceModels(): Promise<void> {
-  if (MOCK || !sdk) return;
-  if (process.env.KALEIDO_MIND_VOICE === '0') {
-    diag('voice delegation disabled (KALEIDO_MIND_VOICE=0)');
-    return;
-  }
-
-  // STT — Whisper transcription.
-  const sttName = process.env.KALEIDO_MIND_STT_MODEL || DEFAULT_STT_MODEL;
-  const sttSrc = resolveModelConst(sttName);
-  if (!sttSrc) {
-    diag(`STT model constant not found: ${sttName} — transcription delegation off`);
-  } else {
-    try {
-      state.qvacSttHandle = await sdk.loadModel({
-        modelSrc: sttSrc,
-        modelType: 'whispercpp-transcription',
-        modelConfig: { language: 'en', strategy: 'greedy', audio_format: 's16le' },
-      });
-      diag(`STT model loaded for delegation: ${sttName}`);
-      emit({ type: 'log', level: 'info', message: `voice: transcription ready (${sttName})` });
-    } catch (e) {
-      diag(`STT load failed (${sttName}): ${(e as Error).message}`);
-      emit({ type: 'log', level: 'warn', message: `voice: transcription unavailable — ${(e as Error).message}` });
-    }
-  }
-
-  // TTS — neural speech synthesis.
-  const ttsName = process.env.KALEIDO_MIND_TTS_MODEL || DEFAULT_TTS_MODEL;
-  const ttsSrc = resolveModelConst(ttsName);
-  if (!ttsSrc) {
-    diag(`TTS model constant not found: ${ttsName} — speech-synthesis delegation off`);
-  } else {
-    try {
-      state.qvacTtsHandle = await sdk.loadModel({
-        modelSrc: ttsSrc,
-        modelType: 'tts-ggml',
-        modelConfig: { ttsEngine: 'supertonic', language: 'en', voice: 'F1', ttsSpeed: 1.05, ttsNumInferenceSteps: 5 },
-      });
-      diag(`TTS model loaded for delegation: ${ttsName}`);
-      emit({ type: 'log', level: 'info', message: `voice: speech synthesis ready (${ttsName})` });
-    } catch (e) {
-      diag(`TTS load failed (${ttsName}): ${(e as Error).message}`);
-      emit({ type: 'log', level: 'warn', message: `voice: speech synthesis unavailable — ${(e as Error).message}` });
-    }
-  }
-}
-
 async function handleStart(modelId: string): Promise<void> {
   if (state.providerOn) {
     throw new Error('Provider is already running. Stop it first.');
@@ -1000,9 +920,6 @@ async function handleStart(modelId: string): Promise<void> {
     emit({ type: 'provider_loading', phase: 'model_loaded' });
     state.qvacModelHandle = `mock-${modelId}`;
     state.inferenceDevice = 'mock';
-    emit({ type: 'provider_loading', phase: 'starting_p2p' });
-    await new Promise((r) => setTimeout(r, 200));
-    state.publicKey = mockPubkey();
   } else {
     // ── Real path ──────────────────────────────────────────────────
     try {
@@ -1039,36 +956,6 @@ async function handleStart(modelId: string): Promise<void> {
     subscribeSdkLogs();
 
     emit({ type: 'provider_loading', phase: 'model_loaded' });
-
-    // Load the voice models (best-effort) before advertising, so the provider
-    // comes up already able to serve delegated STT/TTS to paired phones.
-    await loadVoiceModels();
-
-    emit({ type: 'provider_loading', phase: 'starting_p2p', message: 'Connecting to Hyperswarm…' });
-
-    // Firewall: a QVAC provider is reachable by anyone who learns its public key,
-    // so by default any such peer can run inference here. Set KALEIDO_MIND_ALLOWED_KEYS
-    // (comma/space/newline-separated consumer public keys, e.g. the paired phone's)
-    // to allow-list ONLY those peers. Unset ⇒ open, with a loud warning.
-    const firewall = firewallFromKeyList(process.env.KALEIDO_MIND_ALLOWED_KEYS);
-    if (firewall) {
-      diag(`P2P firewall: allow-list of ${firewall.publicKeys.length} consumer key(s)`);
-    } else {
-      const msg = 'P2P firewall OPEN — KALEIDO_MIND_ALLOWED_KEYS unset; any peer with this public key can delegate inference here.';
-      diag(msg);
-      emit({ type: 'log', level: 'warn', message: msg });
-    }
-
-    const startP2p = sdk.startQVACProvider;
-    if (typeof startP2p !== 'function') {
-      const msg = 'This @qvac/sdk has no P2P provider (startQVACProvider was removed in 0.19) — desktop-only mode.';
-      diag(msg);
-      emit({ type: 'provider_loading', phase: 'p2p_failed', message: msg });
-      emit({ type: 'log', level: 'warn', message: msg });
-      state.publicKey = null;
-    } else {
-      await startP2pProvider(startP2p, firewall);
-    }
   }
 
   state.providerOn = true;
@@ -1094,73 +981,16 @@ async function handleStart(modelId: string): Promise<void> {
   startScheduler();
 }
 
-async function startP2pProvider(
-  startP2p: NonNullable<QvacSDK['startQVACProvider']>,
-  firewall: ReturnType<typeof firewallFromKeyList>,
-): Promise<void> {
-  // 60 s ceiling on the P2P bootstrap — DHT can take ~30s on first run.
-  let provider: any = null;
-  try {
-    provider = await withTimeout(startP2p(firewall ? { firewall } : {}), 60_000);
-  } catch (e) {
-    diag(`startQVACProvider threw: ${(e as Error).message}`);
-  }
-  // Diagnostic: log the full response so we can see the real field names.
-  diag(`startQVACProvider returned: ${JSON.stringify(provider)}`);
-
-  if (!provider) {
-    const msg = 'P2P bootstrap timed out after 60s — desktop-only mode.';
-    diag(msg);
-    emit({ type: 'provider_loading', phase: 'p2p_failed', message: msg });
-    emit({ type: 'log', level: 'warn', message: msg });
-    state.publicKey = null;
-  } else if (provider.success === false) {
-    const msg = `startQVACProvider failed: ${provider.error ?? 'unknown'}`;
-    diag(msg);
-    emit({ type: 'provider_loading', phase: 'p2p_failed', message: msg });
-    emit({ type: 'log', level: 'warn', message: msg });
-    state.publicKey = null;
-  } else {
-    // Try every plausible field name we've seen across SDK versions.
-    state.publicKey =
-      (provider?.publicKey as string) ??
-      (provider?.public_key as string) ??
-      (provider?.pubkey as string) ??
-      (provider?.keyPair?.publicKey as string) ??
-      (provider?.keyPair?.publicKey?.toString?.('hex') as string) ??
-      null;
-    if (!state.publicKey) {
-      const msg = `startQVACProvider returned success but no publicKey field. Keys: ${Object.keys(provider).join(', ')}`;
-      diag(msg);
-      emit({ type: 'provider_loading', phase: 'p2p_failed', message: msg });
-      emit({ type: 'log', level: 'warn', message: msg });
-    }
-  }
-}
-
 async function handleStop(): Promise<void> {
   if (!state.providerOn) return;
   // Tasks call the model; stop firing them when the model unloads.
   stopScheduler();
   if (sdk && !MOCK) {
-    try {
-      await sdk.stopQVACProvider?.();
-    } catch (e) {
-      diag(`stopQVACProvider error: ${(e as Error).message}`);
-    }
     if (state.qvacModelHandle) {
       try {
         await sdk.unloadModel({ modelId: state.qvacModelHandle });
       } catch (e) {
         diag(`unloadModel error: ${(e as Error).message}`);
-      }
-    }
-    for (const voiceHandle of [state.qvacSttHandle, state.qvacTtsHandle]) {
-      if (!voiceHandle) continue;
-      try {
-        await sdk.unloadModel({ modelId: voiceHandle });
-      } catch (e) {
-        diag(`unloadModel (voice) error: ${(e as Error).message}`);
       }
     }
   }
@@ -1188,8 +1018,6 @@ async function handleStop(): Promise<void> {
   state.activeModelId = null;
   state.activeModelName = null;
   state.qvacModelHandle = null;
-  state.qvacSttHandle = null;
-  state.qvacTtsHandle = null;
   state.peers.clear();
   state.startedAt = null;
   state.tokensPerSecond = null;
@@ -2148,17 +1976,6 @@ async function dispatch(cmd: Command): Promise<void> {
   } catch (e) {
     respondErr(cmd.id, e instanceof Error ? e.message : String(e));
   }
-}
-
-// ─────────────────────────────────────────────────────────────────────
-// Mock helper — stable-looking pubkey for offline dev
-// ─────────────────────────────────────────────────────────────────────
-
-function mockPubkey(): string {
-  const hex = '0123456789abcdef';
-  let out = '';
-  for (let i = 0; i < 64; i++) out += hex[Math.floor(Math.random() * 16)];
-  return out;
 }
 
 // ─────────────────────────────────────────────────────────────────────

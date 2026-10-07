@@ -1,6 +1,6 @@
 {
   "name": "@kaleidorg/mind",
-  "version": "0.8.1",
+  "version": "0.9.0",
   "description": "Local-first reasoning + function-calling engine for KaleidoSwap. QVAC-powered.",
   "license": "Apache-2.0",
   "type": "module",
@@ -45,6 +45,36 @@
       "import": "./dist/providers/openai.js",
       "default": "./dist/providers/openai.js"
     },
+    "./kaleidoswap": {
+      "types": "./dist/kaleidoswap/index.d.ts",
+      "import": "./dist/kaleidoswap/index.js",
+      "default": "./dist/kaleidoswap/index.js"
+    },
+    "./lsps1": {
+      "types": "./dist/lsps1/index.d.ts",
+      "import": "./dist/lsps1/index.js",
+      "default": "./dist/lsps1/index.js"
+    },
+    "./submarine": {
+      "types": "./dist/submarine/index.d.ts",
+      "import": "./dist/submarine/index.js",
+      "default": "./dist/submarine/index.js"
+    },
+    "./bitrefill": {
+      "types": "./dist/bitrefill/index.d.ts",
+      "import": "./dist/bitrefill/index.js",
+      "default": "./dist/bitrefill/index.js"
+    },
+    "./flashnet": {
+      "types": "./dist/flashnet/index.d.ts",
+      "import": "./dist/flashnet/index.js",
+      "default": "./dist/flashnet/index.js"
+    },
+    "./knowledge": {
+      "types": "./dist/knowledge/index.d.ts",
+      "import": "./dist/knowledge/index.js",
+      "default": "./dist/knowledge/index.js"
+    },
     "./testing": {
       "types": "./dist/testing/index.d.ts",
       "import": "./dist/testing/index.js",
@@ -68,7 +98,7 @@
     "bundle-skills": "node scripts/bundle-skills.mjs"
   },
   "peerDependencies": {
-    "@qvac/sdk": ">=0.13.1"
+    "@qvac/sdk": ">=0.20.0"
   },
   "peerDependenciesMeta": {
     "@qvac/sdk": {

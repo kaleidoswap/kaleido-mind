@@ -54,10 +54,11 @@ provider, tool sources and a confirm handler.
   `apps/provider/src/protocol.ts`). It loads the
   model, skills and MCP servers configured by the host and streams chat events
   back.
-- **Delegated inference:** with `@qvac/sdk` 0.13–0.18 a phone can delegate
-  inference to a paired desktop (`buildDelegateConfig`, `allowListFirewall`).
-  QVAC 0.19 removed the P2P provider API; on newer SDKs hosts run inference
-  locally.
+- **Remote inference:** to run the model on another machine, serve it with an
+  OpenAI-compatible server (`qvac serve`, Ollama, LM Studio, llama.cpp) and use
+  `createOpenAICompatibleProvider` from `@kaleidorg/mind/openai`. Put the server
+  behind authentication; the tools and signing stay on the device that runs
+  the Engine.
 
 ## Binding tool contracts (the host side)
 

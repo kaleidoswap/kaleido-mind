@@ -96,23 +96,6 @@ describe('createQvacProvider.runTurn', () => {
     expect(calls[0].generationParams).toBeUndefined();
   });
 
-  it('caps thinking by tokens — cancels the run and returns a fallback', async () => {
-    const cancel = vi.fn(async () => {});
-    const { fn } = fakeCompletion(
-      { contentText: '', toolCalls: [], raw: { fullText: '' }, stopReason: 'cancelled' },
-      [{ type: 'thinkingDelta', text: 'z'.repeat(400) }], // ~100 tokens, budget 4 (+ backstop headroom)
-    );
-    const p = createQvacProvider({
-      completion: fn as any,
-      cancel: cancel as any,
-      getModelId: () => 'm1',
-      maxThinkingTokens: 4,
-    });
-    const out = await p.runTurn({ messages: [{ role: 'user', content: 'think hard' }], tools: [] });
-    expect(cancel).toHaveBeenCalledWith({ requestId: 'req-1' });
-    expect(out.text).toMatch(/thinking budget/i);
-  });
-
   it('sends the thinking cap as the SDK reasoning_budget', async () => {
     const { fn, calls } = fakeCompletion({ contentText: 'ok', toolCalls: [], raw: { fullText: 'ok' } });
     const p = createQvacProvider({ completion: fn as any, cancel: noopCancel, getModelId: () => 'm1', maxThinkingTokens: 128 });
