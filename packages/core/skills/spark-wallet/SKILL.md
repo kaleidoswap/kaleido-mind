@@ -3,6 +3,7 @@ name: spark-wallet
 description: "Operate the user's Spark BTC wallet on this device — check Spark balance, get a Spark deposit address, create a Spark Lightning invoice to receive, pay any BOLT11 Lightning invoice with Spark, or send BTC on-chain from Spark. Use this when the user names Spark explicitly OR when paying a Lightning invoice on a phone where Spark is the connected layer. Pairs with the bitrefill skill: a Bitrefill purchase that returns a Lightning invoice is paid with `spark_pay_invoice`."
 tools: spark_get_balance, spark_get_address, spark_get_onchain_address, spark_create_invoice, spark_pay_invoice, spark_send, get_price, fiat_to_sats, bitrefill_search, bitrefill_get_product, bitrefill_get_balance, bitrefill_create_invoice, bitrefill_get_invoice, bitrefill_get_order
 triggers: spark, sprak, spakr, spark wallet, pay with spark, send with spark, spark balance, spark address, spark invoice, lightning invoice, pay invoice, bolt11, ln invoice, pay this invoice, on-chain address, onchain address, deposit address, deposit btc, fund spark
+requires-tools: spark_get_balance
 metadata:
   author: kaleidoswap
   version: "1.0.0"

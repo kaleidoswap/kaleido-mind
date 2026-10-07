@@ -9,6 +9,103 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- `TurnInput.toolChoice` (`'auto' | 'none' | 'required' | <tool name>`) and
+  `TurnOutput.toolErrors`. The QVAC provider sends them as
+  `generationParams.tool_choice` and reads `final.toolErrors` (`@qvac/sdk`
+  0.20+).
+- `AgenticOptions.firstTurnToolChoice`. The funnel sets it to `'required'`
+  when the request is a wallet action (`wantsToolCall`), so the first model
+  call must be a tool call. "How/what/why…" questions are not forced.
+- Asset issuance (`issue-asset`) is a detected wallet action: with no
+  `*issue_asset` tool in scope the funnel refuses without calling the model.
+
+- `fixSatsBtcConversions` / `formatSatsAsBtc`: the Engine recomputes a BTC
+  figure paired with a sats amount in the final answer ("4,277 sats
+  (42.77 BTC)" → "4,277 sats (0.00004277 BTC)").
+  `EngineOptions.fixAmountConversions` (default on). Under the same switch,
+  RGB asset results reach the model with a `balance_display` ("1,000 USDT",
+  scaled by `precision`), and an answer that calls an asset balance sats is
+  relabelled (`annotateRgbBalances`, `fixRgbBalanceUnits`,
+  `formatRgbAmount`).
+- `@kaleidorg/mind/openai`: `createOpenAICompatibleProvider` runs the engine
+  on any OpenAI Chat Completions server with tool calling (Ollama, LM Studio,
+  llama.cpp, vLLM, hosted APIs). Streaming, `tool_choice`, `toolErrors` for
+  arguments that are not valid JSON, abort on `signal`; no dependencies.
+- `@kaleidorg/create-mind` 0.1.0: `npm create @kaleidorg/mind my-agent`
+  scaffolds a standalone copy of `examples/rgb-agent`, generated from the
+  example at pack time. CI scaffolds it, installs it with npm against the
+  commit's `@kaleidorg/mind`, typechecks it and runs it offline.
+- `examples/rgb-agent`: `OPENAI_BASE_URL` / `OPENAI_MODEL` / `OPENAI_API_KEY`
+  switch the model to an OpenAI-compatible server.
+- `examples/rgb-agent`: `pnpm eval` / `pnpm eval:mock` run seven wallet
+  requests through the Funnel with a local model and check each result.
+
+### Changed
+
+- A turn whose tool call did not parse is sent back to the model once with the
+  parse error (or, when the output hit the token cap, a "one call at a time"
+  hint); if it fails again the run ends with a fixed message instead of
+  showing the broken frame. The retry does not count against `maxTurns`.
+- The answer guards (ungrounded payment data, amount fixes) only check text
+  the model wrote, not the engine's own fixed replies. A declined send whose
+  readback shortens the invoice was replaced by the "won't make one up"
+  refusal.
+- `runAgentic` never returns an empty answer: a run whose last turn produced
+  no text ends with the "had to stop" message.
+- Recipe slot extraction forces the extraction tool (`toolChoice`).
+- `maxThinkingTokens` is sent as the SDK's `reasoning_budget`; the
+  cancel-on-overrun check stays as a backstop with headroom. A budget at or
+  above the output cap is lowered to half of it, since the model could
+  otherwise spend the whole turn reasoning. Qwen3.5 ignores `/no_think`; the
+  budget is what limits its reasoning.
+- The `rgb-agent` and `node-minimal` examples cap reasoning at 128 tokens.
+
+## [0.8.0] — 2026-10-07
+
+Core `@kaleidorg/mind` 0.8.0 and `@kaleidorg/mind-provider` 0.8.0.
+
+### Added
+
+- **Qwen3.5 model list** in `@kaleidorg/mind/qvac`: `QWEN35_MODELS` (Qwen3.5
+  0.8B / 2B / 4B / 9B and Qwen3.6 35B-A3B MoE, Q4_K_M, with exact sizes, RAM
+  hints and the matching `@qvac/sdk` constant names), `DEFAULT_MODEL_ID` and
+  `DEFAULT_SMALL_DEVICE_MODEL_ID` (both Qwen3.5 2B), `DEFAULT_QVAC_MODEL`,
+  `DEFAULT_SMALL_DEVICE_QVAC_MODEL` and `getRecommendedModel`.
+- **Agent guards** (`validateToolArgs`, `findUngroundedPaymentData`,
+  `detectWalletAction`, `hasCapableTool`, `DECLINED_TOOL_MESSAGE`):
+  - Tool arguments are validated against the tool's JSON Schema / Zod schema
+    (plus conditional rules for `rln_issue_asset`) before `onConfirm`. Invalid
+    calls return a tool error to the model; the user is not asked.
+    `onConfirm` now receives the validated (coerced) arguments and a
+    `summary` readback.
+  - A repeated identical tool call in one run is answered from the earlier
+    result instead of re-running; a third repeat forces a tool-less answer.
+    A confirm-gated call resets this cache.
+  - A final answer that contains an invoice, offer, LNURL, address or RGB
+    invoice that no tool returned and the user never typed is replaced with a
+    refusal (`EngineOptions.guardUngroundedPaymentData`, default on).
+  - `Engine.composeSkill(skills, query, base)` (and `selectAvailableSkill`,
+    `skillAvailable`) pick a skill that can act with the engine's tools:
+    skills whose `requires-tools` frontmatter is not fully live are skipped,
+    skills with at least one live tool are preferred. The funnel uses the same
+    selection.
+  - A wallet action (invoice, address, pay, send) that no exposed tool can
+    perform gets a fixed "I can't do that here" reply without inference
+    (`EngineOptions.guardMissingTools`, default on; funnel `route: 'no-tool'`).
+  - When the user declines every call in a turn the run ends with a fixed
+    "Cancelled — you declined: … Nothing was sent or changed." reply
+    (`EngineOptions.endTurnOnDecline`, default on).
+  - An empty answer after tool calls (e.g. reasoning used the whole output
+    budget) triggers one tool-less retry, then falls back to the last tool
+    result. `TurnOutput.incomplete` marks such turns; the QVAC provider sets
+    it.
+- Text tool-call recovery understands Qwen3.5's XML call format
+  (`<function=…><parameter=…>`).
+- Provider: catalog entries carry `recommended` (the 2B default) and
+  `tool_confirm_request` carries the optional `summary` readback.
+
+### Added
+
 - **Submarine swaps on the KaleidoSwap /v2 maker** (kaleidoswap-maker-rs): pay a
   Lightning invoice from Liquid funds.
   - New contract `SUBMARINE_TOOLS` (`kaleidoswap_submarine_pairs`, `_create`,
@@ -39,6 +136,32 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   any amount that isn't a positive safe integer after `precision` scaling.
 
 ### Changed
+
+- **Model catalog moved to Qwen3.5.** The provider and CLI catalogs, examples
+  and quickstarts now use Qwen3.5 2B by default: on an M4 it passed all 7 signet
+  RGB wallet tasks at 45–150 s per question; 4B was equally correct but about
+  twice as slow, 9B slower still, and 0.8B loops on actions.
+  Qwen3 (0.6B–30B-A3B) and Hermes 3 are removed: they garbled multi-argument
+  wallet calls such as `rln_issue_asset`. Previously downloaded GGUFs no longer
+  appear as installed catalog models; add them back by Hugging Face URL if
+  needed. The Qwen3.5 constants exist in every supported `@qvac/sdk` (0.13.1+),
+  so peer ranges are unchanged.
+- **Declines are attributed to the user.** A declined call returns
+  `{ status: 'cancelled_by_user', declined_by: 'user', tool, message }` (plus
+  `host_reason` when the host gave one) instead of
+  `{ declined: true, reason: 'user declined' }`.
+- Provider defaults: `KALEIDO_MIND_MAX_THINKING_TOKENS` 128 → 512 and
+  `KALEIDO_MIND_MAX_TOKENS` 512 → 1536. Qwen3.5 2B used 80–390 thinking tokens
+  per wallet turn; the old caps cut turns off before a tool call or answer.
+- RGB invoices are only treated as payment data when they carry a path or
+  beneficiary; plain `rgb:` asset ids never trip the payment-data guard.
+- `confirmReadback` never prints `NaN`: missing or non-numeric amounts read as
+  "an unspecified amount", and stray quotes/commas are trimmed from tickers.
+- `rgb-lightning-node` skill 0.3.3: `rln_list_assets` documents its optional
+  `schemas` filter and says to call it once; tickers must be resolved to an
+  `asset_id` via `rln_list_assets` before invoices, balances and sends; LN
+  invoices must come from the tool. `spark-wallet` declares
+  `requires-tools: spark_get_balance`.
 
 - **RGB issuance tools aligned with kaleido-mcp**, which now ships them as
   `wdk_*` / `rln_*`: `rln_list_transfers` takes `asset_id` (in-app wallets still

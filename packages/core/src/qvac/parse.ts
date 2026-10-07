@@ -4,6 +4,7 @@
  * is testable without loading a model, and so the same mapping runs on mobile,
  * desktop, and the eval harness.
  */
+import type { ToolCallError } from '../providers/types.js';
 import { cleanAssistantVisibleText } from './text.js';
 
 /**
@@ -32,6 +33,8 @@ export interface QvacFinalLike {
   raw?: { fullText?: string };
   /** Tool calls the model requested this turn (empty ⇒ final answer). */
   toolCalls?: Array<{ id?: string; name: string; arguments?: Record<string, unknown> }>;
+  /** Tool-call regions that failed to parse or validate (QVAC 0.20+; omitted when none). */
+  toolErrors?: ToolCallError[];
   /**
    * Why generation stopped: `"length"` when the token budget is exhausted,
    * `"cancelled"` on abort, `"eos"`/`"stopSequence"`/`undefined` on a natural stop. We surface
@@ -49,6 +52,8 @@ export interface ParsedTurn {
   rawContent: string;
   /** Tool calls the model requested (arguments defaulted to `{}`). */
   toolCalls: Array<{ id?: string; name: string; arguments: Record<string, unknown> }>;
+  /** Tool-call attempts the SDK could not parse, when no call was recovered from text. */
+  toolErrors?: ToolCallError[];
   /** True when generation was cut off by the token budget (incomplete output). */
   truncated: boolean;
   /** Raw stop reason from the SDK, when provided. */
@@ -90,6 +95,31 @@ function parseCallObject(
 }
 
 /**
+ * Parse Qwen3.5's XML call body:
+ * `<function=name><parameter=key>value</parameter>…</function>`. Values that
+ * read as JSON (numbers, booleans, arrays, objects) are decoded; the rest stay
+ * strings.
+ */
+function parseXmlCall(s: string): { name: string; arguments: Record<string, unknown> } | null {
+  const fn = s.match(/<function=([^>\s]+)\s*>([\s\S]*?)(?:<\/function>|$)/i);
+  if (!fn?.[1]) return null;
+  const args: Record<string, unknown> = {};
+  for (const m of (fn[2] ?? '').matchAll(/<parameter=([^>\s]+)\s*>([\s\S]*?)<\/parameter>/gi)) {
+    const raw = (m[2] ?? '').trim();
+    let value: unknown = raw;
+    if (/^(-?\d+(\.\d+)?|true|false|null|\[[\s\S]*\]|\{[\s\S]*\})$/.test(raw)) {
+      try {
+        value = JSON.parse(raw);
+      } catch {
+        value = raw;
+      }
+    }
+    args[m[1]!] = value;
+  }
+  return { name: fn[1], arguments: args };
+}
+
+/**
  * Recover tool calls a model emitted as PLAIN TEXT instead of structured frames
  * — `<tool_call>{"name":…,"arguments":…}</tool_call>` (Qwen/Hermes) or a bare
  * leading `{"name":…,"arguments":…}`. Small local models (and SDK builds that
@@ -101,7 +131,8 @@ export function extractTextToolCalls(
 ): Array<{ name: string; arguments: Record<string, unknown> }> {
   const calls: Array<{ name: string; arguments: Record<string, unknown> }> = [];
   for (const m of text.matchAll(/<tool_call\b[^>]*>([\s\S]*?)<\/tool_call>/gi)) {
-    const c = parseCallObject(m[1] ?? '');
+    const body = m[1] ?? '';
+    const c = parseCallObject(body) ?? parseXmlCall(body);
     if (c) calls.push(c);
   }
   if (calls.length) return calls;
@@ -139,6 +170,7 @@ export function finalToTurn(final: QvacFinalLike, streamed = ''): ParsedTurn {
     text,
     rawContent: final.raw?.fullText ?? rawText,
     toolCalls,
+    ...(toolCalls.length === 0 && final.toolErrors?.length ? { toolErrors: final.toolErrors } : {}),
     truncated: final.stopReason === 'length',
     stopReason: final.stopReason,
     stats: final.stats,

@@ -64,7 +64,7 @@ import {
   type ToolSource,
 } from '@kaleidorg/mind';
 import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
-import { createQvacProvider, firewallFromKeyList } from '@kaleidorg/mind/qvac';
+import { createQvacProvider, firewallFromKeyList, QWEN35_MODELS, DEFAULT_MODEL_ID } from '@kaleidorg/mind/qvac';
 
 // ─────────────────────────────────────────────────────────────────────
 // IO helpers
@@ -152,86 +152,21 @@ function subscribeSdkLogs(): void {
 // Catalog — single source of truth (mirror of desktop-app's fallback)
 // ─────────────────────────────────────────────────────────────────────
 
-// All entries below have been probe-verified to return HTTP 302 (public CDN redirect).
-const CATALOG: CatalogModel[] = [
-  {
-    id: 'qwen3-0.6b-q4_k_m',
-    family: 'qwen3',
-    displayName: 'Qwen 3 · 0.6B',
-    quant: 'Q4_K_M',
-    sizeBytes: 420_000_000,
-    hfRepo: 'unsloth/Qwen3-0.6B-GGUF',
-    hfFile: 'Qwen3-0.6B-Q4_K_M.gguf',
-    ramHintGb: 1,
-    notes: 'Tiny smoke-test model. Downloads in seconds. Use for end-to-end testing.',
-  },
-  {
-    id: 'qwen3-1.7b-q4_k_m',
-    family: 'qwen3',
-    displayName: 'Qwen 3 · 1.7B',
-    quant: 'Q4_K_M',
-    sizeBytes: 1_100_000_000,
-    hfRepo: 'unsloth/Qwen3-1.7B-GGUF',
-    hfFile: 'Qwen3-1.7B-Q4_K_M.gguf',
-    ramHintGb: 2,
-    notes: 'Fastest usable agent. Good for mobile / quick desktop tests.',
-  },
-  {
-    id: 'qwen3-4b-q4_k_m',
-    family: 'qwen3',
-    displayName: 'Qwen 3 · 4B',
-    quant: 'Q4_K_M',
-    sizeBytes: 2_400_000_000,
-    hfRepo: 'unsloth/Qwen3-4B-GGUF',
-    hfFile: 'Qwen3-4B-Q4_K_M.gguf',
-    ramHintGb: 4,
-    notes: 'Mobile sweet spot. Solid function calling.',
-  },
-  {
-    id: 'qwen3-8b-q4_k_m',
-    family: 'qwen3',
-    displayName: 'Qwen 3 · 8B',
-    quant: 'Q4_K_M',
-    sizeBytes: 5_000_000_000,
-    hfRepo: 'unsloth/Qwen3-8B-GGUF',
-    hfFile: 'Qwen3-8B-Q4_K_M.gguf',
-    ramHintGb: 7,
-    notes: 'Daily-driver desktop choice. Function calling out of the box.',
-  },
-  {
-    id: 'qwen3-14b-q4_k_m',
-    family: 'qwen3',
-    displayName: 'Qwen 3 · 14B',
-    quant: 'Q4_K_M',
-    sizeBytes: 9_000_000_000,
-    hfRepo: 'unsloth/Qwen3-14B-GGUF',
-    hfFile: 'Qwen3-14B-Q4_K_M.gguf',
-    ramHintGb: 12,
-    notes: 'Stronger reasoning. Solid on M4 24GB.',
-  },
-  {
-    id: 'qwen3-30b-a3b-q4_k_m',
-    family: 'qwen3',
-    displayName: 'Qwen 3 · 30B-A3B (MoE)',
-    quant: 'Q4_K_M',
-    sizeBytes: 17_000_000_000,
-    hfRepo: 'unsloth/Qwen3-30B-A3B-GGUF',
-    hfFile: 'Qwen3-30B-A3B-Q4_K_M.gguf',
-    ramHintGb: 20,
-    notes: 'MoE — 30B params, 3B active. Best quality / speed on M4 24GB.',
-  },
-  {
-    id: 'hermes-3-llama-3.1-8b-q4_k_m',
-    family: 'hermes',
-    displayName: 'Hermes 3 · Llama 3.1 8B',
-    quant: 'Q4_K_M',
-    sizeBytes: 5_000_000_000,
-    hfRepo: 'NousResearch/Hermes-3-Llama-3.1-8B-GGUF',
-    hfFile: 'Hermes-3-Llama-3.1-8B.Q4_K_M.gguf',
-    ramHintGb: 7,
-    notes: 'Agentic-tuned alternative. JSON-mode native.',
-  },
-];
+// Qwen3.5 family (plus Qwen3.6 MoE for big machines) — the same GGUFs as the
+// @qvac/sdk registry constants. Qwen3 and Hermes 3 were dropped: they garbled
+// multi-argument RGB tool calls. Older GGUFs can still be added by HF URL.
+const CATALOG: CatalogModel[] = QWEN35_MODELS.map((m) => ({
+  id: m.id,
+  family: m.family,
+  displayName: m.displayName,
+  quant: m.quant,
+  sizeBytes: m.sizeBytes,
+  hfRepo: m.hfRepo,
+  hfFile: m.hfFile,
+  ramHintGb: m.ramHintGb,
+  notes: m.notes,
+  ...(m.id === DEFAULT_MODEL_ID ? { recommended: true } : {}),
+}));
 
 const MODELS_DIR = join(homedir(), '.kaleido', 'models');
 const CUSTOM_MODELS_FILE = join(MODELS_DIR, 'custom-models.json');
@@ -545,12 +480,13 @@ function resetTurnStats(): void {
 }
 
 // Cap the model's <think> reasoning by TOKENS (not seconds — tok/s varies by
-// model + hardware, and the SDK exposes no numeric reasoning budget). ~128
-// thinking tokens keeps simple wallet actions short on slower local models.
+// model + hardware); sent as the SDK's reasoning_budget, so at the cap the model
+// closes its reasoning and answers. Qwen3.5 2B used 80–390 thinking tokens per
+// wallet turn on signet.
 // Tune with KALEIDO_MIND_MAX_THINKING_TOKENS (0 ⇒ unlimited).
 const MAX_THINKING_TOKENS: number | undefined = ((): number | undefined => {
   const env = process.env.KALEIDO_MIND_MAX_THINKING_TOKENS;
-  if (env === undefined || env === '') return 128;
+  if (env === undefined || env === '') return 512;
   const n = Number(env);
   return Number.isFinite(n) && n > 0 ? n : undefined; // 0 / invalid ⇒ unlimited
 })();
@@ -558,11 +494,12 @@ const MAX_THINKING_TOKENS: number | undefined = ((): number | undefined => {
 // Total-output backstop (predict / n_predict). The thinking cap only bites when
 // the model emits separate <think> tokens; a model that rambles in the VISIBLE
 // answer needs a hard total-token ceiling so a turn still can't run away.
-// 512 tokens is enough for wallet results without allowing a runaway answer.
+// The cap covers reasoning AND answer, so it must exceed the thinking cap with
+// room for a table of assets/channels.
 // Tune with KALEIDO_MIND_MAX_TOKENS (0 ⇒ uncapped).
 const MAX_OUTPUT_TOKENS: number | undefined = ((): number | undefined => {
   const env = process.env.KALEIDO_MIND_MAX_TOKENS;
-  if (env === undefined || env === '') return 512;
+  if (env === undefined || env === '') return 1536;
   const n = Number(env);
   return Number.isFinite(n) && n > 0 ? n : undefined;
 })();
@@ -1814,13 +1751,15 @@ function followupActions(prompt: string): SuggestedAction[] {
 const CONFIRM_TIMEOUT_MS = 120_000;
 const pendingConfirms = new Map<string, (d: { approved: boolean; reason?: string }) => void>();
 
-function requestToolConfirmation(call: {
+function requestToolConfirmation(request: {
   name: string;
   arguments: Record<string, unknown>;
+  summary?: string;
 }): Promise<{ approved: boolean; reason?: string }> {
+  const { summary, ...call } = request;
   const confirmId = randomUUID();
   diag(`confirm requested: ${call.name} (${confirmId})`);
-  emit({ type: 'tool_confirm_request', confirmId, call, timeoutMs: CONFIRM_TIMEOUT_MS });
+  emit({ type: 'tool_confirm_request', confirmId, call, ...(summary ? { summary } : {}), timeoutMs: CONFIRM_TIMEOUT_MS });
   return new Promise((resolve) => {
     const timer = setTimeout(() => {
       pendingConfirms.delete(confirmId);

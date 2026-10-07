@@ -111,6 +111,7 @@ export async function extractSlots(
       system,
       messages: [{ role: 'user', content: text }],
       tools: [extractTool],
+      toolChoice: EXTRACT_TOOL,
       signal,
     });
   } catch (err) {

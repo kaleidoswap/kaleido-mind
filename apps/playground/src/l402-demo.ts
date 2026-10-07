@@ -8,9 +8,10 @@
  * fully local.
  *
  *   pnpm --filter @kaleidorg/mind-playground exec tsx src/l402-demo.ts
- *   QVAC_MODEL_PATH=~/.kaleido/models/Qwen3-4B-Q4_K_M.gguf pnpm ... l402-demo.ts
+ *   QVAC_MODEL_PATH=~/.kaleido/models/Qwen3.5-2B-Q4_K_M.gguf pnpm ... l402-demo.ts
  */
 
+import { getRecommendedModel, DEFAULT_MODEL_ID } from '@kaleidorg/mind/qvac';
 import { createServer } from 'node:http';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
@@ -23,7 +24,7 @@ import {
 
 const MODEL_PATH =
   process.env.QVAC_MODEL_PATH ||
-  join(homedir(), '.kaleido', 'models', 'Qwen3-0.6B-Q4_K_M.gguf');
+  join(homedir(), '.kaleido', 'models', getRecommendedModel(DEFAULT_MODEL_ID)!.hfFile);
 
 async function startMockL402Server(): Promise<{ url: string; close: () => void; paidCount: () => number }> {
   let paid = 0;

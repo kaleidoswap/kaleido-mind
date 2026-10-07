@@ -24,6 +24,16 @@ export {
 } from './config.js';
 
 export {
+  QWEN35_MODELS,
+  DEFAULT_MODEL_ID,
+  DEFAULT_SMALL_DEVICE_MODEL_ID,
+  DEFAULT_QVAC_MODEL,
+  DEFAULT_SMALL_DEVICE_QVAC_MODEL,
+  getRecommendedModel,
+  type RecommendedModel,
+} from './models.js';
+
+export {
   finalToTurn,
   type QvacFinalLike,
   type ParsedTurn,

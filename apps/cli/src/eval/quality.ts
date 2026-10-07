@@ -89,7 +89,7 @@ export async function runQualitySuite(opts: QualityOpts): Promise<QualitySuiteRe
   const repeats = Math.max(1, opts.repeats ?? 3);
   const cases = qualityCases();
   const sdk = opts.mock ? null : await import('@qvac/sdk');
-  const modelIds = opts.models ?? ['qwen3-0.6b'];
+  const modelIds = opts.models ?? ['qwen3.5-0.8b'];
   const results: QualityResult[] = [];
   const total = modelIds.length * cases.length * repeats;
   let done = 0;

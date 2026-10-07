@@ -213,7 +213,7 @@ export async function runMultiStepSuite(opts: MultiOpts): Promise<MultiSuiteResu
   const modes = opts.modes ?? (['recipe', 'free'] as Mode[]);
   const cases = multiCases();
   const sdk = opts.mock ? null : await import('@qvac/sdk');
-  const modelIds = opts.models ?? ['qwen3-0.6b'];
+  const modelIds = opts.models ?? ['qwen3.5-0.8b'];
   const results: MultiResult[] = [];
   const total = modelIds.length * modes.length * cases.length * repeats;
   let done = 0;

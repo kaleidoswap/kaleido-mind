@@ -6,8 +6,9 @@ and confirmed by you first.
 
 | Command | Tools | Model |
 |---|---|---|
-| `pnpm start` | [kaleido-mcp](https://www.npmjs.com/package/kaleido-mcp) over stdio, on signet | Qwen3 1.7B via `@qvac/sdk` |
-| `pnpm start:mock` | in-process fake RLN (`MockWallet`) — no node needed | Qwen3 1.7B |
+| `pnpm start` | [kaleido-mcp](https://www.npmjs.com/package/kaleido-mcp) over stdio, on signet | Qwen3.5 2B via `@qvac/sdk` |
+| `pnpm start:mock` | in-process fake RLN (`MockWallet`) — no node needed | Qwen3.5 2B |
+| `OPENAI_BASE_URL=… OPENAI_MODEL=… pnpm start:mock` | fake RLN | any OpenAI-compatible server (Ollama, LM Studio, …) |
 | `pnpm start:offline` | fake RLN | scripted, no download (used in CI) |
 
 ```bash
@@ -33,6 +34,24 @@ pnpm start
 `RECIPIENT_INVOICE` is an RGB invoice created by another wallet; without it the
 send step is skipped. Spends prompt `[y/N]` on the terminal; `--yes` approves
 them automatically (mock runs only, please).
+
+## Eval
+
+`src/eval.ts` sends seven wallet requests through the full `Funnel` (fast path,
+recipes, skills, agentic loop) with the local model and checks each result:
+balance, asset list, asset issuance, RGB invoice, Lightning invoice, a
+KaleidoSwap quote (live only) and a send that is declined at the confirmation
+gate. It prints PASS/FAIL per request and exits 1 on any failure.
+
+```bash
+pnpm eval:mock                                   # fake RLN node, no node needed
+RLN_NODE_URL=http://localhost:3001 pnpm eval     # your signet node
+MODEL=QWEN3_5_2B_MULTIMODAL_Q4_K_M ONLY=issue,send OUT=eval.jsonl pnpm eval:mock
+```
+
+The live run issues a new test asset (approved at the gate), so the node needs
+a free colored UTXO and some signet sats. Each request takes from tens of
+seconds to a few minutes on a laptop.
 
 ## How it is wired
 

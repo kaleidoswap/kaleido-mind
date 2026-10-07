@@ -30,7 +30,7 @@ export const LOCAL_LLM_CONFIG_GPU = {
 
 /**
  * Delegated to a desktop provider — it has the RAM to run a big context, so give
- * the agentic prompt plenty of room (Qwen3-600M supports up to 32k). 2048
+ * the agentic prompt plenty of room (Qwen3.5 supports far more than this). 2048
  * overflowed with the system prompt + tool/skill definitions alone.
  */
 export const DELEGATE_LLM_CONFIG = {

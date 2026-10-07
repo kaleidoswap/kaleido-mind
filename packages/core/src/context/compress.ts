@@ -48,6 +48,7 @@ export const DEFAULT_PRESERVE_KEYS: readonly string[] = [
   'total',
   'total_sats',
   'balance',
+  'balance_display',
   'balance_sat',
   'address',
   'invoice',

@@ -41,10 +41,11 @@ export interface QvacProviderOptions {
   /** Default max output tokens — caps a turn so it can't ramble. Omit for uncapped. */
   defaultMaxTokens?: number;
   /**
-   * Cap `<think>` reasoning at this many TOKENS (not seconds — tok/s varies, and
-   * the SDK has no numeric reasoning budget). When a turn's thinking exceeds it,
-   * the run is cancelled and a short fallback is returned instead of hanging on
-   * "Thinking…". Omit for unlimited reasoning.
+   * Cap `<think>` reasoning at this many TOKENS (not seconds — tok/s varies).
+   * Sent as the SDK's `reasoning_budget`, so the model closes its reasoning and
+   * answers. If the stream still runs well past it, the run is cancelled and a
+   * short fallback is returned instead of hanging on "Thinking…". Omit for
+   * unlimited reasoning.
    */
   maxThinkingTokens?: number;
   /** Stream the model's `<think>` reasoning, when a host wants to surface it. */
@@ -93,13 +94,23 @@ export function createQvacProvider(options: QvacProviderOptions): LLMProvider {
       // when a value is set so a host that passes neither keeps SDK defaults.
       const temp = input.temperature ?? options.defaultTemperature;
       const predict = input.maxTokens ?? options.defaultMaxTokens;
-      const generationParams =
-        temp !== undefined || predict !== undefined
-          ? {
-              ...(temp !== undefined ? { temp } : {}),
-              ...(predict !== undefined ? { predict } : {}),
-            }
-          : undefined;
+      // A thinking budget at or above the output cap never binds: the model can
+      // spend the whole turn reasoning and return no answer. Keep half for it.
+      const thinkingCap = input.maxThinkingTokens ?? options.maxThinkingTokens;
+      const maxThinkingTokens =
+        thinkingCap !== undefined && predict !== undefined && thinkingCap >= predict
+          ? Math.floor(predict / 2)
+          : thinkingCap;
+      // `tool_choice` is only meaningful with tools; the SDK rejects a named
+      // choice that isn't among them.
+      const toolChoice = tools && input.toolChoice ? input.toolChoice : undefined;
+      const generationParamsRaw = {
+        ...(temp !== undefined ? { temp } : {}),
+        ...(predict !== undefined ? { predict } : {}),
+        ...(maxThinkingTokens !== undefined ? { reasoning_budget: maxThinkingTokens } : {}),
+        ...(toolChoice ? { tool_choice: toolChoice } : {}),
+      };
+      const generationParams = Object.keys(generationParamsRaw).length ? generationParamsRaw : undefined;
 
       const run = options.completion({
         modelId,
@@ -129,11 +140,13 @@ export function createQvacProvider(options: QvacProviderOptions): LLMProvider {
         }
       }
 
-      const maxThinkingTokens = input.maxThinkingTokens ?? options.maxThinkingTokens;
       const result = await consumeRun(run, {
         onToken: input.onToken,
         onThinking: input.onThinking ?? options.onThinking,
-        maxThinkingTokens,
+        // Backstop only: the SDK enforces the budget itself, and our count is a
+        // char-based estimate, so leave headroom before cancelling.
+        maxThinkingTokens:
+          maxThinkingTokens === undefined ? undefined : Math.ceil(maxThinkingTokens * 1.25) + 32,
         // Cancel the in-flight run the moment the thinking budget is blown — the
         // SDK keeps generating otherwise. Fire-and-forget; `final` then resolves.
         onThinkingBudgetExceeded: () => {
@@ -175,12 +188,16 @@ export function createQvacProvider(options: QvacProviderOptions): LLMProvider {
         ...(result.stopReason ? { stopReason: result.stopReason } : {}),
       };
 
+      const incomplete =
+        !result.text && result.toolCalls.length === 0 && (result.thinkingBudgetExceeded || !!result.truncated);
       return {
         text,
         rawContent: result.rawContent,
         toolCalls: result.toolCalls,
+        ...(result.toolErrors ? { toolErrors: result.toolErrors } : {}),
         requestId: result.requestId,
         inference,
+        ...(incomplete ? { incomplete: true } : {}),
       };
     },
 

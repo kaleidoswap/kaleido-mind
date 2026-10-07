@@ -26,7 +26,8 @@ npm i @kaleidorg/mind @qvac/sdk
 ```
 
 You need `@qvac/sdk` only to run QVAC models. The engine accepts any
-`LLMProvider`, and `@kaleidorg/mind/testing` includes a scripted provider that
+`LLMProvider`: `@kaleidorg/mind/openai` talks to any OpenAI-compatible server
+(see below), and `@kaleidorg/mind/testing` includes a scripted provider that
 needs no model. To connect MCP servers, also install
 `@modelcontextprotocol/sdk`.
 
@@ -35,6 +36,27 @@ needs no model. To connect MCP servers, also install
 | 0.19 – 0.21 | Supported (tested with 0.21.0). There is no P2P delegated inference: QVAC removed `startQVACProvider` / `loadModel({ delegate })` in 0.19. |
 | 0.13.1 – 0.18 | Supported, including P2P delegation (`buildDelegateConfig`, `allowListFirewall`). |
 
+The Qwen3.5 model constants used below (`QWEN3_5_*_MULTIMODAL_Q4_K_M`) exist in
+every supported `@qvac/sdk` version (0.13.1+).
+
+## Models
+
+We recommend Qwen3.5. Qwen3 (0.6B–4B) and Hermes 3 kept mangling the arguments of
+multi-field wallet calls such as `rln_issue_asset`, so they are no longer in the
+catalog; any GGUF still loads by path or Hugging Face URL.
+
+| Model | `@qvac/sdk` constant | Download | RAM | Use |
+|---|---|---|---|---|
+| Qwen3.5 0.8B | `QWEN3_5_0_8B_MULTIMODAL_Q4_K_M` | 0.53 GB | ~1.5 GB | Smoke tests only; loops on wallet actions |
+| Qwen3.5 2B | `QWEN3_5_2B_MULTIMODAL_Q4_K_M` | 1.3 GB | ~3 GB | **Default.** All 7 signet RGB wallet tasks passed, 45–150 s per question on an M4 |
+| Qwen3.5 4B | `QWEN3_5_4B_MULTIMODAL_Q4_K_M` | 2.7 GB | ~5 GB | Same correctness, ~2× slower (105–330 s) |
+| Qwen3.5 9B | `QWEN3_5_9B_MULTIMODAL_Q4_K_M` | 5.7 GB | ~9 GB | 16 GB machines; slow for chat (180–690 s) |
+| Qwen3.6 35B-A3B (MoE) | `QWEN3_6_35B_A3B_MULTIMODAL_Q4_K_M` | 22 GB | ~26 GB | 32 GB+ machines |
+
+The same list is exported as data from `@kaleidorg/mind/qvac` (`QWEN35_MODELS`,
+`DEFAULT_MODEL_ID`, `DEFAULT_QVAC_MODEL`, `DEFAULT_SMALL_DEVICE_QVAC_MODEL`).
+Only the text weights are loaded; the vision projector is not needed.
+
 ## Quickstart (5 minutes)
 
 This example loads a small GGUF model through QVAC, registers one tool and one
@@ -42,14 +64,13 @@ skill, and runs one turn.
 
 ```ts
 // quickstart.ts — run with: npx tsx quickstart.ts
-import { completion, cancel, loadModel, unloadModel, close, QWEN3_1_7B_INST_Q4 } from '@qvac/sdk';
+import { completion, cancel, loadModel, unloadModel, close, QWEN3_5_2B_MULTIMODAL_Q4_K_M } from '@qvac/sdk';
 import { Engine, InProcessToolSource, SkillRegistry, ToolRegistry } from '@kaleidorg/mind';
 import { createQvacProvider } from '@kaleidorg/mind/qvac';
 
-// 1. Model: Qwen3 1.7B Q4 (~1 GB, cached after the first download).
-//    QWEN3_600M_INST_Q4 (~380 MB) also works but is weaker at tool calls.
+// 1. Model: Qwen3.5 2B Q4 (~1.3 GB, cached after the first download).
 const modelId = await loadModel({
-  modelSrc: QWEN3_1_7B_INST_Q4,
+  modelSrc: QWEN3_5_2B_MULTIMODAL_Q4_K_M,
   modelConfig: { ctx_size: 4096, tools: true }, // `tools: true` turns on tool calling
 });
 const provider = createQvacProvider({ completion, cancel, getModelId: () => modelId, defaultTemperature: 0.2 });
@@ -81,8 +102,9 @@ Call get_btc_price, then answer in one sentence with the number.`);
 
 // 4. A turn.
 const question = 'What is bitcoin worth in EUR?';
-const { system, allowedTools } = skills.compose('You are a concise assistant.', skills.select(question));
 const engine = new Engine({ provider, tools });
+// composeSkill picks a skill that can act with these tools, then composes its prompt.
+const { system, allowedTools } = await engine.composeSkill(skills, question, 'You are a concise assistant.');
 const result = await engine.runAgentic(
   [{ role: 'system', content: system }, { role: 'user', content: question }],
   { allowedTools },
@@ -96,12 +118,37 @@ await close();
 A runnable copy (with a `--mock` mode) is in
 [`examples/node-minimal`](https://github.com/kaleidoswap/kaleido-mind/tree/main/examples/node-minimal).
 
+## Models you already serve
+
+`createOpenAICompatibleProvider` runs the same engine on any server that speaks
+the OpenAI Chat Completions API with tool calling: Ollama, LM Studio, llama.cpp
+`llama-server`, vLLM, `qvac serve` or a hosted API. It has no dependencies
+(it uses `fetch`).
+
+```ts
+import { createOpenAICompatibleProvider } from '@kaleidorg/mind/openai';
+
+const provider = createOpenAICompatibleProvider({
+  baseUrl: 'http://localhost:11434/v1', // Ollama
+  model: 'qwen3.5:2b',
+  apiKey: process.env.OPENAI_API_KEY,    // optional; sent as a bearer token
+  defaultTemperature: 0.1,
+  defaultMaxTokens: 1536,
+});
+```
+
+It streams tokens, forwards `toolChoice` as `tool_choice`, reports arguments
+that are not valid JSON as `toolErrors` (so the engine retries once), and
+aborts the request on `signal`. Reasoning deltas (`reasoning_content`) go to
+`onThinking`. Server-specific fields go in `extraBody`.
+
 ## Subpath exports
 
 | Import | What it gives you | Runtime |
 |---|---|---|
 | `@kaleidorg/mind` | `Engine`, `Funnel` (fast-path → recipe → agent), `ToolRegistry`, `InProcessToolSource`, `SkillRegistry`, wallet / KaleidoSwap / LSPS1 / Bitrefill / Flashnet contracts and binders, `confirmReadback`, recipes, memory, RAG, context budgeting, L402 and CLI tool sources | Any (RN-safe) |
 | `@kaleidorg/mind/qvac` | `createQvacProvider`, `toQvacTools`, `consumeRun`, voice (`createQvacVoice`, `runVoiceAssistant`), model configs, delegation helpers | Any; you inject the SDK functions |
+| `@kaleidorg/mind/openai` | `createOpenAICompatibleProvider` for Ollama, LM Studio, llama.cpp, vLLM, hosted APIs | Any with `fetch` |
 | `@kaleidorg/mind/mcp` | `McpToolSource`: tools from an MCP server over stdio or streamable HTTP | Node |
 | `@kaleidorg/mind/skills` | `loadSkillsDir`, `loadSkillFromDir`, `packagedSkillsDir()` (the 14 bundled skills) | Node (fs) |
 | `@kaleidorg/mind/testing` | `MockWallet` (stateful fake wallet bound to the real contract), `scriptedProvider` | Any |
@@ -161,9 +208,14 @@ Never guess an address.
 ```ts
 import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
 const skills = new SkillRegistry([...loadSkillsDir(packagedSkillsDir()), ...loadSkillsDir('./skills')]);
-const skill = skills.select(userText);                 // keyword selector by default
-const { system, allowedTools } = skills.compose(baseSystem, skill);
+// Skips skills whose tools the engine's registry lacks (e.g. spark-wallet with
+// no Spark tools), so the model never runs inside a skill it can't act in.
+const { skill, system, allowedTools } = await engine.composeSkill(skills, userText, baseSystem);
 ```
+
+`skills.select()` alone only scores keywords; prefer `engine.composeSkill()`
+(or `selectAvailableSkill(skills, text, liveToolNames)`). The `Funnel` does this
+for you.
 
 ## The wallet tool contract
 
@@ -183,6 +235,42 @@ spend flags. Use `walletTools({ layers })` to select tools,
 🔒 = `requiresConfirmation`. `confirmReadback(call)` turns a pending call into a
 deterministic sentence for your confirm sheet, e.g. *"Send 5 USDT to utxob:…ij90
 over RLN. Confirm?"*.
+
+### Agent guards
+
+The engine and funnel check the model's tool use before anything reaches the
+user:
+
+- **Schema validation.** Arguments are checked against the tool's JSON Schema
+  (or Zod schema) before `onConfirm`: required fields, types, enums, ranges,
+  finite numbers. Invalid calls go back to the model as a tool error and the
+  user is never asked. `onConfirm` receives the validated arguments plus a
+  `summary` readback.
+- **Repeated calls.** A second identical call (same name and arguments) is not
+  re-run; the model gets the earlier result and is told to answer. A third
+  forces a final answer with no tools.
+- **Declines end the turn.** When the user declines every call in a turn, the
+  run ends with a fixed reply ("Cancelled — you declined: Create 5 RGB UTXOs
+  on-chain over RLN. Nothing was sent or changed.") and no further inference.
+  The tool result in history is the same for every tool:
+  `{ status: 'cancelled_by_user', declined_by: 'user', tool, message }`.
+  Turn it off with `endTurnOnDecline: false`.
+- **No empty answers.** If the model runs tools but its answer comes back empty
+  (reasoning used the output budget), the engine asks once more without tools,
+  then falls back to showing the last tool result.
+- **No made-up payment data.** A final answer containing an invoice, offer,
+  address or RGB invoice that no tool returned and the user never typed is
+  replaced with a refusal (`guardUngroundedPaymentData`, default on).
+- **Skills that can act.** `engine.composeSkill()` and the funnel skip skills
+  whose `requires-tools` are not live and prefer skills with at least one live
+  tool. If the request is a wallet action (create an invoice, get an address,
+  pay, send) and no exposed tool can do it, the engine answers "I can't do that
+  here" without calling the model (`guardMissingTools`, default on).
+
+Qwen3.5 reasons before it answers: in our signet runs the 2B model used 80–390
+thinking tokens per turn. Keep `maxThinkingTokens` around 512 and the output cap
+(`defaultMaxTokens`) well above it (we use 1536); a tighter cap cuts the turn
+off before it calls a tool or answers.
 
 ```ts
 const wallet = bindWalletTools(

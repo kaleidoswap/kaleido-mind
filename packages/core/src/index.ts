@@ -20,6 +20,8 @@ export type {
 export type {
   InferenceMetrics,
   LLMProvider,
+  ToolCallError,
+  ToolChoice,
   TurnInput,
   TurnOutput,
 } from './providers/types.js';
@@ -55,6 +57,19 @@ export type {
   BindWalletOptions,
 } from './wallet/contract.js';
 export { confirmReadback } from './wallet/confirm.js';
+export {
+  validateToolArgs,
+  findUngroundedPaymentData,
+  detectWalletAction,
+  hasCapableTool,
+  wantsToolCall,
+  fixSatsBtcConversions,
+  formatSatsAsBtc,
+  DECLINED_TOOL_MESSAGE,
+  declinedToolResult,
+} from './guards.js';
+export { annotateRgbBalances, fixRgbBalanceUnits, formatRgbAmount } from './context/rgb-units.js';
+export type { ArgValidation, UngroundedItem, WalletAction } from './guards.js';
 
 // ── KaleidoSwap maker tool contract (single source of truth) ────────────────
 export {
@@ -225,10 +240,11 @@ export type {
 } from './knowledge/btc-map.js';
 
 export { Engine } from './engine.js';
-export type { EngineOptions, AgenticOptions, AgenticResult } from './engine.js';
+export type { EngineOptions, AgenticOptions, AgenticResult, ComposedSkill } from './engine.js';
 
 // ── Funnel (T0 fast-path → T2 recipe → T1 agentic — the tiered agent) ───────
 export { Funnel, DEFAULT_WALLET_SYSTEM } from './funnel.js';
+export { skillAvailable, selectAvailableSkill } from './skills/select.js';
 export type { FunnelOptions, FunnelSettings, FunnelCallbacks, FunnelResult } from './funnel.js';
 
 export {

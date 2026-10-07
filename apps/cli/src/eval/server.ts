@@ -123,7 +123,7 @@ const PAGE = `<!doctype html><html><head><meta charset="utf-8"><title>KaleidoMin
 
  <div class="panel">
    <div class="row">
-     <span><label>models</label><input id="models" placeholder="qwen3-0.6b,qwen3-4b" size="26"></span>
+     <span><label>models</label><input id="models" placeholder="qwen3.5-0.8b,qwen3.5-4b" size="26"></span>
      <span><label>per</label><input id="per" type="number" value="2" style="width:54px"></span>
      <span><label>repeats</label><input id="repeats" type="number" value="3" style="width:54px"></span>
      <span><label>sample</label><input id="sample" type="number" placeholder="all" style="width:60px"></span>

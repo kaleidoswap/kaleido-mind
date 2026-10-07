@@ -1,6 +1,6 @@
 {
   "name": "@kaleidorg/mind",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Local-first reasoning + function-calling engine for KaleidoSwap. QVAC-powered.",
   "license": "Apache-2.0",
   "type": "module",
@@ -39,6 +39,11 @@
       "types": "./dist/qvac/index.d.ts",
       "import": "./dist/qvac/index.js",
       "default": "./dist/qvac/index.js"
+    },
+    "./openai": {
+      "types": "./dist/providers/openai.d.ts",
+      "import": "./dist/providers/openai.js",
+      "default": "./dist/providers/openai.js"
     },
     "./testing": {
       "types": "./dist/testing/index.d.ts",

@@ -14,11 +14,29 @@ are never asked to do the slow or weak parts.
 [examples](./examples) ·
 [architecture](./docs/ARCHITECTURE.md)
 
+## Start a project
+
+```bash
+npm create @kaleidorg/mind my-agent
+cd my-agent && npm install
+npm run start:offline   # fake node + scripted model: checks the setup, no download
+npm run start:mock      # fake node + Qwen3.5 2B on-device
+```
+
+The starter is a standalone copy of [`examples/rgb-agent`](./examples/rgb-agent):
+a local model that operates an RGB Lightning Node on signet, with an eval
+(`npm run eval:mock`). It runs on QVAC by default; with Ollama, LM Studio or any
+OpenAI-compatible server, set `OPENAI_BASE_URL` and `OPENAI_MODEL`.
+
 ## Use it in your app
 
 ```bash
 npm i @kaleidorg/mind @qvac/sdk
 ```
+
+`@qvac/sdk` is only needed for on-device QVAC models. To use a model you
+already serve, use `createOpenAICompatibleProvider` from
+`@kaleidorg/mind/openai` instead.
 
 The [package README](./packages/core/README.md) covers a five-minute QVAC
 quickstart, the subpath exports, the wallet tool contract, connecting MCP
@@ -100,12 +118,12 @@ frontmatter lines are read by the mind runtime; Claude ignores them.
 | Example | What it does | Run |
 |---|---|---|
 | [`node-minimal`](./examples/node-minimal) | Engine + QVAC local model + one in-process tool, routed by one skill | `pnpm start` / `pnpm start:mock` |
-| [`rgb-agent`](./examples/rgb-agent) | A local model operates an RGB Lightning Node through kaleido-mcp on signet: RGB balances, RGB invoice, asset send behind a confirm gate | `pnpm start` / `pnpm start:mock` / `pnpm start:offline` |
+| [`rgb-agent`](./examples/rgb-agent) | A local model operates an RGB Lightning Node through kaleido-mcp on signet: RGB balances, RGB invoice, asset send behind a confirm gate. Also what `npm create @kaleidorg/mind` generates | `pnpm start` / `pnpm start:mock` / `pnpm start:offline` / `pnpm eval:mock` |
 
 ```bash
 corepack enable
 pnpm install && pnpm build
-cd examples/node-minimal && pnpm start      # downloads Qwen3 1.7B (~1 GB) on first run
+cd examples/node-minimal && pnpm start      # downloads Qwen3.5 2B (~1.3 GB) on first run
 cd ../rgb-agent && pnpm start:mock          # fake RLN node, real local model
 ```
 
