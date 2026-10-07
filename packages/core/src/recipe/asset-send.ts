@@ -69,7 +69,7 @@ export const assetSendRecipe: Recipe = {
     tool: 'rln_send_asset',
     args: (ctx: RecipeContext) => {
       const contact = ctx.results.contact as { ln_address?: string } | undefined;
-      return { asset: ctx.slots.asset, amount: ctx.slots.amount, to: contact?.ln_address ?? ctx.slots.recipient };
+      return { asset_id: ctx.slots.asset, amount: ctx.slots.amount, recipient_id: contact?.ln_address ?? ctx.slots.recipient };
     },
   },
   summary: (ctx) => {
