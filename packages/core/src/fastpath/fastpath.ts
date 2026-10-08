@@ -22,6 +22,12 @@ export interface FastIntent {
   match: (text: string) => boolean;
   /** Optional args derived from the text (default: none). */
   args?: (text: string) => Record<string, unknown>;
+  /**
+   * Extra reads added to the answer when `when(text)` holds, e.g. the RGB
+   * asset list for "my BTC and USDT balance". The first tool the host has is
+   * called; its result reaches the renderer under `name`.
+   */
+  also?: Array<{ name: string; tools: string[]; when: (text: string) => boolean }>;
 }
 
 export interface FastHit {
@@ -56,6 +62,8 @@ export class FastPath {
 // A "spend or compound" guard — never fast-path anything that moves money or
 // chains another action ("send", "pay", "and then", "swap").
 const ACTIONY = /\b(send|pay|transfer|swap|buy|sell|then|after that)\b/i;
+// A balance question that names an RGB asset also wants the asset balances.
+const NAMES_ASSET = /\b(usdt|xaut|rgb|assets?|tokens?)\b/i;
 // Asks that create something are not reads, even when they mention assets.
 const CREATEY = /\b(issue|mint|create|make|new|generate|invoice|receive|request)\b/i;
 
@@ -65,6 +73,7 @@ export const WALLET_FAST_INTENTS: FastIntent[] = [
     name: 'balance',
     tool: 'get_balances',
     fallbackTools: ['rln_get_balances', 'wdk_get_balances'],
+    also: [{ name: 'assets', tools: ['rln_list_assets', 'wdk_list_assets'], when: (t) => NAMES_ASSET.test(t) }],
     match: (t) => !ACTIONY.test(t) && /\b(balance|funds|how much (do i|have i|i have)|how much.* (do i have|in my wallet))\b/i.test(t),
   },
   {

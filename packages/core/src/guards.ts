@@ -358,3 +358,34 @@ export function callKey(name: string, args: Record<string, unknown>): string {
         : v;
   return `${name}:${JSON.stringify(canon(args ?? {}))}`;
 }
+
+const LAYERS: Array<{ label: string; named: RegExp; prefixes: string[] }> = [
+  { label: 'Spark wallet', named: /\bspark\b/i, prefixes: ['spark_', 'flashnet_'] },
+  { label: 'Arkade wallet', named: /\b(arkade|ark)\b/i, prefixes: ['arkade_', 'ark_', 'bark_'] },
+  { label: 'Liquid wallet', named: /\bliquid\b/i, prefixes: ['liquid_', 'lwk_'] },
+];
+
+const WALLET_REQUEST = /\b(wallet|balance|address|invoice|send|receive|pay|swap|deposit|withdraw|transfer|move|fund|my)\b/i;
+
+const CONNECTED: Array<{ label: string; prefixes: string[] }> = [
+  { label: 'the RGB Lightning Node', prefixes: ['rln_', 'wdk_'] },
+  { label: 'KaleidoSwap', prefixes: ['kaleidoswap_'] },
+  ...LAYERS.map((l) => ({ label: `the ${l.label}`, prefixes: l.prefixes })),
+];
+
+/**
+ * A fixed reply when the request names a wallet whose tools aren't loaded
+ * ("send to my Spark wallet" on an RLN-only host), or null. Without it a
+ * small model improvises with whatever tools it has.
+ */
+export function missingLayerReply(text: string, toolNames: string[]): string | null {
+  // Only for requests that use a wallet; "what is Spark?" is a question, not a request.
+  if (!WALLET_REQUEST.test(text)) return null;
+  const has = (prefixes: string[]) => toolNames.some((n) => prefixes.some((p) => n.startsWith(p)));
+  const missing = LAYERS.find((l) => l.named.test(text) && !has(l.prefixes));
+  if (!missing) return null;
+  const available = CONNECTED.filter((c) => has(c.prefixes)).map((c) => c.label);
+  return `There's no ${missing.label} connected here, so I can't do that with it.` +
+    (available.length ? ` I can use ${available.join(' and ')}.` : '');
+}
+

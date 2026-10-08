@@ -45,9 +45,12 @@ function renderAssets(r: unknown): string {
   return `Your RGB assets:\n${rows.join('\n')}`;
 }
 
-export function defaultRenderFast(intent: string, result: unknown): string {
+export function defaultRenderFast(intent: string, result: unknown, extra?: Record<string, unknown>): string {
   const r = parse(result) as Obj;
-  if (intent === 'balance') return renderBalance(r ?? {});
+  if (intent === 'balance') {
+    const text = renderBalance(r ?? {});
+    return extra && 'assets' in extra ? `${text}\n${renderAssets(parse(extra.assets))}` : text;
+  }
   if (intent === 'assets') return renderAssets(r);
   if (intent === 'address') {
     return r?.address ? `Here's your receive address:\n\n\`${r.address}\`` : 'No address available right now.';
