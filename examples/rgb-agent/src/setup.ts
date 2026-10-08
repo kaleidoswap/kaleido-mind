@@ -50,7 +50,8 @@ export async function createTools(opts: {
     transport: {
       kind: 'stdio',
       command: 'npx',
-      args: ['-y', 'kaleido-mcp'],
+      // 0.4.5+: quotes carry the rgb: asset id the swap channel check needs.
+      args: ['-y', 'kaleido-mcp@^0.4.5'],
       env: { ...(process.env as Record<string, string>), KALEIDO_NETWORK: process.env.KALEIDO_NETWORK ?? 'signet' },
     },
     allow: opts.allow,

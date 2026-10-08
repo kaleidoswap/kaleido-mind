@@ -30,6 +30,8 @@ export interface RunRecipeOptions {
   pollIntervalMs?: number;
   /** Override the recipe's poll timeout (tests). */
   pollTimeoutMs?: number;
+  /** Override steps' `recheckAfterMs` (tests). */
+  recheckAfterMs?: number;
   signal?: AbortSignal;
 }
 
@@ -254,22 +256,29 @@ export async function runRecipe(recipe: Recipe, text: string, opts: RunRecipeOpt
       if (step.skipIf?.(ctx)) continue;
       const args = step.args(ctx);
       if (!(await passesGate(step.tool, args))) return cancelled();
-      let result: unknown;
-      if (step.optional) {
+      const runStep = async (): Promise<unknown> => {
+        if (!step.optional) return opts.tools.execute(step.tool, args);
         try {
-          result = await opts.tools.execute(step.tool, args);
-          if (toolFailure(result)) result = undefined;
+          const r = await opts.tools.execute(step.tool, args);
+          return toolFailure(r) ? undefined : r;
         } catch {
-          result = undefined;
+          return undefined;
         }
-      } else {
-        result = await opts.tools.execute(step.tool, args);
-      }
+      };
+      let result = await runStep();
       ctx.results[step.as ?? step.tool] = result;
       opts.onStep?.(step.tool, args, result);
       const failure = step.optional ? null : toolFailure(result);
       if (failure) return failedResult(recipe, ctx, inferences, failure);
-      const problem = step.check?.(ctx);
+      let problem = step.check?.(ctx);
+      const recheck = opts.recheckAfterMs ?? step.recheckAfterMs;
+      if (problem && recheck !== undefined && !opts.signal?.aborted) {
+        await new Promise((r) => setTimeout(r, recheck));
+        result = await runStep();
+        ctx.results[step.as ?? step.tool] = result;
+        opts.onStep?.(step.tool, args, result);
+        problem = step.check?.(ctx);
+      }
       if (problem) return failedResult(recipe, ctx, inferences, problem);
     }
 
