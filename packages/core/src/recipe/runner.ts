@@ -250,11 +250,23 @@ export async function runRecipe(recipe: Recipe, text: string, opts: RunRecipeOpt
       if (step.skipIf?.(ctx)) continue;
       const args = step.args(ctx);
       if (!(await passesGate(step.tool, args))) return cancelled();
-      const result = await opts.tools.execute(step.tool, args);
+      let result: unknown;
+      if (step.optional) {
+        try {
+          result = await opts.tools.execute(step.tool, args);
+          if (toolFailure(result)) result = undefined;
+        } catch {
+          result = undefined;
+        }
+      } else {
+        result = await opts.tools.execute(step.tool, args);
+      }
       ctx.results[step.as ?? step.tool] = result;
       opts.onStep?.(step.tool, args, result);
-      const failure = toolFailure(result);
+      const failure = step.optional ? null : toolFailure(result);
       if (failure) return failedResult(recipe, ctx, inferences, failure);
+      const problem = step.check?.(ctx);
+      if (problem) return failedResult(recipe, ctx, inferences, problem);
     }
 
     // Final action.

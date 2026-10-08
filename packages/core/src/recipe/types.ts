@@ -35,6 +35,13 @@ export interface RecipeStep {
   as?: string;
   /** Skip this step when true (e.g. recipient is already an address). */
   skipIf?: (ctx: RecipeContext) => boolean;
+  /** A missing or failing tool doesn't stop the recipe (the result is then undefined). */
+  optional?: boolean;
+  /**
+   * Runs after the step's result is stored. A returned message stops the
+   * recipe there, before any later confirmation or spend.
+   */
+  check?: (ctx: RecipeContext) => string | null;
 }
 
 export interface Recipe {

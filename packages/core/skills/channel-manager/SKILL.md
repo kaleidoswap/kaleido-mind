@@ -23,8 +23,8 @@ numbers from this turn's results only. All `*_sat` fields are sats.
   3. `kaleidoswap_lsp_estimate_fees`, show `total_fee`.
   4. `kaleidoswap_lsp_create_order` with `client_pubkey` from `rln_get_node_info`.
      `lsp_balance_sat` (min 50,000) is inbound; `client_balance_sat` is your
-     outbound, paid by you. For a BTC→asset swap add `asset_id` (the `rgb:` id)
-     and `lsp_asset_amount` in raw units (USDT: 10 USDT = 10000000).
+     outbound, paid by you. BTC→asset swap: add `asset_id` (`rgb:` id),
+     `lsp_asset_amount` raw (10 USDT = 10000000), `client_balance_sat` ≥ swap + 6,000.
   5. Pay `amount_due_sat` (fee + `client_balance_sat`), never `fee_sat`.
      With no channel, pay on-chain: `rln_send_btc` to `payment.onchain.address`.
   6. Poll `kaleidoswap_lsp_get_order` with `order_id` + `access_token`, then

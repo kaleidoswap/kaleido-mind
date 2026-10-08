@@ -9,8 +9,11 @@ Field names are kaleido-mcp 0.4.2.
 - Swap BTC → USDT/XAUT over Lightning: you send BTC and receive the asset, so
   the channel needs BTC outbound (`client_balance_sat`) and asset inbound
   (`asset_id` + `lsp_asset_amount`, raw units = display × 10^precision).
-  An RGB Lightning payment carries at least 3,000 sats, and outbound is about
-  1,000 sats less than `client_balance_sat`, so use at least 4,000.
+  The BTC leg goes out as one payment of the swap amount plus 3,000 sats
+  (the RGB node's HTLC minimum), and outbound is about 1,000 sats less than
+  `client_balance_sat`. So set `client_balance_sat` to at least the largest
+  swap you plan + 6,000. With 4,000 (the example below) the channel works but
+  no BTC → asset swap fits.
 - Swap USDT/XAUT → BTC: you need the asset on your side; buy it with
   `kaleidoswap_lsp_quote_asset_channel` → `kaleidoswap_lsp_create_asset_channel`.
 
@@ -20,7 +23,8 @@ Field names are kaleido-mcp 0.4.2.
    (50,000 on signet), `max_channel_expiry_blocks`, and the asset ids.
 2. `rln_connect_peer {"peer_pubkey_and_addr":"<lsp_connection_url>"}`
 3. `kaleidoswap_lsp_estimate_fees {"lsp_balance_sat":50000,"client_balance_sat":4000,"channel_expiry_blocks":4320,"asset_id":"<rgb:… USDT id>","lsp_asset_amount":10000000}`
-   → `total_fee` 2,972.
+   → `total_fee` 2,972. (A 4,000-sat `client_balance_sat` buys inbound only;
+   for a 20,000-sat swap use 26,000.)
 4. Confirm the ORDER with the user, showing the order total (the estimate's
    `total_fee` + `client_balance_sat`). `kaleidoswap_lsp_create_order` is
    confirmation-gated on MCP hosts.
