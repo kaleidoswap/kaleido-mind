@@ -95,6 +95,40 @@ function swapstringLegs(swapstring: string): string | undefined {
   return `${leg(qtyFrom, from)} ⇄ ${leg(qtyTo, to)}`;
 }
 
+function expiresIn(expiresAt: unknown): string {
+  const t = Number(expiresAt);
+  if (!Number.isFinite(t) || t <= 0) return '';
+  const secs = Math.round((t > 1e12 ? t : t * 1000) / 1000 - Date.now() / 1000);
+  return secs > 0 ? ` (quote expires in ${secs}s)` : ' (the quote has expired)';
+}
+
+/** One leg from init args alone: BTC raw is msat; an asset's raw units without its precision. */
+function rawLeg(assetId: unknown, raw: unknown): string {
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return String(assetId ?? '?');
+  return /^(btc|sats?)$/i.test(String(assetId ?? '')) ? sats(Math.floor(n / 1000)) : `${n.toLocaleString('en-US')} raw units of ${shortRef(String(assetId ?? '?'))}`;
+}
+
+function atomicInitReadback(a: Record<string, unknown>, ctx?: ReadbackContext): string {
+  const quote = lastResult(ctx, /(^|_)get_quote$/);
+  const from = legText(quote?.from_asset);
+  const to = legText(quote?.to_asset);
+  if (quote && from && to && (!a.rfq_id || !quote.rfq_id || a.rfq_id === quote.rfq_id)) {
+    const differs =
+      (a.from_amount_raw != null && quote.from_asset?.amount_raw != null && Number(a.from_amount_raw) !== Number(quote.from_asset.amount_raw)) ||
+      (a.to_amount_raw != null && quote.to_asset?.amount_raw != null && Number(a.to_amount_raw) !== Number(quote.to_asset.amount_raw));
+    return `Swap ${from} for ${to} on KaleidoSwap${expiresIn(quote.expires_at)}${differs ? ' (the amounts sent differ from the quote)' : ''}`;
+  }
+  return `Swap ${rawLeg(a.from_asset_id, a.from_amount_raw)} for ${rawLeg(a.to_asset_id, a.to_amount_raw)} on KaleidoSwap (no quote in this conversation)`;
+}
+
+function atomicExecuteReadback(ctx?: ReadbackContext): string {
+  const quote = lastResult(ctx, /(^|_)get_quote$/);
+  const from = legText(quote?.from_asset);
+  const to = legText(quote?.to_asset);
+  return from && to ? `Settle the KaleidoSwap swap: you send ${from}, you receive ${to}` : 'Settle the KaleidoSwap atomic swap';
+}
+
 function atomicTakerReadback(swapstring: string, ctx?: ReadbackContext): string {
   const quote = lastResult(ctx, /(^|_)get_quote$/);
   const init = lastResult(ctx, /(^|_)atomic_init$/);
@@ -147,6 +181,10 @@ export function confirmReadback(call: { name: string; arguments: Record<string, 
     }
     case 'rln_close_channel':
       return ask(`${a.force ? 'Force-close' : 'Close'} channel ${shortRef(String(a.channel_id ?? ''))}`);
+    case 'kaleidoswap_atomic_init':
+      return ask(atomicInitReadback(a, context));
+    case 'kaleidoswap_atomic_execute':
+      return ask(atomicExecuteReadback(context));
     case 'rln_atomic_taker':
     case 'wdk_atomic_taker':
       return ask(atomicTakerReadback(String(a.swapstring ?? ''), context));

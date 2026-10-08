@@ -26,6 +26,11 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   1.5 USDT"), flags a swapstring that isn't the swap just created, and decodes
   the swapstring when there is no quote. `confirmReadback` takes an optional
   context with earlier results.
+- `kaleidoswap_atomic_init` is read back with the quote's amounts and expiry
+  ("Swap 2,500 sats for 2.020975 USDT on KaleidoSwap (quote expires in 45s)"),
+  flags amounts that differ from the quote, and shows the raw amounts when
+  there is no quote; `kaleidoswap_atomic_execute` with the quote's amounts.
+  Before, both read "Run kaleidoswap_atomic_init?".
 - Swap channel check: when the outbound only covers the HTLC minimum, the
   message says no BTC swap fits instead of "swap at most 0 sats".
 

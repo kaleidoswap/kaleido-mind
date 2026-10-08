@@ -118,3 +118,34 @@ describe('confirmReadback: accepting an atomic swap', () => {
     );
   });
 });
+
+describe('confirmReadback: starting a KaleidoSwap swap', () => {
+  const quote = {
+    name: 'kaleidoswap_get_quote',
+    result: {
+      rfq_id: 'rfq-9',
+      from_asset: { ticker: 'BTC', amount_display: '2,500 sats', amount_raw: 2_500_000 },
+      to_asset: { ticker: 'USDT', amount_display: '2.020975', amount_raw: 2_020_975 },
+      expires_at: Math.floor(Date.now() / 1000) + 45,
+    },
+  };
+  const args = { rfq_id: 'rfq-9', from_asset_id: 'BTC', from_amount_raw: 2_500_000, to_asset_id: 'rgb:usdt', to_amount_raw: 2_020_975 };
+
+  it('reads the quote amounts and expiry', () => {
+    expect(confirmReadback({ name: 'kaleidoswap_atomic_init', arguments: args }, { results: [quote] })).toMatch(
+      /^Swap 2,500 sats for 2\.020975 USDT on KaleidoSwap \(quote expires in 4[0-9]s\)\. Confirm\?$/,
+    );
+    expect(confirmReadback({ name: 'kaleidoswap_atomic_execute', arguments: {} }, { results: [quote] })).toBe(
+      'Settle the KaleidoSwap swap: you send 2,500 sats, you receive 2.020975 USDT. Confirm?',
+    );
+  });
+
+  it('flags amounts that differ from the quote, and reads raw amounts without one', () => {
+    expect(confirmReadback({ name: 'kaleidoswap_atomic_init', arguments: { ...args, to_amount_raw: 1 } }, { results: [quote] })).toMatch(
+      /\(the amounts sent differ from the quote\)\. Confirm\?$/,
+    );
+    expect(confirmReadback({ name: 'kaleidoswap_atomic_init', arguments: args })).toBe(
+      'Swap 2,500 sats for 2,020,975 raw units of rgb:usdt on KaleidoSwap (no quote in this conversation). Confirm?',
+    );
+  });
+});
