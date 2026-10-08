@@ -468,3 +468,71 @@ describe('kaleidoswapAtomicRecipe — amounts and the deterministic path', () =>
     expect(quoteArgs[0]).toMatchObject({ from_asset_id: 'BTC', to_asset_id: 'USDT', from_amount: 0.000025 });
   });
 });
+
+describe('kaleidoswapAtomicRecipe — follows the swap to a final status', () => {
+  const quote = {
+    rfq_id: 'rfq-7',
+    from_asset: { asset_id: 'BTC', ticker: 'BTC', layer: 'BTC_LN', amount_raw: 2_500_000, amount_display: '0.000025' },
+    to_asset: { asset_id: 'rgb:usdt', ticker: 'USDT', layer: 'RGB_LN', amount_raw: 2_020_173, amount_display: '2.020173' },
+  };
+  function setup(statuses: string[]) {
+    const statusArgs: unknown[] = [];
+    const confirms: string[] = [];
+    const t = (name: string, handler: (a: any) => unknown, spend = false) => ({
+      name, description: name, parameters: { type: 'object', properties: {} }, requiresConfirmation: spend, handler: async (a: any) => handler(a),
+    });
+    const tools = new ToolRegistry([
+      new InProcessToolSource('k', [
+        t('kaleidoswap_get_quote', () => quote),
+        t('kaleidoswap_atomic_init', () => ({ swapstring: 's', payment_hash: 'ph-7', access_token: 'tok-7' }), true),
+        t('kaleidoswap_atomic_execute', () => ({ status: 200 }), true),
+        t('kaleidoswap_atomic_status', (a) => {
+          statusArgs.push(a);
+          return { swap: { status: statuses[Math.min(statusArgs.length - 1, statuses.length - 1)] } };
+        }),
+      ]),
+      new InProcessToolSource('rln', [t('rln_get_node_info', () => ({ pubkey: '03' })), t('rln_atomic_taker', () => ({ ok: true }), true)]),
+    ]);
+    return { tools, statusArgs, confirms };
+  }
+  const run = (tools: ToolRegistry, confirms: string[], extra: Record<string, unknown> = {}) =>
+    runRecipe(kaleidoswapAtomicRecipe, 'swap 2500 sats into usdt', {
+      provider: { name: 'none', async runTurn() { throw new Error('unused'); } } as LLMProvider,
+      tools,
+      pollIntervalMs: 1,
+      onConfirm: async (c) => { confirms.push(c.summary ?? ''); return { approved: true }; },
+      ...extra,
+    });
+
+  it('polls with the access token until the swap succeeds, showing BTC in sats', async () => {
+    const { tools, statusArgs, confirms } = setup(['Waiting', 'Pending', 'Succeeded']);
+    const res = await run(tools, confirms);
+    expect(statusArgs).toEqual([
+      { payment_hash: 'ph-7', access_token: 'tok-7' },
+      { payment_hash: 'ph-7', access_token: 'tok-7' },
+      { payment_hash: 'ph-7', access_token: 'tok-7' },
+    ]);
+    expect(confirms[0]).toMatch(/^Swap 2,500 sats → 2\.020173 USDT/);
+    expect(res.text).toBe('Swap completed: you sent 2,500 sats and received 2.020173 USDT.');
+  });
+
+  it('reports a failed swap, and how to check one that is not final yet', async () => {
+    const failed = setup(['Pending', 'Expired']);
+    expect((await run(failed.tools, failed.confirms)).text).toMatch(/^The swap expired: 2,500 sats → 2\.020173 USDT did not complete/);
+    const pending = setup(['Pending']);
+    const res = await run(pending.tools, pending.confirms, { pollTimeoutMs: 20 });
+    expect(res.text).toMatch(/status Pending\. Check it with kaleidoswap_atomic_status\(payment_hash=ph-7, access_token=tok-7\)/);
+  });
+});
+
+describe('swapLiquidityShortfall — a ticker instead of an rgb: id', () => {
+  it("doesn't block on the asset leg it can't match", async () => {
+    const { swapLiquidityShortfall } = await import('./kaleidoswap-atomic.js');
+    const q = {
+      from_asset: { asset_id: 'BTC', layer: 'BTC_LN', amount_raw: 2_500_000 },
+      to_asset: { asset_id: 'USDT', ticker: 'USDT', layer: 'RGB_LN', amount_raw: 2_000_000 },
+    };
+    const ch = { ready: true, asset_id: 'rgb:usdt', asset_remote_amount: 1, next_outbound_htlc_limit_msat: 9_000_000, inbound_balance_msat: 9_000_000 };
+    expect(swapLiquidityShortfall(q as never, { channels: [ch] })).toBeNull();
+  });
+});

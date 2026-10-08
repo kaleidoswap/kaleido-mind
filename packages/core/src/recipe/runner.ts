@@ -26,6 +26,10 @@ export interface RunRecipeOptions {
   onStep?: (name: string, args: Record<string, unknown>, result: unknown) => void;
   /** Skip extraction and use these slots (deterministic Tier-0 / tests). */
   slots?: Record<string, unknown>;
+  /** Override the recipe's poll interval (tests). */
+  pollIntervalMs?: number;
+  /** Override the recipe's poll timeout (tests). */
+  pollTimeoutMs?: number;
   signal?: AbortSignal;
 }
 
@@ -277,6 +281,27 @@ export async function runRecipe(recipe: Recipe, text: string, opts: RunRecipeOpt
     opts.onStep?.(recipe.final.tool, finalArgs, finalResult);
     const failure = toolFailure(finalResult);
     if (failure) return failedResult(recipe, ctx, inferences, failure);
+
+    // Nothing to follow on a host without the status tool.
+    if (recipe.poll && (await opts.tools.getDef(recipe.poll.tool))) {
+      const poll = recipe.poll;
+      const interval = opts.pollIntervalMs ?? poll.intervalMs ?? 3000;
+      const deadline = Date.now() + (opts.pollTimeoutMs ?? poll.timeoutMs ?? 120_000);
+      for (;;) {
+        if (opts.signal?.aborted) break;
+        const args = poll.args(ctx);
+        let result: unknown;
+        try {
+          result = await opts.tools.execute(poll.tool, args);
+        } catch (e) {
+          result = { error: e instanceof Error ? e.message : String(e) };
+        }
+        ctx.results[poll.as ?? poll.tool] = result;
+        opts.onStep?.(poll.tool, args, result);
+        if (poll.done(result) || Date.now() + interval > deadline) break;
+        await new Promise((r) => setTimeout(r, interval));
+      }
+    }
 
     const out = recipe.summary?.(ctx, finalResult) ?? 'Done.';
     return { recipe: recipe.name, slots: ctx.slots, results: ctx.results, final: finalResult, text: out, status: 'done', inferences };

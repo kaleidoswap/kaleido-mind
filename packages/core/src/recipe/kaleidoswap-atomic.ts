@@ -169,6 +169,8 @@ export function swapLiquidityShortfall(
   if (!rows.length) return `this swap runs over Lightning and you have no channels. Buy a channel first.`;
   const usable = rows.filter((c) => c.is_usable !== false && c.ready !== false);
   const hasAssetData = rows.some((c) => 'asset_id' in c);
+  // Channels name assets by rgb: id; a ticker in the quote can't be matched.
+  const assetIdKnown = (leg?: Leg) => hasAssetData && String(leg?.asset_id ?? '').startsWith('rgb:');
 
   if (fromBtc) {
     const amount = num(from?.amount_raw);
@@ -184,7 +186,7 @@ export function swapLiquidityShortfall(
       return `your channels can send at most ${fmtSats(maxOut)}, and this swap needs ${fmtSats(need)} (the amount plus the ${min} HTLC minimum). Swap at most ${fmtSats(Math.max(0, maxOut - htlcMinMsat))}, or buy a bigger channel.`;
     }
     const want = num(to?.amount_raw);
-    if (hasAssetData && want !== undefined) {
+    if (assetIdKnown(to) && want !== undefined) {
       const ok = usable.some(
         (c) => c.asset_id === to?.asset_id && (num(c.asset_remote_amount) ?? 0) >= want && (inbound(c) ?? Infinity) >= htlcMinMsat,
       );
@@ -197,7 +199,7 @@ export function swapLiquidityShortfall(
 
   // asset → BTC
   const have = num(from?.amount_raw);
-  if (hasAssetData && have !== undefined) {
+  if (assetIdKnown(from) && have !== undefined) {
     const ok = usable.some(
       (c) => c.asset_id === from?.asset_id && (num(c.asset_local_amount) ?? 0) >= have && (outbound(c) ?? Infinity) >= htlcMinMsat,
     );
@@ -216,12 +218,31 @@ export function swapLiquidityShortfall(
 /** @deprecated Use `swapLiquidityShortfall`. */
 export const outboundShortfall = swapLiquidityShortfall;
 
-// Render a quote leg as "<amount> <TICKER>" from the MCP quote echo, or undefined
-// if the leg is missing (callers fall back to the user's slot values).
-const quoteLeg = (leg?: { ticker?: string; amount_display?: string }): string | undefined =>
-  leg?.amount_display != null ? `${leg.amount_display}${leg.ticker ? ` ${leg.ticker}` : ''}` : undefined;
-interface InitResult { swapstring?: string; payment_hash?: string; atomic_id?: string }
+// Render a quote leg as "<amount> <TICKER>". BTC reads in sats from the raw
+// msat amount (the maker's display is in BTC, e.g. 0.000025).
+const quoteLeg = (leg?: { ticker?: string; layer?: string; amount_raw?: number; amount_display?: string }): string | undefined => {
+  if (isBtc(leg) && Number.isFinite(Number(leg?.amount_raw))) return `${Math.floor(Number(leg!.amount_raw) / 1000).toLocaleString('en-US')} sats`;
+  return leg?.amount_display != null ? `${leg.amount_display}${leg.ticker ? ` ${leg.ticker}` : ''}` : undefined;
+};
+interface InitResult { swapstring?: string; payment_hash?: string; atomic_id?: string; access_token?: string }
 interface NodeInfo { pubkey?: string }
+
+const FINAL_SWAP_STATUS = new Set(['Succeeded', 'Expired', 'Failed']);
+
+/** The maker's swap status (`{ swap: { status } }`), or undefined. */
+function swapStatus(result: unknown): string | undefined {
+  let r = result;
+  if (typeof r === 'string') {
+    try {
+      r = JSON.parse(r);
+    } catch {
+      return undefined;
+    }
+  }
+  const o = r as { swap?: { status?: unknown }; status?: unknown } | undefined;
+  const st = o?.swap?.status ?? o?.status;
+  return typeof st === 'string' ? st : undefined;
+}
 
 export const kaleidoswapAtomicRecipe: Recipe = {
   name: 'kaleidoswap-atomic',
@@ -330,6 +351,19 @@ export const kaleidoswapAtomicRecipe: Recipe = {
       };
     },
   },
+  // 6. Follow the swap until the maker reports a final status. The status
+  //    needs the per-swap access_token that only init returns.
+  poll: {
+    tool: 'kaleidoswap_atomic_status',
+    as: 'status',
+    args: (ctx) => {
+      const init = ctx.results.init as InitResult | undefined;
+      return { payment_hash: init?.payment_hash, ...(init?.access_token ? { access_token: init.access_token } : {}) };
+    },
+    done: (result) => FINAL_SWAP_STATUS.has(swapStatus(result) ?? ''),
+    intervalMs: 3000,
+    timeoutMs: 90_000,
+  },
   // ONE confirmation, fired after the quote / before init, with the real numbers.
   confirm: (ctx: RecipeContext) => {
     const q = ctx.results.quote as QuoteResult | undefined;
@@ -343,8 +377,12 @@ export const kaleidoswapAtomicRecipe: Recipe = {
     const from = quoteLeg(q?.from_asset) ?? `${ctx.slots.amount} ${ctx.slots.from_asset}`;
     const to = quoteLeg(q?.to_asset) ?? String(ctx.slots.to_asset);
     const init = ctx.results.init as InitResult | undefined;
-    const id = init?.atomic_id || init?.payment_hash || '?';
-    return `remember: atomic swap atomic_id=${id} (for later kaleidoswap_atomic_status checks).
-Swap submitted: ${from} → ${to}. To check status later, call: kaleidoswap_atomic_status(atomic_id=${id}). Say "check my swap status" and I will recall + poll automatically.`;
+    const hash = init?.payment_hash || init?.atomic_id || '?';
+    const token = init?.access_token ? `, access_token=${init.access_token}` : '';
+    const status = swapStatus(ctx.results.status);
+    if (status === 'Succeeded') return `Swap completed: you sent ${from} and received ${to}.`;
+    if (status === 'Expired' || status === 'Failed') return `The swap ${status.toLowerCase()}: ${from} → ${to} did not complete, and nothing was exchanged.`;
+    return `remember: atomic swap payment_hash=${hash}${token} (for kaleidoswap_atomic_status checks).
+Swap submitted: ${from} → ${to}, status ${status ?? 'unknown'}. Check it with kaleidoswap_atomic_status(payment_hash=${hash}${token}), or say "check my swap status".`;
   },
 };
