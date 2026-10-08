@@ -12,7 +12,7 @@ metadata:
 
 Read state first: `rln_get_node_info`, `rln_list_channels`, `rln_get_balances`.
 Outbound = what the node can send; inbound = what it can receive. Report
-numbers from this turn's results only. All `*_sat` fields are sats.
+numbers from this turn's results only.
 
 ## Do
 - Health: count usable channels, total outbound vs inbound, channels with
@@ -22,9 +22,10 @@ numbers from this turn's results only. All `*_sat` fields are sats.
   2. `rln_connect_peer` with `lsp_connection_url`.
   3. `kaleidoswap_lsp_estimate_fees`, show `total_fee`.
   4. `kaleidoswap_lsp_create_order` with `client_pubkey` from `rln_get_node_info`.
-     `lsp_balance_sat` (min 50,000) is inbound; `client_balance_sat` is your
-     outbound, paid by you. BTC→asset swap: add `asset_id` (`rgb:` id),
-     `lsp_asset_amount` raw (10 USDT = 10000000), `client_balance_sat` ≥ swap + 6,000.
+     `lsp_balance_sat` (min 50,000) = inbound; `client_balance_sat` = your
+     outbound, which you pay. BTC→asset swap: add `asset_id` (`rgb:` id) and
+     raw `lsp_asset_amount`; `client_balance_sat` ≥ swap + 6,000 and capacity
+     ≥ 10 × (swap + 3,000).
   5. Pay `amount_due_sat` (fee + `client_balance_sat`), never `fee_sat`.
      With no channel, pay on-chain: `rln_send_btc` to `payment.onchain.address`.
   6. Poll `kaleidoswap_lsp_get_order` with `order_id` + `access_token`, then
@@ -40,6 +41,6 @@ numbers from this turn's results only. All `*_sat` fields are sats.
 ## Examples
 - "How healthy is my node?" → `rln_list_channels {}`
 - "Buy 500k inbound" → `rln_get_node_info {}` then `kaleidoswap_lsp_create_order {"client_pubkey":"<pubkey>","lsp_balance_sat":500000,"client_balance_sat":0,"channel_expiry_blocks":4320}`
-- "A channel to swap BTC for USDT" → `kaleidoswap_lsp_estimate_fees {"lsp_balance_sat":50000,"client_balance_sat":4000,"channel_expiry_blocks":4320,"asset_id":"<USDT rgb id>","lsp_asset_amount":10000000}`
+- "Channel for a 20k-sat USDT swap" → `kaleidoswap_lsp_estimate_fees {"lsp_balance_sat":210000,"client_balance_sat":26000,"channel_expiry_blocks":4320,"asset_id":"<USDT rgb id>","lsp_asset_amount":10000000}`
 - "Pay the order on-chain" → `rln_send_btc {"address":"<payment.onchain.address>","amount_sat":6972}`
 - "A channel holding 100 USDT" → `kaleidoswap_lsp_quote_asset_channel {"asset":"USDT","asset_amount":100}`

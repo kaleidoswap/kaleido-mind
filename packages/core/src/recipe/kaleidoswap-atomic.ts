@@ -180,6 +180,12 @@ export function swapLiquidityShortfall(
       if (maxOut === 0) {
         return `this swap needs a Lightning channel that can send ${fmtSats(need)} (the amount plus the ${min} HTLC minimum), and none can send right now. Buy a channel with at least that much outbound first.`;
       }
+      // Enough balance, but one payment is capped (the LSP's in-flight HTLC
+      // limit, about 10% of capacity): a bigger balance alone won't help.
+      const maxBalance = maxOver(rows, (c) => num(c.outbound_balance_msat));
+      if (maxBalance !== undefined && maxBalance >= need) {
+        return `one payment on your channels is capped at ${fmtSats(maxOut)} (about 10% of channel capacity), and this swap sends ${fmtSats(need)} (the amount plus the ${min} HTLC minimum). ${maxOut > htlcMinMsat ? `Swap at most ${fmtSats(maxOut - htlcMinMsat)}, or` : 'No BTC swap fits;'} buy a channel of about ${fmtSats(need * 10)} capacity.`;
+      }
       if (maxOut <= htlcMinMsat) {
         return `your channels can send at most ${fmtSats(maxOut)}, which only covers the ${min} HTLC minimum, so no BTC swap fits. This one needs ${fmtSats(need)}: buy a channel with more outbound.`;
       }

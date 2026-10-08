@@ -12,7 +12,10 @@ Field names are kaleido-mcp 0.4.2.
   The BTC leg goes out as one payment of the swap amount plus 3,000 sats
   (the RGB node's HTLC minimum), and outbound is about 1,000 sats less than
   `client_balance_sat`. So set `client_balance_sat` to at least the largest
-  swap you plan + 6,000. With 4,000 (the example below) the channel works but
+  swap you plan + 6,000. One payment is also capped at about 10% of the
+  channel's capacity (`next_outbound_htlc_limit_msat`: 5,400 sats on a 54,000
+  channel), so the capacity (`lsp_balance_sat` + `client_balance_sat`) must be
+  at least 10 × (swap + 3,000). With 4,000 (the example below) the channel works but
   no BTC → asset swap fits.
 - Swap USDT/XAUT → BTC: you need the asset on your side; buy it with
   `kaleidoswap_lsp_quote_asset_channel` → `kaleidoswap_lsp_create_asset_channel`.
