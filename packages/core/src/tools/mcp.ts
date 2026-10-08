@@ -46,6 +46,8 @@ export interface McpToolSourceOptions {
   allow?: string[];
   /** Optional prefix denylist applied after discovery (for host-specific rails). */
   denyPrefixes?: string[];
+  /** Optional prefix allowlist: when non-empty, only tools whose name starts with one of these are exposed. */
+  allowPrefixes?: string[];
   /** Per-call timeout (ms). Default 60_000. */
   timeoutMs?: number;
 }
@@ -123,8 +125,10 @@ export class McpToolSource implements ToolSource {
     const listed = await this.client.listTools();
     const allow = this.opts.allow ? new Set(this.opts.allow) : null;
     const denied = this.opts.denyPrefixes ?? [];
+    const allowedPrefixes = this.opts.allowPrefixes ?? [];
     this.tools = (listed.tools ?? [])
       .filter((t: any) => !allow || allow.has(t.name))
+      .filter((t: any) => !allowedPrefixes.length || allowedPrefixes.some((prefix) => t.name.startsWith(prefix)))
       .filter((t: any) => !denied.some((prefix) => t.name.startsWith(prefix)))
       .map((t: any) => ({
         name: t.name,

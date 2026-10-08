@@ -183,6 +183,8 @@ interface ProviderSettings {
   /** Generation token caps (0 ⇒ uncapped). */
   maxThinkingTokens?: number;
   maxOutputTokens?: number;
+  /** Model reasoning on (default) or off (reasoning_budget 0). */
+  thinking?: boolean;
   /** Whether scheduled tasks should fire when a model is loaded. */
   schedulerRunning?: boolean;
 }
@@ -238,8 +240,9 @@ async function loadProviderSettings(): Promise<void> {
       maxThinkingTokens = parsed.maxThinkingTokens > 0 ? parsed.maxThinkingTokens : undefined;
     }
     if (typeof parsed.maxOutputTokens === 'number') {
-      maxOutputTokens = parsed.maxOutputTokens > 0 ? parsed.maxOutputTokens : undefined;
+      maxOutputTokens = capOutput(parsed.maxOutputTokens);
     }
+    if (typeof parsed.thinking === 'boolean') thinkingEnabled = parsed.thinking;
     if (typeof parsed.schedulerRunning === 'boolean') {
       schedulerRunning = parsed.schedulerRunning;
     }
@@ -259,6 +262,7 @@ async function saveProviderSettings(): Promise<void> {
     portfolioTargets,
     maxThinkingTokens: maxThinkingTokens ?? 0,
     maxOutputTokens: maxOutputTokens ?? 0,
+    thinking: thinkingEnabled,
     schedulerRunning,
   };
   await fs.writeFile(SETTINGS_FILE, JSON.stringify(settings, null, 2), 'utf8');
@@ -285,9 +289,7 @@ async function connectCustomMcp(server: SavedMcpServer): Promise<void> {
     const { McpToolSource } = await import('@kaleidorg/mind/mcp');
     const source = new McpToolSource({
       id: `custom:${server.id}`,
-      ...(process.env.KALEIDO_MIND_RLN_ONLY === '1'
-        ? { denyPrefixes: ['wdk_', 'spark_'] }
-        : {}),
+      ...mcpToolFilter(),
       transport: { kind: 'http', url: server.url },
     });
     await source.connect();
@@ -441,11 +443,8 @@ function funnelSources(): ToolSource[] {
 function enabledSkills(only?: string[]): Skill[] {
   let skills = (state.skills?.list() ?? []).filter((s) => !state.disabledSkills.has(s.name));
   if (only && only.length) skills = skills.filter((s) => only.includes(s.name));
-  if (RLN_ONLY) {
-    skills = skills.map((skill) => ({
-      ...skill,
-      tools: skill.tools?.filter((name) => !name.startsWith('wdk_') && !name.startsWith('spark_')),
-    }));
+  if (RLN_ONLY || TOOL_PREFIXES.length) {
+    skills = skills.map((skill) => ({ ...skill, tools: skill.tools?.filter(toolAllowed) }));
   }
   return skills;
 }
@@ -495,11 +494,49 @@ const MAX_OUTPUT_TOKENS: number | undefined = ((): number | undefined => {
   return Number.isFinite(n) && n > 0 ? n : undefined;
 })();
 
+const csvEnv = (name: string): string[] =>
+  (process.env[name] ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+
+// Host knobs (e.g. a desktop release narrowing the agent):
+// KALEIDO_MIND_THINKING=0 starts with reasoning off (the Agent tab can turn it on);
+// KALEIDO_MIND_SKILLS=a,b loads only those packaged skills (user skills still load);
+// KALEIDO_MIND_TOOL_PREFIXES=rln_,kaleidoswap_ exposes only MCP tools with those prefixes;
+// KALEIDO_MIND_MAX_TOKENS_CEILING=N clamps the output cap to at most N (no "uncapped").
+const SKILL_ALLOWLIST = csvEnv('KALEIDO_MIND_SKILLS');
+const TOOL_PREFIXES = csvEnv('KALEIDO_MIND_TOOL_PREFIXES');
+const MAX_TOKENS_CEILING = ((): number | undefined => {
+  const n = Number(process.env.KALEIDO_MIND_MAX_TOKENS_CEILING);
+  return Number.isFinite(n) && n > 0 ? n : undefined;
+})();
+let thinkingEnabled = process.env.KALEIDO_MIND_THINKING !== '0';
+
+/** The output cap after the host's ceiling: a value ≤ 0 means uncapped unless a ceiling is set. */
+function capOutput(v: number | undefined): number | undefined {
+  const n = v !== undefined && v > 0 ? v : undefined;
+  if (MAX_TOKENS_CEILING === undefined) return n;
+  return n === undefined ? MAX_TOKENS_CEILING : Math.min(n, MAX_TOKENS_CEILING);
+}
+
+/** Prefix filters shared by every MCP source this provider connects. */
+function mcpToolFilter(): { denyPrefixes?: string[]; allowPrefixes?: string[] } {
+  return {
+    ...(process.env.KALEIDO_MIND_RLN_ONLY === '1' ? { denyPrefixes: ['wdk_', 'spark_'] } : {}),
+    ...(TOOL_PREFIXES.length ? { allowPrefixes: TOOL_PREFIXES } : {}),
+  };
+}
+
+/** Whether a skill may list this tool under the host's rails. */
+function toolAllowed(name: string): boolean {
+  if (name === 'read_skill_reference') return true;
+  if (process.env.KALEIDO_MIND_RLN_ONLY === '1' && (name.startsWith('wdk_') || name.startsWith('spark_'))) return false;
+  return !TOOL_PREFIXES.length || TOOL_PREFIXES.some((p) => name.startsWith(p));
+}
+
 // Live generation limits — seeded from the env defaults, then adjustable at
 // runtime from the Agent tab (set_generation_limits). undefined ⇒ uncapped.
 // The qvac provider reads these via getters, so a change takes effect next turn.
 let maxThinkingTokens: number | undefined = MAX_THINKING_TOKENS;
-let maxOutputTokens: number | undefined = MAX_OUTPUT_TOKENS;
+let maxOutputTokens: number | undefined = capOutput(MAX_OUTPUT_TOKENS);
 
 // All QVAC completion logic lives in @kaleidorg/mind/qvac now (one place, shared
 // with the mobile app). We inject the lazily-loaded SDK functions: `completion`
@@ -567,7 +604,9 @@ const qvacProvider: LLMProvider = {
   ...sharedQvacProvider,
   name: sharedQvacProvider.name,
   runTurn(input) {
-    const run = modelQueue.then(() => sharedQvacProvider.runTurn(input));
+    // Reasoning off: the QVAC provider sends reasoning_budget 0.
+    const turn = thinkingEnabled ? input : { ...input, thinking: 'off' as const };
+    const run = modelQueue.then(() => sharedQvacProvider.runTurn(turn));
     modelQueue = run.catch(() => {});
     return run;
   },
@@ -585,7 +624,7 @@ async function connectMcpIfConfigured(): Promise<void> {
     const { McpToolSource } = await import('@kaleidorg/mind/mcp');
     const src = new McpToolSource({
       id: 'kaleido',
-      ...(RLN_ONLY ? { denyPrefixes: ['wdk_', 'spark_'] } : {}),
+      ...mcpToolFilter(),
       transport: {
         kind: 'stdio',
         // Spawn the mcp with the SAME node that runs this provider
@@ -615,7 +654,8 @@ async function connectMcpIfConfigured(): Promise<void> {
 function loadSkills(): void {
   const packagedDir = process.env.KALEIDO_SKILLS_DIR ?? packagedSkillsDir();
   try {
-    const packaged = loadSkillsDir(packagedDir);
+    // KALEIDO_MIND_SKILLS narrows the packaged set; user-added skills always load.
+    const packaged = loadSkillsDir(packagedDir).filter((s) => !SKILL_ALLOWLIST.length || SKILL_ALLOWLIST.includes(s.name));
     const custom = loadSkillsDir(USER_SKILLS_DIR);
     const byName = new Map(packaged.map((skill) => [skill.name, skill]));
     for (const skill of custom) byName.set(skill.name, skill);
@@ -715,6 +755,7 @@ async function connectBitrefillMcpIfEnabled(): Promise<void> {
     const { McpToolSource } = await import('@kaleidorg/mind/mcp');
     const src = new McpToolSource({
       id: 'bitrefill',
+      ...mcpToolFilter(),
       transport: {
         kind: 'http',
         url: process.env.BITREFILL_MCP_URL ?? 'https://api.bitrefill.com/mcp',
@@ -1476,6 +1517,7 @@ async function agentStateInfo(): Promise<AgentStateWire> {
     generation: {
       maxThinkingTokens: maxThinkingTokens ?? 0,
       maxOutputTokens: maxOutputTokens ?? 0,
+      thinking: thinkingEnabled,
     },
     recent: snap.recent,
     stats: snap.stats,
@@ -2010,8 +2052,9 @@ async function dispatch(cmd: Command): Promise<void> {
           maxThinkingTokens = cmd.maxThinkingTokens > 0 ? cmd.maxThinkingTokens : undefined;
         }
         if (cmd.maxOutputTokens !== undefined) {
-          maxOutputTokens = cmd.maxOutputTokens > 0 ? cmd.maxOutputTokens : undefined;
+          maxOutputTokens = capOutput(cmd.maxOutputTokens);
         }
+        if (typeof cmd.thinking === 'boolean') thinkingEnabled = cmd.thinking;
         await saveProviderSettings();
         const info = await agentStateInfo();
         emit({ type: 'agent_state', state: info });
