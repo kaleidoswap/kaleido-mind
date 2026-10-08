@@ -5,6 +5,17 @@ apps) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.14] — 2026-10-08
+
+### Fixed
+
+- RGB asset balances count what is held in Lightning channels
+  (`offchain_outbound`), not only on-chain. A desktop holding 6.052258 USDT in
+  channels was shown "0 USDT"; the fast-path list now reads "6.052258 USDT
+  (6.052258 in channels, 0 on-chain)". The model sees `balance_display`
+  `offchain_outbound` and `total`, and the "sats" relabelling matches those
+  amounts too (`rgbHoldings`).
+
 ## [0.10.13] — 2026-10-08
 
 ### Fixed

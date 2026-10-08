@@ -58,3 +58,24 @@ describe('fast path: balance that names an asset', () => {
     expect(btcOnly.text).toBe('On-chain: 79,278 sats spendable.\nLightning: 16,500 sats.');
   });
 });
+
+describe('RGB assets held in Lightning channels', () => {
+  const desktopUsdt = {
+    ticker: 'USDT',
+    name: 'Tether USD',
+    precision: 6,
+    balance: { settled: 0, future: 0, spendable: 0, offchain_outbound: 6_052_258, offchain_inbound: 13_947_742 },
+  };
+
+  it('counts the channel balance in the fast-path asset list', () => {
+    expect(defaultRenderFast('assets', [desktopUsdt])).toBe('Your RGB assets:\n- USDT (Tether USD): 6.052258 USDT (6.052258 in channels, 0 on-chain)');
+    expect(defaultRenderFast('assets', [{ ...desktopUsdt, balance: { spendable: 1_000_000 } }])).toBe('Your RGB assets:\n- USDT (Tether USD): 1 USDT');
+  });
+
+  it('shows the model the channel balance and the total', async () => {
+    const { annotateRgbBalances, fixRgbBalanceUnits } = await import('../context/rgb-units.js');
+    const out = annotateRgbBalances([desktopUsdt]) as Array<{ balance_display: Record<string, string> }>;
+    expect(out[0]!.balance_display).toMatchObject({ spendable: '0 USDT', offchain_outbound: '6.052258 USDT', total: '6.052258 USDT' });
+    expect(fixRgbBalanceUnits('USDT: 6,052,258 sats', [[desktopUsdt]])).toBe('USDT: 6.052258 USDT');
+  });
+});

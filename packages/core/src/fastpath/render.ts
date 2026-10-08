@@ -3,7 +3,7 @@
  * different shapes (aggregate wallet, kaleido-mcp, MockWallet), so each shape
  * is read here instead of asking a model to describe it.
  */
-import { formatRgbAmount } from '../context/rgb-units.js';
+import { formatRgbAmount, rgbHoldings } from '../context/rgb-units.js';
 
 type Obj = Record<string, any>;
 
@@ -38,8 +38,13 @@ function renderAssets(r: unknown): string {
   const list: Obj[] = Array.isArray(r) ? r : Array.isArray((r as Obj)?.assets) ? (r as Obj).assets : [];
   if (!list.length) return "You don't hold any RGB assets yet.";
   const rows = list.map((a) => {
-    const raw = a.balance?.spendable ?? a.balance?.settled;
-    const amount = typeof raw === 'number' ? `${formatRgbAmount(raw, Number(a.precision) || 0)} ${a.ticker}` : 'balance unknown';
+    const held = rgbHoldings(a.balance);
+    const fmt = (raw: number) => formatRgbAmount(raw, Number(a.precision) || 0);
+    const amount = !held
+      ? 'balance unknown'
+      : held.channels
+        ? `${fmt(held.total)} ${a.ticker} (${fmt(held.channels)} in channels, ${fmt(held.onchain)} on-chain)`
+        : `${fmt(held.total)} ${a.ticker}`;
     return `- ${a.ticker}${a.name && a.name !== a.ticker ? ` (${a.name})` : ''}: ${amount}`;
   });
   return `Your RGB assets:\n${rows.join('\n')}`;
