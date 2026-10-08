@@ -64,6 +64,7 @@ export {
   detectWalletAction,
   hasCapableTool,
   wantsToolCall,
+  missingLayerReply,
   producedPaymentData,
   paymentStrings,
   producedPaymentReply,

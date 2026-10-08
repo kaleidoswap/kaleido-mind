@@ -32,7 +32,7 @@ import { assetSendRecipe } from './recipe/asset-send.js';
 import type { Recipe } from './recipe/types.js';
 import { SkillRegistry } from './skills/registry.js';
 import { selectAvailableSkill } from './skills/select.js';
-import { detectWalletAction, hasCapableTool, noToolReply, wantsToolCall } from './guards.js';
+import { detectWalletAction, hasCapableTool, missingLayerReply, noToolReply, wantsToolCall } from './guards.js';
 import type { Skill } from './skills/types.js';
 import type { LLMProvider } from './providers/types.js';
 import type { InferenceMetrics } from './providers/types.js';
@@ -128,6 +128,8 @@ export interface FunnelResult {
   /** Fast tier only: the matched intent + raw tool result (e.g. for a balance card). */
   intent?: string;
   data?: unknown;
+  /** Fast tier only: results of the intent's `also` reads, by name. */
+  extra?: Record<string, unknown>;
   /** Agentic tier only: executed tool calls + reasoning turns. */
   toolCalls?: ToolResult[];
   turns?: number;
@@ -159,7 +161,7 @@ export interface FunnelOptions {
   /** User settings, read fresh each turn. */
   getSettings?: () => FunnelSettings;
   /** Render a fast-path tool result as user-facing text. Default: built-in. */
-  renderFast?: (intent: string, result: unknown) => string;
+  renderFast?: (intent: string, result: unknown, extra?: Record<string, unknown>) => string;
   /** Diagnostics sink (tier routing, tool calls). Default: silent. */
   log?: (message: string) => void;
   /**
@@ -186,7 +188,7 @@ export class Funnel {
   private readonly allSkills: Skill[];
   private readonly system: string;
   private readonly getSettings: () => FunnelSettings;
-  private readonly renderFast: (intent: string, result: unknown) => string;
+  private readonly renderFast: (intent: string, result: unknown, extra?: Record<string, unknown>) => string;
   private readonly log: (message: string) => void;
   private readonly retriever?: Retriever;
   private readonly topKRag: number;
@@ -235,6 +237,13 @@ export class Funnel {
     const memoryOn = settings.memoryEnabled !== false;
     const ragOn = settings.ragEnabled !== false;
 
+    // A wallet the user named but this host doesn't have: say so up front.
+    const missing = missingLayerReply(text, (await this.registry.listTools()).map((t) => t.name));
+    if (missing) {
+      this.log('tier=guard: named wallet not connected');
+      return { text: missing, tier: 'agentic', route: 'no-tool', toolCalls: [], turns: 0, inference: [] };
+    }
+
     // ── T0: deterministic fast-path (no LLM) ──
     // Only fires when the host's registry actually implements the intent's
     // tool — a partial tool surface (e.g. desktop without the core aggregate
@@ -250,7 +259,23 @@ export class Funnel {
     if (fast && fastTool) {
       this.log(`tier=fast-path → ${fastTool}`);
       const r = await this.registry.execute(fastTool, fast.args);
-      return { text: this.renderFast(fast.intent.name, r), tier: 'fast', route: fast.intent.name, intent: fast.intent.name, data: r };
+      let extra: Record<string, unknown> | undefined;
+      for (const also of fast.intent.also ?? []) {
+        if (!also.when(text)) continue;
+        for (const name of also.tools) {
+          if (!(await this.registry.getDef(name))) continue;
+          extra = { ...extra, [also.name]: await this.registry.execute(name, {}) };
+          break;
+        }
+      }
+      return {
+        text: this.renderFast(fast.intent.name, r, extra),
+        tier: 'fast',
+        route: fast.intent.name,
+        intent: fast.intent.name,
+        data: r,
+        ...(extra ? { extra } : {}),
+      };
     }
 
     // ── T2: recipe multi-step — fires when:

@@ -11,6 +11,7 @@ import {
   DECLINED_TOOL_MESSAGE,
   detectWalletAction,
   wantsToolCall,
+  missingLayerReply,
   fixSatsBtcConversions,
   formatSatsAsBtc,
   findUngroundedPaymentData,
@@ -434,5 +435,21 @@ describe('invoices and addresses come from the tool, not the model', () => {
       [{ tool: 'rln_list_transfers' }, { text: 'You have one transfer.' }],
     );
     expect((await reads.runAgentic([{ role: 'user', content: 'list my transfers' }])).text).toBe('You have one transfer.');
+  });
+});
+
+describe('missingLayerReply', () => {
+  const rlnOnly = ['rln_get_balances', 'rln_get_address', 'rln_send_btc', 'kaleidoswap_get_quote'];
+  it('says a named wallet is not connected instead of improvising', () => {
+    expect(missingLayerReply('Send 1000 sats to my Spark wallet', rlnOnly)).toBe(
+      "There's no Spark wallet connected here, so I can't do that with it. I can use the RGB Lightning Node and KaleidoSwap.",
+    );
+    expect(missingLayerReply('what is my ark balance?', rlnOnly)).toMatch(/^There's no Arkade wallet connected here/);
+  });
+  it('stays quiet when the wallet is there, for questions, and for look-alike words', () => {
+    expect(missingLayerReply('Send 1000 sats to my Spark wallet', [...rlnOnly, 'spark_send'])).toBeNull();
+    expect(missingLayerReply('What is Spark?', rlnOnly)).toBeNull();
+    expect(missingLayerReply('show my liquidity', rlnOnly)).toBeNull();
+    expect(missingLayerReply('send 5 USDT to rgb:abc', rlnOnly)).toBeNull();
   });
 });

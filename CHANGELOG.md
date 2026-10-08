@@ -5,6 +5,20 @@ apps) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.13] — 2026-10-08
+
+### Fixed
+
+- "What's my BTC and USDT balance?" on the fast path replied with BTC only.
+  When a balance question names an asset (USDT, XAUT, RGB, asset, token) the
+  reply also lists the RGB asset balances (`FastIntent.also`; the extra result
+  is in `FunnelResult.extra`).
+- A request that uses a wallet the host doesn't have ("Send 1000 sats to my
+  Spark wallet" with RLN tools only) gets a fixed reply naming what is
+  connected, instead of the model improvising with other tools
+  (`missingLayerReply`; Spark, Arkade, Liquid). Plain questions ("What is
+  Spark?") are not affected.
+
 ## [0.10.12] / [mind-provider 0.10.2] — 2026-10-08
 
 Host knobs for a desktop release that narrows the agent.

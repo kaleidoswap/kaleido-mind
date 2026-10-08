@@ -37,3 +37,24 @@ describe('fast path: RLN tools and RGB assets', () => {
     expect(defaultRenderFast('assets', { assets: [] })).toBe("You don't hold any RGB assets yet.");
   });
 });
+
+describe('fast path: balance that names an asset', () => {
+  it('adds the RGB asset balances to the reply', async () => {
+    const { Funnel } = await import('../funnel.js');
+    const { ToolRegistry } = await import('../tools/registry.js');
+    const { InProcessToolSource } = await import('../tools/in-process.js');
+    const t = (name: string, result: unknown) => ({ name, description: name, parameters: {}, handler: async () => result });
+    const tools = new ToolRegistry([
+      new InProcessToolSource('rln', [
+        t('rln_get_balances', { btc_onchain: { vanilla_spendable_sats: 79278 }, lightning_balance_sat: 16500 }),
+        t('rln_list_assets', [{ ticker: 'USDT', name: 'Tether USD', precision: 6, balance: { spendable: 6_050_000 } }]),
+      ]),
+    ]);
+    const funnel = new Funnel({ provider: { name: 'none', async runTurn() { throw new Error('unused'); } }, tools });
+    const both = await funnel.runTurn("What's my BTC and USDT balance?");
+    expect(both.tier).toBe('fast');
+    expect(both.text).toBe('On-chain: 79,278 sats spendable.\nLightning: 16,500 sats.\nYour RGB assets:\n- USDT (Tether USD): 6.05 USDT');
+    const btcOnly = await funnel.runTurn("What's my balance?");
+    expect(btcOnly.text).toBe('On-chain: 79,278 sats spendable.\nLightning: 16,500 sats.');
+  });
+});
