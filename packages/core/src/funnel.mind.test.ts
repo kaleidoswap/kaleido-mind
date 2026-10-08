@@ -212,6 +212,7 @@ describe('desktop mind — buy assets via atomic swap', () => {
     // The full deterministic chain, in order.
     expect(calls.map((c) => c.name)).toEqual([
       'kaleidoswap_get_quote',
+      'rln_list_channels',
       'kaleidoswap_atomic_init',
       'rln_get_node_info',
       'rln_atomic_taker',
@@ -256,6 +257,7 @@ describe('desktop mind — buy assets via atomic swap', () => {
     expect(res.route).toBe('kaleidoswap-atomic');
     expect(calls.map((c) => c.name)).toEqual([
       'kaleidoswap_get_quote',
+      'rln_list_channels',
       'kaleidoswap_atomic_init',
       'rln_get_node_info',
       'rln_atomic_taker',

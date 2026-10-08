@@ -5,6 +5,31 @@ apps) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.6] — 2026-10-08
+
+A BTC → RGB swap over Lightning sends the amount plus RLN's 3,000-sat HTLC
+minimum in one payment, so a channel needs outbound of at least amount +
+3,000 sats. With the smallest LSP channel (4,000 `client_balance_sat`, about
+3,000 outbound) no swap fits, and the swap failed with NoRoute after the maker
+had locked it.
+
+### Fixed
+
+- `kaleidoswap-atomic` recipe: when the taker pays in BTC over Lightning, it
+  reads `rln_list_channels` after the quote and stops before the confirmation
+  if no usable channel can send amount + 3,000 sats, saying how much it can
+  swap instead (`outboundShortfall`, `RLN_HTLC_MIN_MSAT`).
+- Skills: `kaleido-trading` checks outbound ≥ amount + 3,000 sats before a
+  BTC → asset swap; `channel-manager` and `references/lsp.md` buy channels
+  with `client_balance_sat` ≥ the largest planned swap + 6,000 (the old "at
+  least 4,000" left no room for a swap).
+
+### Added
+
+- Recipe steps can be `optional` (a missing or failing tool doesn't stop the
+  recipe) and have a `check(ctx)` that stops the recipe with a message before
+  any later confirmation or spend.
+
 ## [mind-provider 0.10.1] — 2026-10-07
 
 ### Added

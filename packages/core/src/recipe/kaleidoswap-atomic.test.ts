@@ -310,3 +310,64 @@ describe('kaleidoswapAtomicRecipe — single confirmation', () => {
     expect(captured.map((c) => c.name)).toEqual(['kaleidoswap_get_quote']);
   });
 });
+
+describe('kaleidoswapAtomicRecipe — outbound preflight (BTC leg + RLN HTLC minimum)', () => {
+  const btcQuote = {
+    rfq_id: 'rfq-2',
+    from_asset: { asset_id: 'BTC', ticker: 'BTC', layer: 'BTC_LN', amount_raw: 50_000_000, amount_display: '50,000 sats' },
+    to_asset: { asset_id: 'rgb:usdt', ticker: 'USDT', layer: 'RGB_LN', amount_raw: 30_000_000, amount_display: '30' },
+  };
+
+  it('reports the shortfall in plain numbers', async () => {
+    const { outboundShortfall } = await import('./kaleidoswap-atomic.js');
+    expect(outboundShortfall(btcQuote as never, { channels: [{ ready: true, is_usable: true, outbound_balance_msat: 51_000_000 }] })).toBe(
+      'your channels can send at most 51,000 sats, and this swap needs 53,000 sats (the amount plus RLN\'s 3,000-sat HTLC minimum). Swap at most 48,000 sats, or buy a bigger channel.',
+    );
+    expect(outboundShortfall(btcQuote as never, { channels: [{ ready: true, next_outbound_htlc_limit_msat: 60_000_000 }] })).toBeNull();
+    expect(outboundShortfall(btcQuote as never, { channels: [] })).toMatch(/none can send right now/);
+    expect(outboundShortfall(btcQuote as never, { something: 'else' })).toBeNull();
+    expect(outboundShortfall(btcQuote as never, { channels: [{ ready: false, outbound_balance_msat: 900_000_000 }] })).toMatch(/none can send right now/);
+    expect(outboundShortfall(btcQuote as never, { channels: [{ channel_id: 'x' }] })).toBeNull();
+    expect(outboundShortfall(btcQuote as never, undefined)).toBeNull();
+  });
+
+  it('stops before the confirmation and the init when no channel can carry the BTC leg', async () => {
+    const calls: string[] = [];
+    const confirms: unknown[] = [];
+    const t = (name: string, response: unknown, spend = false) => ({
+      name,
+      description: name,
+      parameters: { type: 'object', properties: {} },
+      requiresConfirmation: spend,
+      handler: async () => {
+        calls.push(name);
+        return response;
+      },
+    });
+    const tools = new ToolRegistry([
+      new InProcessToolSource('k', [
+        t('kaleidoswap_get_quote', btcQuote),
+        t('kaleidoswap_atomic_init', { swapstring: 's', payment_hash: 'p' }, true),
+        t('kaleidoswap_atomic_execute', { status: 200 }, true),
+      ]),
+      new InProcessToolSource('rln', [
+        t('rln_list_channels', { channels: [{ ready: true, is_usable: true, outbound_balance_msat: 3_000_000 }] }),
+        t('rln_get_node_info', { pubkey: '03' }),
+        t('rln_atomic_taker', { ok: true }, true),
+      ]),
+    ]);
+    const res = await runRecipe(kaleidoswapAtomicRecipe, 'swap 50000 sats to usdt', {
+      provider: { name: 'none', async runTurn() { throw new Error('unused'); } } as LLMProvider,
+      tools,
+      slots: { from_asset: 'BTC', to_asset: 'USDT', amount: 50000, amount_side: 'from' },
+      onConfirm: async (c) => {
+        confirms.push(c);
+        return { approved: true };
+      },
+    });
+    expect(res.status).toBe('error');
+    expect(res.text).toMatch(/can send at most 3,000 sats.*needs 53,000 sats/);
+    expect(calls).toEqual(['kaleidoswap_get_quote', 'rln_list_channels']);
+    expect(confirms).toEqual([]);
+  });
+});
