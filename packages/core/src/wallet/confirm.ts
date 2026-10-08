@@ -68,10 +68,17 @@ export interface ReadbackContext {
   results?: Array<{ name: string; result: unknown }>;
 }
 
-type QuoteLeg = { ticker?: string; amount_display?: string };
+type QuoteLeg = { ticker?: string; layer?: string; amount_raw?: number; amount_display?: string };
 
+const isBtcLeg = (leg?: QuoteLeg) => leg?.layer === 'BTC_LN' || (!leg?.layer && String(leg?.ticker ?? '').toUpperCase() === 'BTC');
+
+// BTC reads in sats from the raw msat amount (the maker's display is in BTC).
 const legText = (leg?: QuoteLeg) =>
-  leg?.amount_display ? `${leg.amount_display}${leg.ticker && !/sats?$/i.test(leg.amount_display) ? ` ${leg.ticker}` : ''}` : undefined;
+  isBtcLeg(leg) && Number.isFinite(Number(leg?.amount_raw))
+    ? sats(Math.floor(Number(leg!.amount_raw) / 1000))
+    : leg?.amount_display
+      ? `${leg.amount_display}${leg.ticker && !/sats?$/i.test(leg.amount_display) ? ` ${leg.ticker}` : ''}`
+      : undefined;
 
 const lastResult = (ctx: ReadbackContext | undefined, re: RegExp): Record<string, any> | undefined => {
   const hit = [...(ctx?.results ?? [])].reverse().find((r) => re.test(r.name));

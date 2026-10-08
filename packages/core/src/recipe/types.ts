@@ -77,6 +77,19 @@ export interface Recipe {
   steps: RecipeStep[];
   /** The terminal action (usually a spend → confirmation-gated by its tool). */
   final: RecipeStep;
+  /**
+   * After the final action, call `tool` until `done(result)` (or the timeout),
+   * e.g. a swap's status until it settles. The last result is stored under
+   * `as` for `summary`.
+   */
+  poll?: {
+    tool: string;
+    args: (ctx: RecipeContext) => Record<string, unknown>;
+    as?: string;
+    done: (result: unknown) => boolean;
+    intervalMs?: number;
+    timeoutMs?: number;
+  };
   /** Render the outcome for the user. */
   summary?: (ctx: RecipeContext, finalResult: unknown) => string;
   /**

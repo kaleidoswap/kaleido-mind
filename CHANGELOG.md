@@ -5,6 +5,27 @@ apps) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.9] — 2026-10-08
+
+### Fixed
+
+- The swap recipe follows the swap to the end: it keeps the `access_token`
+  that only `kaleidoswap_atomic_init` returns and polls
+  `kaleidoswap_atomic_status` until `Succeeded`, `Expired` or `Failed` (90 s),
+  then says whether the swap completed. Without the token the maker answered
+  "Swap not found". If it isn't final by then, the reply gives the call to
+  check it later. Hosts without the status tool skip the polling.
+- BTC amounts in swap confirmations and summaries read in sats from the raw
+  msat amount ("2,500 sats", not "0.000025 BTC"), in the recipe and in the
+  readbacks.
+- The swap channel check skips the asset-channel part when the quote names the
+  asset by ticker instead of its `rgb:` id, instead of reporting no channel.
+
+### Added
+
+- `Recipe.poll`: after the final action, call a tool until `done(result)` or a
+  timeout. `RunRecipeOptions.pollIntervalMs` / `pollTimeoutMs` override them.
+
 ## [0.10.8] — 2026-10-08
 
 `@kaleidorg/mind` 0.10.8, `@kaleidorg/create-mind` 0.3.4.
