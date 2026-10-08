@@ -184,7 +184,7 @@ export function swapLiquidityShortfall(
       // limit, about 10% of capacity): a bigger balance alone won't help.
       const maxBalance = maxOver(rows, (c) => num(c.outbound_balance_msat));
       if (maxBalance !== undefined && maxBalance >= need) {
-        return `one payment on your channels is capped at ${fmtSats(maxOut)} (about 10% of channel capacity), and this swap sends ${fmtSats(need)} (the amount plus the ${min} HTLC minimum). ${maxOut > htlcMinMsat ? `Swap at most ${fmtSats(maxOut - htlcMinMsat)}, or` : 'No BTC swap fits;'} buy a channel of about ${fmtSats(need * 10)} capacity.`;
+        return `one payment on your channels is capped at ${fmtSats(maxOut)} right now (about 10% of channel capacity), and this swap sends ${fmtSats(need)} (the amount plus the ${min} HTLC minimum). ${maxOut > htlcMinMsat ? `Swap at most ${fmtSats(maxOut - htlcMinMsat)}, or` : 'No BTC swap fits;'} buy a channel of about ${fmtSats(need * 10)} capacity.`;
       }
       if (maxOut <= htlcMinMsat) {
         return `your channels can send at most ${fmtSats(maxOut)}, which only covers the ${min} HTLC minimum, so no BTC swap fits. This one needs ${fmtSats(need)}: buy a channel with more outbound.`;
@@ -307,6 +307,8 @@ export const kaleidoswapAtomicRecipe: Recipe = {
       tool: 'rln_list_channels',
       as: 'channels',
       optional: true,
+      // Limits dip for a few seconds after a payment settles; read again once.
+      recheckAfterMs: 3000,
       args: () => ({}),
       check: (ctx) =>
         swapLiquidityShortfall(

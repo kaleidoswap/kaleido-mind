@@ -5,6 +5,24 @@ apps) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.11] — 2026-10-08
+
+`@kaleidorg/mind` 0.10.11, `@kaleidorg/create-mind` 0.3.5.
+
+### Fixed
+
+- Swap channel check: right after a payment settles, a channel's
+  `next_outbound_htlc_limit_msat` can read low for a few seconds (1,500
+  instead of 7,000 sats on signet). The check reads the channels once more
+  after 3 s before stopping, and the cap message says "right now".
+- The rgb-agent example and the starter run `kaleido-mcp@^0.4.5`, so a stale
+  npx cache can't bring back quotes without the `rgb:` asset id.
+
+### Added
+
+- `RecipeStep.recheckAfterMs`: when `check` fails, run the step once more
+  after this delay. `RunRecipeOptions.recheckAfterMs` overrides it.
+
 ## [0.10.10] — 2026-10-08
 
 One Lightning payment is capped at about 10% of the channel's capacity (the

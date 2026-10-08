@@ -42,6 +42,8 @@ export interface RecipeStep {
    * recipe there, before any later confirmation or spend.
    */
   check?: (ctx: RecipeContext) => string | null;
+  /** When `check` fails, run the step once more after this delay (a value that may be transient). */
+  recheckAfterMs?: number;
 }
 
 export interface Recipe {

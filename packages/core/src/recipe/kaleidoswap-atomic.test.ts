@@ -424,6 +424,7 @@ describe('kaleidoswapAtomicRecipe — outbound preflight (BTC leg + RLN HTLC min
       provider: { name: 'none', async runTurn() { throw new Error('unused'); } } as LLMProvider,
       tools,
       slots: { from_asset: 'BTC', to_asset: 'USDT', amount: 50000, amount_side: 'from' },
+      recheckAfterMs: 0,
       onConfirm: async (c) => {
         confirms.push(c);
         return { approved: true };
@@ -431,7 +432,8 @@ describe('kaleidoswapAtomicRecipe — outbound preflight (BTC leg + RLN HTLC min
     });
     expect(res.status).toBe('error');
     expect(res.text).toMatch(/can send at most 3,000 sats.*needs 53,000 sats/);
-    expect(calls).toEqual(['kaleidoswap_get_quote', 'rln_get_node_info', 'rln_list_channels']);
+    // The channel read is retried once (limits dip right after a payment).
+    expect(calls).toEqual(['kaleidoswap_get_quote', 'rln_get_node_info', 'rln_list_channels', 'rln_list_channels']);
     expect(confirms).toEqual([]);
   });
 });
@@ -543,7 +545,43 @@ describe('swapLiquidityShortfall — per-payment cap', () => {
     const q = { from_asset: { asset_id: 'BTC', layer: 'BTC_LN', amount_raw: 5_000_000 }, to_asset: { asset_id: 'USDT', layer: 'RGB_LN', amount_raw: 1 } };
     const ch = { ready: true, outbound_balance_msat: 20_000_000, next_outbound_htlc_limit_msat: 5_400_000 };
     expect(swapLiquidityShortfall(q as never, { channels: [ch] })).toBe(
-      'one payment on your channels is capped at 5,400 sats (about 10% of channel capacity), and this swap sends 8,000 sats (the amount plus the 3,000 sats HTLC minimum). Swap at most 2,400 sats, or buy a channel of about 80,000 sats capacity.',
+      'one payment on your channels is capped at 5,400 sats right now (about 10% of channel capacity), and this swap sends 8,000 sats (the amount plus the 3,000 sats HTLC minimum). Swap at most 2,400 sats, or buy a channel of about 80,000 sats capacity.',
     );
   });
 });
+
+describe('kaleidoswapAtomicRecipe — a transient channel limit', () => {
+  it('reads the channels again once and goes ahead when the limit is back', async () => {
+    let reads = 0;
+    const confirms: string[] = [];
+    const t = (name: string, handler: () => unknown, spend = false) => ({
+      name, description: name, parameters: { type: 'object', properties: {} }, requiresConfirmation: spend, handler: async () => handler(),
+    });
+    const quote = {
+      rfq_id: 'r', from_asset: { asset_id: 'BTC', ticker: 'BTC', layer: 'BTC_LN', amount_raw: 2_500_000 },
+      to_asset: { asset_id: 'rgb:usdt', ticker: 'USDT', layer: 'RGB_LN', amount_raw: 2_000_000, amount_display: '2' },
+    };
+    const tools = new ToolRegistry([
+      new InProcessToolSource('k', [
+        t('kaleidoswap_get_quote', () => quote),
+        t('kaleidoswap_atomic_init', () => ({ swapstring: 's', payment_hash: 'p' }), true),
+        t('kaleidoswap_atomic_execute', () => ({ status: 200 }), true),
+      ]),
+      new InProcessToolSource('rln', [
+        t('rln_get_node_info', () => ({ pubkey: '03' })),
+        t('rln_atomic_taker', () => ({ ok: true }), true),
+        t('rln_list_channels', () => ({ channels: [{ ready: true, outbound_balance_msat: 40_000_000, next_outbound_htlc_limit_msat: ++reads === 1 ? 1_500_000 : 7_000_000 }] })),
+      ]),
+    ]);
+    const res = await runRecipe(kaleidoswapAtomicRecipe, 'swap 2500 sats into usdt', {
+      provider: { name: 'none', async runTurn() { throw new Error('unused'); } } as LLMProvider,
+      tools,
+      recheckAfterMs: 0,
+      onConfirm: async (c) => { confirms.push(c.summary ?? ''); return { approved: false }; },
+    });
+    expect(reads).toBe(2);
+    expect(confirms).toHaveLength(1);
+    expect(res.status).toBe('cancelled');
+  });
+});
+
