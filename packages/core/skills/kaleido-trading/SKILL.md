@@ -18,7 +18,8 @@ A swap runs over Lightning: it needs a channel with enough outbound in the
 asset you send and enough inbound in the asset you receive. If
 `rln_list_channels` shows none, buy one first (see `channel-manager`).
 Each leg is one payment plus the node's 3,000-sat HTLC minimum: sending BTC
-needs one channel with outbound ≥ amount + 3,000 sats, receiving BTC inbound ≥
+needs one channel whose `next_outbound_htlc_limit_msat` (about 10% of its
+capacity) ≥ amount + 3,000 sats, receiving BTC inbound ≥
 amount + 3,000; the asset side needs an asset channel holding the asset (or
 inbound for it). Short: offer a smaller swap or a bigger channel.
 

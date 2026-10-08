@@ -5,6 +5,22 @@ apps) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.10] — 2026-10-08
+
+One Lightning payment is capped at about 10% of the channel's capacity (the
+LSP's in-flight HTLC limit, `next_outbound_htlc_limit_msat`; 5,400 sats on a
+54,000-sat channel on signet), so a BTC → asset swap of X sats needs a channel
+of at least 10 × (X + 3,000).
+
+### Fixed
+
+- Swap channel check: when the balance is enough but one payment is capped, it
+  says so and names the capacity needed, instead of suggesting more balance.
+- `channel-manager` / `references/lsp.md`: channels for swaps are sized by
+  capacity too (≥ 10 × (swap + 3,000)); the "channel to swap" example no
+  longer uses a 4,000-sat balance that fits no swap. `kaleido-trading` checks
+  `next_outbound_htlc_limit_msat`, not the balance.
+
 ## [0.10.9] — 2026-10-08
 
 ### Fixed

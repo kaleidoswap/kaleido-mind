@@ -536,3 +536,14 @@ describe('swapLiquidityShortfall — a ticker instead of an rgb: id', () => {
     expect(swapLiquidityShortfall(q as never, { channels: [ch] })).toBeNull();
   });
 });
+
+describe('swapLiquidityShortfall — per-payment cap', () => {
+  it('says when the balance is there but one payment is capped', async () => {
+    const { swapLiquidityShortfall } = await import('./kaleidoswap-atomic.js');
+    const q = { from_asset: { asset_id: 'BTC', layer: 'BTC_LN', amount_raw: 5_000_000 }, to_asset: { asset_id: 'USDT', layer: 'RGB_LN', amount_raw: 1 } };
+    const ch = { ready: true, outbound_balance_msat: 20_000_000, next_outbound_htlc_limit_msat: 5_400_000 };
+    expect(swapLiquidityShortfall(q as never, { channels: [ch] })).toBe(
+      'one payment on your channels is capped at 5,400 sats (about 10% of channel capacity), and this swap sends 8,000 sats (the amount plus the 3,000 sats HTLC minimum). Swap at most 2,400 sats, or buy a channel of about 80,000 sats capacity.',
+    );
+  });
+});
