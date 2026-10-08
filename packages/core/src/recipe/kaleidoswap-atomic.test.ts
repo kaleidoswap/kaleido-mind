@@ -204,8 +204,8 @@ describe('kaleidoswapAtomicRecipe — full chain', () => {
     expect(res.inferences).toBe(0);
     expect(captured.map((c) => c.name)).toEqual([
       'kaleidoswap_get_quote',
-      'kaleidoswap_atomic_init',
       'rln_get_node_info',
+      'kaleidoswap_atomic_init',
       'rln_atomic_taker',
       'kaleidoswap_atomic_execute',
     ]);
@@ -307,7 +307,68 @@ describe('kaleidoswapAtomicRecipe — single confirmation', () => {
 
     expect(res.status).toBe('cancelled');
     // Quote ran (read-only), but NOTHING after the declined gate.
-    expect(captured.map((c) => c.name)).toEqual(['kaleidoswap_get_quote']);
+    expect(captured.map((c) => c.name)).toEqual(['kaleidoswap_get_quote', 'rln_get_node_info']);
+  });
+});
+
+describe('kaleidoswapAtomicRecipe — channel liquidity preflight', () => {
+  const btcToUsdt = {
+    rfq_id: 'rfq-2',
+    from_asset: { asset_id: 'BTC', ticker: 'BTC', layer: 'BTC_LN', amount_raw: 50_000_000, amount_display: '50,000 sats' },
+    to_asset: { asset_id: 'rgb:usdt', ticker: 'USDT', layer: 'RGB_LN', amount_raw: 30_000_000, amount_display: '30' },
+  };
+  const usdtToBtc = {
+    rfq_id: 'rfq-3',
+    from_asset: { asset_id: 'rgb:usdt', ticker: 'USDT', layer: 'RGB_LN', amount_raw: 10_000_000, amount_display: '10' },
+    to_asset: { asset_id: 'BTC', ticker: 'BTC', layer: 'BTC_LN', amount_raw: 15_000_000, amount_display: '15,000 sats' },
+  };
+  const usdtChannel = (over: Record<string, unknown> = {}) => ({
+    ready: true,
+    is_usable: true,
+    asset_id: 'rgb:usdt',
+    asset_local_amount: 20_000_000,
+    asset_remote_amount: 40_000_000,
+    next_outbound_htlc_limit_msat: 60_000_000,
+    inbound_balance_msat: 50_000_000,
+    ...over,
+  });
+
+  it('BTC -> asset: BTC outbound must cover the amount plus the HTLC minimum', async () => {
+    const { swapLiquidityShortfall } = await import('./kaleidoswap-atomic.js');
+    expect(swapLiquidityShortfall(btcToUsdt as never, { channels: [usdtChannel({ next_outbound_htlc_limit_msat: 51_000_000 })] })).toBe(
+      'your channels can send at most 51,000 sats, and this swap needs 53,000 sats (the amount plus the 3,000 sats HTLC minimum). Swap at most 48,000 sats, or buy a bigger channel.',
+    );
+    expect(swapLiquidityShortfall(btcToUsdt as never, { channels: [usdtChannel()] })).toBeNull();
+    expect(swapLiquidityShortfall(btcToUsdt as never, { channels: [] })).toMatch(/no channels/);
+    expect(swapLiquidityShortfall(btcToUsdt as never, { channels: [usdtChannel({ ready: false })] })).toMatch(/none can send right now/);
+  });
+
+  it('BTC -> asset: an asset channel must be able to receive the asset', async () => {
+    const { swapLiquidityShortfall } = await import('./kaleidoswap-atomic.js');
+    expect(swapLiquidityShortfall(btcToUsdt as never, { channels: [usdtChannel({ asset_remote_amount: 5_000_000 })] })).toMatch(
+      /^no channel can receive 30 USDT/,
+    );
+    expect(swapLiquidityShortfall(btcToUsdt as never, { channels: [usdtChannel({ inbound_balance_msat: 1_000_000 })] })).toMatch(
+      /^no channel can receive 30 USDT/,
+    );
+  });
+
+  it('asset -> BTC: the asset must be on our side and BTC inbound must cover amount + minimum', async () => {
+    const { swapLiquidityShortfall } = await import('./kaleidoswap-atomic.js');
+    expect(swapLiquidityShortfall(usdtToBtc as never, { channels: [usdtChannel()] })).toBeNull();
+    expect(swapLiquidityShortfall(usdtToBtc as never, { channels: [usdtChannel({ asset_local_amount: 1_000_000 })] })).toMatch(
+      /^no channel can send 10 USDT/,
+    );
+    expect(swapLiquidityShortfall(usdtToBtc as never, { channels: [usdtChannel({ inbound_balance_msat: 10_000_000 })] })).toBe(
+      'your channels can receive at most 10,000 sats, and this swap pays you 18,000 sats (the amount plus the 3,000 sats HTLC minimum). Swap for less BTC, or get more inbound.',
+    );
+  });
+
+  it("uses the node's HTLC minimum and doesn't block on unreadable data", async () => {
+    const { swapLiquidityShortfall } = await import('./kaleidoswap-atomic.js');
+    expect(swapLiquidityShortfall(btcToUsdt as never, { channels: [usdtChannel({ next_outbound_htlc_limit_msat: 51_000_000 })] }, 1_000_000)).toBeNull();
+    expect(swapLiquidityShortfall(btcToUsdt as never, { channels: [{ channel_id: 'x' }] })).toBeNull();
+    expect(swapLiquidityShortfall(btcToUsdt as never, 'not json')).toBeNull();
   });
 });
 
@@ -321,10 +382,10 @@ describe('kaleidoswapAtomicRecipe — outbound preflight (BTC leg + RLN HTLC min
   it('reports the shortfall in plain numbers', async () => {
     const { outboundShortfall } = await import('./kaleidoswap-atomic.js');
     expect(outboundShortfall(btcQuote as never, { channels: [{ ready: true, is_usable: true, outbound_balance_msat: 51_000_000 }] })).toBe(
-      'your channels can send at most 51,000 sats, and this swap needs 53,000 sats (the amount plus RLN\'s 3,000-sat HTLC minimum). Swap at most 48,000 sats, or buy a bigger channel.',
+      'your channels can send at most 51,000 sats, and this swap needs 53,000 sats (the amount plus the 3,000 sats HTLC minimum). Swap at most 48,000 sats, or buy a bigger channel.',
     );
     expect(outboundShortfall(btcQuote as never, { channels: [{ ready: true, next_outbound_htlc_limit_msat: 60_000_000 }] })).toBeNull();
-    expect(outboundShortfall(btcQuote as never, { channels: [] })).toMatch(/none can send right now/);
+    expect(outboundShortfall(btcQuote as never, { channels: [] })).toMatch(/no channels/);
     expect(outboundShortfall(btcQuote as never, { something: 'else' })).toBeNull();
     expect(outboundShortfall(btcQuote as never, { channels: [{ ready: false, outbound_balance_msat: 900_000_000 }] })).toMatch(/none can send right now/);
     expect(outboundShortfall(btcQuote as never, { channels: [{ channel_id: 'x' }] })).toBeNull();
@@ -367,7 +428,7 @@ describe('kaleidoswapAtomicRecipe — outbound preflight (BTC leg + RLN HTLC min
     });
     expect(res.status).toBe('error');
     expect(res.text).toMatch(/can send at most 3,000 sats.*needs 53,000 sats/);
-    expect(calls).toEqual(['kaleidoswap_get_quote', 'rln_list_channels']);
+    expect(calls).toEqual(['kaleidoswap_get_quote', 'rln_get_node_info', 'rln_list_channels']);
     expect(confirms).toEqual([]);
   });
 });

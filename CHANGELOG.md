@@ -5,6 +5,20 @@ apps) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.7] — 2026-10-08
+
+### Fixed
+
+- The swap recipe's channel check covers both directions and both legs, with
+  the same rules as kaleido-mcp 0.4.3's `atomic_init` preflight. BTC → asset:
+  BTC outbound ≥ amount + HTLC minimum, and an asset channel with inbound for
+  the asset and BTC inbound ≥ minimum. Asset → BTC: an asset channel holding
+  the asset with BTC outbound ≥ minimum, and BTC inbound ≥ amount + minimum.
+  The minimum is the node's `rgb_htlc_min_msat` (fallback 3,000,000 msat);
+  `rln_get_node_info` now runs before the check. Unreadable channel data
+  doesn't block. `swapLiquidityShortfall` (`outboundShortfall` is an alias).
+- `kaleido-trading` states the rule for both directions.
+
 ## [0.10.6] — 2026-10-08
 
 A BTC → RGB swap over Lightning sends the amount plus RLN's 3,000-sat HTLC

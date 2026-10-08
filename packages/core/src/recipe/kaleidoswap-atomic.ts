@@ -85,16 +85,18 @@ interface QuoteResult {
 const layerFor = (asset: unknown): string =>
   /^btc$/i.test(String(asset)) ? 'BTC_LN' : 'RGB_LN';
 
-/** RLN adds this to the taker's BTC HTLC in a BTC→RGB swap (rgb_htlc_min_msat). */
+/** RLN's minimum HTLC for RGB payments when the node doesn't report one (rgb_htlc_min_msat). */
 export const RLN_HTLC_MIN_MSAT = 3_000_000;
 
-function paysBtcOverLightning(q?: QuoteResult): boolean {
-  const leg = q?.from_asset as { layer?: string; ticker?: string } | undefined;
-  return leg?.layer === 'BTC_LN' || (!leg?.layer && String(leg?.ticker ?? '').toUpperCase() === 'BTC');
-}
+type Leg = { asset_id?: string; ticker?: string; layer?: string; amount_raw?: number; amount_display?: string };
+type Channel = Record<string, unknown>;
 
-/** The most one usable channel can send now, in msat; undefined when the shape is unknown. */
-function maxOutboundMsat(channels: unknown): number | undefined {
+const isBtc = (leg?: Leg) => leg?.layer === 'BTC_LN' || (!leg?.layer && String(leg?.ticker ?? '').toUpperCase() === 'BTC');
+const num = (v: unknown): number | undefined => (v == null || v === '' || !Number.isFinite(Number(v)) ? undefined : Number(v));
+const fmtSats = (msat: number) => `${Math.floor(msat / 1000).toLocaleString('en-US')} sats`;
+const legText = (leg?: Leg) => (leg?.amount_display ? `${leg.amount_display}${leg.ticker && !/sats?$/i.test(leg.amount_display) ? ` ${leg.ticker}` : ''}` : (leg?.ticker ?? 'the asset'));
+
+function channelRows(channels: unknown): Channel[] | undefined {
   let list: unknown = channels;
   if (typeof list === 'string') {
     try {
@@ -104,36 +106,93 @@ function maxOutboundMsat(channels: unknown): number | undefined {
     }
   }
   const rows = Array.isArray(list) ? list : (list as { channels?: unknown })?.channels;
-  if (!Array.isArray(rows)) return undefined;
-  // No channels at all: nothing can send. Channels without readable amounts:
-  // unknown, so don't block.
-  if (!rows.length) return 0;
+  return Array.isArray(rows) ? (rows as Channel[]) : undefined;
+}
+
+/** Largest value of `pick` over usable channels; undefined when no channel reports it. */
+function maxOver(rows: Channel[], pick: (c: Channel) => number | undefined): number | undefined {
   let best: number | undefined;
   let readable = false;
-  for (const c of rows as Array<Record<string, unknown>>) {
-    const msat = Number(c.next_outbound_htlc_limit_msat ?? c.outbound_balance_msat);
-    if (!Number.isFinite(msat)) continue;
+  for (const c of rows) {
+    const v = pick(c);
+    if (v === undefined) continue;
     readable = true;
     if (c.is_usable === false || c.ready === false) continue;
-    best = Math.max(best ?? 0, msat);
+    best = Math.max(best ?? 0, v);
   }
-  // Readable channels, none usable: nothing can send.
   return best ?? (readable ? 0 : undefined);
 }
 
-const fmtSats = (msat: number) => `${Math.floor(msat / 1000).toLocaleString('en-US')} sats`;
+const outbound = (c: Channel) => num(c.next_outbound_htlc_limit_msat ?? c.outbound_balance_msat);
+const inbound = (c: Channel) => num(c.inbound_balance_msat);
 
-/** Why the node can't send this swap's BTC leg, or null when it can (or can't tell). */
-export function outboundShortfall(q: QuoteResult | undefined, channels: unknown): string | null {
-  const amount = Number(q?.from_asset?.amount_raw);
-  const max = maxOutboundMsat(channels);
-  if (!Number.isFinite(amount) || max === undefined) return null;
-  const need = amount + RLN_HTLC_MIN_MSAT;
-  if (max >= need) return null;
-  return max === 0
-    ? `this swap needs a Lightning channel that can send ${fmtSats(need)} (the amount plus RLN's 3,000-sat HTLC minimum), and none can send right now. Buy a channel with at least that much outbound first.`
-    : `your channels can send at most ${fmtSats(max)}, and this swap needs ${fmtSats(need)} (the amount plus RLN's 3,000-sat HTLC minimum). Swap at most ${fmtSats(Math.max(0, max - RLN_HTLC_MIN_MSAT))}, or buy a bigger channel.`;
+/**
+ * Why the node can't carry this swap over its Lightning channels, or null when
+ * it can (or the channel data doesn't say). RLN sends each leg as one HTLC and
+ * adds its RGB HTLC minimum to the BTC side and to the asset payment:
+ * - BTC → asset: BTC outbound ≥ amount + minimum; an asset channel with inbound
+ *   ≥ the asset received and BTC inbound ≥ minimum.
+ * - asset → BTC: an asset channel holding the asset with BTC outbound ≥
+ *   minimum; BTC inbound ≥ amount + minimum.
+ */
+export function swapLiquidityShortfall(
+  q: QuoteResult | undefined,
+  channels: unknown,
+  htlcMinMsat: number = RLN_HTLC_MIN_MSAT,
+): string | null {
+  const from = q?.from_asset as Leg | undefined;
+  const to = q?.to_asset as Leg | undefined;
+  const fromBtc = isBtc(from);
+  const toBtc = isBtc(to);
+  if (fromBtc === toBtc) return null;
+  const rows = channelRows(channels);
+  if (!rows) return null;
+  const min = fmtSats(htlcMinMsat);
+  if (!rows.length) return `this swap runs over Lightning and you have no channels. Buy a channel first.`;
+  const usable = rows.filter((c) => c.is_usable !== false && c.ready !== false);
+  const hasAssetData = rows.some((c) => 'asset_id' in c);
+
+  if (fromBtc) {
+    const amount = num(from?.amount_raw);
+    const maxOut = maxOver(rows, outbound);
+    if (amount !== undefined && maxOut !== undefined && maxOut < amount + htlcMinMsat) {
+      const need = amount + htlcMinMsat;
+      return maxOut === 0
+        ? `this swap needs a Lightning channel that can send ${fmtSats(need)} (the amount plus the ${min} HTLC minimum), and none can send right now. Buy a channel with at least that much outbound first.`
+        : `your channels can send at most ${fmtSats(maxOut)}, and this swap needs ${fmtSats(need)} (the amount plus the ${min} HTLC minimum). Swap at most ${fmtSats(Math.max(0, maxOut - htlcMinMsat))}, or buy a bigger channel.`;
+    }
+    const want = num(to?.amount_raw);
+    if (hasAssetData && want !== undefined) {
+      const ok = usable.some(
+        (c) => c.asset_id === to?.asset_id && (num(c.asset_remote_amount) ?? 0) >= want && (inbound(c) ?? Infinity) >= htlcMinMsat,
+      );
+      if (!ok) {
+        return `no channel can receive ${legText(to)}: you need a ${to?.ticker ?? 'asset'} channel with at least that much inbound and ${min} of BTC inbound. Buy an asset channel from the LSP first.`;
+      }
+    }
+    return null;
+  }
+
+  // asset → BTC
+  const have = num(from?.amount_raw);
+  if (hasAssetData && have !== undefined) {
+    const ok = usable.some(
+      (c) => c.asset_id === from?.asset_id && (num(c.asset_local_amount) ?? 0) >= have && (outbound(c) ?? Infinity) >= htlcMinMsat,
+    );
+    if (!ok) {
+      return `no channel can send ${legText(from)}: you need a ${from?.ticker ?? 'asset'} channel holding at least that much, with ${min} of BTC outbound.`;
+    }
+  }
+  const amount = num(to?.amount_raw);
+  const maxIn = maxOver(rows, inbound);
+  if (amount !== undefined && maxIn !== undefined && maxIn < amount + htlcMinMsat) {
+    return `your channels can receive at most ${fmtSats(maxIn)}, and this swap pays you ${fmtSats(amount + htlcMinMsat)} (the amount plus the ${min} HTLC minimum). Swap for less BTC, or get more inbound.`;
+  }
+  return null;
 }
+
+/** @deprecated Use `swapLiquidityShortfall`. */
+export const outboundShortfall = swapLiquidityShortfall;
 
 // Render a quote leg as "<amount> <TICKER>" from the MCP quote echo, or undefined
 // if the leg is missing (callers fall back to the user's slot values).
@@ -183,17 +242,26 @@ export const kaleidoswapAtomicRecipe: Recipe = {
           : { ...base, from_amount: ctx.slots.amount };
       },
     },
-    // 1b. NODE: the BTC leg goes out as one Lightning HTLC of the amount plus
-    //     RLN's 3,000-sat HTLC minimum, so a channel must be able to send that
-    //     much. Stop here, before the confirmation, instead of failing with
-    //     NoRoute after the maker has locked the swap.
+    // 1b. NODE: pubkey for execute, and the node's RGB HTLC minimum.
+    {
+      tool: 'rln_get_node_info',
+      as: 'node',
+      args: () => ({}),
+    },
+    // 1c. NODE: can the channels carry both legs? RLN sends each leg as one
+    //     HTLC and adds its HTLC minimum. Stop here, before the confirmation,
+    //     instead of failing with NoRoute after the maker has locked the swap.
     {
       tool: 'rln_list_channels',
       as: 'channels',
       optional: true,
       args: () => ({}),
-      skipIf: (ctx) => !paysBtcOverLightning(ctx.results.quote as QuoteResult | undefined),
-      check: (ctx) => outboundShortfall(ctx.results.quote as QuoteResult | undefined, ctx.results.channels),
+      check: (ctx) =>
+        swapLiquidityShortfall(
+          ctx.results.quote as QuoteResult | undefined,
+          ctx.results.channels,
+          num((ctx.results.node as { rgb_htlc_min_msat?: unknown } | undefined)?.rgb_htlc_min_msat) ?? RLN_HTLC_MIN_MSAT,
+        ),
     },
     // 2. MAKER locks the swap. SwapRequest is flat (asset ids + maker-unit
     //    amounts) — sourced straight from the quote result, no re-scaling.
@@ -211,12 +279,6 @@ export const kaleidoswapAtomicRecipe: Recipe = {
           to_amount_raw: q?.to_asset?.amount_raw,
         };
       },
-    },
-    // 3. NODE: read our pubkey — the maker needs it as taker_pubkey for execute.
-    {
-      tool: 'rln_get_node_info',
-      as: 'node',
-      args: () => ({}),
     },
     // 4. NODE: the taker whitelists the maker's swapstring (accept the swap).
     //    Exposed by kaleido-mcp as `rln_atomic_taker` (calls rln.whitelistSwap).
