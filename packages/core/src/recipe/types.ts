@@ -63,6 +63,11 @@ export interface Recipe {
    */
   forceModelExtract?: boolean;
   /**
+   * With `forceModelExtract`, use the deterministic extraction anyway when this
+   * returns true for the request (an unambiguous phrasing).
+   */
+  trustExtract?: (text: string) => boolean;
+  /**
    * Whether the recipe is confident enough to RUN deterministically given the
    * extracted slots (vs falling back to the agentic loop). e.g. payments needs a
    * recipient; receive needs an amount or asset. Default: any slot extracted.

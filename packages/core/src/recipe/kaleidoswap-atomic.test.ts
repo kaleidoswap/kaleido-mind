@@ -339,6 +339,9 @@ describe('kaleidoswapAtomicRecipe — channel liquidity preflight', () => {
       'your channels can send at most 51,000 sats, and this swap needs 53,000 sats (the amount plus the 3,000 sats HTLC minimum). Swap at most 48,000 sats, or buy a bigger channel.',
     );
     expect(swapLiquidityShortfall(btcToUsdt as never, { channels: [usdtChannel()] })).toBeNull();
+    expect(swapLiquidityShortfall(btcToUsdt as never, { channels: [usdtChannel({ next_outbound_htlc_limit_msat: 3_000_000 })] })).toBe(
+      'your channels can send at most 3,000 sats, which only covers the 3,000 sats HTLC minimum, so no BTC swap fits. This one needs 53,000 sats: buy a channel with more outbound.',
+    );
     expect(swapLiquidityShortfall(btcToUsdt as never, { channels: [] })).toMatch(/no channels/);
     expect(swapLiquidityShortfall(btcToUsdt as never, { channels: [usdtChannel({ ready: false })] })).toMatch(/none can send right now/);
   });
@@ -430,5 +433,38 @@ describe('kaleidoswapAtomicRecipe — outbound preflight (BTC leg + RLN HTLC min
     expect(res.text).toMatch(/can send at most 3,000 sats.*needs 53,000 sats/);
     expect(calls).toEqual(['kaleidoswap_get_quote', 'rln_get_node_info', 'rln_list_channels']);
     expect(confirms).toEqual([]);
+  });
+});
+
+describe('kaleidoswapAtomicRecipe — amounts and the deterministic path', () => {
+  it('converts a BTC amount said in sats to display units for the quote', async () => {
+    const { quoteAmount } = await import('./kaleidoswap-atomic.js');
+    expect(quoteAmount('BTC', 2500, 'Swap 2500 sats into USDT')).toBe(0.000025);
+    expect(quoteAmount('BTC', 0.001, 'swap 0.001 btc to usdt')).toBe(0.001);
+    expect(quoteAmount('BTC', 100000, 'swap 100000 into usdt')).toBe(0.001);
+    expect(quoteAmount('USDT', 10, 'swap 10 usdt for btc')).toBe(10);
+  });
+
+  it('runs "Swap 2500 sats into USDT" without a model, quoting 0.000025 BTC', async () => {
+    const quoteArgs: unknown[] = [];
+    const tools = new ToolRegistry([
+      new InProcessToolSource('k', [
+        {
+          name: 'kaleidoswap_get_quote',
+          description: 'q',
+          parameters: { type: 'object', properties: {} },
+          handler: async (a: Record<string, unknown>) => {
+            quoteArgs.push(a);
+            return { error: 'stop here' };
+          },
+        },
+      ]),
+    ]);
+    const res = await runRecipe(kaleidoswapAtomicRecipe, 'Swap 2500 sats into USDT on KaleidoSwap', {
+      provider: { name: 'none', async runTurn() { throw new Error('the model must not be called'); } } as LLMProvider,
+      tools,
+    });
+    expect(res.inferences).toBe(0);
+    expect(quoteArgs[0]).toMatchObject({ from_asset_id: 'BTC', to_asset_id: 'USDT', from_amount: 0.000025 });
   });
 });

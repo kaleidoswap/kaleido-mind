@@ -1,5 +1,17 @@
 /** Tool and model setup shared by the agent (index.ts) and the eval (eval.ts). */
-import { bindWalletTools, type LLMProvider, type ToolSource } from '@kaleidorg/mind';
+import {
+  Funnel,
+  ToolRegistry,
+  assetSendRecipe,
+  bindWalletTools,
+  paymentsRecipe,
+  receiveRecipe,
+  skillToolNames,
+  type LLMProvider,
+  type ToolSource,
+} from '@kaleidorg/mind';
+import { kaleidoswapAtomicRecipe, kaleidoswapPriceRecipe } from '@kaleidorg/mind/kaleidoswap';
+import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
 import { McpToolSource } from '@kaleidorg/mind/mcp';
 import { createOpenAICompatibleProvider } from '@kaleidorg/mind/openai';
 import { createQvacProvider } from '@kaleidorg/mind/qvac';
@@ -99,3 +111,27 @@ export async function loadQvacProvider(
     },
   };
 }
+
+/** The bundled skills. */
+export const SKILLS = loadSkillsDir(packagedSkillsDir());
+
+/** kaleido-mcp tools to expose: everything the RGB node and trading skills name. */
+export const AGENT_TOOLS = [
+  ...new Set(SKILLS.filter((s) => ['rgb-lightning-node', 'kaleido-trading'].includes(s.name)).flatMap(skillToolNames)),
+];
+
+/**
+ * The same pipeline the apps run: fast path (no model) → recipes (one model
+ * call at most, none for explicit phrasings) → skill-scoped agent.
+ */
+export function createFunnel(provider: LLMProvider, source: ToolSource): Funnel {
+  return new Funnel({
+    provider,
+    tools: new ToolRegistry([source]),
+    skills: SKILLS,
+    // Price before the swap, so "BTC price" never starts one.
+    recipes: [kaleidoswapPriceRecipe, kaleidoswapAtomicRecipe, assetSendRecipe, paymentsRecipe, receiveRecipe],
+    compressToolOutput: true,
+  });
+}
+

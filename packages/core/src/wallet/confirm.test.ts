@@ -60,8 +60,8 @@ describe('confirmReadback', () => {
       .toBe('Open a 100,000 sats channel to 03abcd…6789. Confirm?');
     expect(confirmReadback({ name: 'rln_close_channel', arguments: { channel_id: 'chan0123456789abcdef0123', peer_pubkey: 'x', force: true } }))
       .toBe('Force-close channel chan01…0123. Confirm?');
-    expect(confirmReadback({ name: 'rln_atomic_taker', arguments: { swapstring: '30/rgb:asset/10/btc/3600/abcdef0123456789' } }))
-      .toBe('Accept atomic swap 30/rgb…6789 on your node. Confirm?');
+    expect(confirmReadback({ name: 'rln_atomic_taker', arguments: { swapstring: '30/rgb:asset/10000/btc/3600/abcdef0123456789' } }))
+      .toBe('Accept atomic swap 30 units of rgb:asset ⇄ 10 sats (30/rgb…6789). Confirm?');
   });
 
   it('execute_swap: from → to with amount', () => {
@@ -88,5 +88,64 @@ describe('confirmReadback: LSP orders', () => {
     expect(
       confirmReadback({ name: 'kaleidoswap_lsp_create_asset_channel', arguments: { asset: 'USDT', asset_amount: 10, rfq_id: 'r' } }),
     ).toBe('Order a channel from the LSP with 10 USDT inbound. The order total is paid in a separate step. Confirm?');
+  });
+});
+
+describe('confirmReadback: accepting an atomic swap', () => {
+  const swapstring = '2500000/btc/1500000/rgb:usdt-abcdefgh/1791400000/ph1';
+  const quote = {
+    name: 'kaleidoswap_get_quote',
+    result: { from_asset: { ticker: 'BTC', amount_display: '2,500 sats' }, to_asset: { ticker: 'USDT', amount_display: '1.5' } },
+  };
+
+  it("shows the run's quote amounts", () => {
+    const init = { name: 'kaleidoswap_atomic_init', result: { swapstring, payment_hash: 'ph1' } };
+    expect(confirmReadback({ name: 'rln_atomic_taker', arguments: { swapstring } }, { results: [quote, init] })).toBe(
+      'Accept the atomic swap: you send 2,500 sats, you receive 1.5 USDT. Confirm?',
+    );
+  });
+
+  it('flags a swapstring that is not the one just created', () => {
+    const init = { name: 'kaleidoswap_atomic_init', result: { swapstring: 'other/btc/1/btc/1/x' } };
+    expect(confirmReadback({ name: 'rln_atomic_taker', arguments: { swapstring } }, { results: [quote, init] })).toMatch(
+      /\(this is not the swap just created\)\. Confirm\?$/,
+    );
+  });
+
+  it('decodes the swapstring when there is no quote', () => {
+    expect(confirmReadback({ name: 'wdk_atomic_taker', arguments: { swapstring } })).toMatch(
+      /^Accept atomic swap 2,500 sats ⇄ 1,500,000 units of rgb:/,
+    );
+  });
+});
+
+describe('confirmReadback: starting a KaleidoSwap swap', () => {
+  const quote = {
+    name: 'kaleidoswap_get_quote',
+    result: {
+      rfq_id: 'rfq-9',
+      from_asset: { ticker: 'BTC', amount_display: '2,500 sats', amount_raw: 2_500_000 },
+      to_asset: { ticker: 'USDT', amount_display: '2.020975', amount_raw: 2_020_975 },
+      expires_at: Math.floor(Date.now() / 1000) + 45,
+    },
+  };
+  const args = { rfq_id: 'rfq-9', from_asset_id: 'BTC', from_amount_raw: 2_500_000, to_asset_id: 'rgb:usdt', to_amount_raw: 2_020_975 };
+
+  it('reads the quote amounts and expiry', () => {
+    expect(confirmReadback({ name: 'kaleidoswap_atomic_init', arguments: args }, { results: [quote] })).toMatch(
+      /^Swap 2,500 sats for 2\.020975 USDT on KaleidoSwap \(quote expires in 4[0-9]s\)\. Confirm\?$/,
+    );
+    expect(confirmReadback({ name: 'kaleidoswap_atomic_execute', arguments: {} }, { results: [quote] })).toBe(
+      'Settle the KaleidoSwap swap: you send 2,500 sats, you receive 2.020975 USDT. Confirm?',
+    );
+  });
+
+  it('flags amounts that differ from the quote, and reads raw amounts without one', () => {
+    expect(confirmReadback({ name: 'kaleidoswap_atomic_init', arguments: { ...args, to_amount_raw: 1 } }, { results: [quote] })).toMatch(
+      /\(the amounts sent differ from the quote\)\. Confirm\?$/,
+    );
+    expect(confirmReadback({ name: 'kaleidoswap_atomic_init', arguments: args })).toBe(
+      'Swap 2,500 sats for 2,020,975 raw units of rgb:usdt on KaleidoSwap (no quote in this conversation). Confirm?',
+    );
   });
 });

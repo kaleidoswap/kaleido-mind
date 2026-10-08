@@ -17,9 +17,8 @@
  * confirmation gate (a real asset on signet); the send is always declined.
  */
 import { appendFileSync } from 'node:fs';
-import { Funnel, ToolRegistry, type ConfirmDecision } from '@kaleidorg/mind';
-import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
-import { createTools, loadProvider } from './setup.js';
+import { type ConfirmDecision } from '@kaleidorg/mind';
+import { createFunnel, createTools, loadProvider } from './setup.js';
 
 const MOCK = process.argv.includes('--mock') || process.env.MOCK === '1';
 const REPEAT = Math.max(1, Number(process.env.REPEAT ?? 1) || 1);
@@ -29,6 +28,7 @@ const LIVE_TOOLS = [
   'rln_create_rgb_invoice', 'rln_send_asset', 'rln_create_utxos', 'rln_issue_asset', 'rln_list_transfers',
   'rln_create_ln_invoice', 'rln_list_channels',
   'kaleidoswap_get_assets', 'kaleidoswap_get_pairs', 'kaleidoswap_get_quote',
+  'kaleidoswap_atomic_init', 'rln_atomic_taker', 'kaleidoswap_atomic_execute', 'kaleidoswap_atomic_status',
   'rln_connect_peer', 'rln_send_btc', 'rln_pay_invoice',
   'kaleidoswap_lsp_get_info', 'kaleidoswap_lsp_estimate_fees', 'kaleidoswap_lsp_create_order', 'kaleidoswap_lsp_get_order',
   'kaleidoswap_lsp_quote_asset_channel', 'kaleidoswap_lsp_create_asset_channel',
@@ -121,12 +121,7 @@ const tools = await createTools({ mock: MOCK, allow: LIVE_TOOLS });
 const { provider, dispose } = await loadProvider();
 let failures = 0;
 try {
-  const funnel = new Funnel({
-    provider,
-    tools: new ToolRegistry([tools.source]),
-    skills: loadSkillsDir(packagedSkillsDir()),
-    compressToolOutput: true,
-  });
+  const funnel = createFunnel(provider, tools.source);
 
   const passes = new Map<string, number>();
   for (const s of scenarios) for (let rep = 1; rep <= REPEAT; rep++) {
