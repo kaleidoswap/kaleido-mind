@@ -5,6 +5,37 @@ apps) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.8] — 2026-10-08
+
+`@kaleidorg/mind` 0.10.8, `@kaleidorg/create-mind` 0.3.4.
+
+### Fixed
+
+- Swap recipe units: `kaleidoswap_get_quote` takes display units, but the
+  recipe passed a BTC amount said in sats as is ("swap 2500 sats" → 2,500
+  BTC on kaleido-mcp hosts). It converts now (`quoteAmount`: sats → BTC; an
+  amount said in BTC is kept; without a unit, < 1 is BTC and ≥ 1 is sats).
+- "Swap 2500 sats into USDT" no longer reaches the model: an explicit
+  "swap / convert / exchange / trade / sell <N> <asset> for|to|into <asset>"
+  uses the deterministic extraction (`Recipe.trustExtract`). Qwen3.5 2B read
+  it as 2,500 USDT and gave up after 170 s. Checked against a signet node
+  through kaleido-mcp 0.4.3: recipe route, no model call, real quote, and the
+  channel check stops it before the confirmation.
+- Accepting an atomic swap (`rln_atomic_taker`, `wdk_atomic_taker`) is read
+  back with the run's quote amounts ("you send 2,500 sats, you receive
+  1.5 USDT"), flags a swapstring that isn't the swap just created, and decodes
+  the swapstring when there is no quote. `confirmReadback` takes an optional
+  context with earlier results.
+- Swap channel check: when the outbound only covers the HTLC minimum, the
+  message says no BTC swap fits instead of "swap at most 0 sats".
+
+### Changed
+
+- rgb-agent example and the `create-mind` starter run through the Funnel
+  (`createFunnel` in `setup.ts`: fast path, swap/price/send/receive recipes,
+  skills), the same pipeline as the apps, and expose the RGB node and trading
+  skills' tools. The eval exposes the atomic swap tools.
+
 ## [0.10.7] — 2026-10-08
 
 ### Fixed

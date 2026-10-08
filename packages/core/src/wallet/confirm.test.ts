@@ -60,8 +60,8 @@ describe('confirmReadback', () => {
       .toBe('Open a 100,000 sats channel to 03abcd…6789. Confirm?');
     expect(confirmReadback({ name: 'rln_close_channel', arguments: { channel_id: 'chan0123456789abcdef0123', peer_pubkey: 'x', force: true } }))
       .toBe('Force-close channel chan01…0123. Confirm?');
-    expect(confirmReadback({ name: 'rln_atomic_taker', arguments: { swapstring: '30/rgb:asset/10/btc/3600/abcdef0123456789' } }))
-      .toBe('Accept atomic swap 30/rgb…6789 on your node. Confirm?');
+    expect(confirmReadback({ name: 'rln_atomic_taker', arguments: { swapstring: '30/rgb:asset/10000/btc/3600/abcdef0123456789' } }))
+      .toBe('Accept atomic swap 30 units of rgb:asset ⇄ 10 sats (30/rgb…6789). Confirm?');
   });
 
   it('execute_swap: from → to with amount', () => {
@@ -88,5 +88,33 @@ describe('confirmReadback: LSP orders', () => {
     expect(
       confirmReadback({ name: 'kaleidoswap_lsp_create_asset_channel', arguments: { asset: 'USDT', asset_amount: 10, rfq_id: 'r' } }),
     ).toBe('Order a channel from the LSP with 10 USDT inbound. The order total is paid in a separate step. Confirm?');
+  });
+});
+
+describe('confirmReadback: accepting an atomic swap', () => {
+  const swapstring = '2500000/btc/1500000/rgb:usdt-abcdefgh/1791400000/ph1';
+  const quote = {
+    name: 'kaleidoswap_get_quote',
+    result: { from_asset: { ticker: 'BTC', amount_display: '2,500 sats' }, to_asset: { ticker: 'USDT', amount_display: '1.5' } },
+  };
+
+  it("shows the run's quote amounts", () => {
+    const init = { name: 'kaleidoswap_atomic_init', result: { swapstring, payment_hash: 'ph1' } };
+    expect(confirmReadback({ name: 'rln_atomic_taker', arguments: { swapstring } }, { results: [quote, init] })).toBe(
+      'Accept the atomic swap: you send 2,500 sats, you receive 1.5 USDT. Confirm?',
+    );
+  });
+
+  it('flags a swapstring that is not the one just created', () => {
+    const init = { name: 'kaleidoswap_atomic_init', result: { swapstring: 'other/btc/1/btc/1/x' } };
+    expect(confirmReadback({ name: 'rln_atomic_taker', arguments: { swapstring } }, { results: [quote, init] })).toMatch(
+      /\(this is not the swap just created\)\. Confirm\?$/,
+    );
+  });
+
+  it('decodes the swapstring when there is no quote', () => {
+    expect(confirmReadback({ name: 'wdk_atomic_taker', arguments: { swapstring } })).toMatch(
+      /^Accept atomic swap 2,500 sats ⇄ 1,500,000 units of rgb:/,
+    );
   });
 });

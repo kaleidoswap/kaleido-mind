@@ -76,7 +76,7 @@ export async function extractSlots(
   const det = recipe.extract?.(text);
   const detValid = det && Object.values(det).some((v) => v !== undefined && v !== null && v !== '');
 
-  if (detValid && !recipe.forceModelExtract) {
+  if (detValid && (!recipe.forceModelExtract || recipe.trustExtract?.(text))) {
     return { slots: det, inferences: 0 };
   }
 

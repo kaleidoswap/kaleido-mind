@@ -14,40 +14,20 @@
  *        RLN_NODE_URL       your RLN node (default inside kaleido-mcp: http://localhost:3001)
  */
 import { createInterface } from 'node:readline/promises';
-import {
-  Engine,
-  SkillRegistry,
-  skillToolNames,
-  ToolRegistry,
-  confirmReadback,
-  type ConfirmDecision,
-  type LLMProvider,
-} from '@kaleidorg/mind';
-import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
+import { confirmReadback, type ConfirmDecision, type LLMProvider } from '@kaleidorg/mind';
 import { scriptedProvider } from '@kaleidorg/mind/testing';
-import { createTools, loadProvider } from './setup.js';
+import { AGENT_TOOLS, createFunnel, createTools, loadProvider } from './setup.js';
 
 const flag = (name: string) => process.argv.includes(`--${name}`);
 const MOCK = flag('mock') || process.env.MOCK === '1';
 const SCRIPTED = flag('scripted');
 const AUTO_YES = flag('yes');
 
-// All bundled skills. composeSkill() skips the ones whose tools this registry
-// lacks (e.g. spark-wallet without Spark tools) before the model runs.
-const skillList = loadSkillsDir(packagedSkillsDir());
-// Expose exactly what the RGB skill names (its requires-tools too), so the
-// skill is never dropped for a missing tool.
-const rgbSkill = skillList.find((s) => s.name === 'rgb-lightning-node');
-const RLN_TOOLS = rgbSkill
-  ? skillToolNames(rgbSkill)
-  : ['rln_get_node_info', 'rln_list_assets', 'rln_create_rgb_invoice', 'rln_send_asset', 'rln_create_ln_invoice'];
-
 async function createProvider(): Promise<{ provider: LLMProvider; dispose: () => Promise<void> }> {
   if (SCRIPTED) {
     return {
+      // The asset list is answered on the fast path, without the model.
       provider: scriptedProvider([
-        { tool: 'rln_list_assets' },
-        { text: 'You hold 1,000 USDT and 2 XAUT.' },
         { tool: 'rln_create_rgb_invoice', args: { asset: 'USDT', amount: 10 } },
         { text: 'Here is your RGB invoice for 10 USDT.' },
         { tool: 'rln_send_asset', args: { asset: 'USDT', amount: 5, to: recipient() } },
@@ -81,12 +61,12 @@ async function confirm(call: { name: string; arguments: Record<string, unknown> 
   return /^y(es)?$/i.test(answer.trim()) ? { approved: true } : { approved: false, reason: 'user declined' };
 }
 
-const tools = await createTools({ mock: MOCK, allow: RLN_TOOLS });
+// Expose exactly what the RGB node and trading skills name (their
+// requires-tools too), so a skill is never dropped for a missing tool.
+const tools = await createTools({ mock: MOCK, allow: AGENT_TOOLS });
 const { provider, dispose } = await createProvider();
 try {
-  const skills = new SkillRegistry(skillList);
-  const engine = new Engine({ provider, tools: new ToolRegistry([tools.source]), compressToolOutput: true });
-  const base = 'You operate the user\'s RGB Lightning Node. Use tools for every value; never invent ids or invoices. Copy invoices exactly.';
+  const funnel = createFunnel(provider, tools.source);
 
   const steps = [
     'Which RGB assets do I hold, and what are the balances?',
@@ -96,19 +76,13 @@ try {
   if (!recipient()) console.error('[skipping the send step: set RECIPIENT_INVOICE to an RGB invoice to pay]');
 
   for (const question of steps) {
-    const { skill, system, allowedTools } = await engine.composeSkill(skills, question, base);
-    console.error(`\n> ${question}  [skill: ${skill?.name ?? 'none'}]`);
-    const result = await engine.runAgentic(
-      [
-        { role: 'system', content: system },
-        { role: 'user', content: question },
-      ],
-      {
-        allowedTools,
-        onConfirm: confirm,
-        onToolCall: (c) => console.error(`  tool ${c.name} ${JSON.stringify(c.arguments)}`),
-      },
-    );
+    console.error(`\n> ${question}`);
+    const result = await funnel.runTurn(question, {
+      onConfirm: confirm,
+      onToolCall: (c) => console.error(`  tool ${c.name} ${JSON.stringify(c.arguments)}`),
+      onStep: (name) => console.error(`  step ${name}`),
+    });
+    console.error(`  [${result.tier}${result.route ? `/${result.route}` : ''}]`);
     console.log(result.text);
   }
 } finally {

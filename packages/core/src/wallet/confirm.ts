@@ -63,7 +63,52 @@ const asset = (amount: unknown, ticker: unknown) => {
 };
 
 /** A spoken confirmation ending in "Confirm?", or null for non-spend tools. */
-export function confirmReadback(call: { name: string; arguments: Record<string, unknown> }): string | null {
+/** What earlier calls in the same run returned, for readbacks that depend on them. */
+export interface ReadbackContext {
+  results?: Array<{ name: string; result: unknown }>;
+}
+
+type QuoteLeg = { ticker?: string; amount_display?: string };
+
+const legText = (leg?: QuoteLeg) =>
+  leg?.amount_display ? `${leg.amount_display}${leg.ticker && !/sats?$/i.test(leg.amount_display) ? ` ${leg.ticker}` : ''}` : undefined;
+
+const lastResult = (ctx: ReadbackContext | undefined, re: RegExp): Record<string, any> | undefined => {
+  const hit = [...(ctx?.results ?? [])].reverse().find((r) => re.test(r.name));
+  let r = hit?.result;
+  if (typeof r === 'string') {
+    try {
+      r = JSON.parse(r);
+    } catch {
+      return undefined;
+    }
+  }
+  return r && typeof r === 'object' ? (r as Record<string, any>) : undefined;
+};
+
+/** RLN swapstring: qty_from/from_asset/qty_to/to_asset/expiry/payment_hash (BTC in msat). */
+function swapstringLegs(swapstring: string): string | undefined {
+  const [qtyFrom, from, qtyTo, to] = swapstring.split('/');
+  if (!qtyFrom || !from || !qtyTo || !to || !/^\d+$/.test(qtyFrom) || !/^\d+$/.test(qtyTo)) return undefined;
+  const leg = (qty: string, asset: string) =>
+    asset === 'btc' ? sats(Math.floor(Number(qty) / 1000)) : `${Number(qty).toLocaleString('en-US')} units of ${shortRef(asset)}`;
+  return `${leg(qtyFrom, from)} ⇄ ${leg(qtyTo, to)}`;
+}
+
+function atomicTakerReadback(swapstring: string, ctx?: ReadbackContext): string {
+  const quote = lastResult(ctx, /(^|_)get_quote$/);
+  const init = lastResult(ctx, /(^|_)atomic_init$/);
+  const from = legText(quote?.from_asset);
+  const to = legText(quote?.to_asset);
+  if (from && to) {
+    const other = init?.swapstring && init.swapstring !== swapstring ? ' (this is not the swap just created)' : '';
+    return `Accept the atomic swap: you send ${from}, you receive ${to}${other}`;
+  }
+  const legs = swapstringLegs(swapstring);
+  return legs ? `Accept atomic swap ${legs} (${shortRef(swapstring)})` : `Accept atomic swap ${shortRef(swapstring)}`;
+}
+
+export function confirmReadback(call: { name: string; arguments: Record<string, unknown> }, context?: ReadbackContext): string | null {
   const { name, arguments: a } = call;
   const to = (k = 'to') => shortRef(String(a[k] ?? ''));
   const ask = (s: string) => `${s}. Confirm?`;
@@ -103,7 +148,8 @@ export function confirmReadback(call: { name: string; arguments: Record<string, 
     case 'rln_close_channel':
       return ask(`${a.force ? 'Force-close' : 'Close'} channel ${shortRef(String(a.channel_id ?? ''))}`);
     case 'rln_atomic_taker':
-      return ask(`Accept atomic swap ${shortRef(String(a.swapstring ?? ''))} on your node`);
+    case 'wdk_atomic_taker':
+      return ask(atomicTakerReadback(String(a.swapstring ?? ''), context));
     case 'execute_swap':
       return ask(`Swap ${asset(a.amount, a.from_asset)} for ${label(a.to_asset)}`);
     // The order total is only known once the LSP creates the order; the

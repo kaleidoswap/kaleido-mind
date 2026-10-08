@@ -367,7 +367,7 @@ export class Engine {
         };
       } else if (def.requiresConfirmation) {
         args = check.args;
-        const summary = confirmReadback({ name: call.name, arguments: args }) ?? undefined;
+        const summary = confirmReadback({ name: call.name, arguments: args }, { results: state.executed }) ?? undefined;
         const decision = opts.onConfirm
           ? await opts.onConfirm({ name: call.name, arguments: args, ...(summary ? { summary } : {}) })
           : { approved: false, reason: 'no confirmation handler available' };

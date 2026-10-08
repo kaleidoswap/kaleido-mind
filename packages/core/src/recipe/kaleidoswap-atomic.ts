@@ -85,6 +85,24 @@ interface QuoteResult {
 const layerFor = (asset: unknown): string =>
   /^btc$/i.test(String(asset)) ? 'BTC_LN' : 'RGB_LN';
 
+/**
+ * `kaleidoswap_get_quote` takes display units (0.0005 BTC). The slots carry
+ * what the user said: a BTC amount said in sats ("2500 sats") is converted;
+ * one said in BTC ("0.001 btc") is kept. Without a unit word, below 1 reads as
+ * BTC and 1 or more as sats.
+ */
+export function quoteAmount(asset: unknown, amount: unknown, text = ''): unknown {
+  const n = Number(amount);
+  if (!/^(btc|sats?|bitcoin)$/i.test(String(asset ?? '').trim()) || !Number.isFinite(n)) return amount;
+  const saidSats = /\b(sats?|satoshis?)\b/i.test(text);
+  const saidBtc = /\b(btc|bitcoins?)\b/i.test(text.replace(/\b(sats?|satoshis?)\b/gi, ''));
+  const inSats = saidSats || (!saidBtc && n >= 1);
+  return inSats ? n / 1e8 : n;
+}
+
+/** "swap|convert|exchange|trade|sell <N> <asset> for|to|into <asset>": nothing for a model to resolve. */
+const EXPLICIT_SWAP = /\b(?:swap|convert|exchange|trade|sell)\s+\d[\d,]*(?:\.\d+)?\s*(?:sats?|satoshis?|btc|bitcoin|usdt|xaut)\s+(?:for|to|into)\s+(?:sats?|btc|bitcoin|usdt|xaut)\b/i;
+
 /** RLN's minimum HTLC for RGB payments when the node doesn't report one (rgb_htlc_min_msat). */
 export const RLN_HTLC_MIN_MSAT = 3_000_000;
 
@@ -157,9 +175,13 @@ export function swapLiquidityShortfall(
     const maxOut = maxOver(rows, outbound);
     if (amount !== undefined && maxOut !== undefined && maxOut < amount + htlcMinMsat) {
       const need = amount + htlcMinMsat;
-      return maxOut === 0
-        ? `this swap needs a Lightning channel that can send ${fmtSats(need)} (the amount plus the ${min} HTLC minimum), and none can send right now. Buy a channel with at least that much outbound first.`
-        : `your channels can send at most ${fmtSats(maxOut)}, and this swap needs ${fmtSats(need)} (the amount plus the ${min} HTLC minimum). Swap at most ${fmtSats(Math.max(0, maxOut - htlcMinMsat))}, or buy a bigger channel.`;
+      if (maxOut === 0) {
+        return `this swap needs a Lightning channel that can send ${fmtSats(need)} (the amount plus the ${min} HTLC minimum), and none can send right now. Buy a channel with at least that much outbound first.`;
+      }
+      if (maxOut <= htlcMinMsat) {
+        return `your channels can send at most ${fmtSats(maxOut)}, which only covers the ${min} HTLC minimum, so no BTC swap fits. This one needs ${fmtSats(need)}: buy a channel with more outbound.`;
+      }
+      return `your channels can send at most ${fmtSats(maxOut)}, and this swap needs ${fmtSats(need)} (the amount plus the ${min} HTLC minimum). Swap at most ${fmtSats(Math.max(0, maxOut - htlcMinMsat))}, or buy a bigger channel.`;
     }
     const want = num(to?.amount_raw);
     if (hasAssetData && want !== undefined) {
@@ -219,6 +241,9 @@ export const kaleidoswapAtomicRecipe: Recipe = {
   // always ask the model to produce the actual slots used for execution.
   extract: extractSwap,
   forceModelExtract: true,
+  // An explicit amount + both assets needs no model, which small models
+  // otherwise misread ("2500 sats into USDT" as 2,500 USDT).
+  trustExtract: (text) => EXPLICIT_SWAP.test(text),
   confident: (s) => !!s.from_asset && !!s.to_asset && !!s.amount,
   steps: [
     // 1. MAKER quotes the swap (read-only). Returns rfq_id + full asset specs
@@ -237,9 +262,9 @@ export const kaleidoswapAtomicRecipe: Recipe = {
           from_layer: layerFor(ctx.slots.from_asset),
           to_layer: layerFor(ctx.slots.to_asset),
         };
-        return side === 'to'
-          ? { ...base, to_amount: ctx.slots.amount }
-          : { ...base, from_amount: ctx.slots.amount };
+        const asset = side === 'to' ? ctx.slots.to_asset : ctx.slots.from_asset;
+        const amount = quoteAmount(asset, ctx.slots.amount, ctx.text);
+        return side === 'to' ? { ...base, to_amount: amount } : { ...base, from_amount: amount };
       },
     },
     // 1b. NODE: pubkey for execute, and the node's RGB HTLC minimum.
