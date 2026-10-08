@@ -18,13 +18,28 @@ interface RgbAsset {
   amounts: number[];
 }
 
-const BALANCE_FIELDS = ['settled', 'spendable', 'future'] as const;
+// On-chain fields, plus the asset held in Lightning channels (`offchain_outbound`),
+// which is where most RGB-LN users keep it.
+const BALANCE_FIELDS = ['settled', 'spendable', 'future', 'offchain_outbound'] as const;
+
+/** On-chain spendable + in channels, in raw units; undefined when neither is reported. */
+export function rgbHoldings(balance: unknown): { onchain: number; channels: number; total: number } | undefined {
+  if (!isObj(balance)) return undefined;
+  const onchainRaw = balance.spendable ?? balance.settled;
+  const channelsRaw = balance.offchain_outbound;
+  if (typeof onchainRaw !== 'number' && typeof channelsRaw !== 'number') return undefined;
+  const onchain = typeof onchainRaw === 'number' ? onchainRaw : 0;
+  const channels = typeof channelsRaw === 'number' ? channelsRaw : 0;
+  return { onchain, channels, total: onchain + channels };
+}
 
 const isObj = (v: unknown): v is Obj => !!v && typeof v === 'object' && !Array.isArray(v);
 
 function asAsset(v: Obj): RgbAsset | null {
   if (typeof v.ticker !== 'string' || !v.ticker || !isObj(v.balance)) return null;
   const amounts = BALANCE_FIELDS.map((k) => (v.balance as Obj)[k]).filter((n): n is number => typeof n === 'number');
+  const held = rgbHoldings(v.balance);
+  if (held && held.channels) amounts.push(held.total);
   if (!amounts.length) return null;
   const precision = typeof v.precision === 'number' && v.precision > 0 ? v.precision : 0;
   return { ticker: v.ticker, precision, amounts };
@@ -49,6 +64,8 @@ export function annotateRgbBalances(result: unknown): unknown {
     for (const k of BALANCE_FIELDS) {
       if (typeof balance[k] === 'number') display[k] = `${formatRgbAmount(balance[k] as number, asset.precision)} ${asset.ticker}`;
     }
+    const held = rgbHoldings(balance);
+    if (held?.channels) display.total = `${formatRgbAmount(held.total, asset.precision)} ${asset.ticker}`;
     out.balance_display = display;
   }
   return out;
