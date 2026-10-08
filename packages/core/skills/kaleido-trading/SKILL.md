@@ -17,10 +17,10 @@ ticker (`BTC`, `USDT`, `XAUT`) or an `rgb:…` id.
 A swap runs over Lightning: it needs a channel with enough outbound in the
 asset you send and enough inbound in the asset you receive. If
 `rln_list_channels` shows none, buy one first (see `channel-manager`).
-Sending BTC, the node sends the amount plus 3,000 sats (the RGB node's HTLC
-minimum) in one payment, so one usable channel needs outbound of at least
-amount + 3,000 sats. Less than that: offer a smaller swap (outbound − 3,000)
-or a bigger channel.
+Each leg is one payment plus the node's 3,000-sat HTLC minimum: sending BTC
+needs one channel with outbound ≥ amount + 3,000 sats, receiving BTC inbound ≥
+amount + 3,000; the asset side needs an asset channel holding the asset (or
+inbound for it). Short: offer a smaller swap or a bigger channel.
 
 ## Do
 - Quote with exactly one amount: `from_amount` to sell a fixed input,
