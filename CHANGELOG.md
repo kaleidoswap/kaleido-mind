@@ -5,6 +5,28 @@ apps) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.12] / [mind-provider 0.10.2] — 2026-10-08
+
+Host knobs for a desktop release that narrows the agent.
+
+### Added
+
+- `McpToolSource({ allowPrefixes })`: only tools whose name starts with one of
+  the prefixes are exposed (next to `denyPrefixes`).
+- mind-provider:
+  - `set_generation_limits { thinking: boolean }` turns model reasoning on or
+    off for every model call (off = `reasoning_budget` 0). Persisted with the
+    other settings, reported in `agent_state.generation.thinking`. Default
+    from `KALEIDO_MIND_THINKING` (`0` = off, otherwise on).
+  - `KALEIDO_MIND_SKILLS=a,b,c`: only those packaged skills load and appear in
+    `list_capabilities`; skills the user added in `~/.kaleido/skills` still
+    load.
+  - `KALEIDO_MIND_TOOL_PREFIXES=rln_,kaleidoswap_,…`: every MCP source
+    (kaleido-mcp, Bitrefill, user-added servers) exposes only tools with
+    those prefixes, and skill tool lists are filtered the same way.
+  - `KALEIDO_MIND_MAX_TOKENS_CEILING=N`: the output cap is clamped to at most
+    N; `maxOutputTokens` ≤ 0 (uncapped) becomes N.
+
 ## [0.10.11] — 2026-10-08
 
 `@kaleidorg/mind` 0.10.11, `@kaleidorg/create-mind` 0.3.5.

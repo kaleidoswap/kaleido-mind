@@ -83,7 +83,7 @@ export interface AgentStateWire {
   risk: RiskLimitsWire;
   targets: PortfolioTargetsWire;
   /** Generation token caps (0 ⇒ uncapped). */
-  generation: { maxThinkingTokens: number; maxOutputTokens: number };
+  generation: { maxThinkingTokens: number; maxOutputTokens: number; thinking: boolean };
   recent: TaskRunRecordWire[];
   stats: Record<string, TaskStatsWire>;
   cumulative: TaskRunCostWire;
@@ -176,7 +176,7 @@ export type Command =
   | { id: string; cmd: 'set_risk_limits'; limits: Partial<RiskLimitsWire> }
   | { id: string; cmd: 'set_portfolio_targets'; targets: Partial<PortfolioTargetsWire> }
   // Token caps (0 ⇒ uncapped); read live each turn — no restart needed.
-  | { id: string; cmd: 'set_generation_limits'; maxThinkingTokens?: number; maxOutputTokens?: number }
+  | { id: string; cmd: 'set_generation_limits'; maxThinkingTokens?: number; maxOutputTokens?: number; thinking?: boolean }
   | { id: string; cmd: 'get_suggested_actions' }
   | { id: string; cmd: 'shutdown' };
 
