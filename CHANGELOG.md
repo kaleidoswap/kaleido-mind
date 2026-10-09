@@ -1,5 +1,11 @@
 # Changelog
 
+## Companion packages — 2026-10-09
+
+- `@kaleidorg/mind-provider@0.11.0` packages the sidecar against Mind ^0.11.0.
+- `@kaleidorg/create-mind@0.3.6` generates an offline-first starter with Mind ^0.11.0.
+- CI verifies discovery against the released `kaleido-mcp@0.5.0`.
+
 ## [0.11.0] — 2026-10-09
 
 - Gate MCP wallet spends consistently across RLN/WDK aliases, Spark, Liquid and MPP, plus signing and node mutations.
