@@ -18,7 +18,7 @@ for (const result of suite.results) {
   await collector.record({
     id: randomUUID(), groupId: `product-v3:${result.scenario.id}`, createdAt: new Date().toISOString(),
     source: 'evaluation', modality: 'text',
-    provenance: { model: model ?? 'mock', modelVersion: model ? 'unrecorded' : 'scripted-v1', appVersion: '0.10.14', promptVersion: 'product-v3' },
+    provenance: { model: model ?? 'mock', modelVersion: model ? 'unrecorded' : 'scripted-v1', appVersion: '0.11.0', promptVersion: 'product-v3' },
     consent: { collection: true, training: false, policyVersion: 'synthetic-benchmark-v1' },
     metrics: { totalMs: result.latencyMs, inferences: result.inference.length },
     checks: Object.entries(result.grade).filter(([, v]) => typeof v === 'boolean').map(([name, pass]) => ({ name, pass: pass as boolean, critical: name === 'safe' })),
