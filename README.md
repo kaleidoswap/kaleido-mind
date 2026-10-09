@@ -1,17 +1,24 @@
 # kaleido-mind
 
-> Sovereign AI for sovereign money. A local-first, agentic financial assistant for multi-layer Bitcoin wallets. It trades, pays, onboards and finds merchants across Spark, RGB/Lightning and Arkade, by chat or voice, fully on-device.
+KaleidoMind is a TypeScript engine for building AI assistants that use Bitcoin
+wallet tools. It handles tool calls, skills, multi-step recipes and confirmation
+callbacks. Your application supplies the model, wallet connections and interface.
 
-`@kaleidorg/mind` is the reasoning and tool-calling engine behind that
-assistant. It runs the same agent on a phone, a laptop or a server. Inference
-goes through the [QVAC SDK](https://www.npmjs.com/package/@qvac/sdk), locally. Paired-device inference is not currently available. The design starts from one
-constraint: **small on-device models are slow and weak at arguments**, so they
-are never asked to do the slow or weak parts.
+## Choose your starting point
 
-**Start here:**
-[package docs and quickstart](./packages/core/README.md) ·
-[examples](./examples) ·
-[architecture](./docs/ARCHITECTURE.md)
+| I want to… | Start here |
+|---|---|
+| Try an agent without a model download or node | [Create a project](#start-a-project), then `npm run start:offline` |
+| Add Bitcoin tools to an existing MCP client | [Use the MCP server](#use-with-claude-code--claude-desktop); you do not need to embed Mind |
+| Add an agent to my application | [Core package quickstart](./packages/core/README.md) |
+| Connect a real RGB node | [RGB agent example](./examples/rgb-agent/README.md) |
+| Understand the components | [Architecture](./docs/ARCHITECTURE.md) |
+| Contribute or run checks | [Development](#development) |
+
+**Requirements:** Node.js 20+ for the examples; pnpm 9 for repository development.
+QVAC is optional and needed only for on-device inference. An OpenAI-compatible
+model server or the scripted offline provider can be used instead. See the
+[package requirements](./packages/core/README.md#install) before choosing a runtime.
 
 ## Start a project
 
@@ -19,7 +26,7 @@ are never asked to do the slow or weak parts.
 npm create @kaleidorg/mind my-agent
 cd my-agent && npm install
 npm run start:offline   # fake node + scripted model: checks the setup, no download
-npm run start:mock      # fake node + Qwen3.5 2B on-device
+npm run start:mock      # optional next step: fake node + local model download
 ```
 
 The starter is a standalone copy of [`examples/rgb-agent`](./examples/rgb-agent):
@@ -128,10 +135,10 @@ cd ../rgb-agent && pnpm start:mock          # fake RLN node, real local model
 
 ## How it works
 
-1. **One tool contract, many transports.** The model sees the same tool names
-   and schemas everywhere. Only execution changes: in-process wallet adapters
-   on mobile, an MCP server or CLI on desktop, stateful simulators in tests.
-   Skills are therefore portable and benchmarks are comparable.
+1. **Pluggable tool sources.** Use in-process wallet adapters, MCP or a CLI.
+   The model sees the connected source's actual schemas. Some wire names and
+   arguments differ from the in-process contracts; [MCP integration](./packages/core/README.md#connecting-an-mcp-server)
+   explains normalization and compatibility.
 2. **Recipes, not planning.** A small model can't reliably plan *"pay bob 3
    EUR"* (resolve → price → convert → confirm → send). A recipe carries the
    plan and the model only fills the slots, which takes about one inference
@@ -146,9 +153,10 @@ user request
   └─ T1  agentic loop  everything else                        → skill-scoped LLM with tools
 ```
 
-**Confirm-before-spend is structural.** Every tool that moves funds is marked
-`requiresConfirmation` in the contract, so the engine pauses for the host's
-confirm sheet and the model can't bypass it. The sheet shows a deterministic
+**Confirmation is enforced for classified tools.** Tools marked
+`requiresConfirmation` pause for the host's confirmation callback and are denied
+if no callback is supplied. Mark custom spending tools explicitly; the engine
+cannot infer the effects of an arbitrary handler. The sheet shows a deterministic
 readback built from the resolved call, not from the model (*"Send 4,800 sats to
 bob over Spark. Confirm?"*).
 

@@ -1,204 +1,45 @@
-# KaleidoMind — Master Plan
+# KaleidoMind roadmap
 
-> P2P delegation to a paired desktop, mentioned below, used QVAC's provider
-> API, which `@qvac/sdk` 0.19 removed. A remote model is now reached through an
-> OpenAI-compatible server (`@kaleidorg/mind/openai`).
+This page separates current capabilities from proposed work. It is not a release
+schedule. See [CHANGELOG.md](../CHANGELOG.md) for released changes and the
+[architecture](./ARCHITECTURE.md) for the implementation boundaries.
 
-Consolidated execution plan: architecture, the mobile-optimized agent (incl.
-multi-step on a phone), skills, safety, the eval, and the phased roadmap.
-Design rationale lives in [ARCHITECTURE.md](./ARCHITECTURE.md); methodology
-findings in [BENCHMARK.md](./BENCHMARK.md) and [MEMORY_RAG.md](./MEMORY_RAG.md).
+## Available building blocks
 
-## 0. Goal
+- Engine and tiered funnel, deterministic recipes and skill-scoped tool calling.
+- In-process, MCP, CLI and paid-HTTP tool sources.
+- QVAC and OpenAI-compatible model providers.
+- Confirmation callbacks, mock wallets and scripted providers.
+- Node examples, a project starter and the desktop provider sidecar.
+- Injected memory/RAG and voice helpers; each host chooses which to enable.
 
-A private, on-device AI that drives a **multi-L2 Bitcoin wallet** (Spark · RLN/RGB
-· Arkade · Liquid) across **mobile and desktop**, resolving real requests —
-*"what's my balance", "invoice 25 USDT on Liquid", "pay bob 3 EUR", "buy 0.001
-BTC with USDT"* — with **great UX on limited mobile hardware** and a hard
-**confirm-before-spend** gate. We measure which QVAC model is best **per device**
-(accuracy + thinking-time + reliability).
+Library support does not mean every host exposes a feature. Check the host's
+configuration, package versions and connected tool catalog.
 
----
+## Current hardening work — unreleased
 
-## 1. Architecture (locked — see ARCHITECTURE.md)
+- Consistent MCP confirmation classification for wallet aliases and node mutations.
+- Explicit Spark invoice compatibility in the MCP adapter.
+- Cross-package catalog checks in CI.
+- In the MCP repository: HTTP session lifecycle and durable submarine funding attempts.
 
-- **One tool contract, many transports.** Identical tool names/schemas everywhere.
-- **Contract lives in `@kaleidorg/mind`** (core, single source of truth).
-- **Desktop:** one `kaleido-mcp`, tools **namespaced per layer** (`spark_*`,
-  `rln_*`, `arkade_*`) + a `kaleido` CLI mirror.
-- **Mobile:** in-process tools (WDK adapters) **by default**, **P2P-delegate to a
-  paired desktop optional**. No CLI.
-- **Safety:** spend tools are `requiresConfirmation`; the Engine pauses for the
-  host's `onConfirm`. Mobile → sheet, desktop → dialog, eval → auto-approve.
+## Proposed next work
 
----
-
-## 2. The mobile-optimized agent — a funnel
-
-Mobile is resource-limited and tiny models are slow + weak at arguments (our
-eval). So the agent **avoids making the model do the slow/weak parts**. Every
-request flows through tiers; most never reach the LLM.
-
-```
-request
-  │
-  ├─ T0  Deterministic fast-path  (NO LLM)            ~instant
-  │      skill selector + regex slot-fill → fire tool directly
-  │      e.g. "balance", "receive address", "send 5k to bob"
-  │
-  ├─ T1  Single scoped LLM call                       1 inference
-  │      skill narrows tools to 3-9 + few-shot → one tool call, streamed
-  │      e.g. ambiguous single-tool asks
-  │
-  ├─ T2  Recipe-driven multi-step  (mobile multi-step!) ~1-2 inferences
-  │      the SKILL is the plan; LLM only extracts slots + picks the rail;
-  │      the engine runs the deterministic steps. (see §3)
-  │
-  └─ T3  P2P delegate to paired desktop                offloaded
-         novel/complex chains run on the laptop's bigger model
-```
-
-### Why this works (from our data)
-Tool **selection** is good even at 0.6B; **arguments + latency** are the pain.
-So: deterministic routing/slot-filling handles the args, skill-scoping cuts the
-latency, and the model is reserved for genuine ambiguity.
-
-### Per-call optimizations (all tiers)
-- **Skill-scoping** = fewer tools in context = less prefill = faster + more accurate.
-- **Prefix/KV cache** the system+tools prefix across turns.
-- **Few-shot** in skills → big arg-accuracy boost on tiny models, ~free.
-- **Terse schemas + ContextBudget**, small `ctx_size` (sized by `capabilityProfile`).
-- **Stream tokens + optimistic UI + warm-on-open** → feels instant.
-- **Keep model resident during a session; unload after idle.**
-
----
-
-## 3. Multi-step on mobile — "recipes, not planning"
-
-A tiny model can't reliably plan *"pay bob 3 EUR"* (resolve → price → convert →
-confirm → send) from scratch. So we don't ask it to.
-
-**The skill carries the recipe; the model only fills the gaps** (with targeted
-exceptions for better NL handling).
-
-```
-"pay bob 3 EUR"
-   │  ONE structured LLM call (skill = payments):
-   │     extract { recipient: "bob", amount: 3, currency: "EUR" } + choose rail
-   ▼
-   engine runs the recipe DETERMINISTICALLY (no model):
-     resolve_contact("bob")  → { ln_address, preferred_layer }
-     get_price(BTC, EUR)      → { eur_per_btc }
-     fiat_to_sats(3, EUR)     → { sats: 5000 }
-   ▼
-   assemble send_payment(BTC, 5000, bob, layer)
-   ▼  🔒 CONFIRM GATE → mobile sheet (amount, dest, rail) → user yes/no
-   ▼
-   send_payment(...)   → done, streamed result
-```
-
-- **~1–2 inferences** instead of 5. Deterministic steps cost nothing.
-- **Reliable** on 0.6–4B because the hard part (the plan) is in the skill.
-- **Graceful fallback:** no recipe match → full agentic loop (more inferences) or
-  **delegate to desktop**.
-- **Hybrid nuance (implemented):** For discovery skills (merchant-finder), the
-  model does more reasoning/understanding/post-processing. For complex recipes
-  (atomic), slot extraction can use the model with deterministic precision
-  safeguards. See updated skills section and `forceModelExtract`.
-
-### Two multi-step modes (both eval'd)
-| Mode | Where | How |
+| Work | User outcome | Completion evidence |
 |---|---|---|
-| **Recipe** | mobile default | skill = ordered plan; 1 structured extraction (+ optional model-assisted via `forceModelExtract` for complex cases like atomic swaps, with precision fallbacks) + deterministic execution |
-| **Free agentic** | desktop / remote model | model plans each step in a full loop |
+| Shared versioned tool contracts | Fewer name, schema and unit differences across adapters | The same behavioral tests pass against each adapter |
+| A diagnostic command | Understand missing tools, incompatible versions and node readiness | Useful diagnosis from a clean machine and broken-config fixtures |
+| Persistent operation recovery | Resume or reconcile interrupted operations | Crash/restart and ambiguous-broadcast tests; explicit refund workflow |
+| Capability profiles | Expose only the wallet, trading or administration tools needed | Host tests for each profile and its approval policy |
+| Packaged-host testing | Catch failures hidden by developer workspaces | Install-and-run tests against packaged applications |
+| Request traces | Explain route, calls, confirmations and failures | Redacted traces that let a developer reproduce an issue |
 
-Implementation: a lightweight **Recipe** abstraction — a skill may declare an
-ordered list of steps (deterministic tool calls + the one LLM extraction). The
-Engine runs it. If absent, fall back to free agentic.
+## Model and runtime work
 
----
+Measure correctness and latency together on representative devices. Keep offline
+logic tests separate from real-model evaluations; a passing mock run does not
+measure model quality. See [BENCHMARK.md](./BENCHMARK.md).
 
-## 4. The tool contract (§3 of ARCHITECTURE.md)
-
-Per-layer namespaced (`spark_*`, `rln_*`, `arkade_*`, later `liquid_*`) +
-cross-cutting router/helpers: `resolve_contact`, `get_price(asset,fiat?)`,
-`fiat_to_sats`, `get_swap_quote`/`execute_swap`, and the unified
-`send_payment(asset,amount,to,layer?)`. Spend tools flagged 🔒.
-
-**Missing fns to add:** `resolve_contact`, `fiat_to_sats`,
-`create_invoice(asset,amount,layer?)`, `send_payment`, `get_swap_quote`,
-`execute_swap`.
-
----
-
-## 5. Skills
-
-Ship in core; load identically on both surfaces. They are the routing playbooks
-**and** the multi-step recipes, with **few-shot** examples for small models:
-- **payments** (recipe), **receive** (recipe), **swap** (recipe) — these remain deliberately deterministic for the execution plan (recipe owns the ordered steps and single-confirmation safety; model only fills slots reliably on tiny models). For complex recipes like atomic swaps, slot extraction can be forced through the model (`forceModelExtract`) for better natural-language handling of intents like "buy 1 USDT", with deterministic fallbacks to protect precision/leg selection.
-- **per-layer** (`spark`, `rln`, `arkade`) — tool list + when to pick that rail
-- Discovery skills (e.g. merchant-finder for BTC Map location queries) are intentionally more model-leveraging: the skill + pluggable selectors (including embedding-based via `createEmbeddingSkillSelector`) let the LLM apply natural language understanding, context, post-processing of results, and hybrid RAG use.
-- port **wallet-assistant** from kaleido-agent (already documents these flows)
-
----
-
-## 6. Eval / model selection (Tracks A + B)
-
-Run **per-surface configs** (mobile = `fc + skill`; desktop adds `mcp + cli`)
-across models; report accuracy + thinking-time + reliability → **best model per
-device**.
-- **Track A — single-step** (tool decision): done (3 mechanisms, K-repeats,
-  decision-only, reliability).
-- **Track B — multi-step** (agentic chains): grade coverage / order / final-args.
-  **Recipe vs Free agentic** proves the mobile optimization (recipe = higher
-  success + far lower latency on tiny models). `eval/multistep.ts`.
-- **Track C — safety & adversarial**: over a realistic stateful **MockWallet** —
-  amount/unit safety, **prompt-injection resistance** (poisoned tool data),
-  refusal/over-trigger, insufficient-funds. Inverted metric (fewer unsafe spends
-  = better); a catastrophic miss (paid attacker / 10× amount) dominates. Recipes
-  are structurally injection-resistant (use the structured address, ignore free
-  text). `eval/safety.ts` + `eval/mockWallet.ts`.
-
----
-
-## 7. Roadmap (phased)
-
-| Phase | Deliverable | Status |
-|---|---|---|
-| **1. Spec** | ARCHITECTURE.md + this plan | ✅ |
-| **2. Tool contract in core** | per-layer `ToolDef[]` + spend flags + missing fns | ✅ `wallet/contract.ts` |
-| **3a. Desktop binding** | `kaleido-mcp` namespaced tools + `kaleido` CLI | ✅ `apps/provider` (Tauri sidecar, namespaced MCP) + `apps/cli` CLI host |
-| **3b. Mobile binding** | in-process handlers → Spark/RLN/Arkade WDK adapters | ✅ `rate/services/walletTools.ts` + screen + skill |
-| **4. Skills + recipes** | payments/receive/swap (recipe + few-shot) + per-layer; hybrid model use for discovery skills and complex recipe slot parsing | ✅ payments, receive, swap, atomic swap, LSPS1 channel-order, and asset-channel onboarding recipes shipped (model-assisted extraction + precision safeguards); merchant-finder intentionally model-leveraging with pluggable selectors |
-| **5. Mobile funnel** | deterministic fast-path + slot-filling + Recipe engine | ✅ Tier-0 fast-path + Tier-2 recipe + Recipe engine wired in rate |
-| **6. UX/perf** | warm-on-open, streaming, prefix-cache, idle-unload | ▢ |
-| **7. Safety wiring** | flag spend tools; `onConfirm` sheet (mobile) + dialog (desktop) | partial (gate exists) |
-| **8. Eval B + per-surface** | multi-step track; recipe vs free; best-model table | ◐ harness done (`eval/multistep.ts`, `multistep` cmd); real run next |
-| **9. Delegation** | P2P offload of hard multi-step to desktop | partial (pairing exists) |
-| **10. Fine-tune (stretch)** | LoRA a small model on our eval logs (QVAC Fabric) | ▢ |
-| **11. Demo** | rate + desktop end-to-end on the contract | ▢ |
-
----
-
-## 8. Success criteria
-
-- **Latency:** "balance" ~instant (fast-path, no LLM); single-tool ask < ~3s
-  perceived (stream); "pay bob 3 EUR" completes in ~1–2 inferences + confirm.
-- **Accuracy:** the recommended mobile model resolves the seeded requests
-  reliably (Track A + B), with args handled by slot-filling/recipe where the
-  model is weak.
-- **Safety:** no spend ever executes without the confirm gate firing.
-- **Best-model table:** a clear per-device recommendation, with evidence that the
-  mobile optimizations (fast-path, recipe, few-shot) measurably help.
-
-## 9. What exists vs. what's new
-- **Have:** Engine + ToolSources + Skills + ContextBudget + capabilityProfile +
-  confirm gate + P2P pairing + Whisper + eval Track A + logs (fine-tune data).
-- **New:** the per-layer contract; the deterministic fast-path + slot-filling;
-  the Recipe engine (mobile multi-step); few-shot skills; per-surface eval +
-  Track B; warm/cache/idle perf; the namespaced MCP + CLI mirror.
-- **Evolved (implemented):** Hybrid model use — discovery skills (merchant-finder)
-  intentionally leverage the model for NL understanding + post-processing (with
-  pluggable SkillSelector including embeddings); complex recipes (atomic swap)
-  can force model slot extraction while keeping deterministic plans and precision
-  safeguards via fallbacks.
+Automatic paired-device inference is not implemented. A custom host can already
+use an OpenAI-compatible endpoint. Any future pairing feature needs a separate
+transport, authentication and UX design before it appears in setup guides.
