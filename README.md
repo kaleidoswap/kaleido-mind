@@ -265,3 +265,10 @@ remote-API disclosure and evidence are in [submission/](./submission/README.md).
 ## License
 
 Apache 2.0. See [LICENSE](./LICENSE).
+
+## Evaluation and future training data
+
+See [agent evaluation and datasets](docs/DATASETS.md) for opt-in local collection, voice
+latency/error metrics, retention/deletion and reviewed JSONL exports. Start with
+`pnpm dataset:eval --mock` from the repository root after building. Evaluation
+records never become training examples automatically.

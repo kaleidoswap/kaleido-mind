@@ -242,8 +242,9 @@ export function productScenarios(): ProductScenario[] {
         tier: 'recipe', route: 'kaleidoswap-atomic',
         tools: [
           'kaleidoswap_get_quote',
-          'kaleidoswap_atomic_init',
           'rln_get_node_info',
+          'rln_list_channels',
+          'kaleidoswap_atomic_init',
           'rln_atomic_taker',
           'kaleidoswap_atomic_execute',
         ],

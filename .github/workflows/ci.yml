@@ -31,6 +31,11 @@ jobs:
       - name: Test (core)
         run: pnpm --filter @kaleidorg/mind test
 
+      - name: Product evaluation and dataset export (offline)
+        run: |
+          pnpm dataset:eval --mock
+          pnpm dataset:export .dataset/evaluation
+
       # Cross-package discovery only: no node, model or funded wallet.
       - name: MCP contract (published server)
         run: |

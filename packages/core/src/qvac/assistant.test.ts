@@ -130,3 +130,31 @@ describe('runVoiceAssistant', () => {
     expect(speak).not.toHaveBeenCalled();
   });
 });
+
+
+describe('voice turn metrics', () => {
+  it('reports response and playback errors without transcript content', async () => {
+    const collected: Array<{ status: string }> = [];
+    async function* session() { yield { type: 'text', text: 'Private question' }; }
+    for (const failure of ['respond', 'speak', 'none']) {
+      let clock = 0;
+      await runVoiceAssistant(session(), {
+        respond: async () => { if (failure === 'respond') throw Error('private'); return 'private reply'; },
+        speak: async () => { if (failure === 'speak') throw Error('private'); },
+        onTurnMetrics: (metrics) => { collected.push(metrics); },
+      }, { now: () => clock++, sleep: async () => {} });
+    }
+    expect(collected.map(m => m.status)).toEqual(['response_error', 'playback_error', 'completed']);
+    expect(JSON.stringify(collected)).not.toContain('private');
+  });
+  it('isolates a rejected observer from playback and mic cleanup', async () => {
+    const gates: boolean[] = [];
+    async function* session() { yield { type: 'text', text: 'Hello there' }; }
+    await expect(runVoiceAssistant(session(), {
+      respond: async () => 'Hello', speak: async () => {},
+      onTurnMetrics: async () => { throw Error('disk full'); },
+      setMicGated: value => { gates.push(value); },
+    }, { sleep: async () => {} })).resolves.toBeUndefined();
+    expect(gates.at(-1)).toBe(false);
+  });
+});

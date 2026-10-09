@@ -73,5 +73,6 @@ export {
   type VoiceAssistantOptions,
   type VoiceAssistantState,
   type VoiceTranscriptEvent,
+  type VoiceTurnMetrics,
 } from './assistant.js';
 

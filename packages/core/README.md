@@ -386,3 +386,10 @@ console.log(out.text, wallet.sends);
 - [Changelog](https://github.com/kaleidoswap/kaleido-mind/blob/main/CHANGELOG.md)
 
 Apache-2.0
+
+## Evaluation and future training data
+
+See [agent evaluation and datasets](../../docs/DATASETS.md) for opt-in local collection, voice
+latency/error metrics, retention/deletion and reviewed JSONL exports. Start with
+`pnpm dataset:eval --mock` from the repository root after building. Evaluation
+records never become training examples automatically.
