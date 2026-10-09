@@ -16,7 +16,9 @@
     "lint": "pnpm -r run lint",
     "play": "pnpm --filter @kaleidorg/mind-playground run start",
     "submission:evidence": "node scripts/run-submission-benchmark.mjs",
-    "submission:evidence:mock": "node scripts/run-submission-benchmark.mjs --mock"
+    "submission:evidence:mock": "node scripts/run-submission-benchmark.mjs --mock",
+    "dataset:eval": "tsx scripts/evaluate-dataset.mts",
+    "dataset:export": "tsx scripts/export-dataset.mts"
   },
   "packageManager": "pnpm@9.15.9",
   "devDependencies": {

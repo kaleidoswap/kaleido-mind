@@ -5,13 +5,16 @@ tool and one skill, wired through the `Engine`.
 
 ```bash
 # from the repo root
-pnpm install && pnpm build
+corepack enable
+pnpm install --frozen-lockfile && pnpm build
 
 cd examples/node-minimal
+pnpm start:mock                          # first: scripted response, no model download
 pnpm start                               # Qwen3.5 2B via @qvac/sdk (~1.3 GB download on first run)
 pnpm start "how much is bitcoin in USD?"
-pnpm start:mock                          # no model: a scripted provider replays the turn
 ```
+
+The mock run prints a demo BTC price. It verifies the tool loop, not a live market price.
 
 What it shows, in `src/index.ts`:
 

@@ -24,6 +24,14 @@ export type VoiceAssistantSession = AsyncIterable<VoiceTranscriptEvent>;
 
 export type VoiceAssistantState = 'listening' | 'thinking' | 'speaking';
 
+/** Timing starts when a committed transcript arrives; excludes STT and cooldown. */
+export interface VoiceTurnMetrics {
+  status: 'completed' | 'response_error' | 'playback_error' | 'empty_reply' | 'aborted';
+  reasonMs: number;
+  playbackMs: number;
+  totalMs: number;
+}
+
 export interface VoiceAssistantHandlers {
   /** Produce an assistant reply for a user utterance (wraps the LLM/funnel). */
   respond: (transcript: string) => Promise<string>;
@@ -39,6 +47,8 @@ export interface VoiceAssistantHandlers {
   onUserText?: (text: string) => void;
   /** The assistant's reply, before it is spoken. */
   onReply?: (text: string) => void;
+  /** Optional metrics only: no transcript/audio/error text. Observer failures are isolated. */
+  onTurnMetrics?: (metrics: VoiceTurnMetrics) => void | Promise<void>;
   /** UI state transitions. */
   onState?: (state: VoiceAssistantState) => void;
 }
@@ -52,6 +62,8 @@ export interface VoiceAssistantOptions {
   postPlaybackCooldownMs?: number;
   /** Injected for tests; defaults to setTimeout. */
   sleep?: (ms: number) => Promise<void>;
+  /** Monotonic milliseconds, injectable for tests. */
+  now?: () => number;
   /** Stop the loop early. */
   signal?: AbortSignal;
 }
@@ -96,6 +108,10 @@ export async function runVoiceAssistant(
   const sleep = options.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   const cooldown = options.postPlaybackCooldownMs ?? 300;
   let speaking = false;
+  const now = options.now ?? (() => performance.now());
+  const report = async (metrics: VoiceTurnMetrics) => {
+    try { await handlers.onTurnMetrics?.(metrics); } catch { /* telemetry must not break voice */ }
+  };
 
   handlers.onState?.('listening');
   try {
@@ -111,15 +127,22 @@ export async function runVoiceAssistant(
       handlers.onUserText?.(transcript);
       handlers.onState?.('thinking');
 
+      const started = now();
       let reply: string;
       try {
         reply = await handlers.respond(transcript);
       } catch {
+        await report({ status: 'response_error', reasonMs: now() - started, playbackMs: 0, totalMs: now() - started });
         handlers.onState?.('listening');
         continue;
       }
-      if (options.signal?.aborted) break;
+      const reasonMs = now() - started;
+      if (options.signal?.aborted) {
+        await report({ status: 'aborted', reasonMs, playbackMs: 0, totalMs: now() - started });
+        break;
+      }
       if (!reply || !reply.trim()) {
+        await report({ status: 'empty_reply', reasonMs, playbackMs: 0, totalMs: now() - started });
         handlers.onState?.('listening');
         continue;
       }
@@ -128,15 +151,19 @@ export async function runVoiceAssistant(
       speaking = true;
       handlers.setMicGated?.(true);
       handlers.onState?.('speaking');
+      const playbackStarted = now();
+      let status: VoiceTurnMetrics['status'] = 'completed';
       try {
         await handlers.speak(reply);
       } catch {
-        /* keep the loop alive on a playback error */
+        status = 'playback_error';
       } finally {
+        const metrics = { status, reasonMs, playbackMs: now() - playbackStarted, totalMs: now() - started };
         await sleep(cooldown);
         speaking = false;
         handlers.setMicGated?.(false);
         handlers.onState?.('listening');
+        await report(metrics);
       }
     }
   } finally {

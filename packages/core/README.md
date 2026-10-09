@@ -3,17 +3,18 @@
 A local-first reasoning and function-calling engine for Bitcoin wallets. You
 bring a model (usually [QVAC](https://www.npmjs.com/package/@qvac/sdk) running
 on-device) and some tools; `@kaleidorg/mind` runs the agent loop, routes
-requests through skills and recipes, and stops before any spend until your app
-confirms it.
+requests through skills and recipes, and asks your app to approve tools marked
+`requiresConfirmation` before they run.
 
 - **Pure TypeScript, no runtime dependencies.** It runs in Node, Bare and React
   Native. `@qvac/sdk` is an optional peer and is only imported as types.
 - **One tool contract, many transports.** Wallet tools (`spark_*`, `rln_*`,
   `arkade_*`, `liquid_*` plus router helpers) have fixed names and JSON schemas.
-  Bind them to in-process handlers, an MCP server or a CLI. The model sees the
-  same tools on every surface.
-- **Confirm-before-spend is built in.** Every tool that moves funds is flagged
-  `requiresConfirmation`. The engine calls your `onConfirm` and does not run
+  Bind in-process handlers to those contracts, or discover an MCP/CLI source
+  using its actual schemas. See [MCP compatibility](#connecting-an-mcp-server)
+  for differences in names and arguments.
+- **Confirm-before-spend is built in.** Built-in spending contracts are flagged
+  `requiresConfirmation`; set this flag for custom tools that move funds. The engine calls your `onConfirm` and does not run
   the tool until you approve.
 - **Small-model friendly.** Skills scope each turn to a few tools. Recipes run
   multi-step flows with roughly one inference. A fast path answers simple reads
@@ -34,10 +35,26 @@ needs no model. To connect MCP servers, also install
 | `@qvac/sdk` | Status |
 |---|---|
 | 0.20 – 0.21 | Supported (tested with 0.21.0). |
-| < 0.20 | Not supported from mind 0.9: the provider sends `tool_choice` and `reasoning_budget`, which older SDKs reject or ignore. Use mind 0.8.x. |
+| < 0.20 | Not supported from mind 0.9: the provider sends `tool_choice` and `reasoning_budget`, which older SDKs reject or ignore. Upgrade QVAC before using the current Mind package. |
 
 The Qwen3.5 model constants used below (`QWEN3_5_*_MULTIMODAL_Q4_K_M`) exist in
 every supported `@qvac/sdk` version.
+
+## First run without a model
+
+Create a project that uses a fake wallet and scripted responses:
+
+```bash
+npm create @kaleidorg/mind my-agent
+cd my-agent
+npm install
+npm run start:offline
+```
+
+Expected result: sample balances, a mock RGB invoice and a simulated transfer.
+No node, model download or wallet funds are needed. Next use `npm run start:mock`
+to try a local model, or follow the generated README to connect a signet node.
+The offline script auto-approves only its simulated operations.
 
 ## Models
 
@@ -117,6 +134,22 @@ await close();
 
 A runnable copy (with a `--mock` mode) is in
 [`examples/node-minimal`](https://github.com/kaleidoswap/kaleido-mind/tree/main/examples/node-minimal).
+
+## First run without a model
+
+Create a project that uses a fake wallet and scripted responses:
+
+```bash
+npm create @kaleidorg/mind my-agent
+cd my-agent
+npm install
+npm run start:offline
+```
+
+Expected result: sample balances, a mock RGB invoice and a simulated transfer.
+No node, model download or wallet funds are needed. Next use `npm run start:mock`
+to try a local model, or follow the generated README to connect a signet node.
+The offline script auto-approves only its simulated operations.
 
 ## Models you already serve
 
@@ -313,8 +346,16 @@ await kaleido.close();
 - `allow` keeps the tool list short, which matters for small models.
 - `denyPrefixes` hides whole groups of tools.
 - For a remote server, use `{ kind: 'http', url, headers }`.
-- Spend tools from the contracts stay confirmation-gated even when they come
-  over MCP.
+- Known spend tools, their RLN/WDK aliases, signing and node mutation tools are
+  confirmation-gated even over MCP. A custom tool still needs an explicit risk
+  classification; descriptions are only a compatibility fallback.
+- Allow/deny filters are enforced on direct `execute()` calls too.
+- For Kaleido MCP, Mind exposes `spark_pay_invoice` as the BOLT11 payer and routes
+  it to `spark_pay_lightning_invoice`. Spark invoices remain available as
+  `spark_pay_spark_invoice`. The discovered schemas describe the supported
+  arguments: the MCP BOLT11 payer does not support amount overrides, so use an
+  invoice with an encoded amount. This normalization is part of the next Mind
+  release; raw MCP clients retain Kaleido MCP's original tool names.
 - `KALEIDO_NETWORK=signet` needs kaleido-mcp 0.3.0 or later. On older versions,
   set `RLN_NODE_URL` and `KALEIDOSWAP_API_URL` explicitly.
 
@@ -345,3 +386,10 @@ console.log(out.text, wallet.sends);
 - [Changelog](https://github.com/kaleidoswap/kaleido-mind/blob/main/CHANGELOG.md)
 
 Apache-2.0
+
+## Evaluation and future training data
+
+See [agent evaluation and datasets](../../docs/DATASETS.md) for opt-in local collection, voice
+latency/error metrics, retention/deletion and reviewed JSONL exports. Start with
+`pnpm dataset:eval --mock` from the repository root after building. Evaluation
+records never become training examples automatically.

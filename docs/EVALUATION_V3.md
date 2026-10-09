@@ -87,7 +87,7 @@ pnpm --filter @kaleidorg/mind-cli eval:product:mock
 Run one or more installed QVAC models:
 
 ```bash
-pnpm --filter @kaleidorg/mind-cli eval:product -- --models qwen3-0.6b,qwen3-1.7b
+pnpm --filter @kaleidorg/mind-cli eval:product -- --models qwen3.5-0.8b
 ```
 
 Run selected scenarios while iterating:
@@ -103,3 +103,10 @@ Create submission evidence (product v3 is the default track):
 ```bash
 pnpm submission:evidence
 ```
+
+## Persisting results
+
+Use `pnpm dataset:eval --mock` to save this suite in the versioned dataset schema.
+See [evaluation and training data](DATASETS.md) for consent, review, held-out groups,
+voice metrics and export. The existing scenario suite checks tool orchestration;
+it does not measure transcription or synthesized speech quality.

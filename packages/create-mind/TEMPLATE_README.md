@@ -3,14 +3,28 @@
 A local LLM that operates an RGB Lightning Node (RLN) through
 [@kaleidorg/mind](https://www.npmjs.com/package/@kaleidorg/mind): it reads
 balances, issues and lists RGB assets, creates RGB and Lightning invoices and
-sends assets. Every spend is read back and needs your yes first.
+sends assets. Live spending tools require your confirmation. Offline mode auto-approves simulated operations.
 
 | Command | Tools | Model |
 |---|---|---|
 | `npm run start:offline` | fake RLN node | scripted, no download |
 | `npm run start:mock` | fake RLN node (`MockWallet`) | Qwen3.5 2B on-device via `@qvac/sdk` |
 | `npm start` | [kaleido-mcp](https://www.npmjs.com/package/kaleido-mcp) on signet | Qwen3.5 2B on-device |
-| `npm run eval:mock` / `npm run eval` | fake / real node | checks seven wallet requests, exits 1 on failure |
+| `npm run eval:mock` / `npm run eval` | fake / real node | checks the wallet scenarios in `src/eval.ts`, exits 1 on failure |
+
+## First run
+
+```bash
+npm install
+npm run start:offline
+```
+
+You should see sample balances, a mock invoice and a simulated transfer. This
+checks the application wiring without a node or model download. Next run
+`npm run start:mock` for local inference, or connect a signet node below.
+
+Requires Node.js 20+. QVAC is needed only for the on-device provider and requires
+native support for your platform. See the [package requirements](https://github.com/kaleidoswap/kaleido-mind/blob/main/packages/core/README.md#install).
 
 ## Pick a model
 

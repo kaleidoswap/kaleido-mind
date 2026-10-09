@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.11.0] — 2026-10-09
+
+- Gate MCP wallet spends consistently across RLN/WDK aliases, Spark, Liquid and MPP, plus signing and node mutations.
+- Normalize Kaleido MCP's Spark invoice collision: Mind's spark_pay_invoice pays BOLT11; spark_pay_spark_invoice pays Spark invoices.
+- Discover paginated MCP catalogs, enforce exposure filters during execution, and clear cached tools on disconnect.
+
+- Add opt-in local evaluation datasets, retention/deletion, reviewed text-pair export and stable group splits excluding benchmark groups.
+- Add voice response/playback timing and outcome observers without collecting transcripts or audio.
+- Run the product benchmark and dataset export in CI; correct the atomic-swap preflight expectation.
+- Simplify offline onboarding and replace obsolete architecture/setup instructions.
+
+### Migration
+
+- Through `McpToolSource`, `spark_pay_invoice` means BOLT11 and `spark_pay_spark_invoice` means Spark invoices. Raw MCP wire names are unchanged. Unsupported amount overrides fail explicitly.
+- Sensitive MCP operations now require the host confirmation callback. Custom tools still need explicit risk classification.
+- `TurnLogger` now applies its default mask when none is supplied: messages and metadata are omitted, free text is redacted and common financial fields are hashed. Custom masks replace that policy; migrate any consumers relying on raw logs.
+- Dataset collection is off by default. Consent UI, application-specific sanitization and human review remain host responsibilities. Diagnostic logs are not automatically training examples.
+- The new Node dataset store is available from `@kaleidorg/mind/dataset/node`; keep this entry point out of mobile/browser bundles.
+- Compatible release target: `kaleido-mcp@0.5.0`; QVAC requires >=0.20.0, tested with 0.21.0. Model quality and funded wallet operations require host-specific acceptance tests.
+
 All notable changes to **`@kaleidorg/mind`** (the kaleido-mind engine and its
 apps) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project aims to

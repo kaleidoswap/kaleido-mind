@@ -1,6 +1,6 @@
 {
   "name": "@kaleidorg/mind",
-  "version": "0.10.14",
+  "version": "0.11.0",
   "description": "Local-first reasoning + function-calling engine for KaleidoSwap. QVAC-powered.",
   "license": "Apache-2.0",
   "type": "module",
@@ -79,6 +79,16 @@
       "types": "./dist/testing/index.d.ts",
       "import": "./dist/testing/index.js",
       "default": "./dist/testing/index.js"
+    },
+    "./dataset": {
+      "types": "./dist/dataset.d.ts",
+      "import": "./dist/dataset.js",
+      "default": "./dist/dataset.js"
+    },
+    "./dataset/node": {
+      "types": "./dist/dataset-node.d.ts",
+      "import": "./dist/dataset-node.js",
+      "default": "./dist/dataset-node.js"
     }
   },
   "files": [
