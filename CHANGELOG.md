@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Gate MCP wallet spends consistently across RLN/WDK aliases, Spark, Liquid and MPP, plus signing and node mutations.
+- Normalize Kaleido MCP's Spark invoice collision: Mind's spark_pay_invoice pays BOLT11; spark_pay_spark_invoice pays Spark invoices.
+- Discover paginated MCP catalogs, enforce exposure filters during execution, and clear cached tools on disconnect.
+
+
 All notable changes to **`@kaleidorg/mind`** (the kaleido-mind engine and its
 apps) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project aims to

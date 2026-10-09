@@ -313,8 +313,16 @@ await kaleido.close();
 - `allow` keeps the tool list short, which matters for small models.
 - `denyPrefixes` hides whole groups of tools.
 - For a remote server, use `{ kind: 'http', url, headers }`.
-- Spend tools from the contracts stay confirmation-gated even when they come
-  over MCP.
+- Known spend tools, their RLN/WDK aliases, signing and node mutation tools are
+  confirmation-gated even over MCP. A custom tool still needs an explicit risk
+  classification; descriptions are only a compatibility fallback.
+- Allow/deny filters are enforced on direct `execute()` calls too.
+- For Kaleido MCP, Mind exposes `spark_pay_invoice` as the BOLT11 payer and routes
+  it to `spark_pay_lightning_invoice`. Spark invoices remain available as
+  `spark_pay_spark_invoice`. The discovered schemas describe the supported
+  arguments: the MCP BOLT11 payer does not support amount overrides, so use an
+  invoice with an encoded amount. This normalization is part of the next Mind
+  release; raw MCP clients retain Kaleido MCP's original tool names.
 - `KALEIDO_NETWORK=signet` needs kaleido-mcp 0.3.0 or later. On older versions,
   set `RLN_NODE_URL` and `KALEIDOSWAP_API_URL` explicitly.
 

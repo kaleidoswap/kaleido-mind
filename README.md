@@ -4,8 +4,7 @@
 
 `@kaleidorg/mind` is the reasoning and tool-calling engine behind that
 assistant. It runs the same agent on a phone, a laptop or a server. Inference
-goes through the [QVAC SDK](https://www.npmjs.com/package/@qvac/sdk), locally
-or on a paired machine the user controls. The design starts from one
+goes through the [QVAC SDK](https://www.npmjs.com/package/@qvac/sdk), locally. Paired-device inference is not currently available. The design starts from one
 constraint: **small on-device models are slow and weak at arguments**, so they
 are never asked to do the slow or weak parts.
 
