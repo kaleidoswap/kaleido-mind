@@ -70,6 +70,9 @@ const CREATEY = /\b(issue|mint|create|make|new|generate|invoice|receive|request|
 
 /** Default wallet read intents (balance / RGB assets / receive address / price). */
 const CHANNELS = /\b(channels?|canali|liquidit[aà]|liquidity)\b/i;
+// Only simple channel-list requests bypass the agent. Health, sync and
+// explanatory questions need their own tools or reasoning.
+const CHANNEL_READ = /^(?:(?:please )?(?:list|show|check)(?: (?:my|the|all|open|usable))* channels?(?: and liquidity)?|(?:mostra|elenca|verifica|controlla)(?: (?:i|miei|tutti))* canali|channel status|stato (?:dei )?canali)[.!?]*$/i;
 const CAPACITY = /(?:posso inviare|can i send)\s+(\d+)\s+sats\b/i;
 export const WALLET_FAST_INTENTS: FastIntent[] = [
   {
@@ -94,7 +97,7 @@ export const WALLET_FAST_INTENTS: FastIntent[] = [
       !CREATEY.test(t) &&
       /\b(which|what|list|show|my|quali|elenca|mostra|miei)\b[^.?!]*\b(rgb assets?|assets?|tokens?)\b|\b(rgb assets?|tokens?) (do i|i) (have|hold|own)\b/i.test(t),
   },
-  { name: 'channels', tool: 'rln_list_channels', fallbackTools: ['wdk_list_channels'], match: (t) => !ACTIONY.test(t) && !CREATEY.test(t) && CHANNELS.test(t) && /\b(list|show|check|how|quali|mostra|elenca|verifica|controlla|stato)\b/i.test(t) },
+  { name: 'channels', tool: 'rln_list_channels', fallbackTools: ['wdk_list_channels'], match: (t) => !ACTIONY.test(t) && !CREATEY.test(t) && CHANNEL_READ.test(t.trim()) },
   {
     name: 'address',
     tool: 'spark_get_address',

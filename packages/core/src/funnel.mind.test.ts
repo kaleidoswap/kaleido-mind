@@ -160,6 +160,14 @@ describe('desktop mind — balance', () => {
 });
 
 describe('desktop mind — list channels', () => {
+  it('keeps node health and channel explanations out of the channel-list shortcut', async () => {
+    for (const prompt of ['Check my node health and channel liquidity', 'How do Lightning channels work?']) {
+      const { funnel } = buildMind(scripted([{ text: 'Checked the requested details.' }]));
+      const result = await funnel.runTurn(prompt);
+      expect(result.tier).toBe('agentic');
+    }
+  });
+
   it('routes "list my channels" to the verified fast tier and calls rln_list_channels', async () => {
     const { funnel, calls } = buildMind(
       scripted([
