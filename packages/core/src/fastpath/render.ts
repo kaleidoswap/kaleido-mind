@@ -7,7 +7,7 @@ import { formatRgbAmount, rgbHoldings } from '../context/rgb-units.js';
 
 type Obj = Record<string, any>;
 
-const sats = (n: unknown) => `${Number(n ?? 0).toLocaleString('en-US')} sats`;
+const sats = (n: unknown) => n == null || n === '' || !Number.isFinite(Number(n)) ? 'not verified' : `${Number(n).toLocaleString('en-US')} sats`;
 
 function parse(r: unknown): unknown {
   if (typeof r !== 'string') return r;
@@ -50,11 +50,32 @@ function renderAssets(r: unknown): string {
   return `Your RGB assets:\n${rows.join('\n')}`;
 }
 
+function renderChannels(r: Obj, requested?: number): string {
+  if (!Array.isArray(r?.channels)) return 'Channel liquidity not verified.';
+  const usable = r.channels.filter((c: Obj) => c.is_usable === true && c.ready !== false);
+  const valid = (v: unknown) => v != null && Number.isFinite(Number(v)) && Number(v) >= 0;
+  if (usable.some((c: Obj) => !valid(c.outbound_balance_msat) || !valid(c.inbound_balance_msat))) return 'Channel liquidity not verified.';
+  const outbound = usable.reduce((sum: number, c: Obj) => sum + Number(c.outbound_balance_msat), 0) / 1000;
+  const inbound = usable.reduce((sum: number, c: Obj) => sum + Number(c.inbound_balance_msat), 0) / 1000;
+  let text = `${usable.length} usable channels. Send: ${sats(outbound)}. Receive: ${sats(inbound)}.`;
+  if (requested !== undefined) {
+    const limitsKnown = usable.every((c: Obj) => valid(c.next_outbound_htlc_limit_msat));
+    const max = limitsKnown ? Math.max(0, ...usable.map((c: Obj) => Math.min(Number(c.outbound_balance_msat), Number(c.next_outbound_htlc_limit_msat)) / 1000)) : null;
+    text += max === null ? '\nSingle-HTLC limit not verified.' : `\nSingle-HTLC maximum: ${sats(max)}. ${requested > outbound || requested > max ? 'No: requested amount exceeds available liquidity or the single-HTLC limit.' : 'Within the local upper limit; routing, minimum HTLC and fees still need checking. This does not guarantee payment success.'}`;
+  }
+  return text;
+}
+
 export function defaultRenderFast(intent: string, result: unknown, extra?: Record<string, unknown>): string {
   const r = parse(result) as Obj;
+  if (r?.error || r?.isError) return `Could not verify: ${String(r.error ?? 'tool failed')}`;
+  if (intent === 'channels' || intent === 'payment-capacity') return renderChannels(r, extra?.requestedSats as number | undefined);
   if (intent === 'balance') {
     const text = renderBalance(r ?? {});
-    return extra && 'assets' in extra ? `${text}\n${renderAssets(parse(extra.assets))}` : text;
+    const parts = [text];
+    if (extra && 'assets' in extra) parts.push(defaultRenderFast('assets', extra.assets));
+    if (extra && 'channels' in extra) parts.push(defaultRenderFast('channels', extra.channels));
+    return parts.join('\n');
   }
   if (intent === 'assets') return renderAssets(r);
   if (intent === 'address') {

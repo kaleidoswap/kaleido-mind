@@ -21,7 +21,7 @@
 
 import { Engine } from './engine.js';
 import type { ToolCrushOptions } from './context/compress.js';
-import type { ToolRegistry } from './tools/registry.js';
+import { ToolRegistry } from './tools/registry.js';
 import { defaultRenderFast } from './fastpath/render.js';
 import { FastPath, WALLET_FAST_INTENTS } from './fastpath/fastpath.js';
 import type { FastIntent } from './fastpath/fastpath.js';
@@ -97,6 +97,8 @@ export interface FunnelSettings {
 }
 
 export interface FunnelCallbacks {
+  /** Explicit host opt-out: skip tools, recipes and skill prompts for this turn. */
+  toolMode?: 'none';
   history?: Message[];
   /** The live requestId of the agentic run (so a stop button can cancel it). */
   onStart?: (requestId: string) => void;
@@ -234,6 +236,19 @@ export class Funnel {
 
   async runTurn(text: string, cbs: FunnelCallbacks = {}): Promise<FunnelResult> {
     const settings = this.getSettings();
+    if (cbs.toolMode === 'none') {
+      const system = [this.system, settings.persona,
+        'Tools are disabled for this turn. Answer without calling tools. Do not claim to have checked live wallet data.',
+      ].filter(Boolean).join('\n');
+      const keep = settings.historyLength ?? DEFAULT_HISTORY;
+      const history = keep > 0 ? (cbs.history ?? []).slice(-keep) : [];
+      // An empty registry also rejects hallucinated calls, not just hides schemas.
+      const engine = new Engine({ provider: this.provider, tools: new ToolRegistry([]), defaultMaxTurns: 1 });
+      const res = await engine.runAgentic([
+        { role: 'system', content: system }, ...history, { role: 'user', content: text },
+      ], { onToken: cbs.onToken, onStart: cbs.onStart, signal: cbs.signal });
+      return { text: res.text ?? '', tier: 'agentic', route: 'without-tools', toolCalls: res.toolCalls, turns: res.turns, inference: res.inference };
+    }
     const memoryOn = settings.memoryEnabled !== false;
     const ragOn = settings.ragEnabled !== false;
 
@@ -259,7 +274,7 @@ export class Funnel {
     if (fast && fastTool) {
       this.log(`tier=fast-path → ${fastTool}`);
       const r = await this.registry.execute(fastTool, fast.args);
-      let extra: Record<string, unknown> | undefined;
+      let extra: Record<string, unknown> | undefined = fast.intent.renderContext?.(text);
       for (const also of fast.intent.also ?? []) {
         if (!also.when(text)) continue;
         for (const name of also.tools) {

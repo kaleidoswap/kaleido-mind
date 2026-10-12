@@ -79,3 +79,22 @@ describe('RGB assets held in Lightning channels', () => {
     expect(fixRgbBalanceUnits('USDT: 6,052,258 sats', [[desktopUsdt]])).toBe('USDT: 6.052258 USDT');
   });
 });
+
+describe('desktop verified amounts', () => {
+  const channel = { is_usable: true, ready: true, outbound_balance_msat: 15500000, inbound_balance_msat: 81840000, next_outbound_htlc_limit_msat: 10000000 };
+  it('converts msat in code and distinguishes liquidity from single HTLC capacity', () => {
+    const text = defaultRenderFast('payment-capacity', { channels: [channel] }, { requestedSats: 20000 });
+    expect(text).toContain('15,500 sats'); expect(text).toContain('81,840 sats'); expect(text).toContain('10,000 sats'); expect(text).toContain('No:');
+  });
+  it('routes Italian read requests without inventing schema arguments', () => {
+    expect(fp.select('Verifica il saldo BTC on-chain e gli asset RGB')?.intent.name).toBe('balance');
+    expect(fp.select('Quali asset RGB possiedo?')?.args).toEqual({});
+    expect(fp.select('Posso inviare 20000 sats in un singolo pagamento?')?.intent.name).toBe('payment-capacity');
+    expect(fp.select('Invia 20000 sats adesso')).toBeNull(); expect(fp.select('Crea un canale')).toBeNull();
+  });
+  it('never presents missing data or a failed tool as a zero balance', () => {
+    expect(defaultRenderFast('balance', { btc_onchain: {} })).toContain('not verified');
+    expect(defaultRenderFast('assets', { error: 'Node is locked' })).toContain('Node is locked');
+    expect(defaultRenderFast('channels', {})).toContain('not verified');
+  });
+});

@@ -160,7 +160,7 @@ describe('desktop mind — balance', () => {
 });
 
 describe('desktop mind — list channels', () => {
-  it('routes "list my channels" to the agentic tier and calls rln_list_channels', async () => {
+  it('routes "list my channels" to the verified fast tier and calls rln_list_channels', async () => {
     const { funnel, calls } = buildMind(
       scripted([
         { text: '', toolCalls: [{ name: 'rln_list_channels', arguments: {} }] },
@@ -170,10 +170,9 @@ describe('desktop mind — list channels', () => {
 
     const res = await funnel.runTurn('list my channels');
 
-    expect(res.tier).toBe('agentic');
+    expect(res.tier).toBe('fast');
     expect(calls.map((c) => c.name)).toContain('rln_list_channels');
-    const exec = res.toolCalls?.find((c) => c.name === 'rln_list_channels');
-    expect((exec?.result as { channels?: unknown[] })?.channels).toHaveLength(2);
+    expect((res.data as { channels?: unknown[] })?.channels).toHaveLength(2);
   });
 });
 
@@ -383,7 +382,7 @@ describe('desktop mind — skill scoping (real skills)', () => {
 
     const res = await funnel.runTurn('list my channels');
 
-    expect(res.tier).toBe('agentic');
+    expect(res.tier).toBe('fast');
     expect(calls.map((c) => c.name)).toContain('rln_list_channels');
   });
 });

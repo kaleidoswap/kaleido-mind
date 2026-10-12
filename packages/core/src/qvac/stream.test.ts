@@ -141,3 +141,15 @@ describe('consumeRun', () => {
     await expect(consumeRun(run)).rejects.toThrow('boom');
   });
 });
+
+
+it('hides a budget closing marker even when split across content events', async () => {
+  const tokens: string[] = [];
+  const out = await consumeRun(fakeRun([
+    { type: 'contentDelta', text: '</thi' },
+    { type: 'contentDelta', text: 'nk>' },
+    { type: 'contentDelta', text: 'OK' },
+  ], { contentText: '</think>OK' }), { onToken: t => tokens.push(t) });
+  expect(tokens.join('')).toBe('OK');
+  expect(out.text).toBe('OK');
+});
