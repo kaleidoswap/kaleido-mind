@@ -233,6 +233,7 @@ export class Engine {
         tools: state.tools,
         ...(forced ? { toolChoice: opts.firstTurnToolChoice, ...(this.thinkOnForcedCalls ? {} : { thinking: 'off' as const }) } : {}),
       });
+      if (opts.signal?.aborted) break;
       if (out.requestId) opts.onStart?.(out.requestId, turn);
       answer = model(out.incomplete ? '' : (out.text || '').trim());
 
@@ -265,6 +266,7 @@ export class Engine {
       let repeatedAgain = false;
       const declined: string[] = [];
       for (const call of out.toolCalls) {
+        if (opts.signal?.aborted) break;
         const step = await this.executeCall(state, call, opts, turn);
         repeatedAgain ||= step.repeatedAgain;
         if (step.declined) declined.push(step.declined);

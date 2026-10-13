@@ -38,14 +38,21 @@ export interface QvacProviderOptions {
    * a host that passes neither preserves the SDK's own defaults.
    */
   defaultTemperature?: number;
+  /** Model-specific sampling. Defaults stay with the SDK when omitted. */
+  sampling?: { top_p?: number; top_k?: number; presence_penalty?: number; repeat_penalty?: number };
   /** Default max output tokens — caps a turn so it can't ramble. Omit for uncapped. */
   defaultMaxTokens?: number;
+  /** Optional wall-clock bound for one inference, excluding tool execution/confirmation. */
+  timeoutMs?: number;
   /**
    * Cap `<think>` reasoning at this many TOKENS (not seconds — tok/s varies).
    * Sent as the SDK's `reasoning_budget`, so the model closes its reasoning and
    * answers. Kept below the output cap. Omit for unlimited reasoning.
    */
   maxThinkingTokens?: number;
+  /** Cancel at an estimated thinking budget and retry directly, instead of
+   * forcing </think> into models that continue reasoning in visible content. */
+  softThinkingBudget?: boolean;
   /**
    * Experimental. Keep each agentic run in a QVAC KV-cache session
    * (`kvCache: sessionKey`), so calls after the first send only the new
@@ -123,10 +130,12 @@ export function createQvacProvider(options: QvacProviderOptions): LLMProvider {
       // `tool_choice` is only meaningful with tools; the SDK rejects a named
       // choice that isn't among them.
       const toolChoice = tools && input.toolChoice ? input.toolChoice : undefined;
+      const softBudget = options.softThinkingBudget && input.thinking !== 'off' && maxThinkingTokens !== undefined;
       const generationParamsRaw = {
+        ...options.sampling,
         ...(temp !== undefined ? { temp } : {}),
         ...(predict !== undefined ? { predict } : {}),
-        ...(maxThinkingTokens !== undefined ? { reasoning_budget: maxThinkingTokens } : {}),
+        ...(maxThinkingTokens !== undefined && !softBudget ? { reasoning_budget: maxThinkingTokens } : {}),
         ...(toolChoice ? { tool_choice: toolChoice } : {}),
       };
       const generationParams = Object.keys(generationParamsRaw).length ? generationParamsRaw : undefined;
@@ -143,27 +152,55 @@ export function createQvacProvider(options: QvacProviderOptions): LLMProvider {
         ...(tools ? { tools } : {}),
       } as unknown as Parameters<CompletionFn>[0]);
 
-      // Honor an external AbortSignal (e.g. the desktop "stop" button): cancel
-      // the in-flight run the moment it fires. The SDK keeps generating
-      // otherwise; `final` then resolves with stopReason 'cancelled'. This is
-      // the single place that makes signal-based cancellation work for EVERY
-      // caller (agentic loop + recipe slot extraction).
-      if (input.signal) {
-        if (input.signal.aborted) {
+      // Some SDK runs never close their event stream after cancel. Release the
+      // caller on abort and suppress late tokens; still cancel native inference.
+      const startedAt = Date.now();
+      let partialText = '';
+      let cancelledRun = false;
+      let deadline: ReturnType<typeof setTimeout> | undefined;
+      let cancelRetry: ReturnType<typeof setTimeout> | undefined;
+      let onAbort: (() => void) | undefined;
+      let stopForThinkingBudget: (() => void) | undefined;
+      const cancelled = new Promise<Awaited<ReturnType<typeof consumeRun>>>((resolve) => {
+        const cancelRun = (reason: 'cancelled' | 'timeout' | 'thinking_budget') => {
+          if (cancelledRun) return;
+          cancelledRun = true;
           void options.cancel({ requestId: run.requestId }).catch(() => {});
-        } else {
-          input.signal.addEventListener(
-            'abort',
-            () => void options.cancel({ requestId: run.requestId }).catch(() => {}),
-            { once: true },
-          );
+          cancelRetry = setTimeout(() => {
+            void options.cancel({ requestId: run.requestId }).catch(() => {});
+          }, 100);
+          const text = reason === 'timeout'
+            ? 'The model did not finish in time. Try a shorter request or turn Thinking off.'
+            : reason === 'thinking_budget' ? '' : partialText;
+          resolve({ requestId: run.requestId, text, rawContent: text, truncated: false, toolCalls: [], stopReason: reason, timing: { durationMs: Date.now() - startedAt } });
+        };
+        stopForThinkingBudget = () => cancelRun('thinking_budget');
+        onAbort = () => cancelRun('cancelled');
+        if (options.timeoutMs !== undefined && options.timeoutMs > 0) {
+          deadline = setTimeout(() => cancelRun('timeout'), options.timeoutMs);
         }
-      }
-
-      const result = await consumeRun(run, {
-        onToken: input.onToken,
-        onThinking: input.onThinking ?? options.onThinking,
+        input.signal?.addEventListener('abort', onAbort, { once: true });
+        if (input.signal?.aborted) onAbort();
       });
+      const consuming = consumeRun(run, {
+        ...(softBudget ? { maxThinkingTokens, onThinkingBudgetExceeded: () => stopForThinkingBudget?.() } : {}),
+        onToken: (token) => {
+          if (cancelledRun || input.signal?.aborted) return;
+          partialText += token;
+          input.onToken?.(token);
+        },
+        onThinking: (token) => {
+          if (!cancelledRun && !input.signal?.aborted) (input.onThinking ?? options.onThinking)?.(token);
+        },
+      });
+      void consuming.then(() => clearTimeout(cancelRetry), () => clearTimeout(cancelRetry));
+      let result: Awaited<ReturnType<typeof consumeRun>>;
+      try {
+        result = await Promise.race([consuming, cancelled]);
+      } finally {
+        clearTimeout(deadline);
+        if (onAbort) input.signal?.removeEventListener('abort', onAbort);
+      }
 
       // Surface the real per-turn inference stats (backend device + throughput).
       if (result.stats) (input.onStats ?? options.onStats)?.(result.stats);
@@ -178,6 +215,7 @@ export function createQvacProvider(options: QvacProviderOptions): LLMProvider {
         requestId: result.requestId,
         durationMs: result.timing.durationMs,
         status:
+          result.stopReason === 'timeout' ? 'failed' :
           result.stopReason === 'cancelled'
             ? 'cancelled'
             : result.truncated
@@ -214,7 +252,14 @@ export function createQvacProvider(options: QvacProviderOptions): LLMProvider {
 
     async runTurn(input: QvacTurnInput): Promise<TurnOutput> {
       try {
-        return await runTurnOnce(input);
+        const result = await runTurnOnce(input);
+        if (result.inference?.stopReason === 'thinking_budget' && !input.signal?.aborted) {
+          (input.onThinking ?? options.onThinking)?.('\n\n[Reasoning limit reached — preparing a direct answer.]\n');
+          // Retry the original request, not the interrupted analysis. No tools
+          // from the cancelled attempt are returned to the Engine for execution.
+          return runTurnOnce({ ...input, thinking: 'off' });
+        }
+        return result;
       } catch (err) {
         // Retry once without reasoning: no budget, so nothing to insert.
         if (input.thinking !== 'off' && isReasoningGrammarError(err)) return runTurnOnce({ ...input, thinking: 'off' });

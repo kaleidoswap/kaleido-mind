@@ -141,6 +141,7 @@ export type Command =
   | { id: string; cmd: 'set_active_model'; modelId: string }
   | { id: string; cmd: 'chat'; prompt: string; chatId?: string }
   | { id: string; cmd: 'cancel_chat'; chatId: string }
+  | { id: string; cmd: 'clear_chat' }
   /**
    * Raw inference on the loaded model for another client (e.g. a phone using
    * the desktop as its model server). Tools are passed to the model as

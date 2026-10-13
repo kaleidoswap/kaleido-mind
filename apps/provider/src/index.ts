@@ -32,6 +32,7 @@ import {
 } from './protocol.js';
 import {
   Funnel,
+  defaultRenderFast,
   ToolRegistry,
   SkillRegistry,
   createSkillReferenceToolSource,
@@ -545,6 +546,21 @@ let maxOutputTokens: number | undefined = capOutput(MAX_OUTPUT_TOKENS);
 // provider always runs against it. Cancellation isn't surfaced to the sidecar,
 // but we forward it to the SDK when available.
 const sharedQvacProvider: LLMProvider = createQvacProvider({
+  // Reasoning consumes the same output budget as the answer. At 15–20 tok/s,
+  // a valid 512-token thought can exceed 30 s before the final answer starts.
+  // Keep cancellation immediate and bound slow reasoning without truncating it.
+  get timeoutMs() { return thinkingEnabled ? 60_000 : 30_000; },
+  get softThinkingBudget() { return /qwen.?3\.5/i.test(state.activeModelName ?? ''); },
+  // Qwen3.5 model-card defaults discourage repetitive reasoning. Other models
+  // retain their SDK defaults; exact wallet amounts remain tool-validated.
+  get defaultTemperature() {
+    return /qwen.?3\.5/i.test(state.activeModelName ?? '') ? (thinkingEnabled ? 1 : 0.7) : undefined;
+  },
+  get sampling() {
+    return /qwen.?3\.5/i.test(state.activeModelName ?? '')
+      ? { top_p: thinkingEnabled ? 0.95 : 0.8, top_k: 20, presence_penalty: 1.5, repeat_penalty: 1 }
+      : undefined;
+  },
   completion: ((params: unknown) => {
     if (!sdk) throw new Error('model not loaded');
     return sdk.completion(params);
@@ -1685,6 +1701,7 @@ async function handleChat(
   device?: 'gpu' | 'cpu' | null;
   followups: SuggestedAction[];
 }> {
+  if (chatAborts.size > 0) throw new Error('A response is still running. Stop it before starting another.');
   const t0 = Date.now();
   if (MOCK || !sdk || !state.qvacModelHandle) {
     await new Promise((r) => setTimeout(r, 320));
@@ -1704,11 +1721,12 @@ async function handleChat(
   // fall through to the agentic loop; with no sources connected the model
   // simply answers directly. Spend tools round-trip to the desktop UI for
   // explicit approval (tool_confirm_request / tool_confirm).
+  const toolsDisabled = /\b(?:non usare strumenti|non utilizzare strumenti|do not use tools|don’t use tools|don't use tools)\b/i.test(prompt);
   const funnel = new Funnel({
     provider: qvacProvider,
     tools: new ToolRegistry(funnelSources()),
     skills: enabledSkills(),
-    system: DESKTOP_SYSTEM,
+    system: toolsDisabled ? 'You are KaleidoMind. Answer concisely in the user’s language.' : DESKTOP_SYSTEM,
     maxTurns: 4,
     getSettings: () => ({
       historyLength: 4,
@@ -1734,21 +1752,26 @@ async function handleChat(
   // getDef, so a fast result can race ahead of its call) — the id is just a key.
   let toolSeq = 0;
   const statsSeqBefore = statsSeq;
+  const readIntents: Record<string, string> = { rln_get_balances: 'balance', wdk_get_balances: 'balance', rln_list_assets: 'assets', wdk_list_assets: 'assets', rln_list_channels: 'channels', wdk_list_channels: 'channels' };
+  const verifiedReads = new Map<string, unknown>();
+  let otherToolUsed = false;
   let res;
   try {
     res = await funnel.runTurn(prompt, {
+      toolMode: toolsDisabled ? 'none' : undefined,
       history: state.chatHistory,
       onConfirm: requestToolConfirmation,
       signal: abort.signal,
       onToken: (token) => {
-        if (state.activeChatId) {
+        if (verifiedReads.size > 0 && !otherToolUsed) return;
+        if (state.activeChatId === chatId && !abort.signal.aborted) {
           emit({ type: 'chat_content_delta', chatId: state.activeChatId, delta: token });
         }
       },
       // Surface tool activity so the desktop can render a live "running" pill and
       // then a typed result card (balance, channels, invoice, …) when it returns.
       onToolCall: (call, info) => {
-        if (state.activeChatId) {
+        if (state.activeChatId === chatId && !abort.signal.aborted) {
           emit({
             type: 'chat_tool_call',
             chatId: state.activeChatId,
@@ -1760,7 +1783,9 @@ async function handleChat(
         }
       },
       onToolResult: (ev) => {
-        if (state.activeChatId) {
+        if (readIntents[ev.name]) verifiedReads.set(readIntents[ev.name]!, ev.result);
+        else if (!['rln_get_node_info', 'wdk_get_node_info'].includes(ev.name)) otherToolUsed = true;
+        if (state.activeChatId === chatId && !abort.signal.aborted) {
           const failed =
             !!ev.result &&
             typeof ev.result === 'object' &&
@@ -1786,17 +1811,26 @@ async function handleChat(
 
   // Rolling context for follow-ups ("and how much is that in USD?") — the
   // Funnel trims it to its history budget each turn.
-  const text = res.text || '(no response)';
-  state.chatHistory.push(
-    { role: 'user', content: compactChatHistory(prompt) },
-    { role: 'assistant', content: compactChatHistory(text) },
-  );
+  const text = abort.signal.aborted ? 'Stopped.' : verifiedReads.size > 0 && !otherToolUsed
+    ? [...verifiedReads].map(([intent, result]) => defaultRenderFast(intent, result)).join('\n')
+    : res.text || '(no response)';
+  // Operational failures are UI feedback, not conversational answers. Keeping
+  // them causes small models to analyse earlier timeouts instead of the request.
+  if (!abort.signal.aborted && !res.inference?.some((run) => run.status !== 'completed')) {
+    state.chatHistory.push(
+      { role: 'user', content: compactChatHistory(prompt) },
+      { role: 'assistant', content: compactChatHistory(text) },
+    );
+    state.chatHistory = state.chatHistory.slice(-8);
+  }
 
   const latencyMs = Date.now() - t0;
   // Prefer the SDK's real tok/s (set by onStats during the turn). Only fall back
   // to the char-count estimate when no model turn reported stats (e.g. a recipe
   // tier resolved deterministically without calling the model).
-  if (statsSeq === statsSeqBefore) {
+  if (res.tier === 'fast') {
+    state.tokensPerSecond = 0; // A direct tool read is not model inference.
+  } else if (statsSeq === statsSeqBefore) {
     const estimatedTokens = Math.max(1, Math.round((text.length + state.chatThinking.length) / 4));
     state.tokensPerSecond = Number((estimatedTokens / Math.max(latencyMs / 1000, 0.001)).toFixed(1));
   }
@@ -1940,6 +1974,12 @@ async function dispatch(cmd: Command): Promise<void> {
         break;
       case 'chat':
         respondOk(cmd.id, await handleChat(cmd.prompt, cmd.chatId));
+        break;
+      case 'clear_chat':
+        if (chatAborts.size > 0) throw new Error('Stop the active response before clearing the chat.');
+        state.chatHistory = [];
+        state.chatThinking = '';
+        respondOk(cmd.id);
         break;
       case 'cancel_chat':
         handleCancelChat(cmd.chatId);

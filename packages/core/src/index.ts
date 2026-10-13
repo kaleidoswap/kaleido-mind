@@ -224,3 +224,5 @@ export type {
   RiskVerdict,
   TaskPromptOptions,
 } from './autonomy/index.js';
+
+export { defaultRenderFast } from './fastpath/render.js';

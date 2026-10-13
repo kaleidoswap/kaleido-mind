@@ -205,3 +205,26 @@ describe('Funnel — T1 agentic', () => {
     expect(funnel.listSkills()).toHaveLength(0);
   });
 });
+
+
+describe('Funnel — explicit tool opt-out', () => {
+  it('bypasses balance fast-path and does not send tool schemas or skill text', async () => {
+    const provider = scriptedProvider([{ text: 'I cannot verify your balance without tools.' }]);
+    const tools = stubTools();
+    const execute = vi.spyOn(tools, 'execute');
+    const funnel = new Funnel({ provider, tools, skills: [TEST_SKILL] });
+    const res = await funnel.runTurn("what's my balance?", { toolMode: 'none' });
+    expect(res.route).toBe('without-tools');
+    expect(provider.inputs[0].tools).toEqual([]);
+    expect(provider.inputs[0].thinking).toBeUndefined();
+    expect(execute).not.toHaveBeenCalled();
+  });
+  it('cannot execute a hallucinated call to a hidden registered tool', async () => {
+    const provider = scriptedProvider([{ text: '', toolCalls: [{ name: 'get_balances', arguments: {} }] }]);
+    const tools = stubTools();
+    const execute = vi.spyOn(tools, 'execute');
+    const funnel = new Funnel({ provider, tools });
+    await funnel.runTurn('Say OK without tools.', { toolMode: 'none' });
+    expect(execute).not.toHaveBeenCalled();
+  });
+});

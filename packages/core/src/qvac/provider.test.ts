@@ -229,3 +229,100 @@ describe('createQvacProvider.cancel', () => {
     expect(cancel).toHaveBeenCalledWith({ requestId: 'req-9' });
   });
 });
+
+describe('unresponsive SDK cancellation', () => {
+  it('returns on abort even if neither events nor final complete', async () => {
+    const cancel = vi.fn(async () => {});
+    const never = new Promise<never>(() => {});
+    const provider = createQvacProvider({ completion: (() => ({ requestId: 'stuck', events: (async function* () { await never })(), final: never })) as any, cancel: cancel as any, getModelId: () => 'model' });
+    const controller = new AbortController();
+    const response = provider.runTurn({ messages: [{ role: 'user', content: 'test' }], tools: [], signal: controller.signal });
+    controller.abort();
+    const result = await response;
+    expect(result.inference?.status).toBe('cancelled'); expect(result.toolCalls).toEqual([]); expect(cancel).toHaveBeenCalledWith({ requestId: 'stuck' });
+  });
+});
+
+
+it('cancels a stalled inference at its deadline and discards partial text and calls', async () => {
+  vi.useFakeTimers();
+  try {
+    const cancel = vi.fn(async () => {});
+    const p = createQvacProvider({
+      getModelId: () => 'test', cancel: cancel as any, timeoutMs: 30_000,
+      completion: (() => ({
+        requestId: 'stalled',
+        events: (async function* () {
+          yield { type: 'contentDelta', text: 'unfinished reasoning' };
+          await new Promise(() => {});
+        })(),
+        final: new Promise(() => {}),
+      })) as any,
+    });
+    const response = p.runTurn({ messages: [{ role: 'user', content: 'hello' }], tools: [] });
+    await vi.advanceTimersByTimeAsync(30_000);
+    const result = await response;
+    expect(result.text).toContain('did not finish in time');
+    expect(result.text).not.toContain('unfinished');
+    expect(result.toolCalls).toEqual([]);
+    expect(result.inference).toMatchObject({ status: 'failed', stopReason: 'timeout', durationMs: 30_000 });
+    expect(cancel).toHaveBeenCalledWith({ requestId: 'stalled' });
+    await vi.advanceTimersByTimeAsync(100);
+  } finally { vi.useRealTimers(); }
+});
+
+
+it('forwards model-specific sampling alongside the reasoning budget', async () => {
+  const { fn, calls } = fakeCompletion({ contentText: 'OK' });
+  const p = createQvacProvider({ completion: fn as any, cancel: noopCancel,
+    getModelId: () => 'qwen', defaultTemperature: 1, maxThinkingTokens: 256,
+    sampling: { top_p: 0.95, top_k: 20, presence_penalty: 1.5, repeat_penalty: 1 } });
+  await p.runTurn({ messages: [{ role: 'user', content: 'hello' }], tools: [] });
+  expect(calls[0].generationParams).toMatchObject({ temp: 1, top_p: 0.95, top_k: 20,
+    presence_penalty: 1.5, repeat_penalty: 1, reasoning_budget: 256 });
+});
+
+
+it('retries a soft thinking limit without leaking analysis or executing its tools', async () => {
+  const calls: any[] = [];
+  const cancel = vi.fn(async () => {});
+  const onToken = vi.fn();
+  const onThinking = vi.fn();
+  const completion = (params: any) => {
+    calls.push(params);
+    const first = calls.length === 1;
+    return {
+      requestId: first ? 'reasoning' : 'answer',
+      events: (async function* () {
+        if (first) { yield { type: 'thinkingDelta', text: 'Long analysis continues' }; yield { type: 'contentDelta', text: 'Leaked analysis' }; }
+        else yield { type: 'contentDelta', text: 'Clean answer' };
+      })(),
+      final: first ? new Promise(() => {}) : Promise.resolve({ contentText: 'Clean answer', toolCalls: [] }),
+    };
+  };
+  const p = createQvacProvider({ completion: completion as any, cancel: cancel as any, getModelId: () => 'qwen', softThinkingBudget: true, maxThinkingTokens: 2 });
+  const out = await p.runTurn({ messages: [{ role: 'user', content: 'Question' }], tools: [], onToken, onThinking } as any);
+  expect(out.text).toBe('Clean answer');
+  expect(out.toolCalls).toEqual([]);
+  expect(calls).toHaveLength(2);
+  expect(calls[0].generationParams).toBeUndefined();
+  expect(calls[1].generationParams.reasoning_budget).toBe(0);
+  expect(calls[1].history).toEqual(calls[0].history);
+  expect(onToken.mock.calls.flat().join('')).toBe('Clean answer');
+  expect(onThinking.mock.calls.flat().join('')).toContain('Reasoning limit reached');
+  expect(cancel).toHaveBeenCalledWith({ requestId: 'reasoning' });
+});
+
+it('does not start a direct-answer retry when Stop wins the thinking-budget race', async () => {
+  const controller = new AbortController();
+  const completion = vi.fn(() => ({
+    requestId: 'stopped',
+    events: (async function* () { yield { type: 'thinkingDelta', text: 'Long thought' }; })(),
+    final: new Promise(() => {}),
+  }));
+  const p = createQvacProvider({ completion: completion as any, cancel: noopCancel, getModelId: () => 'qwen', softThinkingBudget: true, maxThinkingTokens: 1 });
+  const out = await p.runTurn({ messages: [], tools: [], signal: controller.signal, onThinking: () => controller.abort() } as any);
+  expect(completion).toHaveBeenCalledOnce();
+  expect(out.inference?.status).toBe('cancelled');
+  expect(out.toolCalls).toEqual([]);
+});

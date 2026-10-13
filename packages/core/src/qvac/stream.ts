@@ -94,13 +94,29 @@ export async function consumeRun(
   const startedAt = now();
   let firstTokenAt: number | undefined;
   let streamed = '';
+  // The SDK may leak the budget-inserted closing marker into contentDelta.
+  // Hold only a possible marker suffix so split tokens cannot flash in the UI.
+  let pendingVisible = '';
+  const emitVisible = (chunk: string, flush = false) => {
+    pendingVisible = (pendingVisible + chunk).replace(/<\/think>/gi, '');
+    let held = 0;
+    if (!flush) {
+      const marker = '</think>';
+      for (let n = 1; n < marker.length; n++) {
+        if (pendingVisible.toLowerCase().endsWith(marker.slice(0, n))) held = n;
+      }
+    }
+    const visible = pendingVisible.slice(0, pendingVisible.length - held);
+    pendingVisible = pendingVisible.slice(pendingVisible.length - held);
+    if (visible) handlers.onToken?.(visible);
+  };
   let thinkingChars = 0;
   let budgetExceeded = false;
   for await (const event of run.events) {
     if (event.type === 'contentDelta' && typeof event.text === 'string') {
       if (firstTokenAt === undefined && event.text.length > 0) firstTokenAt = now();
       streamed += event.text;
-      handlers.onToken?.(event.text);
+      emitVisible(event.text);
     } else if (event.type === 'thinkingDelta' && typeof event.text === 'string') {
       if (firstTokenAt === undefined && event.text.length > 0) firstTokenAt = now();
       handlers.onThinking?.(event.text);
@@ -116,6 +132,7 @@ export async function consumeRun(
       }
     }
   }
+  emitVisible('', true);
   let final: QvacFinalLike;
   try {
     final = await run.final;
