@@ -1,14 +1,14 @@
 /**
- * The smallest useful @kaleidorg/mind agent:
+ * The smallest useful @kaleidoswap/mind agent:
  *   QVAC local model -> Engine -> one in-process tool, routed by one skill.
  *
  *   pnpm start                       # downloads Qwen3.5 2B (~1.3 GB) on first run
  *   pnpm start "price of bitcoin in EUR?"
  *   pnpm start:mock                  # no model: a scripted provider replays the turn
  */
-import { Engine, InProcessToolSource, SkillRegistry, ToolRegistry, type LLMProvider } from '@kaleidorg/mind';
-import { createQvacProvider } from '@kaleidorg/mind/qvac';
-import { scriptedProvider } from '@kaleidorg/mind/testing';
+import { Engine, InProcessToolSource, SkillRegistry, ToolRegistry, type LLMProvider } from '@kaleidoswap/mind';
+import { createQvacProvider } from '@kaleidoswap/mind/qvac';
+import { scriptedProvider } from '@kaleidoswap/mind/testing';
 
 const MOCK = process.argv.includes('--mock') || process.env.MOCK === '1';
 const question = process.argv.slice(2).filter((a) => !a.startsWith('--')).join(' ') || 'What is the bitcoin price in EUR?';

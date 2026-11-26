@@ -6,7 +6,7 @@
  * fastest way to verify tools are selected, executed, fed back, and gated by
  * confirmation, exactly as they would be with a real QVAC model.
  *
- *   pnpm --filter @kaleidorg/mind test
+ *   pnpm --filter @kaleidoswap/mind test
  */
 
 import { describe, it, expect, vi } from 'vitest';

@@ -24,14 +24,14 @@ import {
   type LLMProvider,
   type Message,
   type ToolCall,
-} from '@kaleidorg/mind';
+} from '@kaleidoswap/mind';
 import {
   bindKaleidoswapTools,
   kaleidoswapAtomicRecipe,
   kaleidoswapPriceRecipe,
   KALEIDOSWAP_SPEND_TOOLS,
-} from '@kaleidorg/mind/kaleidoswap';
-import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
+} from '@kaleidoswap/mind/kaleidoswap';
+import { loadSkillsDir, packagedSkillsDir } from '@kaleidoswap/mind/skills';
 import { getModel } from '../catalog.js';
 import { loadProvider } from './run.js';
 

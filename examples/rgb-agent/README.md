@@ -57,7 +57,7 @@ seconds to a few minutes on a laptop.
 
 ## How it is wired
 
-- Tools: `McpToolSource` from `@kaleidorg/mind/mcp`, limited with `allow` to the tools named by the RGB and trading skills. The mock binds the
+- Tools: `McpToolSource` from `@kaleidoswap/mind/mcp`, limited with `allow` to the tools named by the RGB and trading skills. The mock binds the
   canonical wallet contract (`bindWalletTools`) to `MockWallet` handlers.
 - Skills: packaged playbooks loaded with `loadSkillsDir(packagedSkillsDir())`;
   the funnel selects the relevant skill for each request.

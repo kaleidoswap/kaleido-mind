@@ -1,6 +1,6 @@
 /**
  * Pure mapping from a QVAC completion `final` frame to the shape the shared
- * @kaleidorg/mind Engine consumes. Kept SDK-free (structural input type) so it
+ * @kaleidoswap/mind Engine consumes. Kept SDK-free (structural input type) so it
  * is testable without loading a model, and so the same mapping runs on mobile,
  * desktop, and the eval harness.
  */

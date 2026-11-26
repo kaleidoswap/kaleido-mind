@@ -9,7 +9,7 @@
  *
  * Example (mobile: ship the packaged bitrefill skill + the app's own skills):
  *   node bundle-skills.mjs --out ./skills.bundle.json \
- *     node_modules/@kaleidorg/mind/skills/bitrefill ./skills
+ *     node_modules/@kaleidoswap/mind/skills/bitrefill ./skills
  *
  * Each positional arg may be either a single skill folder (contains SKILL.md)
  * or a parent folder of skill folders. References under <skill>/references/*.md

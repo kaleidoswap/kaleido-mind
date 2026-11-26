@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const arg = process.argv[2];
 if (arg === '-h' || arg === '--help') {
-  console.log('Usage: npm create @kaleidorg/mind [directory]');
+  console.log('Usage: npm create @kaleidoswap/mind [directory]');
   process.exit(0);
 }
 

@@ -1,8 +1,8 @@
-# @kaleidorg/mind
+# @kaleidoswap/mind
 
 A local-first reasoning and function-calling engine for Bitcoin wallets. You
 bring a model (usually [QVAC](https://www.npmjs.com/package/@qvac/sdk) running
-on-device) and some tools; `@kaleidorg/mind` runs the agent loop, routes
+on-device) and some tools; `@kaleidoswap/mind` runs the agent loop, routes
 requests through skills and recipes, and asks your app to approve tools marked
 `requiresConfirmation` before they run.
 
@@ -23,12 +23,12 @@ requests through skills and recipes, and asks your app to approve tools marked
 ## Install
 
 ```bash
-npm i @kaleidorg/mind @qvac/sdk
+npm i @kaleidoswap/mind @qvac/sdk
 ```
 
 You need `@qvac/sdk` only to run QVAC models. The engine accepts any
-`LLMProvider`: `@kaleidorg/mind/openai` talks to any OpenAI-compatible server
-(see below), and `@kaleidorg/mind/testing` includes a scripted provider that
+`LLMProvider`: `@kaleidoswap/mind/openai` talks to any OpenAI-compatible server
+(see below), and `@kaleidoswap/mind/testing` includes a scripted provider that
 needs no model. To connect MCP servers, also install
 `@modelcontextprotocol/sdk`.
 
@@ -45,7 +45,7 @@ every supported `@qvac/sdk` version.
 Create a project that uses a fake wallet and scripted responses:
 
 ```bash
-npm create @kaleidorg/mind my-agent
+npm create @kaleidoswap/mind my-agent
 cd my-agent
 npm install
 npm run start:offline
@@ -70,7 +70,7 @@ catalog; any GGUF still loads by path or Hugging Face URL.
 | Qwen3.5 9B | `QWEN3_5_9B_MULTIMODAL_Q4_K_M` | 5.7 GB | ~9 GB | 16 GB machines; slow for chat (180–690 s) |
 | Qwen3.6 35B-A3B (MoE) | `QWEN3_6_35B_A3B_MULTIMODAL_Q4_K_M` | 22 GB | ~26 GB | 32 GB+ machines |
 
-The same list is exported as data from `@kaleidorg/mind/qvac` (`QWEN35_MODELS`,
+The same list is exported as data from `@kaleidoswap/mind/qvac` (`QWEN35_MODELS`,
 `DEFAULT_MODEL_ID`, `DEFAULT_QVAC_MODEL`, `DEFAULT_SMALL_DEVICE_QVAC_MODEL`).
 Only the text weights are loaded; the vision projector is not needed.
 
@@ -82,8 +82,8 @@ skill, and runs one turn.
 ```ts
 // quickstart.ts — run with: npx tsx quickstart.ts
 import { completion, cancel, loadModel, unloadModel, close, QWEN3_5_2B_MULTIMODAL_Q4_K_M } from '@qvac/sdk';
-import { Engine, InProcessToolSource, SkillRegistry, ToolRegistry } from '@kaleidorg/mind';
-import { createQvacProvider } from '@kaleidorg/mind/qvac';
+import { Engine, InProcessToolSource, SkillRegistry, ToolRegistry } from '@kaleidoswap/mind';
+import { createQvacProvider } from '@kaleidoswap/mind/qvac';
 
 // 1. Model: Qwen3.5 2B Q4 (~1.3 GB, cached after the first download).
 const modelId = await loadModel({
@@ -140,7 +140,7 @@ A runnable copy (with a `--mock` mode) is in
 Create a project that uses a fake wallet and scripted responses:
 
 ```bash
-npm create @kaleidorg/mind my-agent
+npm create @kaleidoswap/mind my-agent
 cd my-agent
 npm install
 npm run start:offline
@@ -159,7 +159,7 @@ the OpenAI Chat Completions API with tool calling: Ollama, LM Studio, llama.cpp
 (it uses `fetch`).
 
 ```ts
-import { createOpenAICompatibleProvider } from '@kaleidorg/mind/openai';
+import { createOpenAICompatibleProvider } from '@kaleidoswap/mind/openai';
 
 const provider = createOpenAICompatibleProvider({
   baseUrl: 'http://localhost:11434/v1', // Ollama
@@ -179,18 +179,18 @@ aborts the request on `signal`. Reasoning deltas (`reasoning_content`) go to
 
 | Import | What it gives you | Runtime |
 |---|---|---|
-| `@kaleidorg/mind` | `Engine`, `Funnel` (fast-path → recipe → agent), `ToolRegistry`, `InProcessToolSource`, `SkillRegistry`, the wallet contract and binder, `confirmReadback`, recipes, memory, RAG, context budgeting, L402 and CLI tool sources | Any (RN-safe) |
-| `@kaleidorg/mind/qvac` | `createQvacProvider`, `toQvacTools`, `consumeRun`, voice (`createQvacVoice`, `runVoiceAssistant`), model configs | Any; you inject the SDK functions |
-| `@kaleidorg/mind/openai` | `createOpenAICompatibleProvider` for Ollama, LM Studio, llama.cpp, vLLM, hosted APIs | Any with `fetch` |
-| `@kaleidorg/mind/kaleidoswap` · `/lsps1` · `/submarine` · `/bitrefill` · `/flashnet` | Each domain's tool contract (`*_TOOLS`, `bind*Tools`) and its recipes. Also re-exported from the root until 1.0 | Any |
-| `@kaleidorg/mind/knowledge` | Knowledge packs (`BITCOIN_COPILOT_DOCS`), corpus adapters for RAG, `createBtcMapToolSource` | Any |
-| `@kaleidorg/mind/mcp` | `McpToolSource`: tools from an MCP server over stdio or streamable HTTP | Node |
-| `@kaleidorg/mind/skills` | `loadSkillsDir`, `loadSkillFromDir`, `packagedSkillsDir()` (the 14 bundled skills) | Node (fs) |
-| `@kaleidorg/mind/testing` | `MockWallet` (stateful fake wallet bound to the real contract), `scriptedProvider` | Any |
-| `@kaleidorg/mind/logger` | `TurnLogger` for JSONL turn logs with PII masking | Any |
+| `@kaleidoswap/mind` | `Engine`, `Funnel` (fast-path → recipe → agent), `ToolRegistry`, `InProcessToolSource`, `SkillRegistry`, the wallet contract and binder, `confirmReadback`, recipes, memory, RAG, context budgeting, L402 and CLI tool sources | Any (RN-safe) |
+| `@kaleidoswap/mind/qvac` | `createQvacProvider`, `toQvacTools`, `consumeRun`, voice (`createQvacVoice`, `runVoiceAssistant`), model configs | Any; you inject the SDK functions |
+| `@kaleidoswap/mind/openai` | `createOpenAICompatibleProvider` for Ollama, LM Studio, llama.cpp, vLLM, hosted APIs | Any with `fetch` |
+| `@kaleidoswap/mind/kaleidoswap` · `/lsps1` · `/submarine` · `/bitrefill` · `/flashnet` | Each domain's tool contract (`*_TOOLS`, `bind*Tools`) and its recipes. Also re-exported from the root until 1.0 | Any |
+| `@kaleidoswap/mind/knowledge` | Knowledge packs (`BITCOIN_COPILOT_DOCS`), corpus adapters for RAG, `createBtcMapToolSource` | Any |
+| `@kaleidoswap/mind/mcp` | `McpToolSource`: tools from an MCP server over stdio or streamable HTTP | Node |
+| `@kaleidoswap/mind/skills` | `loadSkillsDir`, `loadSkillFromDir`, `packagedSkillsDir()` (the 14 bundled skills) | Node (fs) |
+| `@kaleidoswap/mind/testing` | `MockWallet` (stateful fake wallet bound to the real contract), `scriptedProvider` | Any |
+| `@kaleidoswap/mind/logger` | `TurnLogger` for JSONL turn logs with PII masking | Any |
 
 React Native hosts can't read skill folders from disk. Bundle them at build time
-with `node node_modules/@kaleidorg/mind/scripts/bundle-skills.mjs --out skills.bundle.json <dirs…>`,
+with `node node_modules/@kaleidoswap/mind/scripts/bundle-skills.mjs --out skills.bundle.json <dirs…>`,
 then load the bundle with `skillsFromBundle()`.
 
 ## Writing a tool
@@ -241,7 +241,7 @@ Never guess an address.
 ```
 
 ```ts
-import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
+import { loadSkillsDir, packagedSkillsDir } from '@kaleidoswap/mind/skills';
 const skills = new SkillRegistry([...loadSkillsDir(packagedSkillsDir()), ...loadSkillsDir('./skills')]);
 // Skips skills whose tools the engine's registry lacks (e.g. spark-wallet with
 // no Spark tools), so the model never runs inside a skill it can't act in.
@@ -325,7 +325,7 @@ it is connected to, and the bundled `rgb-lightning-node` skill describes both.
 ## Connecting an MCP server
 
 ```ts
-import { McpToolSource } from '@kaleidorg/mind/mcp';
+import { McpToolSource } from '@kaleidoswap/mind/mcp';
 
 const kaleido = new McpToolSource({
   id: 'kaleido',
@@ -366,8 +366,8 @@ invoice and sends an asset. It also has a mock mode that runs without a node.
 ## Testing without a node, funds or a model
 
 ```ts
-import { Funnel, issueAssetRecipe } from '@kaleidorg/mind';
-import { MockWallet, scriptedProvider } from '@kaleidorg/mind/testing';
+import { Funnel, issueAssetRecipe } from '@kaleidoswap/mind';
+import { MockWallet, scriptedProvider } from '@kaleidoswap/mind/testing';
 
 const wallet = new MockWallet();
 const funnel = new Funnel({ provider: scriptedProvider(), tools: wallet.registry(), recipes: [issueAssetRecipe] });

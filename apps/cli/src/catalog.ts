@@ -4,7 +4,7 @@
  * loaded by the QVAC SDK. Probe-verified repos (mirror of apps/provider).
  */
 
-import { QWEN35_MODELS, DEFAULT_MODEL_ID } from '@kaleidorg/mind/qvac';
+import { QWEN35_MODELS, DEFAULT_MODEL_ID } from '@kaleidoswap/mind/qvac';
 
 export type ModelKind = 'llm' | 'embeddings' | 'psy';
 

@@ -1,7 +1,7 @@
 /**
  * Skill loader — reads Claude-style Agent Skill folders from disk. NODE ONLY.
  *
- * Import from `@kaleidorg/mind/skills` on Node hosts (desktop sidecar,
+ * Import from `@kaleidoswap/mind/skills` on Node hosts (desktop sidecar,
  * kaleidoagent). React Native has no filesystem — there, build skills with
  * `SkillRegistry.addMarkdown(text, references)` from bundled strings instead.
  *
@@ -27,7 +27,7 @@ import { parseSkill } from './registry.js';
 
 /**
  * Absolute path to the skills shipped inside this package
- * (`@kaleidorg/mind/skills`). Resolves relative to the compiled loader, so it
+ * (`@kaleidoswap/mind/skills`). Resolves relative to the compiled loader, so it
  * works from any host that installs the package. Override with an explicit dir
  * when you keep skills elsewhere.
  */

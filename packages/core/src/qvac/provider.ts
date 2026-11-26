@@ -1,6 +1,6 @@
 /**
  * createQvacProvider — turns `@qvac/sdk` `completion()` into the shared
- * `@kaleidorg/mind` `LLMProvider` the Engine/Funnel consumes. This is the one
+ * `@kaleidoswap/mind` `LLMProvider` the Engine/Funnel consumes. This is the one
  * place the SDK is called for inference; every host (rate, desktop provider,
  * cli) uses it instead of hand-rolling its own completion wrapper.
  *

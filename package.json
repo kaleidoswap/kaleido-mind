@@ -14,7 +14,7 @@
     "typecheck": "pnpm -r run typecheck",
     "test": "pnpm -r run test",
     "lint": "pnpm -r run lint",
-    "play": "pnpm --filter @kaleidorg/mind-playground run start",
+    "play": "pnpm --filter @kaleidoswap/mind-playground run start",
     "submission:evidence": "node scripts/run-submission-benchmark.mjs",
     "submission:evidence:mock": "node scripts/run-submission-benchmark.mjs --mock",
     "dataset:eval": "tsx scripts/evaluate-dataset.mts",

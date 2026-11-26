@@ -16,7 +16,7 @@
  * Auto-skips unless (a) kaleido-mcp/dist is built and (b) an RLN node answers,
  * so it's a no-op in CI and a real check on a dev box with a node up. Run it
  * explicitly against a node with:
- *   RLN_NODE_URL=http://localhost:3001 pnpm --filter @kaleidorg/mind test:live
+ *   RLN_NODE_URL=http://localhost:3001 pnpm --filter @kaleidoswap/mind test:live
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { existsSync } from 'node:fs';

@@ -1,7 +1,7 @@
 {
-  "name": "@kaleidorg/mind-provider",
+  "name": "@kaleidoswap/mind-provider",
   "version": "0.11.1",
-  "description": "Node sidecar that runs a @kaleidorg/mind agent on @qvac/sdk and speaks JSON-RPC over stdio.",
+  "description": "Node sidecar that runs a @kaleidoswap/mind agent on @qvac/sdk and speaks JSON-RPC over stdio.",
   "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -27,7 +27,7 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@kaleidorg/mind": "workspace:^",
+    "@kaleidoswap/mind": "workspace:^",
     "@modelcontextprotocol/sdk": "^1.32.1"
   },
   "peerDependencies": {

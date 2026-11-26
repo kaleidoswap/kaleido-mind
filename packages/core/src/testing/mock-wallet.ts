@@ -5,7 +5,7 @@
  * "sent". The canonical contract tools bind to it, so the agent sees real
  * schemas and real failure modes — not trivial canned stubs.
  *
- * Used by the eval harness and exported as `@kaleidorg/mind/testing` so hosts
+ * Used by the eval harness and exported as `@kaleidoswap/mind/testing` so hosts
  * can build and demo an agent with no node, no funds and no network.
  */
 

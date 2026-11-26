@@ -1,4 +1,4 @@
-name: Publish npm package (@kaleidorg/mind)
+name: Publish npm package (@kaleidoswap/mind)
 
 # Publishes packages/core to npm on push to main. The "skip if already
 # published" guard means it only actually publishes when the version in

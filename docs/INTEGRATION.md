@@ -1,13 +1,13 @@
-# Integrating `@kaleidorg/mind` into a host
+# Integrating `@kaleidoswap/mind` into a host
 
-`@kaleidorg/mind` is a pure-TypeScript library: the `Engine` (agentic loop),
+`@kaleidoswap/mind` is a pure-TypeScript library: the `Engine` (agentic loop),
 the `Funnel` (fast path → recipe → agent), `ToolRegistry` + `ToolSource`s
 (in-process, MCP, CLI, L402), `SkillRegistry`, and an **injected**
 `LLMProvider`. It does nothing on its own; a *host* instantiates it with a
 provider, tool sources and a confirm handler.
 
 ```
-        ┌──────────────────── @kaleidorg/mind (library) ─────────────────────┐
+        ┌──────────────────── @kaleidoswap/mind (library) ─────────────────────┐
         │  Funnel / Engine · ToolRegistry · ToolSource (InProcess/MCP/CLI/L402)│
         │  SkillRegistry (loadSkillsDir / bundle) · injected LLMProvider       │
         └─────────────────────────────────────────────────────────────────────┘
@@ -25,13 +25,13 @@ provider, tool sources and a confirm handler.
 | Host | LLM | Tools | Skills |
 |---|---|---|---|
 | [Rate](https://github.com/kaleidoswap/Rate) (React Native) | QVAC on-device | in-process wallet tools (`bindWalletTools` shape) + L402 | bundled `skills.bundle.json` |
-| [desktop-app](https://github.com/kaleidoswap/desktop-app) (Tauri) | QVAC in the `@kaleidorg/mind-provider` sidecar | kaleido-mcp + Bitrefill MCP + skill references | `loadSkillsDir` |
+| [desktop-app](https://github.com/kaleidoswap/desktop-app) (Tauri) | QVAC in the `@kaleidoswap/mind-provider` sidecar | kaleido-mcp + Bitrefill MCP + skill references | `loadSkillsDir` |
 | `apps/cli`, `apps/playground`, `examples/*` | QVAC in Node, or `scriptedProvider` | in-process, HTTP-backed or MCP | `loadSkillsDir` |
 
 ## What a host provides
 
 1. **An `LLMProvider`.** For QVAC, `createQvacProvider` from
-   `@kaleidorg/mind/qvac`, given the SDK's `completion` / `cancel` and a
+   `@kaleidoswap/mind/qvac`, given the SDK's `completion` / `cancel` and a
    `getModelId()` for the loaded model. The host owns the model lifecycle
    (download, load, unload, GPU fallback); `LOCAL_LLM_CONFIG` /
    `LOCAL_LLM_CONFIG_GPU` are sensible starting points.
@@ -47,16 +47,16 @@ provider, tool sources and a confirm handler.
 
 ## Platform notes
 
-- **React Native:** import only `@kaleidorg/mind`, `/qvac`, `/testing` and
+- **React Native:** import only `@kaleidoswap/mind`, `/qvac`, `/testing` and
   `/logger`. `/mcp` and `/skills` use Node APIs (subprocesses, fs).
-- **Desktop sidecar:** `@kaleidorg/mind-provider` speaks a line-delimited
+- **Desktop sidecar:** `@kaleidoswap/mind-provider` speaks a line-delimited
   JSON protocol over stdio: commands on stdin, events on stdout (see
   `apps/provider/src/protocol.ts`). It loads the
   model, skills and MCP servers configured by the host and streams chat events
   back.
 - **Remote inference:** to run the model on another machine, serve it with an
   OpenAI-compatible server (`qvac serve`, Ollama, LM Studio, llama.cpp) and use
-  `createOpenAICompatibleProvider` from `@kaleidorg/mind/openai`. Put the server
+  `createOpenAICompatibleProvider` from `@kaleidoswap/mind/openai`. Put the server
   behind authentication; the tools and signing stay on the device that runs
   the Engine.
 
@@ -73,7 +73,7 @@ import {
   bindLsps1Tools,
   createBtcMapToolSource,
   ToolRegistry,
-} from '@kaleidorg/mind';
+} from '@kaleidoswap/mind';
 
 const wallet = bindWalletTools({
   get_balances:   async () => protocolManager.totals(),

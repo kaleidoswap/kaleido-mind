@@ -1,9 +1,9 @@
 /**
- * @kaleidorg/mind/testing — build and demo an agent with no node, no funds and
+ * @kaleidoswap/mind/testing — build and demo an agent with no node, no funds and
  * no model: a stateful mock wallet bound to the canonical contract, plus a
  * scripted provider.
  *
- *   import { MockWallet, scriptedProvider } from '@kaleidorg/mind/testing';
+ *   import { MockWallet, scriptedProvider } from '@kaleidoswap/mind/testing';
  *   const wallet = new MockWallet();
  *   const funnel = new Funnel({ provider: scriptedProvider(), tools: wallet.registry(), … });
  */

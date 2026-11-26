@@ -21,8 +21,8 @@
 import { mkdir, readFile, writeFile, chmod } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join, dirname } from 'node:path';
-import { bindWalletTools, type WalletHandler, type WalletLayer } from '@kaleidorg/mind';
-import type { InProcessToolSource } from '@kaleidorg/mind';
+import { bindWalletTools, type WalletHandler, type WalletLayer } from '@kaleidoswap/mind';
+import type { InProcessToolSource } from '@kaleidoswap/mind';
 
 const MNEMONIC_PATH = process.env.KALEIDO_SPARK_MNEMONIC_PATH
   ?? join(homedir(), '.kaleido', 'spark.mnemonic');

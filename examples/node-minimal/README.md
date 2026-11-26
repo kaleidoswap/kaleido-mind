@@ -1,6 +1,6 @@
 # node-minimal
 
-The smallest useful `@kaleidorg/mind` agent: a local QVAC model, one in-process
+The smallest useful `@kaleidoswap/mind` agent: a local QVAC model, one in-process
 tool and one skill, wired through the `Engine`.
 
 ```bash
@@ -21,7 +21,7 @@ What it shows, in `src/index.ts`:
 1. **Tool** — an `InProcessToolSource` with one JSON-Schema tool (`get_btc_price`).
 2. **Skill** — a SKILL.md string registered on a `SkillRegistry`; `select()` picks it
    and `compose()` returns the system prompt plus the tools it may use.
-3. **Provider** — `createQvacProvider` from `@kaleidorg/mind/qvac`, given the SDK's
+3. **Provider** — `createQvacProvider` from `@kaleidoswap/mind/qvac`, given the SDK's
    `completion` / `cancel` and the id returned by `loadModel`.
 4. **Turn** — `engine.runAgentic()` loops model → tool → model until it answers.
 

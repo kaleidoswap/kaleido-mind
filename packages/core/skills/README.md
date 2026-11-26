@@ -1,6 +1,6 @@
 # Skills
 
-Agent Skills the `@kaleidorg/mind` engine loads at runtime (Anthropic Agent
+Agent Skills the `@kaleidoswap/mind` engine loads at runtime (Anthropic Agent
 Skills format, so the same folders also work as Claude Code skills). For each
 query the engine picks one skill, appends its body to the system prompt and
 limits the model to that skill's tools. Long reference material lives in
@@ -62,7 +62,7 @@ One or two lines of context: units, where ids come from.
 `src/skills/catalog.test.ts` checks every skill: each tool exists in the
 in-app contracts or in kaleido-mcp, each example parses and uses valid argument
 names (and values) on every surface that has the tool, and the body stays short.
-Run it with `pnpm --filter @kaleidorg/mind test`.
+Run it with `pnpm --filter @kaleidoswap/mind test`.
 
 ## Integrate in 3 steps
 
@@ -70,8 +70,8 @@ Run it with `pnpm --filter @kaleidorg/mind test`.
    bind your own handlers to a contract:
 
    ```ts
-   import { Engine, ToolRegistry, bindWalletTools } from '@kaleidorg/mind';
-   import { McpToolSource } from '@kaleidorg/mind/mcp';
+   import { Engine, ToolRegistry, bindWalletTools } from '@kaleidoswap/mind';
+   import { McpToolSource } from '@kaleidoswap/mind/mcp';
 
    const mcp = new McpToolSource({ id: 'kaleido', transport: { kind: 'stdio', command: 'npx', args: ['-y', 'kaleido-mcp'] } });
    await mcp.connect();
@@ -81,14 +81,14 @@ Run it with `pnpm --filter @kaleidorg/mind test`.
 2. **Load skills.** Node reads the folders; React Native ships a bundle:
 
    ```ts
-   import { SkillRegistry } from '@kaleidorg/mind';
-   import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
+   import { SkillRegistry } from '@kaleidoswap/mind';
+   import { loadSkillsDir, packagedSkillsDir } from '@kaleidoswap/mind/skills';
    const skills = new SkillRegistry([...loadSkillsDir(packagedSkillsDir()), ...loadSkillsDir('./my-skills')]);
    ```
 
    ```bash
-   node node_modules/@kaleidorg/mind/scripts/bundle-skills.mjs --out skills.bundle.json \
-     node_modules/@kaleidorg/mind/skills/kaleido-trading ./skills
+   node node_modules/@kaleidoswap/mind/scripts/bundle-skills.mjs --out skills.bundle.json \
+     node_modules/@kaleidoswap/mind/skills/kaleido-trading ./skills
    ```
 
 3. **Run a query.** `composeSkill` picks a skill that can act with the live

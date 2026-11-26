@@ -22,9 +22,9 @@ import {
   type LLMProvider,
   type ToolDef,
   type ToolSource,
-} from '@kaleidorg/mind';
-import { createQvacProvider } from '@kaleidorg/mind/qvac';
-import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
+} from '@kaleidoswap/mind';
+import { createQvacProvider } from '@kaleidoswap/mind/qvac';
+import { loadSkillsDir, packagedSkillsDir } from '@kaleidoswap/mind/skills';
 import { getModel } from '../catalog.js';
 import { modelPath, isInstalled } from '../models.js';
 import type { EvalCase } from './dataset.js';

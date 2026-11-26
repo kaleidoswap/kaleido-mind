@@ -29,7 +29,7 @@ jobs:
         run: pnpm -r typecheck
 
       - name: Test (core)
-        run: pnpm --filter @kaleidorg/mind test
+        run: pnpm --filter @kaleidoswap/mind test
 
       - name: Product evaluation and dataset export (offline)
         run: |
@@ -40,23 +40,23 @@ jobs:
       - name: MCP contract (published server)
         run: |
           npm install --prefix /tmp/mind-mcp-contract --no-audit --no-fund kaleido-mcp@0.5.0 @tetherto/wdk-wallet-spark@1.0.0-beta.28 @kaleidorg/wdk-wallet-liquid@1.0.0-beta.9
-          KALEIDO_MCP_CONTRACT_PATH=/tmp/mind-mcp-contract/node_modules/kaleido-mcp/dist/index.js pnpm --filter @kaleidorg/mind exec vitest run src/tools/mcp.contract.test.ts
+          KALEIDO_MCP_CONTRACT_PATH=/tmp/mind-mcp-contract/node_modules/kaleido-mcp/dist/index.js pnpm --filter @kaleidoswap/mind exec vitest run src/tools/mcp.contract.test.ts
 
       # The examples without a model or node: scripted provider + fake tools.
       - name: Examples (offline)
         run: |
-          pnpm --filter @kaleidorg/example-node-minimal run start:mock
-          pnpm --filter @kaleidorg/example-rgb-agent run start:offline
+          pnpm --filter @kaleidoswap/example-node-minimal run start:mock
+          pnpm --filter @kaleidoswap/example-rgb-agent run start:offline
 
-      # What `npm create @kaleidorg/mind` produces, installed with npm against
-      # this commit's @kaleidorg/mind, outside the workspace.
+      # What `npm create @kaleidoswap/mind` produces, installed with npm against
+      # this commit's @kaleidoswap/mind, outside the workspace.
       - name: Starter (create-mind)
         run: |
           mkdir -p /tmp/starter
           (cd packages/core && pnpm pack --pack-destination /tmp/starter)
           node packages/create-mind/bin/create-mind.js /tmp/starter/app
           cd /tmp/starter/app
-          npm pkg set "dependencies.@kaleidorg/mind=file:$(ls /tmp/starter/kaleidorg-mind-*.tgz)"
+          npm pkg set "dependencies.@kaleidoswap/mind=file:$(ls /tmp/starter/kaleidorg-mind-*.tgz)"
           npm install --no-audit --no-fund
           npx tsc --noEmit
           npm run start:offline

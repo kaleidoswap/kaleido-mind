@@ -17,7 +17,7 @@ import {
   type InferenceMetrics,
   type LLMProvider,
   type WalletHandler,
-} from '@kaleidorg/mind';
+} from '@kaleidoswap/mind';
 import { MockWallet, type SendRecord } from './mockWallet.js';
 import { loadProvider, mockEvalProvider } from './run.js';
 

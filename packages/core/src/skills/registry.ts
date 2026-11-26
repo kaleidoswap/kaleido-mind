@@ -151,7 +151,7 @@ export const keywordSelector: SkillSelector = {
  *     cosine vs. query, mixed with keyword score).
  *
  * Example host usage (CLI / provider with embeddings already loaded):
- *   import { createEmbeddingSkillSelector, SkillRegistry } from '@kaleidorg/mind';
+ *   import { createEmbeddingSkillSelector, SkillRegistry } from '@kaleidoswap/mind';
  *   const selector = createEmbeddingSkillSelector(embeddingsProvider);
  *   const reg = new SkillRegistry(loadedSkills, selector);
  *

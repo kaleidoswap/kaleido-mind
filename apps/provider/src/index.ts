@@ -60,14 +60,14 @@ import {
   type LLMProvider,
   type Message,
   type ToolSource,
-} from '@kaleidorg/mind';
+} from '@kaleidoswap/mind';
 import {
   buyAssetChannelRecipe,
   kaleidoswapAtomicRecipe,
   kaleidoswapChannelOrderRecipe,
-} from '@kaleidorg/mind/kaleidoswap';
-import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
-import { createQvacProvider, QWEN35_MODELS, DEFAULT_MODEL_ID } from '@kaleidorg/mind/qvac';
+} from '@kaleidoswap/mind/kaleidoswap';
+import { loadSkillsDir, packagedSkillsDir } from '@kaleidoswap/mind/skills';
+import { createQvacProvider, QWEN35_MODELS, DEFAULT_MODEL_ID } from '@kaleidoswap/mind/qvac';
 
 // ─────────────────────────────────────────────────────────────────────
 // IO helpers
@@ -287,7 +287,7 @@ async function connectCustomMcp(server: SavedMcpServer): Promise<void> {
   state.customMcpSources.delete(server.id);
   state.customMcpErrors.delete(server.id);
   try {
-    const { McpToolSource } = await import('@kaleidorg/mind/mcp');
+    const { McpToolSource } = await import('@kaleidoswap/mind/mcp');
     const source = new McpToolSource({
       id: `custom:${server.id}`,
       ...mcpToolFilter(),
@@ -539,7 +539,7 @@ function toolAllowed(name: string): boolean {
 let maxThinkingTokens: number | undefined = MAX_THINKING_TOKENS;
 let maxOutputTokens: number | undefined = capOutput(MAX_OUTPUT_TOKENS);
 
-// All QVAC completion logic lives in @kaleidorg/mind/qvac now (one place, shared
+// All QVAC completion logic lives in @kaleidoswap/mind/qvac now (one place, shared
 // with the mobile app). We inject the lazily-loaded SDK functions: `completion`
 // is read at call time (the sidecar may start before @qvac/sdk finishes
 // loading), and `getModelId` returns the currently-loaded model handle so the
@@ -637,7 +637,7 @@ async function connectMcpIfConfigured(): Promise<void> {
     return;
   }
   try {
-    const { McpToolSource } = await import('@kaleidorg/mind/mcp');
+    const { McpToolSource } = await import('@kaleidoswap/mind/mcp');
     const src = new McpToolSource({
       id: 'kaleido',
       ...mcpToolFilter(),
@@ -768,7 +768,7 @@ async function connectBitrefillMcpIfEnabled(): Promise<void> {
     return;
   }
   try {
-    const { McpToolSource } = await import('@kaleidorg/mind/mcp');
+    const { McpToolSource } = await import('@kaleidoswap/mind/mcp');
     const src = new McpToolSource({
       id: 'bitrefill',
       ...mcpToolFilter(),

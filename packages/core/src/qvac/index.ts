@@ -1,6 +1,6 @@
 /**
  * @kaleidorg/mind-qvac — the single home for all @qvac/sdk logic behind
- * @kaleidorg/mind. Hosts (rate mobile, desktop provider, cli) supply @qvac/sdk
+ * @kaleidoswap/mind. Hosts (rate mobile, desktop provider, cli) supply @qvac/sdk
  * as a peer dependency; this package owns the orchestration so the logic lives
  * in one place instead of drifting copies per host.
  *

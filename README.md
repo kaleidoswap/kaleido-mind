@@ -23,7 +23,7 @@ model server or the scripted offline provider can be used instead. See the
 ## Start a project
 
 ```bash
-npm create @kaleidorg/mind my-agent
+npm create @kaleidoswap/mind my-agent
 cd my-agent && npm install
 npm run start:offline   # fake node + scripted model: checks the setup, no download
 npm run start:mock      # optional next step: fake node + local model download
@@ -37,12 +37,12 @@ OpenAI-compatible server, set `OPENAI_BASE_URL` and `OPENAI_MODEL`.
 ## Use it in your app
 
 ```bash
-npm i @kaleidorg/mind @qvac/sdk
+npm i @kaleidoswap/mind @qvac/sdk
 ```
 
 `@qvac/sdk` is only needed for on-device QVAC models. To use a model you
 already serve, use `createOpenAICompatibleProvider` from
-`@kaleidorg/mind/openai` instead.
+`@kaleidoswap/mind/openai` instead.
 
 The [package README](./packages/core/README.md) covers a five-minute QVAC
 quickstart, the subpath exports, the wallet tool contract, connecting MCP
@@ -112,7 +112,7 @@ To use the skills without the plugin, copy the skill folders you want into
 `kaleido-node`, `kaleido-trading` (atomic swaps), `channel-manager`
 (channels, liquidity, LSP orders), `portfolio-manager` (rebalancing, DCA),
 `submarine-swaps` and `paid-data` use tools that kaleido-mcp provides. The other skills call tools
-that come from the `@kaleidorg/mind` runtime or from other servers:
+that come from the `@kaleidoswap/mind` runtime or from other servers:
 `spark-wallet` and `wallet-assistant` use the in-app wallet contract,
 `bitrefill` needs the Bitrefill MCP, `flashnet-swaps` needs Flashnet tools, and
 `merchant-finder` needs a BTC Map tool. In Claude Code these skills
@@ -124,7 +124,7 @@ frontmatter lines are read by the mind runtime; Claude ignores them.
 | Example | What it does | Run |
 |---|---|---|
 | [`node-minimal`](./examples/node-minimal) | Engine + QVAC local model + one in-process tool, routed by one skill | `pnpm start` / `pnpm start:mock` |
-| [`rgb-agent`](./examples/rgb-agent) | A local model operates an RGB Lightning Node through kaleido-mcp on signet: RGB balances, RGB invoice, asset send behind a confirm gate. Also what `npm create @kaleidorg/mind` generates | `pnpm start` / `pnpm start:mock` / `pnpm start:offline` / `pnpm eval:mock` |
+| [`rgb-agent`](./examples/rgb-agent) | A local model operates an RGB Lightning Node through kaleido-mcp on signet: RGB balances, RGB invoice, asset send behind a confirm gate. Also what `npm create @kaleidoswap/mind` generates | `pnpm start` / `pnpm start:mock` / `pnpm start:offline` / `pnpm eval:mock` |
 
 ```bash
 corepack enable
@@ -174,7 +174,7 @@ What else is in the box:
   through QVAC.
 - **Voice:** a hands-free STT → agent → TTS loop on QVAC Whisper and
   Supertonic.
-- **Testing:** `@kaleidorg/mind/testing` provides a stateful `MockWallet` and a
+- **Testing:** `@kaleidoswap/mind/testing` provides a stateful `MockWallet` and a
   `scriptedProvider`, so the whole funnel runs in CI with no node, no funds and
   no model.
 
@@ -182,11 +182,11 @@ What else is in the box:
 
 ```
 kaleido-mind/
-├── packages/core/     @kaleidorg/mind — the engine (published)
+├── packages/core/     @kaleidoswap/mind — the engine (published)
 │   ├── src/           engine, funnel, contracts, recipes, skills, tools, memory, rag, qvac
 │   └── skills/        bundled SKILL.md playbooks
 ├── apps/
-│   ├── provider/      @kaleidorg/mind-provider — Node sidecar (JSON-RPC over stdio) for desktop hosts (published)
+│   ├── provider/      @kaleidoswap/mind-provider — Node sidecar (JSON-RPC over stdio) for desktop hosts (published)
 │   ├── cli/           kaleido-mind CLI — model management, chat, product and diagnostic evals
 │   └── playground/    exercise the engine against a real local model
 ├── examples/          node-minimal, rgb-agent

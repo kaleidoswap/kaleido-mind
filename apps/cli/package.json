@@ -1,8 +1,8 @@
 {
-  "name": "@kaleidorg/mind-cli",
+  "name": "@kaleidoswap/mind-cli",
   "version": "0.1.0",
   "private": true,
-  "description": "Interactive terminal harness for @kaleidorg/mind — run the full agent (QVAC + skills + memory + RAG + tools) on your Mac to test before mobile/desktop.",
+  "description": "Interactive terminal harness for @kaleidoswap/mind — run the full agent (QVAC + skills + memory + RAG + tools) on your Mac to test before mobile/desktop.",
   "license": "Apache-2.0",
   "type": "module",
   "bin": {
@@ -21,7 +21,7 @@
   "dependencies": {
     "@buildonspark/spark-sdk": "^0.13.0",
     "@flashnet/sdk": "^0.5.10",
-    "@kaleidorg/mind": "workspace:*",
+    "@kaleidoswap/mind": "workspace:*",
     "@scure/bip39": "^2.4.0"
   },
   "peerDependencies": {

@@ -1,7 +1,7 @@
 /**
  * Skills demo — the brain enters a skill, which scopes its tools + playbook.
  *
- *   pnpm --filter @kaleidorg/mind-playground exec tsx src/skills-demo.ts "rebalance my portfolio to mostly BTC"
+ *   pnpm --filter @kaleidoswap/mind-playground exec tsx src/skills-demo.ts "rebalance my portfolio to mostly BTC"
  *   ... "what's my balance?"        → wallet-assistant skill
  *   ... "open a lightning channel"  → channel-manager skill
  *
@@ -10,7 +10,7 @@
  * full toolset has 7 tools; each skill exposes a curated 2–3.
  */
 
-import { getRecommendedModel, DEFAULT_MODEL_ID } from '@kaleidorg/mind/qvac';
+import { getRecommendedModel, DEFAULT_MODEL_ID } from '@kaleidoswap/mind/qvac';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -20,7 +20,7 @@ import {
   SkillRegistry,
   type LLMProvider,
   type InProcessTool,
-} from '@kaleidorg/mind';
+} from '@kaleidoswap/mind';
 
 const MODEL_PATH =
   process.env.QVAC_MODEL_PATH || join(homedir(), '.kaleido', 'models', getRecommendedModel(DEFAULT_MODEL_ID)!.hfFile);

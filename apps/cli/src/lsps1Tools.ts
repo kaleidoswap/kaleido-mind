@@ -1,6 +1,6 @@
 /**
  * LSPS1 tool source for the CLI — fetch-based handlers that implement the
- * canonical LSP-agnostic contract from `@kaleidorg/mind`.
+ * canonical LSP-agnostic contract from `@kaleidoswap/mind`.
  *
  * The LSPS1 endpoints happen to live on the maker today (port 8000); the tool
  * names are LSP-agnostic (`lsp_*`) so a different LSP can be swapped in by
@@ -15,8 +15,8 @@
  * `app/api/v1/lsps1.py` + `app/models/lsps1.py`.
  */
 
-import { type InProcessToolSource, type Lsps1Handler } from '@kaleidorg/mind';
-import { bindLsps1Tools } from '@kaleidorg/mind/lsps1';
+import { type InProcessToolSource, type Lsps1Handler } from '@kaleidoswap/mind';
+import { bindLsps1Tools } from '@kaleidoswap/mind/lsps1';
 
 export interface Lsps1HttpOptions {
   /** LSP base URL, e.g. http://localhost:8000. No trailing slash. */

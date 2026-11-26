@@ -1,8 +1,8 @@
 /**
  * McpToolSource — exposes an MCP server's tools to the engine. NODE ONLY.
  *
- * Not exported from the package's main entry (`@kaleidorg/mind`) — import it
- * explicitly from `@kaleidorg/mind/mcp` on Node hosts (desktop-app, kaleidoagent)
+ * Not exported from the package's main entry (`@kaleidoswap/mind`) — import it
+ * explicitly from `@kaleidoswap/mind/mcp` on Node hosts (desktop-app, kaleidoagent)
  * so React Native never bundles the MCP SDK or any subprocess machinery.
  *
  * Connects to a server like `kaleido-mcp` (Spark + RLN + KaleidoSwap DEX +
