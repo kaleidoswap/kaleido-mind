@@ -5,8 +5,8 @@ Two packages are published to npmjs.org under the `@kaleidorg` scope:
 
 | Package | Source | Workflow |
 |---|---|---|
-| `@kaleidorg/mind` | `packages/core` | `.github/workflows/publish-npm.yml` |
-| `@kaleidorg/mind-provider` | `apps/provider` | `.github/workflows/publish-provider.yml` |
+| `@kaleidoswap/mind` | `packages/core` | `.github/workflows/publish-npm.yml` |
+| `@kaleidoswap/mind-provider` | `apps/provider` | `.github/workflows/publish-provider.yml` |
 
 `apps/cli`, `apps/playground` and `examples/*` are private and never published.
 
@@ -19,7 +19,7 @@ publishes it.** The workflows use the `NPM_TOKEN` repository secret. Core is
 published with provenance.
 
 1. Bump `packages/core/package.json` (and `apps/provider/package.json` when the
-   sidecar changed; its `@kaleidorg/mind` dependency is `workspace:^` and is
+   sidecar changed; its `@kaleidoswap/mind` dependency is `workspace:^` and is
    rewritten to the released range by `pnpm publish`).
 2. Keep `.claude-plugin/plugin.json` `version` in step with core: Claude Code
    uses it to detect plugin updates.
@@ -54,9 +54,9 @@ the host at the checkout:
 
 ```jsonc
 // host package.json
-"@kaleidorg/mind": "file:../kaleido-mind/packages/core"
+"@kaleidoswap/mind": "file:../kaleido-mind/packages/core"
 ```
 
-Run `pnpm --filter @kaleidorg/mind build` (or `tsc --watch` in
+Run `pnpm --filter @kaleidoswap/mind build` (or `tsc --watch` in
 `packages/core`) after each change. React Native hosts also need to re-run
 their skill bundling step.

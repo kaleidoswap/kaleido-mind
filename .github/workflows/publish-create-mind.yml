@@ -1,6 +1,6 @@
-name: Publish npm package (@kaleidorg/create-mind)
+name: Publish npm package (@kaleidoswap/create-mind)
 
-# Publishes packages/create-mind (`npm create @kaleidorg/mind`) on push to
+# Publishes packages/create-mind (`npm create @kaleidoswap/mind`) on push to
 # main when its version changes. The template is built from examples/rgb-agent
 # at pack time. Requires an NPM_TOKEN secret allowed to publish the package.
 on:

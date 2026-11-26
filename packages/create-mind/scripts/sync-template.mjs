@@ -29,7 +29,7 @@ files.set(
       private: true,
       type: 'module',
       scripts: ex.scripts,
-      dependencies: { ...ex.dependencies, '@kaleidorg/mind': `^${core.version}` },
+      dependencies: { ...ex.dependencies, '@kaleidoswap/mind': `^${core.version}` },
       devDependencies: ex.devDependencies,
     },
     null,
@@ -51,4 +51,4 @@ for (const [name, body] of files) {
   mkdirSync(dirname(join(out, name)), { recursive: true });
   writeFileSync(join(out, name), body);
 }
-console.log(`template/ written from examples/rgb-agent (@kaleidorg/mind ^${core.version})`);
+console.log(`template/ written from examples/rgb-agent (@kaleidoswap/mind ^${core.version})`);

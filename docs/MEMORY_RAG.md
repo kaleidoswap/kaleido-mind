@@ -1,6 +1,6 @@
 # Memory, RAG & Context
 
-How `@kaleidorg/mind` gives an agent a **soul**, **long-term memory**, **RAG**,
+How `@kaleidoswap/mind` gives an agent a **soul**, **long-term memory**, **RAG**,
 and a **hardware-aware context budget** — while staying pure-TS and zero-dep
 (everything heavy is injected by the host, so it still bundles in Bare/RN).
 
@@ -224,7 +224,7 @@ import {
   walletHistoryToDocuments,      // personal wallet knowledge (tx history → docs)
   contactsToDocuments,
   merchantsToDocuments,          // BTC map discovery (merchant directory → docs)
-} from '@kaleidorg/mind'
+} from '@kaleidoswap/mind'
 
 await retriever.ingest(BITCOIN_COPILOT_DOCS)
 await retriever.ingest(walletHistoryToDocuments(txs))

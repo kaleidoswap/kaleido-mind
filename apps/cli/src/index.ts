@@ -16,9 +16,9 @@
 import * as os from 'node:os';
 import * as readline from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
-import { capabilityProfile } from '@kaleidorg/mind';
-import { SkillRegistry } from '@kaleidorg/mind';
-import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
+import { capabilityProfile } from '@kaleidoswap/mind';
+import { SkillRegistry } from '@kaleidoswap/mind';
+import { loadSkillsDir, packagedSkillsDir } from '@kaleidoswap/mind/skills';
 import { banner, box, table, c, bytes, dot, bar } from './ui.js';
 import { CATALOG, getModel, recommendChatModel, type CatalogModel } from './catalog.js';
 import { listInstalled, isInstalled, pullModel, removeModel } from './models.js';

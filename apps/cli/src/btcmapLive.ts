@@ -21,7 +21,7 @@ import type {
   BtcMapFetch,
   BtcMapMerchant,
   LatLng,
-} from '@kaleidorg/mind';
+} from '@kaleidoswap/mind';
 
 const CACHE_PATH = join(homedir(), '.kaleido', 'btcmap-cache.json');
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h — BTC Map data changes slowly

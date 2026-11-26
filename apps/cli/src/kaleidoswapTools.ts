@@ -1,6 +1,6 @@
 /**
  * KaleidoSwap maker tool source for the CLI — fetch-based handlers that
- * implement the canonical contract from `@kaleidorg/mind`.
+ * implement the canonical contract from `@kaleidoswap/mind`.
  *
  * Pattern: core declares the agent-facing tool shape (simple flat args); this
  * host adapter translates them into the maker's REST request bodies (often
@@ -10,8 +10,8 @@
  * Routes + body shapes mirror `kaleido_sdk._maker_client.py` / `_generated/api_types.py`.
  */
 
-import { type InProcessToolSource, type KaleidoswapHandler } from '@kaleidorg/mind';
-import { bindKaleidoswapTools } from '@kaleidorg/mind/kaleidoswap';
+import { type InProcessToolSource, type KaleidoswapHandler } from '@kaleidoswap/mind';
+import { bindKaleidoswapTools } from '@kaleidoswap/mind/kaleidoswap';
 
 export interface KaleidoswapHttpOptions {
   /** Maker base URL, e.g. http://localhost:8000. No trailing slash. */

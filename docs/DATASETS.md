@@ -27,12 +27,12 @@ writes private `train.jsonl`, `validation.jsonl` and `manifest.json` files in a 
 
 ## Collect from an application
 
-`@kaleidorg/mind/dataset` is portable; `@kaleidorg/mind/dataset/node` is Node-only.
+`@kaleidoswap/mind/dataset` is portable; `@kaleidoswap/mind/dataset/node` is Node-only.
 React Native/browser hosts supply their own secure `appendLine` implementation.
 
 ```ts
-import { DatasetCollector } from '@kaleidorg/mind/dataset';
-import { LocalDatasetStore } from '@kaleidorg/mind/dataset/node';
+import { DatasetCollector } from '@kaleidoswap/mind/dataset';
+import { LocalDatasetStore } from '@kaleidoswap/mind/dataset/node';
 
 const store = new LocalDatasetStore('.dataset/agent', 30);
 const collector = new DatasetCollector({

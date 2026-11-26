@@ -5,17 +5,17 @@
  * QVAC SDK. Here:
  *   - QVAC `embed()` (GTE_LARGE_FP16, 1024-dim) produces the vectors —
  *     wrapped as an `EmbeddingProvider`.
- *   - `@kaleidorg/mind` `Retriever` + `InMemoryVectorStore` are the
+ *   - `@kaleidoswap/mind` `Retriever` + `InMemoryVectorStore` are the
  *     "bring-your-own vector DB" (QVAC ships embeddings, not a store).
  *   - QVAC `completion()` answers the question using ONLY the retrieved
  *     context — no cloud, no data leaving the device.
  *
  *   QVAC_EMBED_MODEL=GTE_LARGE_FP16 \
  *   QVAC_MODEL_PATH=~/.kaleido/models/Qwen3.5-2B-Q4_K_M.gguf \
- *   pnpm --filter @kaleidorg/mind-playground exec tsx src/rag-demo.ts
+ *   pnpm --filter @kaleidoswap/mind-playground exec tsx src/rag-demo.ts
  */
 
-import { getRecommendedModel, DEFAULT_MODEL_ID } from '@kaleidorg/mind/qvac';
+import { getRecommendedModel, DEFAULT_MODEL_ID } from '@kaleidoswap/mind/qvac';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -26,8 +26,8 @@ import {
   type EmbeddingProvider,
   type LLMProvider,
   type AgentProfile,
-} from '@kaleidorg/mind';
-import { BITCOIN_COPILOT_DOCS } from '@kaleidorg/mind/knowledge';
+} from '@kaleidoswap/mind';
+import { BITCOIN_COPILOT_DOCS } from '@kaleidoswap/mind/knowledge';
 
 const MODEL_PATH =
   process.env.QVAC_MODEL_PATH ||

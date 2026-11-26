@@ -81,19 +81,19 @@ end-to-end product reliability.
 Validate the harness without loading QVAC:
 
 ```bash
-pnpm --filter @kaleidorg/mind-cli eval:product:mock
+pnpm --filter @kaleidoswap/mind-cli eval:product:mock
 ```
 
 Run one or more installed QVAC models:
 
 ```bash
-pnpm --filter @kaleidorg/mind-cli eval:product -- --models qwen3.5-0.8b
+pnpm --filter @kaleidoswap/mind-cli eval:product -- --models qwen3.5-0.8b
 ```
 
 Run selected scenarios while iterating:
 
 ```bash
-pnpm --filter @kaleidorg/mind-cli eval:product -- \
+pnpm --filter @kaleidoswap/mind-cli eval:product -- \
   --models qwen3-0.6b \
   --scenarios atomic-swap-approved,merchant-nearby
 ```

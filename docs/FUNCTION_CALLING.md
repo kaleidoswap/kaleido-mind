@@ -25,9 +25,9 @@ a timeout can occur after broadcast, so reconcile the operation first.
 
 | Provider | Entry point | Host responsibility |
 |---|---|---|
-| QVAC | `@kaleidorg/mind/qvac` | Load/unload a supported model with tool calling enabled; supply SDK functions |
-| OpenAI-compatible | `@kaleidorg/mind/openai` | Configure the endpoint, model and optional credentials |
-| Scripted | `@kaleidorg/mind/testing` | Supply planned turns for offline tests |
+| QVAC | `@kaleidoswap/mind/qvac` | Load/unload a supported model with tool calling enabled; supply SDK functions |
+| OpenAI-compatible | `@kaleidoswap/mind/openai` | Configure the endpoint, model and optional credentials |
+| Scripted | `@kaleidoswap/mind/testing` | Supply planned turns for offline tests |
 
 Use `@qvac/sdk >=0.20.0` for the current QVAC adapter. The implementation is tested
 with 0.21.0. The QVAC adapter normalizes tool schemas and model outputs; the Engine
@@ -65,8 +65,8 @@ Automatic paired-device inference is not implemented.
 From the repository root:
 
 ```bash
-pnpm --filter @kaleidorg/example-node-minimal run start:mock
-pnpm --filter @kaleidorg/example-rgb-agent run start:offline
+pnpm --filter @kaleidoswap/example-node-minimal run start:mock
+pnpm --filter @kaleidoswap/example-rgb-agent run start:offline
 ```
 
 These commands use scripted responses and simulated tools. The

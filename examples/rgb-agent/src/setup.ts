@@ -9,13 +9,13 @@ import {
   skillToolNames,
   type LLMProvider,
   type ToolSource,
-} from '@kaleidorg/mind';
-import { kaleidoswapAtomicRecipe, kaleidoswapPriceRecipe } from '@kaleidorg/mind/kaleidoswap';
-import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
-import { McpToolSource } from '@kaleidorg/mind/mcp';
-import { createOpenAICompatibleProvider } from '@kaleidorg/mind/openai';
-import { createQvacProvider } from '@kaleidorg/mind/qvac';
-import { MockWallet } from '@kaleidorg/mind/testing';
+} from '@kaleidoswap/mind';
+import { kaleidoswapAtomicRecipe, kaleidoswapPriceRecipe } from '@kaleidoswap/mind/kaleidoswap';
+import { loadSkillsDir, packagedSkillsDir } from '@kaleidoswap/mind/skills';
+import { McpToolSource } from '@kaleidoswap/mind/mcp';
+import { createOpenAICompatibleProvider } from '@kaleidoswap/mind/openai';
+import { createQvacProvider } from '@kaleidoswap/mind/qvac';
+import { MockWallet } from '@kaleidoswap/mind/testing';
 
 /** kaleido-mcp over stdio (signet by default), or an in-process fake RLN node. */
 export async function createTools(opts: {

@@ -17,7 +17,7 @@
  * confirmation gate (a real asset on signet); the send is always declined.
  */
 import { appendFileSync } from 'node:fs';
-import { type ConfirmDecision } from '@kaleidorg/mind';
+import { type ConfirmDecision } from '@kaleidoswap/mind';
 import { createFunnel, createTools, loadProvider } from './setup.js';
 
 const MOCK = process.argv.includes('--mock') || process.env.MOCK === '1';

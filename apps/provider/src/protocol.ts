@@ -8,7 +8,7 @@
 // stderr is reserved for human-readable diagnostics, never parsed.
 
 // ───────────────────────────────────────────────────────────────────────
-// Autonomy wire types — the agent's task brain (mirror @kaleidorg/mind/autonomy).
+// Autonomy wire types — the agent's task brain (mirror @kaleidoswap/mind/autonomy).
 // Structurally compatible with the core types so the sidecar passes core
 // objects straight onto the wire; the frontend mirrors these in api/mind.ts.
 // ───────────────────────────────────────────────────────────────────────

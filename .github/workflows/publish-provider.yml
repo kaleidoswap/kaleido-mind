@@ -1,8 +1,8 @@
-name: Publish npm package (@kaleidorg/mind-provider)
+name: Publish npm package (@kaleidoswap/mind-provider)
 
 # Publishes apps/provider to npm on push to main. Guarded by a "skip if already
 # published" check, so it only actually publishes when apps/provider/package.json
-# version changes. Uses pnpm publish (not npm) so the `@kaleidorg/mind`
+# version changes. Uses pnpm publish (not npm) so the `@kaleidoswap/mind`
 # workspace:^ dependency is rewritten to a real version range on publish.
 on:
   push:
@@ -61,7 +61,7 @@ jobs:
 
       - name: Publish to npm with provenance
         if: steps.npm_check.outputs.already_published == 'false'
-        run: pnpm --filter @kaleidorg/mind-provider publish --provenance --access public --no-git-checks
+        run: pnpm --filter @kaleidoswap/mind-provider publish --provenance --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 

@@ -11,7 +11,7 @@
  * the real wallet adapters (mobile) and the engine behaves identically.
  */
 
-import { getRecommendedModel, DEFAULT_MODEL_ID } from '@kaleidorg/mind/qvac';
+import { getRecommendedModel, DEFAULT_MODEL_ID } from '@kaleidoswap/mind/qvac';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
@@ -25,8 +25,8 @@ import {
   type LLMProvider,
   type InProcessTool,
   type LoggerIO,
-} from '@kaleidorg/mind';
-import { createBtcMapToolSource } from '@kaleidorg/mind/knowledge';
+} from '@kaleidoswap/mind';
+import { createBtcMapToolSource } from '@kaleidoswap/mind/knowledge';
 import { buildKaleidoswapToolSource, buildLsps1ToolSource } from './kaleidoswapTools.js';
 
 const KALEIDOSWAP_BASE_URL = process.env.KALEIDOSWAP_BASE_URL ?? 'http://localhost:8000';

@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- All packages move to the `@kaleidoswap` npm scope: `@kaleidoswap/mind`, `@kaleidoswap/mind-provider` and `@kaleidoswap/create-mind`. The `@kaleidorg` packages stop receiving releases and will be deprecated.
+
 ## Companion packages — 2026-10-09
 
 - `@kaleidorg/mind-provider@0.11.0` packages the sidecar against Mind ^0.11.0.

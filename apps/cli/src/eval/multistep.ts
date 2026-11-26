@@ -24,7 +24,7 @@ import {
   type InferenceMetrics,
   type WalletHandler,
   type Recipe,
-} from '@kaleidorg/mind';
+} from '@kaleidoswap/mind';
 import { loadProvider, mockEvalProvider } from './run.js';
 
 const RATE_USD = 60000; // stub BTC/USD

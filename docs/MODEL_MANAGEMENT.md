@@ -8,9 +8,9 @@ on its own.
 
 | Need | Provider | Setup |
 |---|---|---|
-| Verify application wiring without inference | Scripted provider | `@kaleidorg/mind/testing`; no model download |
+| Verify application wiring without inference | Scripted provider | `@kaleidoswap/mind/testing`; no model download |
 | Run inference on the user's device | QVAC provider | `@qvac/sdk >=0.20.0`, tested with 0.21.0 |
-| Use an existing model server | OpenAI-compatible provider | `@kaleidorg/mind/openai`; configure endpoint and model name |
+| Use an existing model server | OpenAI-compatible provider | `@kaleidoswap/mind/openai`; configure endpoint and model name |
 
 Start with the [offline example](../examples/rgb-agent/README.md), then choose
 inference. The [core package README](../packages/core/README.md#models) maintains

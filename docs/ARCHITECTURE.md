@@ -73,7 +73,7 @@ transaction rollback mechanism. Raw MCP clients must provide their own approvals
 | KaleidoAgent | Separate runtime; reuses Mind skill playbooks rather than its Engine |
 
 The library's supported providers are broader than any individual application's
-settings. `@kaleidorg/mind/openai` can connect a custom host to an OpenAI-compatible
+settings. `@kaleidoswap/mind/openai` can connect a custom host to an OpenAI-compatible
 server. Automatic phone/desktop pairing is not a current capability.
 
 ## Other subsystems

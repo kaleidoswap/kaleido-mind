@@ -12,7 +12,7 @@
  *   - conciseness: answer stays within a word bound (small models ramble).
  */
 
-import type { InferenceMetrics, LLMProvider } from '@kaleidorg/mind';
+import type { InferenceMetrics, LLMProvider } from '@kaleidoswap/mind';
 import { loadProvider, mockEvalProvider } from './run.js';
 
 const SYSTEM =

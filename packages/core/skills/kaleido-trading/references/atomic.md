@@ -4,7 +4,7 @@ Every KaleidoSwap swap settles as an atomic HTLC swap between the maker and
 the user's RGB Lightning Node (RLN). There is no deposit or order flow. If either side fails, nothing settles. Typical end-to-end
 time: 2–15 s.
 
-The argument names are the same in kaleido-mcp and in the `@kaleidorg/mind`
+The argument names are the same in kaleido-mcp and in the `@kaleidoswap/mind`
 KaleidoSwap contract.
 
 ## Steps

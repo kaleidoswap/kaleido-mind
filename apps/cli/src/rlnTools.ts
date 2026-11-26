@@ -22,7 +22,7 @@
  * REST endpoints (apps/cli/src/kaleidoswapTools.ts), not this node's.
  */
 
-import { InProcessToolSource, type InProcessTool } from '@kaleidorg/mind';
+import { InProcessToolSource, type InProcessTool } from '@kaleidoswap/mind';
 
 export interface RlnHttpOptions {
   /** RGB Lightning Node base URL, e.g. http://localhost:3001. No trailing slash. */

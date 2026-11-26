@@ -33,7 +33,7 @@ importers:
       '@flashnet/sdk':
         specifier: ^0.5.10
         version: 0.5.10(@buildonspark/spark-sdk@0.13.0(bare-abort-controller@1.1.2)(bare-buffer@3.7.1)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-pipe@4.3.1(bare-abort-controller@1.1.2)(bare-buffer@3.7.1))(ws@8.22.0))(typescript@7.0.2)
-      '@kaleidorg/mind':
+      '@kaleidoswap/mind':
         specifier: workspace:*
         version: link:../../packages/core
       '@qvac/sdk':
@@ -55,7 +55,7 @@ importers:
 
   apps/playground:
     dependencies:
-      '@kaleidorg/mind':
+      '@kaleidoswap/mind':
         specifier: workspace:*
         version: link:../../packages/core
       '@qvac/sdk':
@@ -74,7 +74,7 @@ importers:
 
   apps/provider:
     dependencies:
-      '@kaleidorg/mind':
+      '@kaleidoswap/mind':
         specifier: workspace:^
         version: link:../../packages/core
       '@modelcontextprotocol/sdk':
@@ -96,7 +96,7 @@ importers:
 
   examples/node-minimal:
     dependencies:
-      '@kaleidorg/mind':
+      '@kaleidoswap/mind':
         specifier: workspace:*
         version: link:../../packages/core
       '@qvac/sdk':
@@ -115,7 +115,7 @@ importers:
 
   examples/rgb-agent:
     dependencies:
-      '@kaleidorg/mind':
+      '@kaleidoswap/mind':
         specifier: workspace:*
         version: link:../../packages/core
       '@modelcontextprotocol/sdk':

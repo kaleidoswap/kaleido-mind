@@ -1,15 +1,15 @@
 /**
  * KaleidoSwap maker tool source for the playground — fetch-based handlers
- * over the canonical contract from `@kaleidorg/mind`. Same shape as the
+ * over the canonical contract from `@kaleidoswap/mind`. Same shape as the
  * CLI's kaleidoswapTools.ts; duplicated here on purpose to keep the apps
  * self-contained (no shared host-side package yet).
  *
  * The mind never sees URLs — the HTTP call lives here.
  */
 
-import { type InProcessToolSource, type KaleidoswapHandler, type Lsps1Handler } from '@kaleidorg/mind';
-import { bindKaleidoswapTools } from '@kaleidorg/mind/kaleidoswap';
-import { bindLsps1Tools } from '@kaleidorg/mind/lsps1';
+import { type InProcessToolSource, type KaleidoswapHandler, type Lsps1Handler } from '@kaleidoswap/mind';
+import { bindKaleidoswapTools } from '@kaleidoswap/mind/kaleidoswap';
+import { bindLsps1Tools } from '@kaleidoswap/mind/lsps1';
 
 export interface MakerHttpOptions {
   /** Maker base URL, e.g. http://localhost:8000. No trailing slash. */

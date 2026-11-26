@@ -27,15 +27,15 @@ import {
   type Message,
   type Skill,
   type ToolSource,
-} from '@kaleidorg/mind';
-import { flashnetSwapRecipe } from '@kaleidorg/mind/flashnet';
+} from '@kaleidoswap/mind';
+import { flashnetSwapRecipe } from '@kaleidoswap/mind/flashnet';
 import {
   kaleidoswapPriceRecipe,
   kaleidoswapAtomicRecipe,
   kaleidoswapChannelOrderRecipe,
-} from '@kaleidorg/mind/kaleidoswap';
-import { createBtcMapToolSource, BITCOIN_COPILOT_DOCS } from '@kaleidorg/mind/knowledge';
-import { loadSkillsDir, packagedSkillsDir } from '@kaleidorg/mind/skills';
+} from '@kaleidoswap/mind/kaleidoswap';
+import { createBtcMapToolSource, BITCOIN_COPILOT_DOCS } from '@kaleidoswap/mind/knowledge';
+import { loadSkillsDir, packagedSkillsDir } from '@kaleidoswap/mind/skills';
 import { c } from './ui.js';
 import { MEMORY_PATH, type CliConfig } from './config.js';
 import { getModel } from './catalog.js';

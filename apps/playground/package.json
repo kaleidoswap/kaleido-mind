@@ -1,8 +1,8 @@
 {
-  "name": "@kaleidorg/mind-playground",
+  "name": "@kaleidoswap/mind-playground",
   "version": "0.0.1",
   "private": true,
-  "description": "CLI to exercise the @kaleidorg/mind engine + tools against a real local QVAC model — no phone, no MCP.",
+  "description": "CLI to exercise the @kaleidoswap/mind engine + tools against a real local QVAC model — no phone, no MCP.",
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@kaleidorg/mind": "workspace:*"
+    "@kaleidoswap/mind": "workspace:*"
   },
   "peerDependencies": {
     "@qvac/sdk": "^0.21.0"

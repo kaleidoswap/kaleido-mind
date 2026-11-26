@@ -137,7 +137,7 @@ export { capabilityProfile } from './capabilities.js';
 export type { CapabilityInput, MindCapabilities } from './capabilities.js';
 
 // ── Domain packs ─────────────────────────────────────────────────────────────
-// Each has its own subpath (`@kaleidorg/mind/kaleidoswap`, `/lsps1`,
+// Each has its own subpath (`@kaleidoswap/mind/kaleidoswap`, `/lsps1`,
 // `/submarine`, `/bitrefill`, `/flashnet`, `/knowledge`). The root re-exports
 // them for compatibility; 1.0 drops these re-exports.
 export * from './kaleidoswap/index.js';

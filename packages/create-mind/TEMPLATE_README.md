@@ -1,7 +1,7 @@
 # RGB agent
 
 A local LLM that operates an RGB Lightning Node (RLN) through
-[@kaleidorg/mind](https://www.npmjs.com/package/@kaleidorg/mind): it reads
+[@kaleidoswap/mind](https://www.npmjs.com/package/@kaleidoswap/mind): it reads
 balances, issues and lists RGB assets, creates RGB and Lightning invoices and
 sends assets. Live spending tools require your confirmation. Offline mode auto-approves simulated operations.
 
@@ -61,7 +61,7 @@ UTXO, so keep a few sats on the node.
 - `src/index.ts`: the requests the agent runs and the system prompt.
 - `src/setup.ts`: which tools it sees (`allow` list) and the model settings.
 - `src/eval.ts`: the scenarios and what counts as a pass.
-- Skills: the agent loads every skill packaged with `@kaleidorg/mind`. Write
+- Skills: the agent loads every skill packaged with `@kaleidoswap/mind`. Write
   your own as a `SKILL.md` and add it to the `SkillRegistry`.
 
 A request takes from tens of seconds to a few minutes on a laptop, mostly

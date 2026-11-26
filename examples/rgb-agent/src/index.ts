@@ -14,8 +14,8 @@
  *        RLN_NODE_URL       your RLN node (default inside kaleido-mcp: http://localhost:3001)
  */
 import { createInterface } from 'node:readline/promises';
-import { confirmReadback, type ConfirmDecision, type LLMProvider } from '@kaleidorg/mind';
-import { scriptedProvider } from '@kaleidorg/mind/testing';
+import { confirmReadback, type ConfirmDecision, type LLMProvider } from '@kaleidoswap/mind';
+import { scriptedProvider } from '@kaleidoswap/mind/testing';
 import { AGENT_TOOLS, createFunnel, createTools, loadProvider } from './setup.js';
 
 const flag = (name: string) => process.argv.includes(`--${name}`);
